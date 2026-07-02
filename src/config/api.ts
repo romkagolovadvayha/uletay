@@ -1,0 +1,43 @@
+import { Platform } from 'react-native';
+import { AppData, Stage, StageId } from '../types';
+
+const DEFAULT_COLORS: Record<StageId, string> = {
+  south: '#F5C518',
+  west: '#34C759',
+  'ren-tv': '#FF5520',
+};
+
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  (Platform.OS === 'web' && typeof window !== 'undefined'
+    ? `${window.location.origin}/api`
+    : 'http://localhost/uletay/api');
+
+export const CACHE_TTL_MS = 60_000;
+
+export function resolveMediaUrl(path?: string | null): string | undefined {
+  if (!path) {
+    return undefined;
+  }
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    if (path.startsWith('/')) {
+      return `${origin}${path}`;
+    }
+    return `${origin}/${path}`;
+  }
+  return `http://localhost${path}`;
+}
+
+export function getStageColor(stageId: StageId, stages?: Stage[]): string {
+  const fromData = stages?.find((stage) => stage.id === stageId)?.color;
+  return fromData ?? DEFAULT_COLORS[stageId] ?? DEFAULT_COLORS.south;
+}
+
+export type CachedAppData = {
+  data: AppData;
+  fetchedAt: number;
+};

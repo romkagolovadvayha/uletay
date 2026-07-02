@@ -32,6 +32,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+api/config.deploy.php
 
 # typescript
 *.tsbuildinfo

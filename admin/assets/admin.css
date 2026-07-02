@@ -1,0 +1,93 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0b0b0c;
+  color: #fff;
+}
+a { color: #ffc107; }
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #2c2c2e;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #2c2c2e;
+  flex-wrap: wrap;
+}
+.tabs a {
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #1c1c1e;
+  color: #aeaeb2;
+  font-size: 13px;
+  font-weight: 700;
+}
+.tabs a.active { background: #ffc107; color: #000; }
+.container { padding: 20px; max-width: 1100px; margin: 0 auto; }
+.panel {
+  background: #1c1c1e;
+  border: 1px solid #2c2c2e;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #aeaeb2; }
+input, textarea, button {
+  font: inherit;
+}
+input, textarea {
+  background: #0b0b0c;
+  border: 1px solid #2c2c2e;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+textarea { width: 100%; font-family: Consolas, monospace; font-size: 12px; }
+button {
+  margin-top: 12px;
+  background: #ffc107;
+  color: #000;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.stage-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2c2c2e;
+}
+.preview { max-width: 320px; border-radius: 12px; margin-top: 12px; display: block; }
+.ok { color: #34c759; }
+.error { color: #ff453a; }
+.hint { color: #aeaeb2; font-size: 13px; }
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+.auth-card {
+  width: min(420px, 92vw);
+  background: #1c1c1e;
+  border: 1px solid #2c2c2e;
+  border-radius: 16px;
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+}

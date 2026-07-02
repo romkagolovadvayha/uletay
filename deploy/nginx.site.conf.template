@@ -1,0 +1,41 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __DOMAIN__;
+
+    client_max_body_size 20M;
+
+    location ^~ /api/uploads/ {
+        alias __DEPLOY_PATH__/api/uploads/;
+        expires 7d;
+        add_header Cache-Control "public";
+        try_files $uri =404;
+    }
+
+    location ^~ /api/ {
+        root __DEPLOY_PATH__;
+        location ~ \.php$ {
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            fastcgi_pass unix:__PHP_FPM_SOCKET__;
+        }
+        try_files $uri $uri/ =404;
+    }
+
+    location ^~ /admin/ {
+        root __DEPLOY_PATH__;
+        index index.php;
+        location ~ \.php$ {
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            fastcgi_pass unix:__PHP_FPM_SOCKET__;
+        }
+        try_files $uri $uri/ /admin/index.php?$query_string;
+    }
+
+    location / {
+        root __DEPLOY_PATH__/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+}

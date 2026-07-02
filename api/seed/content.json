@@ -1,0 +1,1582 @@
+{
+  "festival": {
+    "name": "УЛЕТАЙ",
+    "year": 2026,
+    "startDate": "2026-07-08",
+    "endDate": "2026-07-12",
+    "location": "ЛАГУНОВО, УДМУРТИЯ",
+    "locationShort": "Удмуртия, с. Лагуново",
+    "ageRating": "6+",
+    "heroImageUrl": null
+  },
+  "stages": [
+    {
+      "id": "ren-tv",
+      "name": "СЦЕНА РЕН ТВ",
+      "shortName": "РЕН ТВ",
+      "color": "#FF5520"
+    },
+    {
+      "id": "south",
+      "name": "ЮЖНАЯ СЦЕНА",
+      "shortName": "Южная",
+      "color": "#F5C518"
+    },
+    {
+      "id": "west",
+      "name": "ЗАПАДНАЯ СЦЕНА",
+      "shortName": "Западная",
+      "color": "#34C759"
+    }
+  ],
+  "schedule": [
+    {
+      "id": "ren-tv-2026-07-09-15:00-ГРАН-КУРАЖЪ",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "artist": "ГРАН-КУРАЖЪ"
+    },
+    {
+      "id": "ren-tv-2026-07-09-16:00-КАЛИНОВ МОСТ",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "16:00",
+      "endTime": "17:05",
+      "artist": "КАЛИНОВ МОСТ"
+    },
+    {
+      "id": "ren-tv-2026-07-09-17:05-МАРА",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "17:05",
+      "endTime": "18:10",
+      "artist": "МАРА"
+    },
+    {
+      "id": "ren-tv-2026-07-09-18:10-МУЛЬТFИЛЬМЫ",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "18:10",
+      "endTime": "19:15",
+      "artist": "МУЛЬТFИЛЬМЫ"
+    },
+    {
+      "id": "ren-tv-2026-07-09-19:15-МОНГОЛ ШУУДА",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "19:15",
+      "endTime": "20:20",
+      "artist": "МОНГОЛ ШУУДАН"
+    },
+    {
+      "id": "ren-tv-2026-07-09-20:20-УНДЕРВУД",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "20:20",
+      "endTime": "21:25",
+      "artist": "УНДЕРВУД"
+    },
+    {
+      "id": "ren-tv-2026-07-09-21:25-КРЕМАТОРИЙ",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "21:25",
+      "endTime": "22:35",
+      "artist": "КРЕМАТОРИЙ"
+    },
+    {
+      "id": "ren-tv-2026-07-09-22:35-LUMEN",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "22:35",
+      "endTime": "14:00",
+      "artist": "LUMEN"
+    },
+    {
+      "id": "ren-tv-2026-07-10-14:00-МЕЛЬНИЦА",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "artist": "МЕЛЬНИЦА"
+    },
+    {
+      "id": "ren-tv-2026-07-10-15:00-7Б",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "15:00",
+      "endTime": "16:10",
+      "artist": "7Б"
+    },
+    {
+      "id": "ren-tv-2026-07-10-16:10-СУРГАНОВА И ",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "16:10",
+      "endTime": "17:20",
+      "artist": "СУРГАНОВА И ОРКЕСТР"
+    },
+    {
+      "id": "ren-tv-2026-07-10-17:20-ЭПИДЕМИЯ",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "17:20",
+      "endTime": "18:30",
+      "artist": "ЭПИДЕМИЯ"
+    },
+    {
+      "id": "ren-tv-2026-07-10-18:30-МУРАКАМИ",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "18:30",
+      "endTime": "19:40",
+      "artist": "МУРАКАМИ"
+    },
+    {
+      "id": "ren-tv-2026-07-10-19:40-БРАВО",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "19:40",
+      "endTime": "21:00",
+      "artist": "БРАВО"
+    },
+    {
+      "id": "ren-tv-2026-07-10-21:00-СЕРЬГА",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "21:00",
+      "endTime": "22:10",
+      "artist": "СЕРЬГА"
+    },
+    {
+      "id": "ren-tv-2026-07-10-22:10-ГОРШЕНЕВ",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "22:10",
+      "endTime": "23:30",
+      "artist": "ГОРШЕНЕВ"
+    },
+    {
+      "id": "ren-tv-2026-07-10-23:30-АЛИСА",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "23:30",
+      "endTime": "14:00",
+      "artist": "АЛИСА"
+    },
+    {
+      "id": "ren-tv-2026-07-11-14:00-КНЯZZ",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "artist": "КНЯZZ"
+    },
+    {
+      "id": "ren-tv-2026-07-11-15:00-ПИЛОТ",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "15:00",
+      "endTime": "16:20",
+      "artist": "ПИЛОТ"
+    },
+    {
+      "id": "ren-tv-2026-07-11-16:20-КОСТЯ КУЛЯСО",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "16:20",
+      "endTime": "17:40",
+      "artist": "КОСТЯ КУЛЯСОВ. АНИМАЦИЯ"
+    },
+    {
+      "id": "ren-tv-2026-07-11-17:40-СЕРГЕЙ БОБУН",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "17:40",
+      "endTime": "19:00",
+      "artist": "СЕРГЕЙ БОБУНЕЦ"
+    },
+    {
+      "id": "ren-tv-2026-07-11-19:00-ВЯЧЕСЛАВ БУТ",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "19:00",
+      "endTime": "20:20",
+      "artist": "ВЯЧЕСЛАВ БУТУСОВ"
+    },
+    {
+      "id": "ren-tv-2026-07-11-20:20-АРИЯ",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "20:20",
+      "endTime": "21:40",
+      "artist": "АРИЯ"
+    },
+    {
+      "id": "ren-tv-2026-07-11-21:40-ПИКНИК",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "21:40",
+      "endTime": "23:00",
+      "artist": "ПИКНИК"
+    },
+    {
+      "id": "ren-tv-2026-07-11-23:00-ВАДИМ САМОЙЛ",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "23:00",
+      "endTime": "12:00",
+      "artist": "ВАДИМ САМОЙЛОВ"
+    },
+    {
+      "id": "ren-tv-2026-07-12-12:00-АНГЕЛ НЕБЕС",
+      "stageId": "ren-tv",
+      "date": "2026-07-12",
+      "startTime": "12:00",
+      "endTime": "13:00",
+      "artist": "АНГЕЛ НЕБЕС"
+    },
+    {
+      "id": "ren-tv-2026-07-12-13:00-БРИГАДНЫЙ ПО",
+      "stageId": "ren-tv",
+      "date": "2026-07-12",
+      "startTime": "13:00",
+      "endTime": "14:15",
+      "artist": "БРИГАДНЫЙ ПОДРЯД"
+    },
+    {
+      "id": "ren-tv-2026-07-12-14:15-ZNAKI",
+      "stageId": "ren-tv",
+      "date": "2026-07-12",
+      "startTime": "14:15",
+      "endTime": "15:30",
+      "artist": "ZNAKI"
+    },
+    {
+      "id": "ren-tv-2026-07-12-15:30-ИГОРЬ РАСТЕР",
+      "stageId": "ren-tv",
+      "date": "2026-07-12",
+      "startTime": "15:30",
+      "endTime": "16:30",
+      "artist": "ИГОРЬ РАСТЕРЯЕВ"
+    },
+    {
+      "id": "south-2026-07-08-15:00-NADИ",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "artist": "NADИ"
+    },
+    {
+      "id": "south-2026-07-08-16:00-ВЕРЕ ДИКТУМ ",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "artist": "ВЕРЕ ДИКТУМ / VERE DICTUM"
+    },
+    {
+      "id": "south-2026-07-08-17:00-ГРУППА Ё",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "17:00",
+      "endTime": "18:00",
+      "artist": "ГРУППА Ё"
+    },
+    {
+      "id": "south-2026-07-08-18:00-МОСКВИТИН",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "artist": "МОСКВИТИН"
+    },
+    {
+      "id": "south-2026-07-08-19:00-ЛУЧШИЙ САМЫЙ",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "artist": "ЛУЧШИЙ САМЫЙ ДЕНЬ"
+    },
+    {
+      "id": "south-2026-07-08-20:00-КАЛЕВАЛА",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "20:00",
+      "endTime": "21:00",
+      "artist": "КАЛЕВАЛА"
+    },
+    {
+      "id": "south-2026-07-08-21:00-АНГЕЛ-ХРАНИТ",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "21:00",
+      "endTime": "22:00",
+      "artist": "АНГЕЛ-ХРАНИТЕЛЬ"
+    },
+    {
+      "id": "south-2026-07-08-22:00-ОБЕ-РЕК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "22:00",
+      "endTime": "23:00",
+      "artist": "ОБЕ-РЕК"
+    },
+    {
+      "id": "south-2026-07-08-23:00-СКОЛОТ",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "23:00",
+      "endTime": "00:00",
+      "artist": "СКОЛОТ"
+    },
+    {
+      "id": "south-2026-07-09-00:00-КИРПИЧИ",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "00:00",
+      "endTime": "01:00",
+      "artist": "КИРПИЧИ"
+    },
+    {
+      "id": "south-2026-07-09-01:00-ТРОЛЛЬ ГНЕТ ",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "01:00",
+      "endTime": "16:00",
+      "artist": "ТРОЛЛЬ ГНЕТ ЕЛЬ"
+    },
+    {
+      "id": "south-2026-07-09-16:00-ДОНЭРА",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "artist": "ДОНЭРА"
+    },
+    {
+      "id": "south-2026-07-09-17:00-БАГИРА / BAG",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "17:00",
+      "endTime": "18:00",
+      "artist": "БАГИРА / BAGIRA"
+    },
+    {
+      "id": "south-2026-07-09-18:00-АФФИНАЖ",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "artist": "АФФИНАЖ"
+    },
+    {
+      "id": "south-2026-07-09-19:00-ПАВЕЛ ПИКОВС",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "artist": "ПАВЕЛ ПИКОВСКИЙ"
+    },
+    {
+      "id": "south-2026-07-09-20:00-ДРУГОЙ ВЕТЕР",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "20:00",
+      "endTime": "21:00",
+      "artist": "ДРУГОЙ ВЕТЕР"
+    },
+    {
+      "id": "south-2026-07-09-21:00-БЕЗ Б / BEZ ",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "21:00",
+      "endTime": "22:00",
+      "artist": "БЕЗ Б / BEZ B"
+    },
+    {
+      "id": "south-2026-07-09-22:00-NAGART",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "22:00",
+      "endTime": "23:00",
+      "artist": "NAGART"
+    },
+    {
+      "id": "south-2026-07-09-23:00-ХЕЛЬВЕГЕН / ",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "23:00",
+      "endTime": "00:00",
+      "artist": "ХЕЛЬВЕГЕН / HELVEGEN"
+    },
+    {
+      "id": "south-2026-07-10-00:00-КОНЕЦ ФИЛЬМА",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "00:00",
+      "endTime": "01:00",
+      "artist": "КОНЕЦ ФИЛЬМА"
+    },
+    {
+      "id": "south-2026-07-10-01:00-ROCK PRIVET",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "01:00",
+      "endTime": "14:00",
+      "artist": "ROCK PRIVET"
+    },
+    {
+      "id": "south-2026-07-10-14:00-ДЕКАБРЬ",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "artist": "ДЕКАБРЬ"
+    },
+    {
+      "id": "south-2026-07-10-15:00-ЛАСКАЛА / LA",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "15:00",
+      "endTime": "16:05",
+      "artist": "ЛАСКАЛА / LASCALA"
+    },
+    {
+      "id": "south-2026-07-10-16:05-ХМЫРОВ",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "16:05",
+      "endTime": "17:10",
+      "artist": "ХМЫРОВ"
+    },
+    {
+      "id": "south-2026-07-10-17:10-ПОЛНАЛЮБВИ /",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "17:10",
+      "endTime": "18:15",
+      "artist": "ПОЛНАЛЮБВИ / POLNALYUBVI"
+    },
+    {
+      "id": "south-2026-07-10-18:15-ПЛАМЕНЕВ",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "18:15",
+      "endTime": "19:20",
+      "artist": "ПЛАМЕНЕВ"
+    },
+    {
+      "id": "south-2026-07-10-19:20-СЛОТ",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "19:20",
+      "endTime": "20:25",
+      "artist": "СЛОТ"
+    },
+    {
+      "id": "south-2026-07-10-20:25-НЭИЛ ШЕРИ",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "20:25",
+      "endTime": "21:30",
+      "artist": "НЭИЛ ШЕРИ"
+    },
+    {
+      "id": "south-2026-07-10-21:30-F.P.G.",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "21:30",
+      "endTime": "22:35",
+      "artist": "F.P.G."
+    },
+    {
+      "id": "south-2026-07-10-22:35-ОПЕРАЦИЯ ПЛА",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "22:35",
+      "endTime": "23:40",
+      "artist": "ОПЕРАЦИЯ ПЛАСТИЛИН"
+    },
+    {
+      "id": "south-2026-07-10-23:40-AMATORY",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "23:40",
+      "endTime": "01:00",
+      "artist": "AMATORY"
+    },
+    {
+      "id": "south-2026-07-11-01:00-ВИА «ВОЛГА-В",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "01:00",
+      "endTime": "14:00",
+      "artist": "ВИА «ВОЛГА-ВОЛГА»"
+    },
+    {
+      "id": "south-2026-07-11-14:00-МАША И МЕДВЕ",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "artist": "МАША И МЕДВЕДИ"
+    },
+    {
+      "id": "south-2026-07-11-15:00-КАТЮША",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "artist": "КАТЮША"
+    },
+    {
+      "id": "south-2026-07-11-16:00-КЭЖУАЛ / CAS",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "artist": "КЭЖУАЛ / CASUAL"
+    },
+    {
+      "id": "south-2026-07-11-17:00-ИНКОГНИТО",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "17:00",
+      "endTime": "18:00",
+      "artist": "ИНКОГНИТО"
+    },
+    {
+      "id": "south-2026-07-11-18:00-DRUMMATIX",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "artist": "DRUMMATIX"
+    },
+    {
+      "id": "south-2026-07-11-19:00-СТИГМАТА / S",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "artist": "СТИГМАТА / STIGMATA"
+    },
+    {
+      "id": "south-2026-07-11-20:00-ПОТОМУЧТО",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "20:00",
+      "endTime": "21:10",
+      "artist": "ПОТОМУЧТО"
+    },
+    {
+      "id": "south-2026-07-11-21:10-БИРТМАН",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "21:10",
+      "endTime": "22:20",
+      "artist": "БИРТМАН"
+    },
+    {
+      "id": "south-2026-07-11-22:20-ЙОРШ",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "22:20",
+      "endTime": "23:30",
+      "artist": "ЙОРШ"
+    },
+    {
+      "id": "south-2026-07-11-23:30-RADIO TAPOK",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "23:30",
+      "endTime": "01:10",
+      "artist": "RADIO TAPOK"
+    },
+    {
+      "id": "south-2026-07-12-01:10-НЕЙРОМОНАХ Ф",
+      "stageId": "south",
+      "date": "2026-07-12",
+      "startTime": "01:10",
+      "endTime": "02:10",
+      "artist": "НЕЙРОМОНАХ ФЕОФАН"
+    },
+    {
+      "id": "west-2026-07-08-16:00-ТАПОК",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "artist": "ТАПОК"
+    },
+    {
+      "id": "west-2026-07-08-17:00-МУХОМОРЫ",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "17:00",
+      "endTime": "18:00",
+      "artist": "МУХОМОРЫ"
+    },
+    {
+      "id": "west-2026-07-08-18:00-МАГНИТНАЯ АН",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "artist": "МАГНИТНАЯ АНОМАЛИЯ"
+    },
+    {
+      "id": "west-2026-07-08-19:00-НЕБО ПОПОЛАМ",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "artist": "НЕБО ПОПОЛАМ"
+    },
+    {
+      "id": "west-2026-07-08-20:00-РАЗНЫЕ ЛЮДИ",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "20:00",
+      "endTime": "21:00",
+      "artist": "РАЗНЫЕ ЛЮДИ"
+    },
+    {
+      "id": "west-2026-07-08-21:00-ФЕДУЛОВА",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "21:00",
+      "endTime": "22:00",
+      "artist": "ФЕДУЛОВА"
+    },
+    {
+      "id": "west-2026-07-08-22:00-ВКЛЮЧАЙ МИКР",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "22:00",
+      "endTime": "23:00",
+      "artist": "ВКЛЮЧАЙ МИКРОФОН!"
+    },
+    {
+      "id": "west-2026-07-08-23:00-ЧЕРНЫЙ ОБЕЛИ",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "23:00",
+      "endTime": "00:00",
+      "artist": "ЧЕРНЫЙ ОБЕЛИСК"
+    },
+    {
+      "id": "west-2026-07-09-00:00-СЕМЬ ШТУК БА",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "00:00",
+      "endTime": "12:00",
+      "artist": "СЕМЬ ШТУК БАКСОВ / 7000$"
+    },
+    {
+      "id": "west-2026-07-09-12:00-EMBERWOOD, В",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "12:00",
+      "endTime": "13:30",
+      "artist": "EMBERWOOD, ВЕТЕР, ЕЛЕНА JAYA",
+      "isCompetition": true
+    },
+    {
+      "id": "west-2026-07-09-13:30-НЕ МЕНЕЕ ПЯТ",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "13:30",
+      "endTime": "15:00",
+      "artist": "НЕ МЕНЕЕ ПЯТИ ОБОРОТОВ",
+      "isCompetition": true
+    },
+    {
+      "id": "west-2026-07-09-15:00-ТРИ ВТОРЫХ",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "artist": "ТРИ ВТОРЫХ"
+    },
+    {
+      "id": "west-2026-07-09-16:00-ФАН МОД / FU",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "artist": "ФАН МОД / FUN MODE"
+    },
+    {
+      "id": "west-2026-07-09-17:00-НИНА СМИТ",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "17:00",
+      "endTime": "18:00",
+      "artist": "НИНА СМИТ"
+    },
+    {
+      "id": "west-2026-07-09-18:00-АСТРА",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "artist": "АСТРА"
+    },
+    {
+      "id": "west-2026-07-09-19:00-САША И СИРОЖ",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "artist": "САША И СИРОЖА"
+    },
+    {
+      "id": "west-2026-07-09-20:00-ОТМОРОЗКИ",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "20:00",
+      "endTime": "21:00",
+      "artist": "ОТМОРОЗКИ"
+    },
+    {
+      "id": "west-2026-07-09-21:00-РЯЗАНOFF",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "21:00",
+      "endTime": "22:00",
+      "artist": "РЯЗАНOFF"
+    },
+    {
+      "id": "west-2026-07-09-22:00-ОТАВА Ё",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "22:00",
+      "endTime": "23:00",
+      "artist": "ОТАВА Ё"
+    },
+    {
+      "id": "west-2026-07-09-23:00-ДИСТЕМПЕР / ",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "23:00",
+      "endTime": "00:00",
+      "artist": "ДИСТЕМПЕР / DISTEMPER"
+    },
+    {
+      "id": "west-2026-07-10-00:00-РАВАННА / RA",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "00:00",
+      "endTime": "12:00",
+      "artist": "РАВАННА / RAVANNA"
+    },
+    {
+      "id": "west-2026-07-10-12:00-СВОБОДНЫЙ РЕ",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "12:00",
+      "endTime": "13:30",
+      "artist": "СВОБОДНЫЙ РЕЖИМ, VERRONA EX GREAT REVIVAL, МОРРОЗ",
+      "isCompetition": true
+    },
+    {
+      "id": "west-2026-07-10-13:30-#СЕВАИВАНОВ",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "13:30",
+      "endTime": "14:00",
+      "artist": "#СЕВАИВАНОВ",
+      "isCompetition": true
+    },
+    {
+      "id": "west-2026-07-10-14:00-НИКОЛАЙ ГРИН",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "artist": "НИКОЛАЙ ГРИНЬКО"
+    },
+    {
+      "id": "west-2026-07-10-15:00-МЕЩЕРА",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "artist": "МЕЩЕРА"
+    },
+    {
+      "id": "west-2026-07-10-16:00-АННУШКАА",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "artist": "АННУШКАА"
+    },
+    {
+      "id": "west-2026-07-10-17:00-ДМЦ",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "17:00",
+      "endTime": "18:00",
+      "artist": "ДМЦ"
+    },
+    {
+      "id": "west-2026-07-10-18:00-РЕКОРД ОРКЕС",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "artist": "РЕКОРД ОРКЕСТР"
+    },
+    {
+      "id": "west-2026-07-10-19:00-СОВА",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "artist": "СОВА"
+    },
+    {
+      "id": "west-2026-07-10-20:00-7 РАСА",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "20:00",
+      "endTime": "21:00",
+      "artist": "7 РАСА"
+    },
+    {
+      "id": "west-2026-07-10-21:00-ВАСИЛИЙ УРИЕ",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "21:00",
+      "endTime": "22:00",
+      "artist": "ВАСИЛИЙ УРИЕВСКИЙ"
+    },
+    {
+      "id": "west-2026-07-10-22:00-TAISH",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "22:00",
+      "endTime": "23:00",
+      "artist": "TAISH"
+    },
+    {
+      "id": "west-2026-07-10-23:00-ЯШНИКОВА",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "23:00",
+      "endTime": "00:00",
+      "artist": "ЯШНИКОВА"
+    },
+    {
+      "id": "west-2026-07-11-00:00-КЛЮЧЕВАЯ",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "00:00",
+      "endTime": "12:00",
+      "artist": "КЛЮЧЕВАЯ"
+    },
+    {
+      "id": "west-2026-07-11-12:00-СЕРДЦЕ ТРУ, ",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "12:00",
+      "endTime": "13:30",
+      "artist": "СЕРДЦЕ ТРУ, VERMOL, ГАБАРИТ",
+      "isCompetition": true
+    },
+    {
+      "id": "west-2026-07-11-13:30-КИТЧ",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "13:30",
+      "endTime": "14:20",
+      "artist": "КИТЧ",
+      "isCompetition": true
+    },
+    {
+      "id": "west-2026-07-11-14:20-ДИСЦИПЛИНА",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "14:20",
+      "endTime": "15:00",
+      "artist": "ДИСЦИПЛИНА"
+    },
+    {
+      "id": "west-2026-07-11-15:00-КДРР / KDRR",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "artist": "КДРР / KDRR"
+    },
+    {
+      "id": "west-2026-07-11-16:00-АНЯ ИЗ ПИТЕР",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "artist": "АНЯ ИЗ ПИТЕРА"
+    },
+    {
+      "id": "west-2026-07-11-17:00-АРКТИДА",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "17:00",
+      "endTime": "18:00",
+      "artist": "АРКТИДА"
+    },
+    {
+      "id": "west-2026-07-11-18:00-AMALGAMA",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "artist": "AMALGAMA"
+    },
+    {
+      "id": "west-2026-07-11-19:00-СЕЛЛАУТ / SE",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "artist": "СЕЛЛАУТ / SELLOUT"
+    },
+    {
+      "id": "west-2026-07-11-20:00-БАХЫТ-КОМПОТ",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "20:00",
+      "endTime": "21:00",
+      "artist": "БАХЫТ-КОМПОТ"
+    },
+    {
+      "id": "west-2026-07-11-21:00-ПИТОНЫ 3000",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "21:00",
+      "endTime": "22:00",
+      "artist": "ПИТОНЫ 3000"
+    },
+    {
+      "id": "west-2026-07-11-22:00-ДЖОКОНДА",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "22:00",
+      "endTime": "23:00",
+      "artist": "ДЖОКОНДА"
+    },
+    {
+      "id": "west-2026-07-11-23:00-ТОРБА-НА-КРУ",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "23:00",
+      "endTime": "00:00",
+      "artist": "ТОРБА-НА-КРУЧЕ"
+    },
+    {
+      "id": "west-2026-07-12-00:00-НАКОНЕЧНЫЙ",
+      "stageId": "west",
+      "date": "2026-07-12",
+      "startTime": "00:00",
+      "endTime": "01:00",
+      "artist": "НАКОНЕЧНЫЙ"
+    }
+  ],
+  "autographs": [
+    {
+      "id": "auto-south-2026-07-08-17:00-NADИ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "17:00",
+      "endTime": "17:30",
+      "artist": "NADИ"
+    },
+    {
+      "id": "auto-south-2026-07-08-18:00-ВЕРЕ ДИК",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "18:00",
+      "endTime": "18:30",
+      "artist": "ВЕРЕ ДИКТУМ / VERE DICTUM"
+    },
+    {
+      "id": "auto-south-2026-07-08-20:00-МОСКВИТИ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "20:00",
+      "endTime": "20:30",
+      "artist": "МОСКВИТИН"
+    },
+    {
+      "id": "auto-south-2026-07-08-20:30-ЛУЧШИЙ С",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "20:30",
+      "endTime": "21:00",
+      "artist": "ЛУЧШИЙ САМЫЙ ДЕНЬ"
+    },
+    {
+      "id": "auto-south-2026-07-08-22:00-КАЛЕВАЛА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "22:00",
+      "endTime": "22:30",
+      "artist": "КАЛЕВАЛА"
+    },
+    {
+      "id": "auto-south-2026-07-08-22:30-АНГЕЛ-ХР",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "22:30",
+      "endTime": "23:00",
+      "artist": "АНГЕЛ-ХРАНИТЕЛЬ"
+    },
+    {
+      "id": "auto-south-2026-07-08-23:00-ТРОЛЛЬ Г",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "23:00",
+      "endTime": "23:30",
+      "artist": "ТРОЛЛЬ ГНЕТ ЕЛЬ"
+    },
+    {
+      "id": "auto-south-2026-07-08-23:30-ОБЕ-РЕК",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-08",
+      "startTime": "23:30",
+      "endTime": "00:00",
+      "artist": "ОБЕ-РЕК"
+    },
+    {
+      "id": "auto-south-2026-07-09-00:00-СКОЛОТ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "00:00",
+      "endTime": "00:30",
+      "artist": "СКОЛОТ"
+    },
+    {
+      "id": "auto-south-2026-07-09-17:30-ДОНЭРА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "17:30",
+      "endTime": "18:00",
+      "artist": "ДОНЭРА"
+    },
+    {
+      "id": "auto-south-2026-07-09-18:30-БАГИРА /",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "18:30",
+      "endTime": "19:00",
+      "artist": "БАГИРА / BAGIRA"
+    },
+    {
+      "id": "auto-south-2026-07-09-19:00-БЕЗ Б / ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "19:00",
+      "endTime": "20:00",
+      "artist": "БЕЗ Б / BEZ B"
+    },
+    {
+      "id": "auto-south-2026-07-09-20:00-АФФИНАЖ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "20:00",
+      "endTime": "20:30",
+      "artist": "АФФИНАЖ"
+    },
+    {
+      "id": "auto-south-2026-07-09-21:00-ПАВЕЛ ПИ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "21:00",
+      "endTime": "21:30",
+      "artist": "ПАВЕЛ ПИКОВСКИЙ"
+    },
+    {
+      "id": "auto-south-2026-07-09-21:30-ДРУГОЙ В",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-09",
+      "startTime": "21:30",
+      "endTime": "22:00",
+      "artist": "ДРУГОЙ ВЕТЕР"
+    },
+    {
+      "id": "auto-south-2026-07-10-00:00-NAGART",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "00:00",
+      "endTime": "00:30",
+      "artist": "NAGART"
+    },
+    {
+      "id": "auto-south-2026-07-10-00:30-ХЕЛЬВЕГЕ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "00:30",
+      "endTime": "01:00",
+      "artist": "ХЕЛЬВЕГЕН / HELVEGEN"
+    },
+    {
+      "id": "auto-south-2026-07-10-20:15-ПЛАМЕНЕВ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "20:15",
+      "endTime": "20:45",
+      "artist": "ПЛАМЕНЕВ"
+    },
+    {
+      "id": "auto-south-2026-07-10-21:00-СЛОТ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-10",
+      "startTime": "21:00",
+      "endTime": "21:30",
+      "artist": "СЛОТ"
+    },
+    {
+      "id": "auto-south-2026-07-11-16:30-КАТЮША",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "16:30",
+      "endTime": "17:00",
+      "artist": "КАТЮША"
+    },
+    {
+      "id": "auto-south-2026-07-11-17:30-КЭЖУАЛ /",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "17:30",
+      "endTime": "18:00",
+      "artist": "КЭЖУАЛ / CASUAL"
+    },
+    {
+      "id": "auto-south-2026-07-11-20:00-DRUMMATI",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "20:00",
+      "endTime": "20:30",
+      "artist": "DRUMMATIX"
+    },
+    {
+      "id": "auto-south-2026-07-11-22:50-БИРТМАН",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "south",
+      "date": "2026-07-11",
+      "startTime": "22:50",
+      "endTime": "23:20",
+      "artist": "БИРТМАН"
+    },
+    {
+      "id": "auto-west-2026-07-08-18:00-ТАПОК",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "18:00",
+      "endTime": "18:30",
+      "artist": "ТАПОК"
+    },
+    {
+      "id": "auto-west-2026-07-08-19:00-МАГНИТНА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "19:00",
+      "endTime": "19:30",
+      "artist": "МАГНИТНАЯ АНОМАЛИЯ"
+    },
+    {
+      "id": "auto-west-2026-07-08-20:30-НЕБО ПОП",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "20:30",
+      "endTime": "21:00",
+      "artist": "НЕБО ПОПОЛАМ"
+    },
+    {
+      "id": "auto-west-2026-07-08-22:00-РАЗНЫЕ Л",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "22:00",
+      "endTime": "22:30",
+      "artist": "РАЗНЫЕ ЛЮДИ, МУХОМОРЫ"
+    },
+    {
+      "id": "auto-west-2026-07-08-23:00-ФЕДУЛОВА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-08",
+      "startTime": "23:00",
+      "endTime": "23:30",
+      "artist": "ФЕДУЛОВА"
+    },
+    {
+      "id": "auto-west-2026-07-09-00:00-ВКЛЮЧАЙ ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "00:00",
+      "endTime": "00:30",
+      "artist": "ВКЛЮЧАЙ МИКРОФОН!"
+    },
+    {
+      "id": "auto-west-2026-07-09-01:00-ЧЕРНЫЙ О",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "01:00",
+      "endTime": "01:30",
+      "artist": "ЧЕРНЫЙ ОБЕЛИСК"
+    },
+    {
+      "id": "auto-west-2026-07-09-01:30-СЕМЬ ШТУ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "01:30",
+      "endTime": "02:00",
+      "artist": "СЕМЬ ШТУК БАКСОВ / 7000$"
+    },
+    {
+      "id": "auto-west-2026-07-09-17:00-ТРИ ВТОР",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "17:00",
+      "endTime": "17:30",
+      "artist": "ТРИ ВТОРЫХ"
+    },
+    {
+      "id": "auto-west-2026-07-09-17:30-ФАН МОД ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-09",
+      "startTime": "17:30",
+      "endTime": "18:00",
+      "artist": "ФАН МОД / FUN MODE"
+    },
+    {
+      "id": "auto-west-2026-07-10-18:30-ДМЦ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "18:30",
+      "endTime": "19:00",
+      "artist": "ДМЦ"
+    },
+    {
+      "id": "auto-west-2026-07-10-20:00-ЯШНИКОВА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "20:00",
+      "endTime": "20:30",
+      "artist": "ЯШНИКОВА"
+    },
+    {
+      "id": "auto-west-2026-07-10-22:00-7 РАСА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "22:00",
+      "endTime": "22:30",
+      "artist": "7 РАСА"
+    },
+    {
+      "id": "auto-west-2026-07-10-23:00-ВАСИЛИЙ ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-10",
+      "startTime": "23:00",
+      "endTime": "23:30",
+      "artist": "ВАСИЛИЙ УРИЕВСКИЙ"
+    },
+    {
+      "id": "auto-west-2026-07-11-00:00-TAISH",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "00:00",
+      "endTime": "00:30",
+      "artist": "TAISH"
+    },
+    {
+      "id": "auto-west-2026-07-11-15:20-ДЖОКОНДА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "15:20",
+      "endTime": "15:50",
+      "artist": "ДЖОКОНДА"
+    },
+    {
+      "id": "auto-west-2026-07-11-17:00-КДРР / K",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "17:00",
+      "endTime": "17:30",
+      "artist": "КДРР / KDRR"
+    },
+    {
+      "id": "auto-west-2026-07-11-18:00-АНЯ ИЗ П",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "18:00",
+      "endTime": "18:30",
+      "artist": "АНЯ ИЗ ПИТЕРА"
+    },
+    {
+      "id": "auto-west-2026-07-11-19:00-АРКТИДА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "19:00",
+      "endTime": "19:30",
+      "artist": "АРКТИДА"
+    },
+    {
+      "id": "auto-west-2026-07-11-20:00-AMALGAMA",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "20:00",
+      "endTime": "20:30",
+      "artist": "AMALGAMA"
+    },
+    {
+      "id": "auto-west-2026-07-11-21:00-SELLOUT",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-11",
+      "startTime": "21:00",
+      "endTime": "21:30",
+      "artist": "SELLOUT"
+    },
+    {
+      "id": "auto-west-2026-07-12-01:30-RAVANNA",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "west",
+      "date": "2026-07-12",
+      "startTime": "01:30",
+      "endTime": "02:00",
+      "artist": "RAVANNA"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-09-16:00-ГРАН-КУР",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "16:00",
+      "endTime": "16:30",
+      "artist": "ГРАН-КУРАЖЪ"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-09-19:00-МАРА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "19:00",
+      "endTime": "19:30",
+      "artist": "МАРА"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-09-19:40-МУЛЬТFИЛ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "19:40",
+      "endTime": "20:10",
+      "artist": "МУЛЬТFИЛЬМЫ"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-09-21:10-МОНГОЛ Ш",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-09",
+      "startTime": "21:10",
+      "endTime": "21:40",
+      "artist": "МОНГОЛ ШУУДАН"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-10-15:30-ЭПИДЕМИЯ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "15:30",
+      "endTime": "16:00",
+      "artist": "ЭПИДЕМИЯ"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-10-16:00-МУРАКАМИ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-10",
+      "startTime": "16:00",
+      "endTime": "16:30",
+      "artist": "МУРАКАМИ"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-11-15:00-КОСТЯ КУ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-11",
+      "startTime": "15:00",
+      "endTime": "15:30",
+      "artist": "КОСТЯ КУЛЯСОВ. АНИМАЦИЯ"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-12-13:30-АНГЕЛ НЕ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-12",
+      "startTime": "13:30",
+      "endTime": "14:00",
+      "artist": "АНГЕЛ НЕБЕС"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-12-14:30-БРИГАДНЫ",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-12",
+      "startTime": "14:30",
+      "endTime": "15:00",
+      "artist": "БРИГАДНЫЙ ПОДРЯД"
+    },
+    {
+      "id": "auto-ren-tv-2026-07-12-17:00-ИГОРЬ РА",
+      "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
+      "stageId": "ren-tv",
+      "date": "2026-07-12",
+      "startTime": "17:00",
+      "endTime": "17:30",
+      "artist": "ИГОРЬ РАСТЕРЯЕВ"
+    }
+  ],
+  "foodcourt": [
+    {
+      "id": "fc-1",
+      "name": "Бургерная УЛЕТАЙ",
+      "category": "hot",
+      "description": "Бургеры, картофель фри, лимонады",
+      "location": "Фуд-корт, сектор A",
+      "hours": "10:00 — 02:00",
+      "priceFrom": "от 450 ₽",
+      "priceRange": "200 - 600 ₽",
+      "distance": "80 м",
+      "imageTint": "#5C3D2E"
+    },
+    {
+      "id": "fc-2",
+      "name": "Пицца на углях",
+      "category": "hot",
+      "description": "Пицца 30/40 см, паста, салаты",
+      "location": "Фуд-корт, сектор B",
+      "hours": "11:00 — 01:00",
+      "priceFrom": "от 590 ₽",
+      "priceRange": "350 - 890 ₽",
+      "distance": "120 м",
+      "imageTint": "#8B3A2A"
+    },
+    {
+      "id": "fc-3",
+      "name": "Шашлычная «Лагуново»",
+      "category": "hot",
+      "description": "Шашлык, люля, овощи на гриле",
+      "location": "Фуд-корт, сектор C",
+      "hours": "12:00 — 02:00",
+      "priceFrom": "от 380 ₽",
+      "priceRange": "250 - 750 ₽",
+      "distance": "150 м",
+      "imageTint": "#6B4423"
+    },
+    {
+      "id": "fc-6",
+      "name": "Пельменная",
+      "category": "hot",
+      "description": "Пельмени, вареники, уха",
+      "location": "Фуд-корт, сектор E",
+      "hours": "11:00 — 01:30",
+      "priceFrom": "от 320 ₽",
+      "distance": "210 м",
+      "imageTint": "#4A4A4A"
+    },
+    {
+      "id": "fc-5",
+      "name": "Кофе & Круассан",
+      "category": "drinks",
+      "description": "Кофе, чай, выпечка, мороженое",
+      "location": "Фуд-корт, центральная аллея",
+      "hours": "08:00 — 24:00",
+      "priceFrom": "от 190 ₽",
+      "distance": "60 м",
+      "imageTint": "#3D2F24"
+    },
+    {
+      "id": "fc-7",
+      "name": "Лимонадная",
+      "category": "drinks",
+      "description": "Лимонады, смузи, холодный чай",
+      "location": "Фуд-корт, сектор A",
+      "hours": "10:00 — 02:00",
+      "priceFrom": "от 250 ₽",
+      "distance": "95 м",
+      "imageTint": "#2F4A3A"
+    },
+    {
+      "id": "fc-4",
+      "name": "Веган-точка",
+      "category": "desserts",
+      "description": "Боулы, смузи, веган-десерты",
+      "location": "Фуд-корт, сектор D",
+      "hours": "10:00 — 23:00",
+      "priceFrom": "от 350 ₽",
+      "distance": "180 м",
+      "imageTint": "#2F5A3C"
+    },
+    {
+      "id": "fc-8",
+      "name": "Сладкая палатка",
+      "category": "desserts",
+      "description": "Вафли, пончики, мороженое, кофе to go",
+      "location": "Фуд-корт, сектор D",
+      "hours": "10:00 — 01:00",
+      "priceFrom": "от 280 ₽",
+      "distance": "175 м",
+      "imageTint": "#5A3D5C"
+    }
+  ]
+}

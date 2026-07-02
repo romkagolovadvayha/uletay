@@ -1,0 +1,85 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      DOMAIN: ${{ vars.DOMAIN }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/var/www/uletay' }}
+      LE_EMAIL: ${{ vars.LE_EMAIL }}
+      SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+      PHP_FPM_SOCKET: ${{ vars.PHP_FPM_SOCKET || '/run/php/php8.2-fpm.sock' }}
+      ADMIN_USER: ${{ vars.ADMIN_USER || 'admin' }}
+      EXPO_PUBLIC_API_URL: https://${{ vars.DOMAIN }}/api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate environment
+        run: |
+          test -n "$DOMAIN" || (echo "Set DOMAIN in GitHub Environment (production)" && exit 1)
+          test -n "$LE_EMAIL" || (echo "Set LE_EMAIL in GitHub Environment (production)" && exit 1)
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+        env:
+          EXPO_PUBLIC_API_URL: ${{ env.EXPO_PUBLIC_API_URL }}
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SSH_PORT" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Sync files to server
+        run: |
+          RSYNC_SSH="ssh -i ~/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
+          TARGET="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DEPLOY_PATH"
+
+          rsync -az --delete -e "$RSYNC_SSH" \
+            --exclude 'node_modules' \
+            --exclude '.git' \
+            --exclude '.expo' \
+            --exclude 'api/uploads' \
+            --exclude 'api/config.deploy.php' \
+            ./ "$TARGET/"
+
+      - name: Configure server (nginx + HTTPS)
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "DOMAIN='$DOMAIN' \
+             DEPLOY_PATH='$DEPLOY_PATH' \
+             LE_EMAIL='$LE_EMAIL' \
+             DB_HOST='${{ secrets.DB_HOST }}' \
+             DB_NAME='${{ secrets.DB_NAME }}' \
+             DB_USER='${{ secrets.DB_USER }}' \
+             DB_PASS='${{ secrets.DB_PASS }}' \
+             ADMIN_USER='$ADMIN_USER' \
+             ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}' \
+             PHP_FPM_SOCKET='$PHP_FPM_SOCKET' \
+             bash '$DEPLOY_PATH/deploy/remote-deploy.sh'"
