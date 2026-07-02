@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   tabsWrap: {
     paddingHorizontal: spacing.screen,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xs,
   },
   notificationsWrap: {
     paddingHorizontal: spacing.screen,

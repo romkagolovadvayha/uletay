@@ -198,15 +198,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: spacing.screen,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   timeAxisHeader: {
     width: SCHEDULE_GRID_TIME_AXIS_WIDTH,
   },
   stageHeader: {
     borderTopWidth: 3,
-    paddingTop: spacing.xs,
-    minHeight: 36,
+    paddingTop: 2,
+    minHeight: 30,
+    alignItems: 'center',
     justifyContent: 'flex-end',
   },
   stageHeaderText: {
@@ -215,6 +216,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 12,
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   scroll: {
     flex: 1,
