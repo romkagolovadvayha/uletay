@@ -17,13 +17,21 @@ jobs:
     environment: production
 
     env:
-      DOMAIN: ${{ vars.DOMAIN }}
-      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/var/www/uletay' }}
-      LE_EMAIL: ${{ vars.LE_EMAIL }}
-      SSH_PORT: ${{ vars.SSH_PORT || '22' }}
-      CMS_PORT: ${{ vars.CMS_PORT || '3000' }}
-      ADMIN_USER: ${{ vars.ADMIN_USER || 'admin' }}
-      EXPO_PUBLIC_API_URL: https://${{ vars.DOMAIN }}/api
+      DOMAIN: ${{ vars.DOMAIN || secrets.DOMAIN }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || secrets.DEPLOY_PATH || '/var/www/uletay' }}
+      LE_EMAIL: ${{ vars.LE_EMAIL || secrets.LE_EMAIL }}
+      SSH_HOST: ${{ vars.SSH_HOST || secrets.SSH_HOST }}
+      SSH_USER: ${{ vars.SSH_USER || secrets.SSH_USER }}
+      SSH_PORT: ${{ vars.SSH_PORT || secrets.SSH_PORT || '22' }}
+      CMS_PORT: ${{ vars.CMS_PORT || secrets.CMS_PORT || '3000' }}
+      ADMIN_USER: ${{ vars.ADMIN_USER || secrets.ADMIN_USER || 'admin' }}
+      DB_HOST: ${{ vars.DB_HOST || secrets.DB_HOST }}
+      DB_NAME: ${{ vars.DB_NAME || secrets.DB_NAME }}
+      DB_USER: ${{ vars.DB_USER || secrets.DB_USER }}
+      DB_PASS: ${{ vars.DB_PASS || secrets.DB_PASS }}
+      ADMIN_PASSWORD: ${{ vars.ADMIN_PASSWORD || secrets.ADMIN_PASSWORD }}
+      SESSION_SECRET: ${{ vars.SESSION_SECRET || secrets.SESSION_SECRET }}
+      EXPO_PUBLIC_API_URL: https://${{ vars.DOMAIN || secrets.DOMAIN }}/api
 
     steps:
       - name: Checkout
@@ -31,8 +39,29 @@ jobs:
 
       - name: Validate environment
         run: |
-          test -n "$DOMAIN" || (echo "Set DOMAIN in GitHub Environment (production)" && exit 1)
-          test -n "$LE_EMAIL" || (echo "Set LE_EMAIL in GitHub Environment (production)" && exit 1)
+          require() {
+            name="$1"
+            value="$2"
+            if [ -z "$value" ]; then
+              echo "Set $name in GitHub Environment → production → Variables or Secrets"
+              exit 1
+            fi
+          }
+
+          require DOMAIN "$DOMAIN"
+          require LE_EMAIL "$LE_EMAIL"
+          require SSH_HOST "$SSH_HOST"
+          require SSH_USER "$SSH_USER"
+          require DB_HOST "$DB_HOST"
+          require DB_NAME "$DB_NAME"
+          require DB_USER "$DB_USER"
+          require DB_PASS "$DB_PASS"
+          require ADMIN_PASSWORD "$ADMIN_PASSWORD"
+
+          if [ -z "${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "Set SSH_PRIVATE_KEY in GitHub Environment → production → Variables or Secrets"
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -49,16 +78,18 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ env.EXPO_PUBLIC_API_URL }}
 
       - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "$SSH_PORT" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Sync files to server
         run: |
           RSYNC_SSH="ssh -i ~/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
-          TARGET="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DEPLOY_PATH"
+          TARGET="${SSH_USER}@${SSH_HOST}:$DEPLOY_PATH"
 
           rsync -az --delete -e "$RSYNC_SSH" \
             --exclude 'node_modules' \
@@ -71,18 +102,20 @@ jobs:
             ./ "$TARGET/"
 
       - name: Configure server (Node CMS + nginx + HTTPS)
+        env:
+          SSH_PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
         run: |
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "${SSH_USER}@${SSH_HOST}" \
             "DOMAIN='$DOMAIN' \
              DEPLOY_PATH='$DEPLOY_PATH' \
              LE_EMAIL='$LE_EMAIL' \
              CMS_PORT='$CMS_PORT' \
-             DB_HOST='${{ secrets.DB_HOST }}' \
-             DB_NAME='${{ secrets.DB_NAME }}' \
-             DB_USER='${{ secrets.DB_USER }}' \
-             DB_PASS='${{ secrets.DB_PASS }}' \
+             DB_HOST='$DB_HOST' \
+             DB_NAME='$DB_NAME' \
+             DB_USER='$DB_USER' \
+             DB_PASS='$DB_PASS' \
              ADMIN_USER='$ADMIN_USER' \
-             ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}' \
-             SESSION_SECRET='${{ secrets.SESSION_SECRET }}' \
+             ADMIN_PASSWORD='$ADMIN_PASSWORD' \
+             SESSION_SECRET='$SESSION_SECRET' \
              bash '$DEPLOY_PATH/deploy/remote-deploy.sh'"

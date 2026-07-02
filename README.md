@@ -112,30 +112,25 @@ ssh-copy-id -i ~/.ssh/uletay_deploy.pub deploy@ВАШ_IP
 
 **Settings → Environments → `production`**
 
-#### Variables
+Каждый параметр можно добавить в **Variables** или **Secrets** (сначала берётся Variables, если пусто — Secrets).
 
-| Имя | Пример |
-|-----|--------|
-| `DOMAIN` | `uletay.ru` |
-| `LE_EMAIL` | `you@mail.ru` |
-| `DEPLOY_PATH` | `/var/www/uletay` |
-| `SSH_PORT` | `22` |
-| `CMS_PORT` | `3000` |
-| `ADMIN_USER` | `admin` |
-
-#### Secrets
-
-| Имя | Значение |
-|-----|----------|
-| `SSH_HOST` | IP VPS |
-| `SSH_USER` | `deploy` |
-| `SSH_PRIVATE_KEY` | приватный ключ |
-| `DB_HOST` | `127.0.0.1` |
-| `DB_NAME` | `uletay` |
-| `DB_USER` | `uletay` |
-| `DB_PASS` | пароль MySQL |
-| `ADMIN_PASSWORD` | пароль админки |
-| `SESSION_SECRET` | случайная строка 32+ символов (опционально) |
+| Имя | Пример | Обязательный |
+|-----|--------|--------------|
+| `DOMAIN` | `uletay.ru` | да |
+| `LE_EMAIL` | `you@mail.ru` | да |
+| `SSH_HOST` | IP VPS (`185.x.x.x`) | да |
+| `SSH_USER` | `root` | да |
+| `SSH_PRIVATE_KEY` | приватный ключ | да |
+| `DB_HOST` | `127.0.0.1` | да |
+| `DB_NAME` | `uletay` | да |
+| `DB_USER` | `uletay` | да |
+| `DB_PASS` | пароль MySQL | да |
+| `ADMIN_PASSWORD` | пароль админки | да |
+| `DEPLOY_PATH` | `/var/www/uletay` | нет |
+| `SSH_PORT` | `22` | нет |
+| `CMS_PORT` | `3000` | нет |
+| `ADMIN_USER` | `admin` | нет |
+| `SESSION_SECRET` | случайная строка | нет |
 
 ### 9. Первый деплой
 

@@ -8,30 +8,34 @@
 
 **Settings → Environments → `production`**
 
-### Variables
+Каждый параметр можно указать в **Variables** или **Secrets** — workflow берёт значение из Variables, если пусто — из Secrets.
+
+### Обязательные
 
 | Имя | Пример | Описание |
 |-----|--------|----------|
 | `DOMAIN` | `uletay.ru` | Домен |
 | `LE_EMAIL` | `you@mail.ru` | Email для Let's Encrypt |
+| `SSH_HOST` | `185.x.x.x` | IP VPS |
+| `SSH_USER` | `root` | SSH-пользователь |
+| `SSH_PRIVATE_KEY` | `-----BEGIN...` | Приватный SSH-ключ |
+| `DB_HOST` | `127.0.0.1` | MySQL host |
+| `DB_NAME` | `uletay` | Имя БД |
+| `DB_USER` | `uletay` | Пользователь MySQL |
+| `DB_PASS` | `***` | Пароль MySQL |
+| `ADMIN_PASSWORD` | `***` | Пароль админки |
+
+### Опциональные (есть значения по умолчанию)
+
+| Имя | По умолчанию | Описание |
+|-----|--------------|----------|
 | `DEPLOY_PATH` | `/var/www/uletay` | Путь на сервере |
 | `SSH_PORT` | `22` | SSH-порт |
 | `CMS_PORT` | `3000` | Порт Next.js CMS |
 | `ADMIN_USER` | `admin` | Логин админки |
+| `SESSION_SECRET` | генерируется на сервере | Секрет сессии CMS |
 
-### Secrets
-
-| Имя | Описание |
-|-----|----------|
-| `SSH_HOST` | IP VPS |
-| `SSH_USER` | SSH-пользователь |
-| `SSH_PRIVATE_KEY` | Приватный SSH-ключ |
-| `DB_HOST` | `127.0.0.1` |
-| `DB_NAME` | Имя БД |
-| `DB_USER` | Пользователь MySQL |
-| `DB_PASS` | Пароль MySQL |
-| `ADMIN_PASSWORD` | Пароль админки |
-| `SESSION_SECRET` | Секрет сессии (опционально, иначе генерируется) |
+> Пароли и ключи лучше хранить в **Secrets**, но технически можно и в Variables.
 
 ## 2. Подготовка сервера
 
