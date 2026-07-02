@@ -80,40 +80,56 @@ jobs:
       - name: Setup SSH key
         env:
           SSH_PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
+          SSH_PRIVATE_KEY_B64: ${{ vars.SSH_PRIVATE_KEY_B64 || secrets.SSH_PRIVATE_KEY_B64 }}
           SSH_KEY_PASSPHRASE: ${{ vars.SSH_KEY_PASSPHRASE || secrets.SSH_KEY_PASSPHRASE }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
+          KEY_FILE="$HOME/.ssh/deploy_key"
 
-          if printf '%s' "$SSH_PRIVATE_KEY" | grep -q '\\n'; then
-            printf '%b' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          if [ -n "$SSH_PRIVATE_KEY_B64" ]; then
+            echo "$SSH_PRIVATE_KEY_B64" | tr -d '\r\n ' | base64 -d > "$KEY_FILE"
+          elif printf '%s' "$SSH_PRIVATE_KEY" | grep -q '\\n'; then
+            printf '%b' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$KEY_FILE"
           else
-            printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+            printf '%s' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$KEY_FILE"
           fi
-          chmod 600 ~/.ssh/deploy_key
+          chmod 600 "$KEY_FILE"
+
+          if ! ssh-keygen -y -f "$KEY_FILE" > "$HOME/.ssh/deploy_key.pub" 2>/dev/null; then
+            echo "::error::SSH_PRIVATE_KEY is invalid (libcrypto)."
+            echo "Do NOT use Variables for the key — only Secrets."
+            echo "Recommended: set SSH_PRIVATE_KEY_B64 (base64 -w0 ~/.ssh/uletay_deploy on server)."
+            echo "First line of key file:"
+            head -n 1 "$KEY_FILE" || true
+            exit 1
+          fi
 
           eval "$(ssh-agent -s)"
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
           echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
 
-          if [ -n "$SSH_KEY_PASSPHRASE" ]; then
+          if ssh-add "$KEY_FILE" 2>/dev/null; then
+            echo "SSH key loaded (no passphrase)."
+          elif [ -n "$SSH_KEY_PASSPHRASE" ]; then
             sudo apt-get update -qq
             sudo apt-get install -y -qq expect
             expect <<EOF
           set timeout 10
-          spawn ssh-add /home/runner/.ssh/deploy_key
+          spawn ssh-add $env(HOME)/.ssh/deploy_key
           expect {
             "Enter passphrase" { send "$SSH_KEY_PASSPHRASE\r"; exp_continue }
             eof
           }
           EOF
           else
-            ssh-add ~/.ssh/deploy_key
+            echo "::error::ssh-add failed. Set SSH_KEY_PASSPHRASE or use a key without passphrase."
+            exit 1
           fi
 
           ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-          echo "=== Add this public key to ~/.ssh/authorized_keys on the server ==="
+          echo "=== Public key (must be in server ~/.ssh/authorized_keys) ==="
           ssh-add -L
           echo "=== Target: ${SSH_USER}@${SSH_HOST}:${SSH_PORT} ==="
 

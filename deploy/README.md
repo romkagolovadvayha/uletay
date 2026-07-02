@@ -18,8 +18,9 @@
 | `LE_EMAIL` | `you@mail.ru` | Email для Let's Encrypt |
 | `SSH_HOST` | `185.x.x.x` | IP VPS |
 | `SSH_USER` | `root` | SSH-пользователь |
-| `SSH_PRIVATE_KEY` | `-----BEGIN...` | да — **только Secrets** (многострочный ключ) |
-| `SSH_KEY_PASSPHRASE` | пароль от ключа | нет — если ключ **с паролем** |
+| `SSH_PRIVATE_KEY` | `-----BEGIN...` | да — **только Secrets**, весь файл |
+| `SSH_PRIVATE_KEY_B64` | `base64 -w0 uletay_deploy` | вместо `SSH_PRIVATE_KEY` (надёжнее) |
+| `SSH_KEY_PASSPHRASE` | пароль от ключа | только если ключ **с паролем** |
 | `DB_HOST` | `127.0.0.1` | MySQL host |
 | `DB_NAME` | `uletay` | Имя БД |
 | `DB_USER` | `uletay` | Пользователь MySQL |
@@ -38,13 +39,20 @@
 
 > Пароли и ключи лучше хранить в **Secrets**, но технически можно и в Variables.
 
-> `SSH_PRIVATE_KEY` — **только в Secrets** (Variables не поддерживают многострочный ключ).
+> `SSH_PRIVATE_KEY` — **только в Secrets** (Variables ломают многострочный ключ).
 
-Для CI лучше ключ **без пароля**:
+**Рекомендуется `SSH_PRIVATE_KEY_B64`** — на сервере:
 ```bash
-ssh-keygen -t ed25519 -C "github-deploy-uletay" -f ~/.ssh/uletay_deploy_ci -N ""
+# проверка ключа
+ssh-keygen -y -f ~/.ssh/uletay_deploy
+
+# публичный ключ в authorized_keys
+grep -qxF "$(cat ~/.ssh/uletay_deploy.pub)" ~/.ssh/authorized_keys || cat ~/.ssh/uletay_deploy.pub >> ~/.ssh/authorized_keys
+
+# одна строка для GitHub Secret SSH_PRIVATE_KEY_B64
+base64 -w0 ~/.ssh/uletay_deploy && echo
 ```
-Если ключ с паролем — добавь `SSH_KEY_PASSPHRASE` в Secrets.
+Скопируй вывод в Secret `SSH_PRIVATE_KEY_B64`. Удали `SSH_PRIVATE_KEY` и `SSH_KEY_PASSPHRASE`, если ключ без пароля.
 
 ## SSH: Permission denied (publickey)
 
