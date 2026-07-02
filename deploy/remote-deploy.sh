@@ -44,8 +44,12 @@ NODE_ENV=production
 ENV
 
 cd "$DEPLOY_PATH/cms"
-npm ci --omit=dev
-npm run build
+npm ci
+
+if [ ! -f .next/BUILD_ID ]; then
+  echo "CMS build not found from CI, building on server..."
+  npm run build
+fi
 
 mkdir -p .next/standalone/.next
 cp -r .next/static .next/standalone/.next/static
