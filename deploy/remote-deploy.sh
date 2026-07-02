@@ -59,13 +59,6 @@ source .env
 set +a
 npm run db:install
 
-ECOSYSTEM=$(sed \
-  -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g" \
-  -e "s|__CMS_PORT__|${CMS_PORT}|g" \
-  "$DEPLOY_PATH/deploy/ecosystem.config.cjs")
-
-echo "$ECOSYSTEM" | sudo tee "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs" > /dev/null
-
 export PATH="/usr/local/bin:/usr/local/node/bin:$(npm prefix -g 2>/dev/null)/bin:${PATH}"
 
 if ! command -v pm2 >/dev/null 2>&1; then
@@ -89,7 +82,23 @@ if [ -z "$PM2_BIN" ] || [ ! -x "$PM2_BIN" ]; then
 fi
 
 echo "Using PM2: $PM2_BIN"
-"$PM2_BIN" startOrRestart "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs"
+
+set -a
+source .env
+set +a
+export HOSTNAME=127.0.0.1
+
+CMS_SERVER="$DEPLOY_PATH/cms/.next/standalone/server.js"
+if [ ! -f "$CMS_SERVER" ]; then
+  echo "CMS server not found: $CMS_SERVER"
+  exit 1
+fi
+
+if "$PM2_BIN" describe uletay-cms >/dev/null 2>&1; then
+  "$PM2_BIN" restart uletay-cms --update-env
+else
+  "$PM2_BIN" start "$CMS_SERVER" --name uletay-cms --cwd "$DEPLOY_PATH/cms" --update-env
+fi
 "$PM2_BIN" save || true
 
 sed \
