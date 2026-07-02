@@ -137,43 +137,25 @@ jobs:
             exit 1
           fi
 
-          eval "$(ssh-agent -s)"
-          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
-          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
-
-          if ssh-add "$KEY_FILE" 2>/dev/null; then
-            echo "SSH key loaded (no passphrase)."
-          elif [ -n "$SSH_KEY_PASSPHRASE" ]; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq expect
-            expect <<EOF
-          set timeout 10
-          spawn ssh-add $env(HOME)/.ssh/deploy_key
-          expect {
-            "Enter passphrase" { send "$SSH_KEY_PASSPHRASE\r"; exp_continue }
-            eof
-          }
-          EOF
-          else
-            echo "::error::ssh-add failed. Set SSH_KEY_PASSPHRASE or use a key without passphrase."
-            exit 1
-          fi
+          ssh-keygen -y -f "$KEY_FILE" > "$HOME/.ssh/deploy_key.pub"
+          echo "DEPLOY_KEY_FILE=$KEY_FILE" >> "$GITHUB_ENV"
 
           ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-          echo "=== Public key (must be in server ~/.ssh/authorized_keys) ==="
-          ssh-add -L
+          echo "=== Add this line to /root/.ssh/authorized_keys on the server ==="
+          cat "$HOME/.ssh/deploy_key.pub"
           echo "=== Target: ${SSH_USER}@${SSH_HOST}:${SSH_PORT} ==="
 
       - name: Verify SSH connection
         run: |
-          ssh -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new \
+          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
             "${SSH_USER}@${SSH_HOST}" "echo SSH connection OK" \
-            || (echo "SSH failed. Copy the public key from the previous step into /root/.ssh/authorized_keys on the server." && exit 1)
+            || (echo "SSH failed. On server run: cat ~/.ssh/uletay_ci.pub >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" && exit 1)
 
       - name: Sync files to server
         run: |
-          RSYNC_SSH="ssh -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
+          RSYNC_SSH="ssh -i $DEPLOY_KEY_FILE -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
           TARGET="${SSH_USER}@${SSH_HOST}:$DEPLOY_PATH"
 
           rsync -az --delete -e "$RSYNC_SSH" \
@@ -188,7 +170,7 @@ jobs:
 
       - name: Configure server (Node CMS + nginx + HTTPS)
         run: |
-          ssh -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
+          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
             "${SSH_USER}@${SSH_HOST}" \
             "DOMAIN='$DOMAIN' \
              DEPLOY_PATH='$DEPLOY_PATH' \
