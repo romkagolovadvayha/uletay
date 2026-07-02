@@ -92,11 +92,12 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   time: {
-    width: 52,
+    width: 84,
     ...typography.scheduleTime,
     color: colors.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+    lineHeight: 16,
   },
   timeLive: {
     color: colors.live,

@@ -3,21 +3,23 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AutographSessionRow } from '../components/AutographSessionRow';
+import { CategoryPillBar } from '../components/CategoryPillBar';
 import { DateTabBar } from '../components/DateTabBar';
-import { EventScheduleRow } from '../components/EventScheduleRow';
 import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
-import { StageLegend } from '../components/StageLegend';
+import { ScheduleStageGrid } from '../components/ScheduleStageGrid';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
-import { StageId } from '../types';
 import { colors } from '../theme/colors';
 import { screenHeaderStyle } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { getAutographHighlight } from '../utils/autographHelpers';
 import { favoriteKey } from '../utils/favoriteKeys';
 import {
+  formatSoonCountdown,
   getDefaultFestivalDate,
   getFestivalDates,
   parseDateTime,
@@ -28,29 +30,18 @@ type Props = {
   navigation: BottomTabNavigationProp<RootTabParamList, 'FavoritesTab'>;
 };
 
-type MyScheduleItem =
-  | {
-      kind: 'performance';
-      id: string;
-      date: string;
-      startTime: string;
-      stageId: StageId;
-      artist: string;
-      isCompetition?: boolean;
-    }
-  | {
-      kind: 'autograph';
-      id: string;
-      date: string;
-      startTime: string;
-      stageId: StageId;
-      artist: string;
-    };
+type FavoritesSection = 'schedule' | 'autographs';
+
+const SECTION_TABS = [
+  { id: 'schedule' as const, label: 'Расписание' },
+  { id: 'autographs' as const, label: 'Автографы' },
+];
 
 export function MyScheduleScreen({ navigation }: Props) {
   const { data } = useAppData();
-  const now = useNow();
+  const now = useNow(1000);
   const { favorites, isFavorite, toggleFavorite, isAutographFavorite, toggleAutographFavorite } = useFavorites();
+  const [activeSection, setActiveSection] = useState<FavoritesSection>('schedule');
 
   const festivalDates = useMemo(
     () => getFestivalDates(data.festival.startDate, data.festival.endDate),
@@ -76,37 +67,28 @@ export function MyScheduleScreen({ navigation }: Props) {
     [data.autographs, favorites],
   );
 
-  const dayItems = useMemo(() => {
-    const items: MyScheduleItem[] = [
-      ...favoritePerformances
-        .filter((item) => item.date === selectedDate)
-        .map((item) => ({
-          kind: 'performance' as const,
-          id: item.id,
-          date: item.date,
-          startTime: item.startTime,
-          stageId: item.stageId,
-          artist: item.artist,
-          isCompetition: item.isCompetition,
-        })),
-      ...favoriteAutographs
-        .filter((item) => item.date === selectedDate)
-        .map((item) => ({
-          kind: 'autograph' as const,
-          id: item.id,
-          date: item.date,
-          startTime: item.startTime,
-          stageId: item.stageId,
-          artist: item.artist,
-        })),
-    ];
+  const dayPerformances = useMemo(
+    () => favoritePerformances.filter((item) => item.date === selectedDate),
+    [favoritePerformances, selectedDate],
+  );
 
-    return items.sort(
-      (a, b) => parseDateTime(a.date, a.startTime).getTime() - parseDateTime(b.date, b.startTime).getTime(),
-    );
-  }, [favoriteAutographs, favoritePerformances, selectedDate]);
+  const dayAutographs = useMemo(
+    () => favoriteAutographs.filter((item) => item.date === selectedDate),
+    [favoriteAutographs, selectedDate],
+  );
+
+  const autographHighlights = useMemo(
+    () =>
+      dayAutographs.reduce<Record<string, ReturnType<typeof getAutographHighlight>>>((acc, session) => {
+        acc[session.id] = getAutographHighlight(session, dayAutographs, now);
+        return acc;
+      }, {}),
+    [dayAutographs, now],
+  );
 
   const hasAnyFavorites = favoritePerformances.length > 0 || favoriteAutographs.length > 0;
+  const hasSectionFavorites =
+    activeSection === 'schedule' ? favoritePerformances.length > 0 : favoriteAutographs.length > 0;
 
   const navigateToLive = (performanceId: string) => {
     navigation.navigate('ScheduleTab', {
@@ -128,50 +110,87 @@ export function MyScheduleScreen({ navigation }: Props) {
         <Text style={styles.title}>МОЁ РАСПИСАНИЕ</Text>
       </View>
 
+      <View style={styles.sectionTabsWrap}>
+        <CategoryPillBar
+          categories={SECTION_TABS}
+          selectedId={activeSection}
+          onSelect={(id) => setActiveSection(id as FavoritesSection)}
+        />
+      </View>
+
       <View style={styles.tabsWrap}>
         <DateTabBar dates={festivalDates} selectedDate={selectedDate} onSelect={setSelectedDate} variant="red" />
       </View>
 
-      <StageLegend />
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.notificationsWrap}>
         <FavoriteNotificationsCard />
+      </View>
 
-        {!hasAnyFavorites ? (
-          <View style={styles.empty}>
-            <Ionicons name="star-outline" size={32} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>ПОКА ПУСТО</Text>
-            <Text style={styles.emptyText}>
-              Нажми на звёздочку рядом с выступлением или автограф-сессией, чтобы добавить сюда
-            </Text>
-          </View>
-        ) : dayItems.length > 0 ? (
-          dayItems.map((item) => (
-            <EventScheduleRow
-              key={`${item.kind}:${item.id}`}
-              time={item.startTime}
-              stageId={item.stageId}
-              artist={item.artist}
-              subtitle={item.kind === 'performance' ? 'ВЫСТУПЛЕНИЕ' : 'АВТОГРАФ-СЕССИЯ'}
-              subtitleTone={item.kind}
-              isFavorite={
-                item.kind === 'performance' ? isFavorite(item.id) : isAutographFavorite(item.id)
-              }
-              onToggleFavorite={() =>
-                item.kind === 'performance' ? toggleFavorite(item.id) : toggleAutographFavorite(item.id)
-              }
-              onPress={() =>
-                item.kind === 'performance' ? navigateToLive(item.id) : navigateToAutograph(item.id)
-              }
-              isCompetition={item.kind === 'performance' ? item.isCompetition : false}
-            />
-          ))
+      {!hasAnyFavorites ? (
+        <View style={styles.empty}>
+          <Ionicons name="star-outline" size={32} color={colors.textMuted} />
+          <Text style={styles.emptyTitle}>ПОКА ПУСТО</Text>
+          <Text style={styles.emptyText}>
+            Нажми на звёздочку рядом с выступлением или автограф-сессией, чтобы добавить сюда
+          </Text>
+        </View>
+      ) : !hasSectionFavorites ? (
+        <View style={styles.empty}>
+          <Ionicons name="star-outline" size={28} color={colors.textMuted} />
+          <Text style={styles.emptyTitle}>
+            {activeSection === 'schedule' ? 'НЕТ ВЫСТУПЛЕНИЙ' : 'НЕТ АВТОГРАФ-СЕССИЙ'}
+          </Text>
+          <Text style={styles.emptyText}>
+            {activeSection === 'schedule'
+              ? 'Добавь выступления из расписания в избранное'
+              : 'Добавь автограф-сессии в избранное'}
+          </Text>
+        </View>
+      ) : activeSection === 'schedule' ? (
+        dayPerformances.length > 0 ? (
+          <ScheduleStageGrid
+            performances={dayPerformances}
+            stages={data.stages}
+            selectedDate={selectedDate}
+            now={now}
+            isFavorite={isFavorite}
+            onToggleFavorite={toggleFavorite}
+            onPressPerformance={navigateToLive}
+          />
         ) : (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>Нет событий в этот день</Text>
+            <Text style={styles.emptyText}>Нет избранных выступлений в этот день</Text>
           </View>
-        )}
-      </ScrollView>
+        )
+      ) : dayAutographs.length > 0 ? (
+        <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+          {dayAutographs.map((session) => {
+            const highlight = autographHighlights[session.id];
+            const isUpcoming = highlight === 'next';
+
+            return (
+              <AutographSessionRow
+                key={session.id}
+                session={session}
+                isLive={highlight === 'live'}
+                isUpcoming={isUpcoming}
+                soonCountdown={
+                  isUpcoming
+                    ? formatSoonCountdown(parseDateTime(session.date, session.startTime), now)
+                    : undefined
+                }
+                isFavorite={isAutographFavorite(session.id)}
+                onToggleFavorite={() => toggleAutographFavorite(session.id)}
+                onPress={() => navigateToAutograph(session.id)}
+              />
+            );
+          })}
+        </ScrollView>
+      ) : (
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>Нет избранных автограф-сессий в этот день</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -187,17 +206,28 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 22,
   },
+  sectionTabsWrap: {
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.xs,
+  },
   tabsWrap: {
     paddingHorizontal: spacing.screen,
-    paddingBottom: spacing.xl / 2,
+    paddingBottom: spacing.md,
   },
-  content: {
+  notificationsWrap: {
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.sm,
+  },
+  listContent: {
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xxl,
   },
   empty: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.xxxl,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.xxxl,
     gap: spacing.sm,
   },
   emptyTitle: {
