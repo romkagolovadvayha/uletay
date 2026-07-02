@@ -5,6 +5,7 @@ import {
 } from '../actions';
 import { DeleteButton } from './DeleteButton';
 import type { FoodCourtCategory, FoodCourtVendor } from '@/types';
+import { presetHint } from '@/lib/image-presets';
 
 const CATEGORIES: { value: FoodCourtCategory; label: string }[] = [
   { value: 'hot', label: 'Горячее' },
@@ -119,6 +120,7 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
             <label className="span-2">
               Загрузить картинку
               <input type="file" name="file" accept="image/*" />
+              <span className="hint">{presetHint('thumb')}</span>
             </label>
           </div>
 

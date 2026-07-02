@@ -9,6 +9,7 @@ import {
 } from '@/lib/admin-ids';
 import { getAppData, saveAppData } from '@/lib/app-data';
 import { verifyAdminCredentials } from '@/lib/auth';
+import type { ImagePreset } from '@/lib/image-presets';
 import { saveUploadedImage } from '@/lib/upload';
 import { getSession } from '@/lib/session';
 import type {
@@ -28,16 +29,33 @@ async function requireSession() {
   }
 }
 
-async function optionalImageUrl(formData: FormData, current?: string): Promise<string | undefined> {
+async function optionalImageUrl(
+  formData: FormData,
+  current?: string,
+  preset: ImagePreset = 'artist',
+): Promise<string | undefined> {
   const manual = String(formData.get('imageUrl') ?? '').trim();
   const file = formData.get('file');
   if (file instanceof File && file.size > 0) {
-    const uploaded = await saveUploadedImage(file, 'images');
+    const uploaded = await saveUploadedImage(file, 'images', preset);
     if (uploaded) {
       return uploaded;
     }
   }
   return manual || current || undefined;
+}
+
+function presetForUploadTarget(target: string): ImagePreset {
+  if (target === 'festival_hero') {
+    return 'hero';
+  }
+  if (target === 'foodcourt') {
+    return 'thumb';
+  }
+  if (target === 'autograph') {
+    return 'hero';
+  }
+  return 'artist';
 }
 
 export async function loginAction(formData: FormData) {
@@ -123,7 +141,7 @@ export async function upsertScheduleAction(formData: FormData) {
     ? uniqueId(buildScheduleId(stageId, date, startTime, artist), ids)
     : existingId;
 
-  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl);
+  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'artist');
 
   const item: SchedulePerformance = {
     id,
@@ -182,7 +200,7 @@ export async function upsertAutographAction(formData: FormData) {
     ? uniqueId(buildAutographId(stageId, date, startTime, artist), ids)
     : existingId;
 
-  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl);
+  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'hero');
 
   const item: AutographSession = {
     id,
@@ -240,7 +258,7 @@ export async function upsertFoodcourtAction(formData: FormData) {
   }
 
   const id = isNew ? buildFoodcourtId() : existingId;
-  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl);
+  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'thumb');
 
   const item: FoodCourtVendor = {
     id,
@@ -290,7 +308,7 @@ export async function uploadImageAction(formData: FormData) {
     redirect('/admin?error=' + encodeURIComponent('Файл не выбран'));
   }
 
-  const url = await saveUploadedImage(file, 'images');
+  const url = await saveUploadedImage(file, 'images', presetForUploadTarget(target));
   if (!url) {
     redirect('/admin?error=' + encodeURIComponent('Не удалось загрузить файл'));
   }

@@ -5,6 +5,7 @@ import {
 } from '../actions';
 import { DeleteButton } from './DeleteButton';
 import type { AutographSession, Stage } from '@/types';
+import { presetHint } from '@/lib/image-presets';
 
 type Props = {
   items: AutographSession[];
@@ -117,6 +118,7 @@ export function AutographsEditor({ items, stages, editId, stageFilter, dateFilte
             <label className="span-2">
               Загрузить картинку
               <input type="file" name="file" accept="image/*" />
+              <span className="hint">{presetHint('hero')}</span>
             </label>
           </div>
 

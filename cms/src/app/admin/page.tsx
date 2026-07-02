@@ -11,6 +11,7 @@ import {
   uploadImageAction,
 } from './actions';
 import type { AdminTab } from '@/types';
+import { presetHint } from '@/lib/image-presets';
 
 const TABS: Record<AdminTab, string> = {
   festival: 'Фестиваль',
@@ -116,6 +117,7 @@ export default async function AdminPage({
               <label>
                 Загрузить hero-картинку
                 <input type="file" name="file" accept="image/*" required />
+                <span className="hint">{presetHint('hero')}</span>
               </label>
               <button type="submit" className="btn-primary">
                 Загрузить

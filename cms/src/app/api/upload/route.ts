@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { verifyBearerToken } from '@/lib/auth';
+import type { ImagePreset } from '@/lib/image-presets';
 import { saveUploadedImage } from '@/lib/upload';
 import { jsonResponse, optionsResponse } from '@/lib/api-response';
 import { getSession } from '@/lib/session';
@@ -25,12 +26,13 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const file = form.get('file');
     const subdir = String(form.get('subdir') ?? 'images');
+    const preset = String(form.get('preset') ?? 'artist') as ImagePreset;
 
     if (!(file instanceof File)) {
       return jsonResponse({ error: 'File is required' }, 400);
     }
 
-    const url = await saveUploadedImage(file, subdir);
+    const url = await saveUploadedImage(file, subdir, preset);
     if (!url) {
       return jsonResponse({ error: 'Upload failed' }, 400);
     }
