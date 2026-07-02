@@ -9,10 +9,8 @@ import {
 } from '@expo-google-fonts/montserrat';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
-import { ensureMontserratStylesheet, IONICONS_FONT_URI } from '../utils/webFonts';
 
-const nativeFonts = {
+const appFonts = {
   Montserrat_400Regular,
   Montserrat_500Medium,
   Montserrat_600SemiBold,
@@ -22,42 +20,20 @@ const nativeFonts = {
   ...Ionicons.font,
 };
 
+const FONT_LOAD_TIMEOUT_MS = 8_000;
+
 export function useAppFonts() {
-  const [webMontserratReady, setWebMontserratReady] = useState(Platform.OS !== 'web');
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS !== 'web') {
-      return;
-    }
-
-    let active = true;
-    void ensureMontserratStylesheet()
-      .then(() => {
-        if (active) {
-          setWebMontserratReady(true);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setWebMontserratReady(true);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
+    const timer = setTimeout(() => setTimedOut(true), FONT_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(timer);
   }, []);
 
-  const [loaded, error] = useFonts(
-    Platform.OS === 'web'
-      ? { ionicons: { uri: IONICONS_FONT_URI } }
-      : nativeFonts,
-  );
-
-  const fontsReady = Platform.OS === 'web' ? webMontserratReady && loaded : loaded;
+  const [loaded, error] = useFonts(appFonts);
 
   return {
-    loaded: fontsReady,
+    loaded: timedOut || loaded,
     error,
   };
-};
+}
