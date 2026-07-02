@@ -58,9 +58,13 @@ jobs:
           require DB_PASS "$DB_PASS"
           require ADMIN_PASSWORD "$ADMIN_PASSWORD"
 
-          if [ -z "${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}" ]; then
-            echo "Set SSH_PRIVATE_KEY in GitHub Environment → production → Variables or Secrets"
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 || secrets.SSH_PRIVATE_KEY || vars.SSH_PRIVATE_KEY }}" ]; then
+            echo "Set SSH_PRIVATE_KEY_B64 (recommended) or SSH_PRIVATE_KEY in Secrets"
             exit 1
+          fi
+
+          if [ -n "${{ vars.SSH_PRIVATE_KEY }}" ]; then
+            echo "::warning::Remove SSH_PRIVATE_KEY from Variables — use Secrets or SSH_PRIVATE_KEY_B64 only"
           fi
 
       - name: Setup Node.js
@@ -79,29 +83,45 @@ jobs:
 
       - name: Setup SSH key
         env:
-          SSH_PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
-          SSH_PRIVATE_KEY_B64: ${{ vars.SSH_PRIVATE_KEY_B64 || secrets.SSH_PRIVATE_KEY_B64 }}
-          SSH_KEY_PASSPHRASE: ${{ vars.SSH_KEY_PASSPHRASE || secrets.SSH_KEY_PASSPHRASE }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY || vars.SSH_PRIVATE_KEY }}
+          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 }}
+          SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE || vars.SSH_KEY_PASSPHRASE }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           KEY_FILE="$HOME/.ssh/deploy_key"
 
           if [ -n "$SSH_PRIVATE_KEY_B64" ]; then
-            echo "$SSH_PRIVATE_KEY_B64" | tr -d '\r\n ' | base64 -d > "$KEY_FILE"
-          elif printf '%s' "$SSH_PRIVATE_KEY" | grep -q '\\n'; then
-            printf '%b' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$KEY_FILE"
+            echo "Using SSH_PRIVATE_KEY_B64"
+            B64=$(echo "$SSH_PRIVATE_KEY_B64" | tr -d '\r\n \t')
+            case $((${#B64} % 4)) in 2) B64="${B64}==" ;; 3) B64="${B64}=" ;; esac
+            echo "$B64" | base64 -d > "$KEY_FILE"
+          elif [ -n "$SSH_PRIVATE_KEY" ]; then
+            echo "Using SSH_PRIVATE_KEY (prefer SSH_PRIVATE_KEY_B64)"
+            if printf '%s' "$SSH_PRIVATE_KEY" | grep -q '\\n'; then
+              printf '%b' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$KEY_FILE"
+            else
+              printf '%s' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$KEY_FILE"
+            fi
           else
-            printf '%s' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$KEY_FILE"
+            echo "::error::No SSH key configured"
+            exit 1
           fi
           chmod 600 "$KEY_FILE"
 
+          KEY_SIZE=$(wc -c < "$KEY_FILE" | tr -d ' ')
+          echo "Key file size: ${KEY_SIZE} bytes"
+
+          if head -c 4 "$KEY_FILE" | grep -q '^ssh-'; then
+            echo "::error::This looks like a .pub file. Encode the private key: base64 -w0 ~/.ssh/uletay_deploy"
+            exit 1
+          fi
+
           if ! ssh-keygen -y -f "$KEY_FILE" > "$HOME/.ssh/deploy_key.pub" 2>/dev/null; then
-            echo "::error::SSH_PRIVATE_KEY is invalid (libcrypto)."
-            echo "Do NOT use Variables for the key — only Secrets."
-            echo "Recommended: set SSH_PRIVATE_KEY_B64 (base64 -w0 ~/.ssh/uletay_deploy on server)."
-            echo "First line of key file:"
-            head -n 1 "$KEY_FILE" || true
+            echo "::error::SSH key is invalid (libcrypto)."
+            echo "On server run: base64 -w0 ~/.ssh/uletay_deploy"
+            echo "Put result in Secret SSH_PRIVATE_KEY_B64 only."
+            echo "Delete SSH_PRIVATE_KEY from Variables and Secrets."
             exit 1
           fi
 
