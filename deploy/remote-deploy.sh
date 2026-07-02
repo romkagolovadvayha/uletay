@@ -66,14 +66,31 @@ ECOSYSTEM=$(sed \
 
 echo "$ECOSYSTEM" | sudo tee "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs" > /dev/null
 
-if command -v pm2 >/dev/null 2>&1; then
-  pm2 startOrRestart "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs"
-  pm2 save || true
-else
+export PATH="/usr/local/bin:/usr/local/node/bin:$(npm prefix -g 2>/dev/null)/bin:${PATH}"
+
+if ! command -v pm2 >/dev/null 2>&1; then
+  echo "Installing PM2..."
   sudo npm install -g pm2
-  pm2 startOrRestart "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs"
-  pm2 save || true
+  hash -r 2>/dev/null || true
+  export PATH="/usr/local/bin:/usr/local/node/bin:$(npm prefix -g 2>/dev/null)/bin:${PATH}"
 fi
+
+PM2_BIN=$(command -v pm2 || true)
+for candidate in /usr/local/bin/pm2 /usr/local/node/bin/pm2 /usr/bin/pm2; do
+  if [ -x "$candidate" ]; then
+    PM2_BIN="$candidate"
+    break
+  fi
+done
+
+if [ -z "$PM2_BIN" ] || [ ! -x "$PM2_BIN" ]; then
+  echo "PM2 not found. On server run: sudo npm install -g pm2"
+  exit 1
+fi
+
+echo "Using PM2: $PM2_BIN"
+"$PM2_BIN" startOrRestart "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs"
+"$PM2_BIN" save || true
 
 sed \
   -e "s|__DOMAIN__|${DOMAIN}|g" \
