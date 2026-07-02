@@ -14,6 +14,7 @@ import {
   TimedStatus,
 } from '../utils/scheduleHelpers';
 import { getRemoteImageSource } from '../utils/imageSource';
+import { CompetitionLabel } from './CompetitionLabel';
 import { LiveBadge } from './LiveBadge';
 import { SoonBadge } from './SoonBadge';
 
@@ -53,6 +54,7 @@ export function LiveArtistCard({ performance, stageName, status, onPress, imageS
         <Text style={styles.artist} numberOfLines={1}>
           {performance.artist}
         </Text>
+        {performance.isCompetition ? <CompetitionLabel /> : null}
         <Text style={styles.stage}>{stageName}</Text>
         <Text style={styles.time}>
           {startsIn ? `${performance.startTime} · ${startsIn}` : formatTimeRange(performance.startTime, performance.endTime)}
@@ -97,6 +99,7 @@ export function LiveHeroCard({ performance, stageName, status, imageSource, now 
       </View>
       <View style={styles.heroContent}>
         <Text style={styles.heroArtist}>{performance.artist}</Text>
+        {performance.isCompetition ? <CompetitionLabel style={styles.heroCompetition} /> : null}
         <Text style={styles.heroStage}>{stageName}</Text>
         <Text style={styles.heroTime}>
           {startsIn
@@ -186,6 +189,10 @@ const styles = StyleSheet.create({
   heroArtist: {
     ...typography.heroArtist,
     color: colors.text,
+  },
+  heroCompetition: {
+    marginTop: -2,
+    marginBottom: -2,
   },
   heroStage: {
     ...typography.heroStage,

@@ -7,6 +7,7 @@ import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { formatStartsIn, parseDateTime } from '../utils/scheduleHelpers';
 import { LiveBadge } from './LiveBadge';
+import { CompetitionLabel } from './CompetitionLabel';
 import { SoonBadge } from './SoonBadge';
 import { StageDot } from './StageDot';
 
@@ -74,9 +75,12 @@ export function ScheduleTimelineItem({
       <Text style={[styles.timelineTime, isLive && styles.timelineTimeLive]}>{performance.startTime}</Text>
       <View style={styles.timelineMain}>
         <StageDot stageId={performance.stageId} size={7} />
-        <Text style={styles.timelineArtist} numberOfLines={2}>
-          {performance.artist}
-        </Text>
+        <View style={styles.timelineText}>
+          <Text style={styles.timelineArtist} numberOfLines={2}>
+            {performance.artist}
+          </Text>
+          {performance.isCompetition ? <CompetitionLabel /> : null}
+        </View>
       </View>
     </Pressable>
   );
@@ -117,7 +121,7 @@ export function ScheduleListItem({
           {performance.artist}
         </Text>
         {stageName ? <Text style={styles.stage}>{stageName}</Text> : null}
-        {performance.isCompetition ? <Text style={styles.competition}>Конкурсная программа</Text> : null}
+        {performance.isCompetition ? <CompetitionLabel /> : null}
       </View>
       <View style={styles.actions}>
         {isLive ? <LiveBadge compact /> : isUpcoming ? <SoonBadge compact /> : null}
@@ -137,9 +141,12 @@ export function NextUpItem({ performance, isFavorite, onToggleFavorite }: NextPr
   return (
     <View style={styles.nextRow}>
       <Text style={styles.nextTime}>{performance.startTime}</Text>
-      <Text style={styles.nextArtist} numberOfLines={2}>
-        {performance.artist}
-      </Text>
+      <View style={styles.nextMain}>
+        <Text style={styles.nextArtist} numberOfLines={2}>
+          {performance.artist}
+        </Text>
+        {performance.isCompetition ? <CompetitionLabel /> : null}
+      </View>
       <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={22} />
     </View>
   );
@@ -177,6 +184,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  timelineText: {
+    flex: 1,
+    gap: 2,
   },
   timelineArtist: {
     flex: 1,
@@ -243,11 +254,6 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     letterSpacing: 0,
   },
-  competition: {
-    ...typography.caption,
-    color: colors.competition,
-    fontSize: 10,
-  },
   actions: {
     alignItems: 'flex-end',
     gap: spacing.xs,
@@ -267,8 +273,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
   },
-  nextArtist: {
+  nextMain: {
     flex: 1,
+    gap: 2,
+  },
+  nextArtist: {
     ...typography.scheduleArtist,
     color: colors.text,
     fontSize: 13,

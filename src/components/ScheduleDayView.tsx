@@ -103,6 +103,7 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
                   isFavorite={isFavorite(performance.id)}
                   onToggleFavorite={() => toggleFavorite(performance.id)}
                   onPress={() => navigation.navigate('LiveDetail', { performanceId: performance.id })}
+                  isCompetition={performance.isCompetition}
                 />
               </React.Fragment>
             );

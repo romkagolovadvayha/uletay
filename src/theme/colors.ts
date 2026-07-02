@@ -20,6 +20,7 @@ export const colors = {
   overlayStrong: 'rgba(0, 0, 0, 0.75)',
   star: '#FFC107',
   competition: '#FF9F0A',
+  competitionLabel: 'rgba(255, 193, 7, 0.58)',
   adminAccent: '#34C759',
   logoStroke: '#FFFFFF',
   pillInactive: '#1C1C1E',

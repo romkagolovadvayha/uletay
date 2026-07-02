@@ -5,6 +5,7 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { LiveBadge } from './LiveBadge';
+import { CompetitionLabel } from './CompetitionLabel';
 import { SoonBadge } from './SoonBadge';
 import { FavoriteStar } from './ScheduleListItem';
 import { StageDot } from './StageDot';
@@ -24,6 +25,7 @@ type Props = {
   onToggleFavorite?: () => void;
   onPress?: () => void;
   trailing?: ReactNode;
+  isCompetition?: boolean;
 };
 
 export function EventScheduleRow({
@@ -39,6 +41,7 @@ export function EventScheduleRow({
   onToggleFavorite,
   onPress,
   trailing,
+  isCompetition,
 }: Props) {
   return (
     <Pressable
@@ -63,6 +66,7 @@ export function EventScheduleRow({
             {subtitle}
           </Text>
         ) : null}
+        {isCompetition ? <CompetitionLabel /> : null}
       </View>
       <View style={styles.actions}>
         {isLive ? <LiveBadge compact /> : isUpcoming ? <SoonBadge compact countdown={soonCountdown} /> : null}

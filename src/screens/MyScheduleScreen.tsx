@@ -36,6 +36,7 @@ type MyScheduleItem =
       startTime: string;
       stageId: StageId;
       artist: string;
+      isCompetition?: boolean;
     }
   | {
       kind: 'autograph';
@@ -86,6 +87,7 @@ export function MyScheduleScreen({ navigation }: Props) {
           startTime: item.startTime,
           stageId: item.stageId,
           artist: item.artist,
+          isCompetition: item.isCompetition,
         })),
       ...favoriteAutographs
         .filter((item) => item.date === selectedDate)
@@ -161,6 +163,7 @@ export function MyScheduleScreen({ navigation }: Props) {
               onPress={() =>
                 item.kind === 'performance' ? navigateToLive(item.id) : navigateToAutograph(item.id)
               }
+              isCompetition={item.kind === 'performance' ? item.isCompetition : false}
             />
           ))
         ) : (
