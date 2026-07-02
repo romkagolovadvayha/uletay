@@ -120,7 +120,7 @@ ssh-copy-id -i ~/.ssh/uletay_deploy.pub deploy@ВАШ_IP
 | `LE_EMAIL` | `you@mail.ru` | да |
 | `SSH_HOST` | IP VPS (`185.x.x.x`) | да |
 | `SSH_USER` | `root` | да |
-| `SSH_PRIVATE_KEY` | приватный ключ | да |
+| `SSH_PRIVATE_KEY` | приватный ключ | да — **только Secrets** |
 | `DB_HOST` | `127.0.0.1` | да |
 | `DB_NAME` | `uletay` | да |
 | `DB_USER` | `uletay` | да |

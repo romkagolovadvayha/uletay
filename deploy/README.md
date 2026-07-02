@@ -18,7 +18,7 @@
 | `LE_EMAIL` | `you@mail.ru` | Email для Let's Encrypt |
 | `SSH_HOST` | `185.x.x.x` | IP VPS |
 | `SSH_USER` | `root` | SSH-пользователь |
-| `SSH_PRIVATE_KEY` | `-----BEGIN...` | Приватный SSH-ключ |
+| `SSH_PRIVATE_KEY` | `-----BEGIN...` | да — **только Secrets** (многострочный ключ) |
 | `DB_HOST` | `127.0.0.1` | MySQL host |
 | `DB_NAME` | `uletay` | Имя БД |
 | `DB_USER` | `uletay` | Пользователь MySQL |
@@ -36,6 +36,38 @@
 | `SESSION_SECRET` | генерируется на сервере | Секрет сессии CMS |
 
 > Пароли и ключи лучше хранить в **Secrets**, но технически можно и в Variables.
+
+> `SSH_PRIVATE_KEY` — **только в Secrets** (Variables не поддерживают многострочный ключ).
+
+## SSH: Permission denied (publickey)
+
+1. На сервере проверь ключ:
+   ```bash
+   cat /root/.ssh/authorized_keys
+   ```
+2. На компьютере сравни публичный ключ:
+   ```bash
+   ssh-keygen -y -f ~/.ssh/uletay_deploy
+   ```
+   Вывод должен совпадать со строкой в `authorized_keys`.
+3. Проверь вход вручную:
+   ```bash
+   ssh -i ~/.ssh/uletay_deploy root@212.193.26.91
+   ```
+4. В GitHub → Secrets вставь **весь** приватный ключ:
+   ```
+   -----BEGIN OPENSSH PRIVATE KEY-----
+   ...
+   -----END OPENSSH PRIVATE KEY-----
+   ```
+5. `SSH_USER` должен совпадать с пользователем на сервере (`root`).
+
+Если ключа на сервере нет — добавь:
+```bash
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo "содержимое .pub файла" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
 
 ## 2. Подготовка сервера
 

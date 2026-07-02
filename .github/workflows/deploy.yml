@@ -77,18 +77,21 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ env.EXPO_PUBLIC_API_URL }}
 
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
+
+      - name: Verify SSH key and host
         run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          ssh-keygen -l -f <(ssh-add -L | head -n1) || (echo "SSH_PRIVATE_KEY is invalid. Use Secrets (multiline key), not Variables." && exit 1)
           ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh -p "$SSH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+            "${SSH_USER}@${SSH_HOST}" "echo SSH connection OK"
 
       - name: Sync files to server
         run: |
-          RSYNC_SSH="ssh -i ~/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
+          RSYNC_SSH="ssh -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
           TARGET="${SSH_USER}@${SSH_HOST}:$DEPLOY_PATH"
 
           rsync -az --delete -e "$RSYNC_SSH" \
@@ -102,10 +105,8 @@ jobs:
             ./ "$TARGET/"
 
       - name: Configure server (Node CMS + nginx + HTTPS)
-        env:
-          SSH_PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
+          ssh -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
             "${SSH_USER}@${SSH_HOST}" \
             "DOMAIN='$DOMAIN' \
              DEPLOY_PATH='$DEPLOY_PATH' \
