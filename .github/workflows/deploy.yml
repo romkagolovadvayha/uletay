@@ -175,12 +175,12 @@ jobs:
           TARGET="${SSH_USER}@${SSH_HOST}:$DEPLOY_PATH"
 
           rsync -az --delete -e "$RSYNC_SSH" \
-            --exclude 'node_modules' \
-            --exclude 'cms/node_modules' \
-            --exclude '.git' \
-            --exclude '.expo' \
-            --exclude 'uploads' \
-            --exclude 'cms/.env' \
+            --exclude '/node_modules' \
+            --exclude '/cms/node_modules' \
+            --exclude '/.git' \
+            --exclude '/.expo' \
+            --exclude '/uploads' \
+            --exclude '/cms/.env' \
             ./ "$TARGET/"
 
       - name: Configure server (Node CMS + nginx + HTTPS)

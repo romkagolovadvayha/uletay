@@ -119,6 +119,12 @@ source "$DEPLOY_PATH/deploy/nginx-ssl-setup.sh"
 setup_https_nginx "$DEPLOY_PATH"
 
 echo "Verifying local endpoints..."
+FONT_FILE=$(find "$DEPLOY_PATH/dist/assets" -name 'Ionicons*.ttf' 2>/dev/null | head -1)
+if [ -z "$FONT_FILE" ]; then
+  echo "Font assets missing in dist/assets (check rsync excludes)"
+  exit 1
+fi
+
 CMS_CHECK="/tmp/uletay-cms-check.json"
 cms_ok=0
 for _ in $(seq 1 20); do
