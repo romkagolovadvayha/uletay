@@ -41,7 +41,12 @@ export function FavoriteStar({
   };
 
   return (
-    <Pressable accessibilityRole="button" onPress={handlePress} hitSlop={10}>
+    <Pressable
+      accessibilityRole="imagebutton"
+      accessibilityLabel={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+      onPress={handlePress}
+      hitSlop={10}
+    >
       <Ionicons
         name={isFavorite ? 'star' : 'star-outline'}
         size={size}

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>УЛЕТАЙ — справка по проекту и деплою</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0b0b0c;
+      color: #e5e5ea;
+      line-height: 1.55;
+    }
+    a { color: #ffc107; }
+    header {
+      padding: 24px 20px;
+      border-bottom: 1px solid #2c2c2e;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    header h1 { margin: 0 0 8px; font-size: 1.6rem; }
+    header p { margin: 0; color: #aeaeb2; }
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    section {
+      background: #1c1c1e;
+      border: 1px solid #2c2c2e;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h2 { margin: 0 0 12px; font-size: 1.15rem; color: #ffc107; }
+    h3 { margin: 16px 0 8px; font-size: 0.95rem; color: #aeaeb2; }
+    p, li { color: #d1d1d6; }
+    ul { padding-left: 20px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    th, td {
+      border: 1px solid #2c2c2e;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #0b0b0c; color: #aeaeb2; }
+    code {
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      background: #0b0b0c;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    pre {
+      background: #0b0b0c;
+      border: 1px solid #2c2c2e;
+      border-radius: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 8px 0 0;
+    }
+    pre code { background: none; padding: 0; }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #2c2c2e;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffc107;
+      margin-right: 6px;
+    }
+    .warn { color: #ff9f0a; }
+    .ok { color: #34c759; }
+    .err { color: #ff453a; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>УЛЕТАЙ 2026</h1>
+    <p>Справка по стеку, API, админке и деплою — примеры из реального кода репозитория.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Архитектура на проде</h2>
+      <pre><code>nginx
+  /              → dist/                    (Expo web, npm run build)
+  /api/*         → 127.0.0.1:3000           (cms/src/app/api/*)
+  /admin         → 127.0.0.1:3000           (cms/src/app/admin/*)
+  /_next/*       → 127.0.0.1:3000           (CSS/JS Next.js — без этого админка без стилей)
+
+PM2: node cms/.next/standalone/server.js --name uletay-cms
+MySQL: одна строка app_content (JSON всего AppData)</code></pre>
+    </section>
+
+    <section>
+      <h2>URL после деплоя</h2>
+      <table>
+        <tr><th>Сервис</th><th>URL</th><th>Файл в репо</th></tr>
+        <tr><td>Приложение</td><td><code>https://DOMAIN/</code></td><td><code>dist/</code></td></tr>
+        <tr><td>API</td><td><code>https://DOMAIN/api/data</code></td><td><code>cms/src/app/api/data/route.ts</code></td></tr>
+        <tr><td>Админка</td><td><code>https://DOMAIN/admin</code></td><td><code>cms/src/app/admin/page.tsx</code></td></tr>
+        <tr><td>Загрузки</td><td><code>https://DOMAIN/api/uploads/images/...</code></td><td><code>cms/src/app/api/uploads/[...path]/route.ts</code></td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Клиент: загрузка данных</h2>
+      <p>Из <code>src/api/appDataApi.ts</code> — один endpoint, кэш 60 сек:</p>
+      <pre><code>const response = await fetch(`${API_BASE_URL}/data`, {
+  headers: { Accept: 'application/json' },
+});
+
+// src/config/api.ts — на проде без EXPO_PUBLIC_API_URL:
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  `${window.location.origin}/api`;</code></pre>
+      <p>CI при сборке задаёт <code>EXPO_PUBLIC_API_URL=https://DOMAIN/api</code> (см. <code>.github/workflows/deploy.yml</code>).</p>
+    </section>
+
+    <section>
+      <h2>API (Next.js CMS)</h2>
+      <h3><span class="tag">GET</span> <code>/api/data</code></h3>
+      <pre><code>// cms/src/app/api/data/route.ts
+export async function GET() {
+  const data = await getAppData();
+  return jsonResponse(data);
+}</code></pre>
+
+      <h3><span class="tag">PUT</span> <code>/api/data</code> — Bearer token</h3>
+      <pre><code>const authorized = await verifyBearerToken(request.headers.get('authorization'));
+if (!authorized) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+await saveAppData(body);
+return jsonResponse({ ok: true });</code></pre>
+
+      <h3>Структура <code>AppData</code> (<code>cms/src/types.ts</code>)</h3>
+      <pre><code>{
+  "festival": { "name", "year", "startDate", "heroImageUrl", ... },
+  "stages": [{ "id": "ren-tv"|"south"|"west", "name", "color" }],
+  "schedule": [{ "id", "stageId", "artist", "startTime", "imageUrl" }],
+  "autographs": [...],
+  "foodcourt": [{ "category": "hot"|"drinks"|"desserts", ... }]
+}</code></pre>
+    </section>
+
+    <section>
+      <h2>Админка</h2>
+      <p>Вкладки из <code>cms/src/app/admin/page.tsx</code>:</p>
+      <table>
+        <tr><th>tab=</th><th>Редактирование</th><th>Server Action</th></tr>
+        <tr><td><code>festival</code></td><td>форма полей + hero upload</td><td><code>saveFestivalAction</code>, <code>uploadImageAction</code></td></tr>
+        <tr><td><code>stages</code></td><td>имя, shortName, color</td><td><code>saveStagesAction</code></td></tr>
+        <tr><td><code>schedule</code></td><td>JSON textarea + картинка по id</td><td><code>saveJsonTabAction</code></td></tr>
+        <tr><td><code>autographs</code></td><td>то же</td><td><code>saveJsonTabAction</code></td></tr>
+        <tr><td><code>foodcourt</code></td><td>то же</td><td><code>saveJsonTabAction</code></td></tr>
+      </table>
+
+      <h3>Логин (<code>cms/src/app/admin/login/page.tsx</code>)</h3>
+      <pre><code>&lt;form action={loginAction}&gt;
+  &lt;input name="username" /&gt;
+  &lt;input name="password" type="password" /&gt;
+&lt;/form&gt;
+
+// actions.ts — iron-session cookie uletay_admin
+session.adminUserId = userId;
+await session.save();</code></pre>
+    </section>
+
+    <section>
+      <h2>nginx (<code>deploy/nginx.site.conf.template</code>)</h2>
+      <pre><code>location /api/ {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /_next/ {
+    proxy_pass http://127.0.0.1:3000;
+    # обязательно — иначе /admin без CSS
+}
+
+location /admin {
+    proxy_pass http://127.0.0.1:3000;
+}
+
+location / {
+    root /var/www/uletay/dist;
+    try_files $uri $uri/ /index.html;
+}</code></pre>
+    </section>
+
+    <section>
+      <h2>GitHub Environment <code>production</code></h2>
+      <p>Из <code>.github/workflows/deploy.yml</code> — Variables <strong>или</strong> Secrets (<code>vars.X || secrets.X</code>):</p>
+      <table>
+        <tr><th>Переменная</th><th>Пример</th></tr>
+        <tr><td><code>DOMAIN</code></td><td>uletay.ru</td></tr>
+        <tr><td><code>LE_EMAIL</code></td><td>you@mail.ru</td></tr>
+        <tr><td><code>SSH_HOST</code></td><td>212.193.26.91</td></tr>
+        <tr><td><code>SSH_USER</code></td><td>root</td></tr>
+        <tr><td><code>SSH_PRIVATE_KEY_B64</code></td><td>только Secrets, см. скрипт ниже</td></tr>
+        <tr><td><code>DEPLOY_PATH</code></td><td>/var/www/uletay</td></tr>
+        <tr><td><code>CMS_PORT</code></td><td>3000</td></tr>
+        <tr><td><code>DB_HOST</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASS</code></td><td>MySQL</td></tr>
+        <tr><td><code>ADMIN_USER</code>, <code>ADMIN_PASSWORD</code></td><td>админка</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>SSH-ключ для CI</h2>
+      <p>Скрипт <code>deploy/print-github-ssh-key.sh</code>:</p>
+      <pre><code>ssh-keygen -t ed25519 -f ~/.ssh/uletay_ci -N "" -C "github-actions"
+cat ~/.ssh/uletay_ci.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+
+B64=$(base64 -w0 ~/.ssh/uletay_ci)
+echo "$B64" | base64 -d > /tmp/t && chmod 600 /tmp/t && ssh-keygen -y -f /tmp/t
+# → в GitHub Secret SSH_PRIVATE_KEY_B64</code></pre>
+      <p class="warn">Не клади приватный ключ в Variables — только Secrets. Ключ без пароля.</p>
+    </section>
+
+    <section>
+      <h2>Деплой на сервере (<code>deploy/remote-deploy.sh</code>)</h2>
+      <pre><code># cms/.env на сервере
+DB_HOST=...
+CORS_ORIGIN=https://DOMAIN
+UPLOAD_DIR=/var/www/uletay/uploads
+PORT=3000
+
+npm ci
+npm run db:install          # tsx scripts/install.ts → schema + seed
+
+pm2 start /var/www/uletay/cms/.next/standalone/server.js \
+  --name uletay-cms \
+  --cwd /var/www/uletay/cms \
+  --update-env
+
+certbot --nginx -d DOMAIN   # если сертификата ещё нет</code></pre>
+      <p>CMS собирается в GitHub Actions (<code>npm run build --prefix cms</code>), на сервер уходит готовый <code>cms/.next</code>.</p>
+    </section>
+
+    <section>
+      <h2>Локальная разработка</h2>
+      <pre><code>npm install && npm install --prefix cms
+cp cms/.env.example cms/.env
+npm run cms:install
+
+# терминал 1
+npm run cms:dev      # http://localhost:3000/admin
+
+# терминал 2
+# .env: EXPO_PUBLIC_API_URL=http://localhost:3000/api
+npm run web</code></pre>
+    </section>
+
+    <section>
+      <h2>Частые ошибки (из реального деплоя)</h2>
+      <table>
+        <tr><th>Симптом</th><th>Причина</th><th>Решение</th></tr>
+        <tr>
+          <td class="err">/admin без стилей</td>
+          <td><code>/_next/static</code> шёл в Expo <code>dist/</code></td>
+          <td>блок <code>location /_next/</code> → proxy на CMS</td>
+        </tr>
+        <tr>
+          <td class="err">libcrypto / invalid SSH key</td>
+          <td>битый base64 или ключ с паролем</td>
+          <td><code>bash deploy/print-github-ssh-key.sh</code></td>
+        </tr>
+        <tr>
+          <td class="err">Permission denied (publickey)</td>
+          <td>нет <code>uletay_ci.pub</code> в authorized_keys</td>
+          <td><code>cat ~/.ssh/uletay_ci.pub >> ~/.ssh/authorized_keys</code></td>
+        </tr>
+        <tr>
+          <td class="err">Cannot find module 'typescript'</td>
+          <td><code>npm ci --omit=dev</code> на сервере</td>
+          <td>сборка CMS в CI, на сервере <code>npm ci</code></td>
+        </tr>
+        <tr>
+          <td class="err">pm2: command not found</td>
+          <td>PATH без /usr/local/node/bin</td>
+          <td><code>sudo npm install -g pm2</code></td>
+        </tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Проверка на сервере</h2>
+      <pre><code>pm2 status
+curl http://127.0.0.1:3000/api/data
+curl -I https://DOMAIN/admin
+sudo nginx -t && sudo systemctl reload nginx</code></pre>
+      <p class="ok">Репозиторий: <a href="https://github.com/romkagolovadvayha/uletay">github.com/romkagolovadvayha/uletay</a></p>
+    </section>
+  </main>
+</body>
+</html>
