@@ -29,8 +29,8 @@ const rawAutographs: RawAutograph[] = [
   { stageId: 'south', date: '2026-07-10', startTime: '00:30', endTime: '01:00', artist: 'ХЕЛЬВЕГЕН / HELVEGEN' },
   { stageId: 'south', date: '2026-07-10', startTime: '20:15', endTime: '20:45', artist: 'ПЛАМЕНЕВ' },
   { stageId: 'south', date: '2026-07-10', startTime: '21:00', endTime: '21:30', artist: 'СЛОТ' },
-  { stageId: 'south', date: '2026-07-11', startTime: '16:30', endTime: '17:00', artist: 'КАТЮША' },
-  { stageId: 'south', date: '2026-07-11', startTime: '17:30', endTime: '18:00', artist: 'КЭЖУАЛ / CASUAL' },
+  { stageId: 'south', date: '2026-07-11', startTime: '16:30', endTime: '17:00', artist: 'КЭЖУАЛ / CASUAL' },
+  { stageId: 'south', date: '2026-07-11', startTime: '17:30', endTime: '18:00', artist: 'КАТЮША' },
   { stageId: 'south', date: '2026-07-11', startTime: '20:00', endTime: '20:30', artist: 'DRUMMATIX' },
   { stageId: 'south', date: '2026-07-11', startTime: '22:50', endTime: '23:20', artist: 'БИРТМАН' },
 

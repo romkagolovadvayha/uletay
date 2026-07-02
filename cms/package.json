@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "db:install": "tsx scripts/install.ts"
+    "db:install": "tsx scripts/install.ts",
+    "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

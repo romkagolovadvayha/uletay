@@ -62,8 +62,8 @@ const rawPerformances: RawPerformance[] = [
   { stageId: 'south', date: '2026-07-11', startTime: '01:00', artist: 'ВИА «ВОЛГА-ВОЛГА»' },
   // ЮЖНАЯ — 11 июля
   { stageId: 'south', date: '2026-07-11', startTime: '14:00', artist: 'МАША И МЕДВЕДИ' },
-  { stageId: 'south', date: '2026-07-11', startTime: '15:00', artist: 'КАТЮША' },
-  { stageId: 'south', date: '2026-07-11', startTime: '16:00', artist: 'КЭЖУАЛ / CASUAL' },
+  { stageId: 'south', date: '2026-07-11', startTime: '15:00', artist: 'КЭЖУАЛ / CASUAL' },
+  { stageId: 'south', date: '2026-07-11', startTime: '16:00', artist: 'КАТЮША' },
   { stageId: 'south', date: '2026-07-11', startTime: '17:00', artist: 'ИНКОГНИТО' },
   { stageId: 'south', date: '2026-07-11', startTime: '18:00', artist: 'DRUMMATIX' },
   { stageId: 'south', date: '2026-07-11', startTime: '19:00', artist: 'СТИГМАТА / STIGMATA' },
@@ -99,7 +99,7 @@ const rawPerformances: RawPerformance[] = [
   // ЗАПАДНАЯ — 10 июля
   { stageId: 'west', date: '2026-07-10', startTime: '12:00', artist: 'СВОБОДНЫЙ РЕЖИМ, VERRONA EX GREAT REVIVAL, МОРРОЗ', isCompetition: true },
   { stageId: 'west', date: '2026-07-10', startTime: '13:30', artist: '#СЕВАИВАНОВ', isCompetition: true },
-  { stageId: 'west', date: '2026-07-10', startTime: '14:00', artist: 'НИКОЛАЙ ГРИНЬКО' },
+  { stageId: 'west', date: '2026-07-10', startTime: '14:00', artist: 'NEARINAMENYA', isCompetition: true },
   { stageId: 'west', date: '2026-07-10', startTime: '15:00', artist: 'МЕЩЕРА' },
   { stageId: 'west', date: '2026-07-10', startTime: '16:00', artist: 'АННУШКАА' },
   { stageId: 'west', date: '2026-07-10', startTime: '17:00', artist: 'ДМЦ' },

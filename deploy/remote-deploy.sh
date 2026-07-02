@@ -70,7 +70,8 @@ fi
 set -a
 source .env
 set +a
-npm run db:install
+# Schema only — do not re-seed app_content (preserves uploaded images and admin edits)
+npm run db:migrate
 
 export PATH="/usr/local/bin:/usr/local/node/bin:$(npm prefix -g 2>/dev/null)/bin:${PATH}"
 

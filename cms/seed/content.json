@@ -527,20 +527,20 @@
       "artist": "МАША И МЕДВЕДИ"
     },
     {
-      "id": "south-2026-07-11-15:00-КАТЮША",
+      "id": "south-2026-07-11-15:00-КЭЖУАЛ / CAS",
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "15:00",
       "endTime": "16:00",
-      "artist": "КАТЮША"
+      "artist": "КЭЖУАЛ / CASUAL"
     },
     {
-      "id": "south-2026-07-11-16:00-КЭЖУАЛ / CAS",
+      "id": "south-2026-07-11-16:00-КАТЮША",
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "16:00",
       "endTime": "17:00",
-      "artist": "КЭЖУАЛ / CASUAL"
+      "artist": "КАТЮША"
     },
     {
       "id": "south-2026-07-11-17:00-ИНКОГНИТО",
@@ -795,12 +795,13 @@
       "isCompetition": true
     },
     {
-      "id": "west-2026-07-10-14:00-НИКОЛАЙ ГРИН",
+      "id": "west-2026-07-10-14:00-NEARINAMENYA",
       "stageId": "west",
       "date": "2026-07-10",
       "startTime": "14:00",
       "endTime": "15:00",
-      "artist": "НИКОЛАЙ ГРИНЬКО"
+      "artist": "NEARINAMENYA",
+      "isCompetition": true
     },
     {
       "id": "west-2026-07-10-15:00-МЕЩЕРА",
@@ -1162,22 +1163,22 @@
       "artist": "СЛОТ"
     },
     {
-      "id": "auto-south-2026-07-11-16:30-КАТЮША",
+      "id": "auto-south-2026-07-11-16:30-КЭЖУАЛ /",
       "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "16:30",
       "endTime": "17:00",
-      "artist": "КАТЮША"
+      "artist": "КЭЖУАЛ / CASUAL"
     },
     {
-      "id": "auto-south-2026-07-11-17:30-КЭЖУАЛ /",
+      "id": "auto-south-2026-07-11-17:30-КАТЮША",
       "location": "ПАЛАТОЧНЫЙ ГОРОДОК",
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "17:30",
       "endTime": "18:00",
-      "artist": "КЭЖУАЛ / CASUAL"
+      "artist": "КАТЮША"
     },
     {
       "id": "auto-south-2026-07-11-20:00-DRUMMATI",

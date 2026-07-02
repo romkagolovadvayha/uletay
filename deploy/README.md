@@ -117,12 +117,20 @@ deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bi
 1. `npm run build` — Expo web → `dist/`
 2. `rsync` на VPS
 3. На сервере: `cms/.env`, `npm ci`, `npm run build` в `cms/`
-4. `npm run db:install` — схема + сид
+4. `npm run db:migrate` — только схема БД (контент и картинки не трогаются)
 5. PM2 запускает Next.js standalone
 6. nginx: `/` → `dist/`, `/api`, `/admin`, `/_next` → CMS
 7. Let's Encrypt: `certbot certonly --webroot`, затем nginx SSL-шаблон + редирект HTTP→HTTPS
 
 Файлы nginx: `deploy/nginx.site.http.conf.template` (временно), `deploy/nginx.site.ssl.conf.template` (прод).
+
+**Первый деплой на пустой сервер** — один раз вручную на VPS:
+
+```bash
+cd /var/www/uletay/cms && npm run db:install
+```
+
+После этого обычные деплои не перезаписывают контент и `imageUrl`.
 
 ## HTTPS не работает / нет редиректа
 
