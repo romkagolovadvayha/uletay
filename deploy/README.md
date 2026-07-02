@@ -119,8 +119,39 @@ deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bi
 3. На сервере: `cms/.env`, `npm ci`, `npm run build` в `cms/`
 4. `npm run db:install` — схема + сид
 5. PM2 запускает Next.js standalone
-6. nginx: `/` → `dist/`, `/api` и `/admin` → CMS
-7. certbot — HTTPS, если сертификата нет
+6. nginx: `/` → `dist/`, `/api`, `/admin`, `/_next` → CMS
+7. Let's Encrypt: `certbot certonly --webroot`, затем nginx SSL-шаблон + редирект HTTP→HTTPS
+
+Файлы nginx: `deploy/nginx.site.http.conf.template` (временно), `deploy/nginx.site.ssl.conf.template` (прод).
+
+## HTTPS не работает / нет редиректа
+
+На сервере:
+
+```bash
+export DOMAIN=uletayapp.ru
+export LE_EMAIL=you@mail.ru
+export DEPLOY_PATH=/var/www/uletay
+bash /var/www/uletay/deploy/fix-https.sh
+```
+
+Или вручную:
+
+```bash
+sudo certbot certonly --webroot -w /var/www/certbot -d uletayapp.ru \
+  --non-interactive --agree-tos -m you@mail.ru
+bash /var/www/uletay/deploy/fix-https.sh
+```
+
+Проверка:
+
+```bash
+curl -I http://uletayapp.ru    # должен быть 301 → https
+curl -I https://uletayapp.ru   # 200
+sudo ss -tlnp | grep ':443'    # nginx слушает 443
+```
+
+Убедитесь, что DNS **A**-запись домена указывает на IP VPS.
 
 ## 4. URL после деплоя
 

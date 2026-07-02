@@ -2,8 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppData } from '../types';
 import { API_BASE_URL, CACHE_TTL_MS, CachedAppData } from '../config/api';
 import { defaultAppData } from '../storage/dataStore';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 const CACHE_KEY = '@uletay_api_cache_v1';
+const FETCH_TIMEOUT_MS = 8_000;
 
 let memoryCache: CachedAppData | null = null;
 let inFlight: Promise<AppData> | null = null;
@@ -33,9 +35,11 @@ function isFresh(cache: CachedAppData): boolean {
 }
 
 async function fetchRemoteAppData(): Promise<AppData> {
-  const response = await fetch(`${API_BASE_URL}/data`, {
-    headers: { Accept: 'application/json' },
-  });
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/data`,
+    { headers: { Accept: 'application/json' } },
+    FETCH_TIMEOUT_MS,
+  );
 
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`);

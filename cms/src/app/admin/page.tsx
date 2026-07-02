@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { AutographsEditor } from './components/AutographsEditor';
+import { FoodcourtEditor } from './components/FoodcourtEditor';
+import { ScheduleEditor } from './components/ScheduleEditor';
 import {
   loadAdminData,
   logoutAction,
   saveFestivalAction,
-  saveJsonTabAction,
   saveStagesAction,
   uploadImageAction,
 } from './actions';
@@ -21,7 +23,15 @@ const TABS: Record<AdminTab, string> = {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; ok?: string; error?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    ok?: string;
+    error?: string;
+    edit?: string;
+    stage?: string;
+    date?: string;
+    category?: string;
+  }>;
 }) {
   const params = await searchParams;
   const tab = (params.tab ?? 'festival') as AdminTab;
@@ -71,11 +81,11 @@ export default async function AdminPage({
                 </label>
                 <label>
                   Начало
-                  <input name="startDate" defaultValue={data.festival.startDate} />
+                  <input name="startDate" type="date" defaultValue={data.festival.startDate} />
                 </label>
                 <label>
                   Конец
-                  <input name="endDate" defaultValue={data.festival.endDate} />
+                  <input name="endDate" type="date" defaultValue={data.festival.endDate} />
                 </label>
                 <label>
                   Локация
@@ -97,7 +107,9 @@ export default async function AdminPage({
               {data.festival.heroImageUrl ? (
                 <img className="preview" src={data.festival.heroImageUrl} alt="hero" />
               ) : null}
-              <button type="submit">Сохранить фестиваль</button>
+              <button type="submit" className="btn-primary">
+                Сохранить фестиваль
+              </button>
             </form>
             <form action={uploadImageAction} className="panel" encType="multipart/form-data">
               <input type="hidden" name="target" value="festival_hero" />
@@ -105,7 +117,9 @@ export default async function AdminPage({
                 Загрузить hero-картинку
                 <input type="file" name="file" accept="image/*" required />
               </label>
-              <button type="submit">Загрузить</button>
+              <button type="submit" className="btn-primary">
+                Загрузить
+              </button>
             </form>
           </>
         ) : null}
@@ -133,52 +147,38 @@ export default async function AdminPage({
                 </label>
               </div>
             ))}
-            <button type="submit">Сохранить сцены</button>
+            <button type="submit" className="btn-primary">
+              Сохранить сцены
+            </button>
           </form>
         ) : null}
 
-        {activeTab === 'schedule' || activeTab === 'autographs' || activeTab === 'foodcourt' ? (
-          <>
-            <form
-              action={saveJsonTabAction.bind(null, activeTab)}
-              className="panel"
-            >
-              <p className="hint">
-                JSON-массив. Для картинок исполнителей добавьте поле <code>imageUrl</code>.
-              </p>
-              <textarea
-                name="json"
-                rows={24}
-                defaultValue={JSON.stringify(data[activeTab], null, 2)}
-              />
-              <button type="submit">Сохранить {TABS[activeTab]}</button>
-            </form>
-            <section className="panel">
-              <h2>Загрузка картинки</h2>
-              <form action={uploadImageAction} encType="multipart/form-data">
-                <input
-                  type="hidden"
-                  name="target"
-                  value={
-                    activeTab === 'schedule'
-                      ? 'schedule'
-                      : activeTab === 'autographs'
-                        ? 'autograph'
-                        : 'foodcourt'
-                  }
-                />
-                <label>
-                  ID записи
-                  <input name="id" required placeholder="например south-2026-07-08-15:00-NADИ" />
-                </label>
-                <label>
-                  Файл
-                  <input type="file" name="file" accept="image/*" required />
-                </label>
-                <button type="submit">Загрузить картинку</button>
-              </form>
-            </section>
-          </>
+        {activeTab === 'schedule' ? (
+          <ScheduleEditor
+            items={data.schedule}
+            stages={data.stages}
+            editId={params.edit}
+            stageFilter={params.stage}
+            dateFilter={params.date}
+          />
+        ) : null}
+
+        {activeTab === 'autographs' ? (
+          <AutographsEditor
+            items={data.autographs}
+            stages={data.stages}
+            editId={params.edit}
+            stageFilter={params.stage}
+            dateFilter={params.date}
+          />
+        ) : null}
+
+        {activeTab === 'foodcourt' ? (
+          <FoodcourtEditor
+            items={data.foodcourt}
+            editId={params.edit}
+            categoryFilter={params.category}
+          />
         ) : null}
       </main>
     </>

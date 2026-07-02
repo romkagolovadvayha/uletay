@@ -16,6 +16,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { FESTIVAL_TIMEZONE, parseFestivalDateOnly } from '../utils/festivalTime';
 import { getFestivalDates, getStageName, parseDateTime } from '../utils/scheduleHelpers';
 import { getRemoteImageSource } from '../utils/imageSource';
 
@@ -40,15 +41,13 @@ export function FestivalHomeScreen({ navigation }: Props) {
     if (dates.length === 0) {
       return '';
     }
-    const first = new Date(`${dates[0]}T12:00:00`);
-    const last = new Date(`${dates[dates.length - 1]}T12:00:00`);
-    const startDay = first.getDate();
-    const endDay = last.getDate();
-    const month = new Intl.DateTimeFormat('ru-RU', { month: 'long' })
-      .format(first)
+    const [, , startDay] = dates[0].split('-');
+    const [, , endDay] = dates[dates.length - 1].split('-');
+    const month = new Intl.DateTimeFormat('ru-RU', { month: 'long', timeZone: FESTIVAL_TIMEZONE })
+      .format(parseFestivalDateOnly(dates[0]))
       .replace('.', '')
       .toUpperCase();
-    return `${startDay}-${endDay} ${month}`;
+    return `${Number(startDay)}-${Number(endDay)} ${month}`;
   }, [data.festival.endDate, data.festival.startDate]);
 
   const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');

@@ -1,8 +1,32 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Platform } from 'react-native';
 import { invalidateAppDataCache, loadAppDataFromApi } from '../api/appDataApi';
 import { AppData } from '../types';
 import { normalizeAppData } from '../utils/appDataNormalize';
 import { defaultAppData } from '../storage/dataStore';
+
+const CACHE_KEY = '@uletay_api_cache_v1';
+
+function readCachedAppDataSync(): AppData | null {
+  if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as { data?: AppData };
+    return parsed?.data ? normalizeAppData(parsed.data) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getInitialAppData(): AppData {
+  return readCachedAppDataSync() ?? defaultAppData;
+}
 
 type DataContextValue = {
   data: AppData;
@@ -15,8 +39,8 @@ type DataContextValue = {
 const DataContext = createContext<DataContextValue | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<AppData>(defaultAppData);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<AppData>(getInitialAppData);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
 
@@ -51,10 +75,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Failed to load data');
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
         }
       }
     })();

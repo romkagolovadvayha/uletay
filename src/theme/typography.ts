@@ -1,4 +1,4 @@
-import { TextStyle } from 'react-native';
+import { Platform, TextStyle } from 'react-native';
 
 export const fonts = {
   regular: 'Montserrat_400Regular',
@@ -9,141 +9,159 @@ export const fonts = {
   black: 'Montserrat_900Black',
 } as const;
 
+type FontKey = keyof typeof fonts;
+
+const webWeights: Record<FontKey, TextStyle['fontWeight']> = {
+  regular: '400',
+  medium: '500',
+  semiBold: '600',
+  bold: '700',
+  extraBold: '800',
+  black: '900',
+};
+
+function font(key: FontKey): Pick<TextStyle, 'fontFamily' | 'fontWeight'> {
+  if (Platform.OS === 'web') {
+    return { fontFamily: 'Montserrat', fontWeight: webWeights[key] };
+  }
+  return { fontFamily: fonts[key] };
+}
+
 export const typography = {
   logoTagline: {
-    fontFamily: fonts.bold,
+    ...font('bold'),
     fontSize: 9,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   logoMain: {
-    fontFamily: fonts.black,
+    ...font('black'),
     fontSize: 46,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   logoYear: {
-    fontFamily: fonts.black,
+    ...font('black'),
     fontSize: 30,
     letterSpacing: 0.5,
   } satisfies TextStyle,
   logoDates: {
-    fontFamily: fonts.bold,
+    ...font('bold'),
     fontSize: 13,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   location: {
-    fontFamily: fonts.bold,
+    ...font('bold'),
     fontSize: 12,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   screenTitle: {
-    fontFamily: fonts.black,
+    ...font('black'),
     fontSize: 22,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   screenSubtitle: {
-    fontFamily: fonts.extraBold,
+    ...font('extraBold'),
     fontSize: 12,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   sectionTitle: {
-    fontFamily: fonts.extraBold,
+    ...font('extraBold'),
     fontSize: 12,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   sectionMuted: {
-    fontFamily: fonts.semiBold,
+    ...font('semiBold'),
     fontSize: 11,
     letterSpacing: 1,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   countdownTitle: {
-    fontFamily: fonts.semiBold,
+    ...font('semiBold'),
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   countdownValue: {
-    fontFamily: fonts.black,
+    ...font('black'),
     fontSize: 32,
     letterSpacing: -0.5,
   } satisfies TextStyle,
   countdownLabel: {
-    fontFamily: fonts.semiBold,
+    ...font('semiBold'),
     fontSize: 9,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   button: {
-    fontFamily: fonts.extraBold,
+    ...font('extraBold'),
     fontSize: 14,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   artistName: {
-    fontFamily: fonts.extraBold,
+    ...font('extraBold'),
     fontSize: 17,
     letterSpacing: 0.2,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   artistStage: {
-    fontFamily: fonts.bold,
+    ...font('bold'),
     fontSize: 11,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   artistTime: {
-    fontFamily: fonts.medium,
+    ...font('medium'),
     fontSize: 13,
     letterSpacing: 0.1,
   } satisfies TextStyle,
   heroArtist: {
-    fontFamily: fonts.black,
+    ...font('black'),
     fontSize: 36,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   heroStage: {
-    fontFamily: fonts.extraBold,
+    ...font('extraBold'),
     fontSize: 13,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   scheduleTime: {
-    fontFamily: fonts.extraBold,
+    ...font('extraBold'),
     fontSize: 14,
     letterSpacing: 0.1,
   } satisfies TextStyle,
   scheduleArtist: {
-    fontFamily: fonts.bold,
+    ...font('bold'),
     fontSize: 13,
     letterSpacing: 0.2,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   tabLabel: {
-    fontFamily: fonts.bold,
+    ...font('bold'),
     fontSize: 10,
     letterSpacing: 0.1,
   } satisfies TextStyle,
   liveBadge: {
-    fontFamily: fonts.extraBold,
+    ...font('extraBold'),
     fontSize: 10,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   body: {
-    fontFamily: fonts.medium,
+    ...font('medium'),
     fontSize: 14,
     letterSpacing: 0.1,
   } satisfies TextStyle,
   caption: {
-    fontFamily: fonts.semiBold,
+    ...font('semiBold'),
     fontSize: 11,
     letterSpacing: 0.4,
     textTransform: 'uppercase',

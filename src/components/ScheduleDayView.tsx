@@ -15,6 +15,7 @@ import { screenHeaderStyle } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import {
+  formatFestivalClock,
   formatSoonCountdown,
   getCurrentTimeMinutes,
   getDefaultFestivalDate,
@@ -83,7 +84,7 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
               index > 0 ? getPerformanceStartMinutes(dayPerformances[index - 1]) : -1;
             const shouldShowNowLine =
               showNowLine && currentMinutes >= prevStartMinutes && currentMinutes < startMinutes;
-            const nowTimeLabel = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const nowTimeLabel = formatFestivalClock(now);
 
             return (
               <React.Fragment key={performance.id}>
@@ -114,7 +115,7 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
         {showNowLine &&
         dayPerformances.length > 0 &&
         currentMinutes >= getPerformanceStartMinutes(dayPerformances[dayPerformances.length - 1]) ? (
-          <CurrentTimeLine time={`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`} />
+          <CurrentTimeLine time={formatFestivalClock(now)} />
         ) : null}
       </ScrollView>
     </SafeAreaView>

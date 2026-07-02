@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
+import { useNotificationSettings } from '../context/NotificationSettingsContext';
 import {
-  ensureNotificationPermissions,
   FavoriteReminderPayload,
   getFavoriteEventsForReminders,
   loadNotifiedIds,
@@ -27,13 +27,10 @@ Notifications.setNotificationHandler({
 export function useFavoriteNotifications() {
   const { data } = useAppData();
   const { favorites, isReady: favoritesReady } = useFavorites();
+  const { enabled: notificationsEnabled, ready: settingsReady } = useNotificationSettings();
   const [activeReminder, setActiveReminder] = useState<FavoriteReminderPayload | null>(null);
   const [notifiedLoaded, setNotifiedLoaded] = useState(false);
   const notifiedIdsRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    void ensureNotificationPermissions();
-  }, []);
 
   useEffect(() => {
     if (!favoritesReady) {
@@ -47,13 +44,13 @@ export function useFavoriteNotifications() {
   }, [favoritesReady]);
 
   useEffect(() => {
-    if (!favoritesReady) {
+    if (!favoritesReady || !settingsReady) {
       return;
     }
 
     void syncFavoriteNotifications(favorites, data);
 
-    if (!notifiedLoaded) {
+    if (!notifiedLoaded || !notificationsEnabled) {
       return;
     }
 
@@ -63,10 +60,10 @@ export function useFavoriteNotifications() {
     const pruned = new Set([...notifiedIdsRef.current].filter((id) => activeIds.has(id)));
     notifiedIdsRef.current = pruned;
     void saveNotifiedIds(pruned);
-  }, [data, favorites, favoritesReady, notifiedLoaded]);
+  }, [data, favorites, favoritesReady, notifiedLoaded, notificationsEnabled, settingsReady]);
 
   useEffect(() => {
-    if (!favoritesReady || !notifiedLoaded) {
+    if (!favoritesReady || !notifiedLoaded || !settingsReady || !notificationsEnabled) {
       return;
     }
 
@@ -98,7 +95,7 @@ export function useFavoriteNotifications() {
     checkReminders();
     const timer = setInterval(checkReminders, POLL_MS);
     return () => clearInterval(timer);
-  }, [data, favorites, favoritesReady, notifiedLoaded]);
+  }, [data, favorites, favoritesReady, notifiedLoaded, notificationsEnabled, settingsReady]);
 
   const dismissReminder = () => {
     setActiveReminder(null);

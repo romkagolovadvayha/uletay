@@ -77,7 +77,12 @@ jobs:
         run: npm ci
 
       - name: Build web app
-        run: npm run build
+        run: |
+          npm run build
+          test -f dist/index.html
+          test -d dist/_expo/static/js/web
+          find dist/assets -name 'Ionicons*.ttf' | grep -q .
+          find dist/assets -name 'Montserrat_400Regular*.ttf' | grep -q .
         env:
           EXPO_PUBLIC_API_URL: ${{ env.EXPO_PUBLIC_API_URL }}
 

@@ -106,48 +106,15 @@ else
 fi
 "$PM2_BIN" save || true
 
-sed \
-  -e "s|__DOMAIN__|${DOMAIN}|g" \
-  -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g" \
-  -e "s|__CMS_PORT__|${CMS_PORT}|g" \
-  "$DEPLOY_PATH/deploy/nginx.site.conf.template" | sudo tee "$NGINX_SITE" > /dev/null
-
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo ln -sf "$NGINX_SITE" "$NGINX_ENABLED"
-sudo nginx -t
-sudo systemctl reload nginx
-
-if [[ -d "/etc/letsencrypt/live/${DOMAIN}" ]]; then
-  echo "Re-applying HTTPS in nginx (cert already on disk)..."
-  sudo certbot --nginx \
-    -d "$DOMAIN" \
-    --non-interactive \
-    --redirect
-else
-  echo "Issuing HTTPS certificate for ${DOMAIN}..."
-  if ! sudo certbot --nginx \
-    -d "$DOMAIN" \
-    --non-interactive \
-    --agree-tos \
-    -m "$LE_EMAIL" \
-    --redirect; then
-    echo "::warning::certbot failed (DNS may not point to this server yet). HTTP should still work."
-  fi
-fi
-
-sudo nginx -t
-sudo systemctl reload nginx
+# shellcheck source=nginx-ssl-setup.sh
+source "$DEPLOY_PATH/deploy/nginx-ssl-setup.sh"
+setup_https_nginx "$DEPLOY_PATH"
 
 echo "Verifying local endpoints..."
-curl -fsS -H "Host: ${DOMAIN}" "http://127.0.0.1/" | head -c 200 | grep -qiE 'html|УЛЕТАЙ|root' \
-  || { echo "nginx does not serve dist/ for ${DOMAIN}"; exit 1; }
 curl -fsS "http://127.0.0.1:${CMS_PORT}/api/data" | head -c 50 | grep -q '{' \
   || { echo "CMS is not responding on port ${CMS_PORT}"; exit 1; }
 
-if [[ -d "/etc/letsencrypt/live/${DOMAIN}" ]]; then
-  curl -fsS -k "https://127.0.0.1/" -H "Host: ${DOMAIN}" | head -c 200 | grep -qiE 'html|УЛЕТАЙ|root' \
-    || { echo "HTTPS is not serving dist/ — run: sudo certbot --nginx -d ${DOMAIN} --redirect"; exit 1; }
-fi
+verify_https
 
 echo "Deploy complete: https://${DOMAIN}"
 echo "Admin: https://${DOMAIN}/admin"

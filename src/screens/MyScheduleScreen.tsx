@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DateTabBar } from '../components/DateTabBar';
 import { EventScheduleRow } from '../components/EventScheduleRow';
+import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { StageLegend } from '../components/StageLegend';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -132,6 +133,8 @@ export function MyScheduleScreen({ navigation }: Props) {
       <StageLegend />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <FavoriteNotificationsCard />
+
         {!hasAnyFavorites ? (
           <View style={styles.empty}>
             <Ionicons name="star-outline" size={32} color={colors.textMuted} />

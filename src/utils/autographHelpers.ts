@@ -1,4 +1,5 @@
 import { AutographSession } from '../types';
+import { FESTIVAL_TIMEZONE, parseFestivalDateOnly } from './festivalTime';
 import {
   getEndDateTime,
   getPrimaryAutograph,
@@ -9,8 +10,11 @@ import {
 export type AutographHighlight = 'live' | 'next' | 'past' | 'default';
 
 export function formatAutographDateParts(date: string): { dateLabel: string; weekday: string } {
-  const parsed = new Date(`${date}T12:00:00`);
-  const weekday = new Intl.DateTimeFormat('ru-RU', { weekday: 'long' }).format(parsed);
+  const parsed = parseFestivalDateOnly(date);
+  const weekday = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: FESTIVAL_TIMEZONE,
+    weekday: 'long',
+  }).format(parsed);
   const [, month, day] = date.split('-');
 
   return {

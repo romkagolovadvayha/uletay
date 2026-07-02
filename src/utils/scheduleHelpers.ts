@@ -1,12 +1,19 @@
 import { AutographSession, SchedulePerformance, Stage, StageId } from '../types';
 import { getStageColor } from '../config/api';
+import {
+  addDaysToDateString,
+  FESTIVAL_TIMEZONE,
+  formatFestivalClock,
+  getFestivalClockParts,
+  getFestivalDateString,
+  parseFestivalDateOnly,
+  parseFestivalLocalDateTime,
+} from './festivalTime';
 
 export type TimedStatus = 'live' | 'upcoming' | 'past';
 
 export function parseDateTime(date: string, time: string): Date {
-  const [year, month, day] = date.split('-').map(Number);
-  const [hours, minutes] = time.split(':').map(Number);
-  return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  return parseFestivalLocalDateTime(date, time);
 }
 
 export function getEndDateTime(date: string, startTime: string, endTime: string): Date {
@@ -14,8 +21,7 @@ export function getEndDateTime(date: string, startTime: string, endTime: string)
   let end = parseDateTime(date, endTime);
 
   if (end <= start) {
-    end = new Date(end);
-    end.setDate(end.getDate() + 1);
+    end = parseDateTime(addDaysToDateString(date, 1), endTime);
   }
 
   return end;
@@ -42,8 +48,9 @@ export function formatTimeRange(startTime: string, endTime: string): string {
 }
 
 export function formatDateLabel(date: string): string {
-  const parsed = new Date(`${date}T12:00:00`);
+  const parsed = parseFestivalDateOnly(date);
   const formatter = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: FESTIVAL_TIMEZONE,
     day: 'numeric',
     month: 'long',
     weekday: 'long',
@@ -57,28 +64,30 @@ export function formatShortDate(date: string): string {
 }
 
 export function formatDateTabParts(date: string): { day: string; month: string; weekday: string } {
-  const parsed = new Date(`${date}T12:00:00`);
-  const day = new Intl.DateTimeFormat('ru-RU', { day: 'numeric' }).format(parsed);
-  const month = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' })
+  const parsed = parseFestivalDateOnly(date);
+  const day = new Intl.DateTimeFormat('ru-RU', { timeZone: FESTIVAL_TIMEZONE, day: 'numeric' }).format(parsed);
+  const month = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: FESTIVAL_TIMEZONE,
+    day: 'numeric',
+    month: 'long',
+  })
     .format(parsed)
     .replace(/^\d+\s*/, '')
     .toLowerCase();
-  const weekday = new Intl.DateTimeFormat('ru-RU', { weekday: 'long' }).format(parsed).toUpperCase();
+  const weekday = new Intl.DateTimeFormat('ru-RU', { timeZone: FESTIVAL_TIMEZONE, weekday: 'long' })
+    .format(parsed)
+    .toUpperCase();
 
   return { day, month, weekday };
 }
 
 export function getFestivalDates(startDate: string, endDate: string): string[] {
   const dates: string[] = [];
-  const current = new Date(`${startDate}T12:00:00`);
-  const end = new Date(`${endDate}T12:00:00`);
+  let current = startDate;
 
-  while (current <= end) {
-    const year = current.getFullYear();
-    const month = String(current.getMonth() + 1).padStart(2, '0');
-    const day = String(current.getDate()).padStart(2, '0');
-    dates.push(`${year}-${month}-${day}`);
-    current.setDate(current.getDate() + 1);
+  while (current <= endDate) {
+    dates.push(current);
+    current = addDaysToDateString(current, 1);
   }
 
   return dates;
@@ -90,10 +99,7 @@ export function getDefaultFestivalDate(startDate: string, endDate: string, now =
     return startDate;
   }
 
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const today = `${year}-${month}-${day}`;
+  const today = getFestivalDateString(now);
 
   if (dates.includes(today)) {
     return today;
@@ -112,15 +118,15 @@ export function getStageDotColor(stageId: StageId, stages?: Stage[]): string {
 }
 
 export function isSameFestivalDay(date: string, now = new Date()): boolean {
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return date === `${year}-${month}-${day}`;
+  return date === getFestivalDateString(now);
 }
 
 export function getCurrentTimeMinutes(now = new Date()): number {
-  return now.getHours() * 60 + now.getMinutes();
+  const { hours, minutes } = getFestivalClockParts(now);
+  return hours * 60 + minutes;
 }
+
+export { formatFestivalClock };
 
 export function getPerformanceStartMinutes(performance: SchedulePerformance): number {
   const [hours, minutes] = performance.startTime.split(':').map(Number);

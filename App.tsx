@@ -3,8 +3,9 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { DataProvider, useAppData } from './src/context/DataContext';
+import { DataProvider } from './src/context/DataContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
+import { NotificationSettingsProvider } from './src/context/NotificationSettingsContext';
 import { useAppFonts } from './src/hooks/useAppFonts';
 import { navigationRef } from './src/navigation/navigationRef';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -23,10 +24,9 @@ const navigationTheme = {
 };
 
 function AppContent() {
-  const { isLoading } = useAppData();
   const { loaded: fontsLoaded } = useAppFonts();
 
-  if (isLoading || !fontsLoaded) {
+  if (!fontsLoaded) {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -47,7 +47,9 @@ export default function App() {
     <SafeAreaProvider>
       <DataProvider>
         <FavoritesProvider>
-          <AppContent />
+          <NotificationSettingsProvider>
+            <AppContent />
+          </NotificationSettingsProvider>
         </FavoritesProvider>
       </DataProvider>
     </SafeAreaProvider>

@@ -7,6 +7,9 @@ import { parseDateTime } from './scheduleHelpers';
 
 const REMINDER_LEAD_MS = 10 * 60 * 1000;
 const NOTIFIED_STORAGE_KEY = '@uletay_favorite_notified';
+export const NOTIFICATIONS_ENABLED_KEY = '@uletay_notifications_enabled';
+
+export type NotificationPermissionStatus = 'granted' | 'denied' | 'undetermined' | 'unsupported';
 
 export type FavoriteReminderPayload = {
   id: string;
@@ -74,7 +77,43 @@ export function getFavoriteEventsForReminders(favorites: string[], data: AppData
     .filter((item): item is NonNullable<typeof item> => item !== null);
 }
 
-export async function ensureNotificationPermissions(): Promise<boolean> {
+export async function loadNotificationsEnabled(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(NOTIFICATIONS_ENABLED_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function saveNotificationsEnabled(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(NOTIFICATIONS_ENABLED_KEY, enabled ? '1' : '0');
+}
+
+export async function getNotificationPermissionStatus(): Promise<NotificationPermissionStatus> {
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return 'unsupported';
+    }
+    if (Notification.permission === 'granted') {
+      return 'granted';
+    }
+    if (Notification.permission === 'denied') {
+      return 'denied';
+    }
+    return 'undetermined';
+  }
+
+  const settings = await Notifications.getPermissionsAsync();
+  if (settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+    return 'granted';
+  }
+  if (settings.canAskAgain === false) {
+    return 'denied';
+  }
+  return 'undetermined';
+}
+
+export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'web') {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       return false;
@@ -82,11 +121,11 @@ export async function ensureNotificationPermissions(): Promise<boolean> {
     if (Notification.permission === 'granted') {
       return true;
     }
-    if (Notification.permission !== 'denied') {
-      const permission = await Notification.requestPermission();
-      return permission === 'granted';
+    if (Notification.permission === 'denied') {
+      return false;
     }
-    return false;
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
   }
 
   const settings = await Notifications.getPermissionsAsync();
@@ -98,8 +137,37 @@ export async function ensureNotificationPermissions(): Promise<boolean> {
   return requested.granted || requested.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 }
 
+/** @deprecated use requestNotificationPermissions after user opt-in */
+export async function ensureNotificationPermissions(): Promise<boolean> {
+  return requestNotificationPermissions();
+}
+
+export async function cancelAllFavoriteNotifications(): Promise<void> {
+  if (Platform.OS === 'web') {
+    return;
+  }
+
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter((item) => item.identifier.startsWith('fav-'))
+      .map((item) => Notifications.cancelScheduledNotificationAsync(item.identifier)),
+  );
+}
+
 export async function syncFavoriteNotifications(favorites: string[], data: AppData): Promise<void> {
   if (Platform.OS === 'web') {
+    return;
+  }
+
+  const enabled = await loadNotificationsEnabled();
+  if (!enabled) {
+    await cancelAllFavoriteNotifications();
+    return;
+  }
+
+  const permission = await getNotificationPermissionStatus();
+  if (permission !== 'granted') {
     return;
   }
 
