@@ -38,8 +38,31 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refreshData(false);
-  }, [refreshData]);
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const next = normalizeAppData(await loadAppDataFromApi(false));
+        if (!cancelled) {
+          setData(next);
+          setLastFetchedAt(Date.now());
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load data');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value = useMemo(
     () => ({ data, isLoading, error, refreshData, lastFetchedAt }),
