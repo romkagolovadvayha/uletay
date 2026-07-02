@@ -98,8 +98,12 @@ setup_https_nginx() {
 }
 
 verify_https() {
-  curl -fsS -k "https://127.0.0.1/" -H "Host: ${DOMAIN}" | head -c 200 | grep -qiE 'html|УЛЕТАЙ|root' \
-    || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; exit 1; }
+  local html_check="/tmp/uletay-https-check.html"
+  curl -fsS -k "https://127.0.0.1/" -H "Host: ${DOMAIN}" -o "$html_check" \
+    || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check"; exit 1; }
+  head -c 200 "$html_check" | grep -qiE 'html|УЛЕТАЙ|root' \
+    || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check"; exit 1; }
+  rm -f "$html_check"
 
   local code
   code=$(curl -fsS -o /dev/null -w '%{http_code}' -H "Host: ${DOMAIN}" "http://127.0.0.1/")

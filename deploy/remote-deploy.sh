@@ -111,8 +111,24 @@ source "$DEPLOY_PATH/deploy/nginx-ssl-setup.sh"
 setup_https_nginx "$DEPLOY_PATH"
 
 echo "Verifying local endpoints..."
-curl -fsS "http://127.0.0.1:${CMS_PORT}/api/data" | head -c 50 | grep -q '{' \
-  || { echo "CMS is not responding on port ${CMS_PORT}"; exit 1; }
+CMS_CHECK="/tmp/uletay-cms-check.json"
+cms_ok=0
+for _ in $(seq 1 20); do
+  if curl -fsS --max-time 5 "http://127.0.0.1:${CMS_PORT}/api/data" -o "$CMS_CHECK" 2>/dev/null; then
+    if grep -q '{' "$CMS_CHECK" 2>/dev/null; then
+      cms_ok=1
+      break
+    fi
+  fi
+  sleep 1
+done
+rm -f "$CMS_CHECK"
+
+if [ "$cms_ok" -ne 1 ]; then
+  echo "CMS is not responding on port ${CMS_PORT}"
+  "$PM2_BIN" logs uletay-cms --lines 40 --nostream 2>/dev/null || true
+  exit 1
+fi
 
 verify_https
 
