@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
-import { fonts, typography } from '../theme/typography';
+import { appFont, typography } from '../theme/typography';
 import { formatDateTabParts } from '../utils/scheduleHelpers';
 
 type Props = {
@@ -61,14 +61,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   day: {
-    fontFamily: fonts.extraBold,
+    ...appFont('extraBold'),
     fontSize: 18,
     lineHeight: 22,
     color: colors.text,
     letterSpacing: 0,
   },
   month: {
-    fontFamily: fonts.semiBold,
+    ...appFont('semiBold'),
     fontSize: 10,
     lineHeight: 13,
     color: colors.text,

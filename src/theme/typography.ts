@@ -1,4 +1,4 @@
-import { Platform, TextStyle } from 'react-native';
+import { TextStyle } from 'react-native';
 
 export const fonts = {
   regular: 'Montserrat_400Regular',
@@ -9,22 +9,14 @@ export const fonts = {
   black: 'Montserrat_900Black',
 } as const;
 
-type FontKey = keyof typeof fonts;
+export type FontKey = keyof typeof fonts;
 
-const webWeights: Record<FontKey, TextStyle['fontWeight']> = {
-  regular: '400',
-  medium: '500',
-  semiBold: '600',
-  bold: '700',
-  extraBold: '800',
-  black: '900',
-};
-
-function font(key: FontKey): Pick<TextStyle, 'fontFamily' | 'fontWeight'> {
-  if (Platform.OS === 'web') {
-    return { fontFamily: 'Montserrat', fontWeight: webWeights[key] };
-  }
+export function appFont(key: FontKey): Pick<TextStyle, 'fontFamily'> {
   return { fontFamily: fonts[key] };
+}
+
+function font(key: FontKey): Pick<TextStyle, 'fontFamily'> {
+  return appFont(key);
 }
 
 export const typography = {

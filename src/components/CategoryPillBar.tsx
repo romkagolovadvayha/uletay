@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import { appFont, typography } from '../theme/typography';
 
 type Category = {
   id: string;
@@ -88,13 +88,13 @@ const styles = StyleSheet.create({
   },
   labelDefaultActive: {
     color: colors.primaryText,
-    fontWeight: '700',
+    ...appFont('bold'),
   },
   labelFood: {
     color: colors.text,
   },
   labelFoodActive: {
     color: colors.primaryText,
-    fontWeight: '700',
+    ...appFont('bold'),
   },
 });

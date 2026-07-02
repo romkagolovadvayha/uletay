@@ -10,7 +10,7 @@ import { MoreStackParamList, RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { screenTitleSpacing } from '../theme/layout';
 import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import { typography, appFont } from '../theme/typography';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'MoreHome'>;
 
@@ -79,9 +79,9 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     ...typography.body,
+    ...appFont('semiBold'),
     color: colors.text,
     fontSize: 15,
-    fontWeight: '600',
     flex: 1,
   },
   card: {
@@ -93,16 +93,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   cardLabel: {
+    ...appFont('bold'),
     color: colors.textSecondary,
     fontSize: 12,
-    fontWeight: '700',
     textTransform: 'uppercase',
     marginBottom: 6,
   },
   cardValue: {
+    ...appFont('semiBold'),
     color: colors.text,
     fontSize: 15,
-    fontWeight: '600',
   },
   pressed: {
     opacity: 0.9,

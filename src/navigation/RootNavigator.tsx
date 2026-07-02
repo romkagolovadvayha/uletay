@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { AutographDetailScreen } from '../screens/AutographDetailScreen';
 import { AutographsScreen } from '../screens/AutographsScreen';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
@@ -33,8 +33,40 @@ const AutographStack = createNativeStackNavigator<AutographStackParamList>();
 
 const TAB_ICON_SIZE = 22;
 
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  tabBar: {
+    backgroundColor: colors.background,
+    borderTopColor: colors.borderStrong,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    height: Platform.OS === 'ios' ? 88 : 76,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  tabLabel: {
+    ...typography.tabLabel,
+    marginTop: 4,
+    fontSize: 9,
+  },
+  tabItem: {
+    paddingTop: 2,
+  },
+});
+
 function TabIcon({ name, color }: { name: string; color: string }) {
   return <Ionicons name={name as keyof typeof Ionicons.glyphMap} size={TAB_ICON_SIZE} color={color} />;
+}
+
+function TabLabel({ color, children }: { color: string; children: string }) {
+  return (
+    <Text style={[styles.tabLabel, { color }]} numberOfLines={1}>
+      {children}
+    </Text>
+  );
 }
 
 function FoodCourtNavigator() {
@@ -104,8 +136,10 @@ export function RootNavigator() {
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,
-        tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
+        tabBarLabel: ({ color, children }) => (
+          <TabLabel color={color}>{children}</TabLabel>
+        ),
       }}
     >
       <Tab.Screen
@@ -162,27 +196,3 @@ export function RootNavigator() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  tabBar: {
-    backgroundColor: colors.background,
-    borderTopColor: colors.borderStrong,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    height: Platform.OS === 'ios' ? 88 : 76,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  tabLabel: {
-    ...typography.tabLabel,
-    marginTop: 4,
-    fontSize: 9,
-  },
-  tabItem: {
-    paddingTop: 2,
-  },
-});
