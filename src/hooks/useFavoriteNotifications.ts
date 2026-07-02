@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -15,14 +16,16 @@ import {
 
 const POLL_MS = 30_000;
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 export function useFavoriteNotifications() {
   const { data } = useAppData();
@@ -31,6 +34,22 @@ export function useFavoriteNotifications() {
   const [activeReminder, setActiveReminder] = useState<FavoriteReminderPayload | null>(null);
   const [notifiedLoaded, setNotifiedLoaded] = useState(false);
   const notifiedIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      return;
+    }
+
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<FavoriteReminderPayload>).detail;
+      if (detail) {
+        setActiveReminder(detail);
+      }
+    };
+
+    window.addEventListener('uletay-favorite-reminder', handler);
+    return () => window.removeEventListener('uletay-favorite-reminder', handler);
+  }, []);
 
   useEffect(() => {
     if (!favoritesReady) {

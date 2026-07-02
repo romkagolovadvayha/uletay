@@ -1,15 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNotificationSettings } from '../context/NotificationSettingsContext';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { startWebNotificationPermissionRequest } from '../utils/favoriteNotifications';
 
 export function FavoriteNotificationsCard() {
-  const { enabled, permission, ready, busy, enableNotifications, disableNotifications } =
+  const { enabled, permission, ready, busy, feedback, enableNotifications, disableNotifications } =
     useNotificationSettings();
+
+  const handleEnable = () => {
+    if (busy || permission === 'denied' || permission === 'unsupported') {
+      return;
+    }
+
+    const webPermissionPromise =
+      Platform.OS === 'web' ? startWebNotificationPermissionRequest() : undefined;
+
+    void enableNotifications(webPermissionPromise);
+  };
 
   if (!ready) {
     return null;
@@ -22,7 +34,11 @@ export function FavoriteNotificationsCard() {
           <Ionicons name="notifications" size={22} color={colors.primary} />
           <View style={styles.textWrap}>
             <Text style={styles.title}>Уведомления включены</Text>
-            <Text style={styles.subtitle}>Напомним за 10 минут до избранного события</Text>
+            <Text style={styles.subtitle}>
+              {Platform.OS === 'web'
+                ? 'Напомним за 10 минут, пока открыт сайт'
+                : 'Напомним за 10 минут до избранного события'}
+            </Text>
           </View>
         </View>
         <Pressable
@@ -38,26 +54,29 @@ export function FavoriteNotificationsCard() {
     );
   }
 
+  const subtitle =
+    permission === 'unsupported'
+      ? 'Нужен HTTPS или браузер с поддержкой уведомлений'
+      : permission === 'denied'
+        ? 'Разрешите уведомления в настройках устройства или браузера'
+        : 'За 10 минут до выступления или автограф-сессии';
+
   return (
     <View style={styles.card}>
       <View style={styles.row}>
         <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
         <View style={styles.textWrap}>
           <Text style={styles.title}>Напоминания об избранном</Text>
-          <Text style={styles.subtitle}>
-            {permission === 'denied'
-              ? 'Разрешите уведомления в настройках устройства или браузера'
-              : 'За 10 минут до выступления или автограф-сессии'}
-          </Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
       </View>
       <Pressable
         accessibilityRole="button"
-        disabled={busy || permission === 'denied'}
-        onPress={() => void enableNotifications()}
+        disabled={busy || permission === 'denied' || permission === 'unsupported'}
+        onPress={handleEnable}
         style={({ pressed }) => [
           styles.enableButton,
-          (busy || permission === 'denied') && styles.enableButtonDisabled,
+          (busy || permission === 'denied' || permission === 'unsupported') && styles.enableButtonDisabled,
           pressed && !busy && styles.pressed,
         ]}
       >
@@ -67,6 +86,7 @@ export function FavoriteNotificationsCard() {
           <Text style={styles.enableLabel}>Включить уведомления</Text>
         )}
       </Pressable>
+      {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
     </View>
   );
 }
@@ -114,6 +134,12 @@ const styles = StyleSheet.create({
     ...typography.button,
     color: colors.primaryText,
     fontSize: 14,
+  },
+  feedback: {
+    ...typography.body,
+    color: colors.competition,
+    fontSize: 12,
+    lineHeight: 16,
   },
   linkButton: {
     alignSelf: 'flex-start',

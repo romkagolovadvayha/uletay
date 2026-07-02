@@ -13,18 +13,30 @@ type NotificationSettingsContextValue = {
   permission: NotificationPermissionStatus;
   ready: boolean;
   busy: boolean;
-  enableNotifications: () => Promise<boolean>;
+  feedback: string | null;
+  enableNotifications: (webPermissionPromise?: Promise<NotificationPermission> | null) => Promise<boolean>;
   disableNotifications: () => Promise<void>;
   refresh: () => Promise<void>;
 };
 
 const NotificationSettingsContext = createContext<NotificationSettingsContextValue | null>(null);
 
+function getEnableFailureMessage(status: NotificationPermissionStatus): string {
+  if (status === 'denied') {
+    return 'Доступ запрещён. Разрешите уведомления в настройках браузера или устройства.';
+  }
+  if (status === 'unsupported') {
+    return 'Уведомления недоступны. Откройте сайт по HTTPS или используйте другой браузер.';
+  }
+  return 'Не удалось включить уведомления. Попробуйте ещё раз.';
+}
+
 export function NotificationSettingsProvider({ children }: { children: React.ReactNode }) {
   const [enabled, setEnabled] = useState(false);
   const [permission, setPermission] = useState<NotificationPermissionStatus>('undetermined');
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const [stored, status] = await Promise.all([loadNotificationsEnabled(), getNotificationPermissionStatus()]);
@@ -52,27 +64,37 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
     };
   }, []);
 
-  const enableNotifications = useCallback(async (): Promise<boolean> => {
-    setBusy(true);
-    try {
-      const granted = await requestNotificationPermissions();
-      const status = await getNotificationPermissionStatus();
-      setPermission(status);
+  const enableNotifications = useCallback(
+    async (webPermissionPromise?: Promise<NotificationPermission> | null): Promise<boolean> => {
+      setFeedback(null);
+      setBusy(true);
+      try {
+        const granted = await requestNotificationPermissions(webPermissionPromise);
+        const status = await getNotificationPermissionStatus();
+        setPermission(status);
 
-      if (granted) {
-        await saveNotificationsEnabled(true);
-        setEnabled(true);
-        return true;
+        if (granted) {
+          await saveNotificationsEnabled(true);
+          setEnabled(true);
+          setFeedback(null);
+          return true;
+        }
+
+        setFeedback(getEnableFailureMessage(status));
+        return false;
+      } catch {
+        setFeedback('Ошибка при запросе уведомлений.');
+        return false;
+      } finally {
+        setBusy(false);
       }
-
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const disableNotifications = useCallback(async () => {
     setBusy(true);
+    setFeedback(null);
     try {
       await saveNotificationsEnabled(false);
       await cancelAllFavoriteNotifications();
@@ -88,11 +110,12 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
       permission,
       ready,
       busy,
+      feedback,
       enableNotifications,
       disableNotifications,
       refresh,
     }),
-    [busy, disableNotifications, enableNotifications, enabled, permission, ready, refresh],
+    [busy, disableNotifications, enableNotifications, enabled, feedback, permission, ready, refresh],
   );
 
   return (
