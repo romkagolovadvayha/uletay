@@ -78,17 +78,50 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ env.EXPO_PUBLIC_API_URL }}
 
       - name: Setup SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ vars.SSH_KEY_PASSPHRASE || secrets.SSH_KEY_PASSPHRASE }}
-          known_hosts: ${{ vars.SSH_HOST || secrets.SSH_HOST }}
+        env:
+          SSH_PRIVATE_KEY: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
+          SSH_KEY_PASSPHRASE: ${{ vars.SSH_KEY_PASSPHRASE || secrets.SSH_KEY_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          if printf '%s' "$SSH_PRIVATE_KEY" | grep -q '\\n'; then
+            printf '%b' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          else
+            printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          fi
+          chmod 600 ~/.ssh/deploy_key
+
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
+
+          if [ -n "$SSH_KEY_PASSPHRASE" ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq expect
+            expect <<EOF
+          set timeout 10
+          spawn ssh-add /home/runner/.ssh/deploy_key
+          expect {
+            "Enter passphrase" { send "$SSH_KEY_PASSPHRASE\r"; exp_continue }
+            eof
+          }
+          EOF
+          else
+            ssh-add ~/.ssh/deploy_key
+          fi
+
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          echo "=== Add this public key to ~/.ssh/authorized_keys on the server ==="
+          ssh-add -L
+          echo "=== Target: ${SSH_USER}@${SSH_HOST}:${SSH_PORT} ==="
 
       - name: Verify SSH connection
         run: |
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh -p "$SSH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
-            "${SSH_USER}@${SSH_HOST}" "echo SSH connection OK"
+          ssh -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new \
+            "${SSH_USER}@${SSH_HOST}" "echo SSH connection OK" \
+            || (echo "SSH failed. Copy the public key from the previous step into /root/.ssh/authorized_keys on the server." && exit 1)
 
       - name: Sync files to server
         run: |
