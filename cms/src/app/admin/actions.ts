@@ -10,7 +10,7 @@ import {
 import { getAppData, saveAppData } from '@/lib/app-data';
 import { verifyAdminCredentials } from '@/lib/auth';
 import type { ImagePreset } from '@/lib/image-presets';
-import { saveUploadedImage } from '@/lib/upload';
+import { ImageUploadError, saveUploadedImage } from '@/lib/upload';
 import { getSession } from '@/lib/session';
 import type {
   AdminTab,
@@ -37,12 +37,16 @@ async function optionalImageUrl(
   const manual = String(formData.get('imageUrl') ?? '').trim();
   const file = formData.get('file');
   if (file instanceof File && file.size > 0) {
-    const uploaded = await saveUploadedImage(file, 'images', preset);
-    if (uploaded) {
-      return uploaded;
-    }
+    return saveUploadedImage(file, 'images', preset);
   }
   return manual || current || undefined;
+}
+
+function uploadErrorMessage(error: unknown): string {
+  if (error instanceof ImageUploadError) {
+    return error.message;
+  }
+  return 'Не удалось загрузить файл';
 }
 
 function presetForUploadTarget(target: string): ImagePreset {
@@ -141,7 +145,12 @@ export async function upsertScheduleAction(formData: FormData) {
     ? uniqueId(buildScheduleId(stageId, date, startTime, artist), ids)
     : existingId;
 
-  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'artist');
+  let imageUrl: string | undefined;
+  try {
+    imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'artist');
+  } catch (error) {
+    redirect('/admin?tab=schedule&error=' + encodeURIComponent(uploadErrorMessage(error)));
+  }
 
   const item: SchedulePerformance = {
     id,
@@ -200,7 +209,12 @@ export async function upsertAutographAction(formData: FormData) {
     ? uniqueId(buildAutographId(stageId, date, startTime, artist), ids)
     : existingId;
 
-  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'hero');
+  let imageUrl: string | undefined;
+  try {
+    imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'hero');
+  } catch (error) {
+    redirect('/admin?tab=autographs&error=' + encodeURIComponent(uploadErrorMessage(error)));
+  }
 
   const item: AutographSession = {
     id,
@@ -258,7 +272,13 @@ export async function upsertFoodcourtAction(formData: FormData) {
   }
 
   const id = isNew ? buildFoodcourtId() : existingId;
-  const imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'thumb');
+
+  let imageUrl: string | undefined;
+  try {
+    imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'thumb');
+  } catch (error) {
+    redirect('/admin?tab=foodcourt&error=' + encodeURIComponent(uploadErrorMessage(error)));
+  }
 
   const item: FoodCourtVendor = {
     id,
@@ -303,14 +323,24 @@ export async function uploadImageAction(formData: FormData) {
   const target = String(formData.get('target') ?? '');
   const id = String(formData.get('id') ?? '');
   const file = formData.get('file');
+  const tab: AdminTab =
+    target === 'festival_hero'
+      ? 'festival'
+      : target === 'schedule'
+        ? 'schedule'
+        : target === 'autograph'
+          ? 'autographs'
+          : 'foodcourt';
 
   if (!(file instanceof File)) {
-    redirect('/admin?error=' + encodeURIComponent('Файл не выбран'));
+    redirect('/admin?tab=' + tab + '&error=' + encodeURIComponent('Файл не выбран'));
   }
 
-  const url = await saveUploadedImage(file, 'images', presetForUploadTarget(target));
-  if (!url) {
-    redirect('/admin?error=' + encodeURIComponent('Не удалось загрузить файл'));
+  let url: string;
+  try {
+    url = await saveUploadedImage(file, 'images', presetForUploadTarget(target));
+  } catch (error) {
+    redirect('/admin?tab=' + tab + '&error=' + encodeURIComponent(uploadErrorMessage(error)));
   }
 
   if (target === 'festival_hero') {
@@ -330,14 +360,6 @@ export async function uploadImageAction(formData: FormData) {
   }
 
   await saveAppData(data);
-  const tab: AdminTab =
-    target === 'festival_hero'
-      ? 'festival'
-      : target === 'schedule'
-        ? 'schedule'
-        : target === 'autograph'
-          ? 'autographs'
-          : 'foodcourt';
   redirect(`/admin?tab=${tab}&ok=1`);
 }
 

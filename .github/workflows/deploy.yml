@@ -91,6 +91,11 @@ jobs:
           npm ci --prefix cms
           npm run build --prefix cms
           cp -r cms/.next/static cms/.next/standalone/.next/static
+          mkdir -p cms/.next/standalone/node_modules
+          cp -a cms/node_modules/sharp cms/.next/standalone/node_modules/
+          if [ -d cms/node_modules/@img ]; then
+            cp -a cms/node_modules/@img cms/.next/standalone/node_modules/
+          fi
 
       - name: Setup SSH key
         env:

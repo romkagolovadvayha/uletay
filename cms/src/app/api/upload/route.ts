@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { verifyBearerToken } from '@/lib/auth';
 import type { ImagePreset } from '@/lib/image-presets';
-import { saveUploadedImage } from '@/lib/upload';
+import { ImageUploadError, saveUploadedImage } from '@/lib/upload';
 import { jsonResponse, optionsResponse } from '@/lib/api-response';
 import { getSession } from '@/lib/session';
 
@@ -33,13 +33,10 @@ export async function POST(request: NextRequest) {
     }
 
     const url = await saveUploadedImage(file, subdir, preset);
-    if (!url) {
-      return jsonResponse({ error: 'Upload failed' }, 400);
-    }
-
     return jsonResponse({ url });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Server error';
-    return jsonResponse({ error: message }, 500);
+    const status = error instanceof ImageUploadError ? 400 : 500;
+    return jsonResponse({ error: message }, status);
   }
 }

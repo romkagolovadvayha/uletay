@@ -59,6 +59,14 @@ fi
 mkdir -p .next/standalone/.next
 cp -r .next/static .next/standalone/.next/static
 
+mkdir -p .next/standalone/node_modules
+if [ -d node_modules/sharp ]; then
+  cp -a node_modules/sharp .next/standalone/node_modules/
+fi
+if [ -d node_modules/@img ]; then
+  cp -a node_modules/@img .next/standalone/node_modules/
+fi
+
 set -a
 source .env
 set +a
