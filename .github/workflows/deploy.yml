@@ -66,7 +66,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install app dependencies
@@ -77,14 +77,15 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ env.EXPO_PUBLIC_API_URL }}
 
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Setup SSH key
+        uses: shimataro/ssh-key-action@v2
         with:
-          ssh-private-key: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
+          key: ${{ vars.SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ vars.SSH_KEY_PASSPHRASE || secrets.SSH_KEY_PASSPHRASE }}
+          known_hosts: ${{ vars.SSH_HOST || secrets.SSH_HOST }}
 
-      - name: Verify SSH key and host
+      - name: Verify SSH connection
         run: |
-          ssh-keygen -l -f <(ssh-add -L | head -n1) || (echo "SSH_PRIVATE_KEY is invalid. Use Secrets (multiline key), not Variables." && exit 1)
           ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           ssh -p "$SSH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
             "${SSH_USER}@${SSH_HOST}" "echo SSH connection OK"

@@ -19,6 +19,7 @@
 | `SSH_HOST` | `185.x.x.x` | IP VPS |
 | `SSH_USER` | `root` | SSH-пользователь |
 | `SSH_PRIVATE_KEY` | `-----BEGIN...` | да — **только Secrets** (многострочный ключ) |
+| `SSH_KEY_PASSPHRASE` | пароль от ключа | нет — если ключ **с паролем** |
 | `DB_HOST` | `127.0.0.1` | MySQL host |
 | `DB_NAME` | `uletay` | Имя БД |
 | `DB_USER` | `uletay` | Пользователь MySQL |
@@ -38,6 +39,12 @@
 > Пароли и ключи лучше хранить в **Secrets**, но технически можно и в Variables.
 
 > `SSH_PRIVATE_KEY` — **только в Secrets** (Variables не поддерживают многострочный ключ).
+
+Для CI лучше ключ **без пароля**:
+```bash
+ssh-keygen -t ed25519 -C "github-deploy-uletay" -f ~/.ssh/uletay_deploy_ci -N ""
+```
+Если ключ с паролем — добавь `SSH_KEY_PASSPHRASE` в Secrets.
 
 ## SSH: Permission denied (publickey)
 
