@@ -111,17 +111,31 @@ jobs:
 
           KEY_SIZE=$(wc -c < "$KEY_FILE" | tr -d ' ')
           echo "Key file size: ${KEY_SIZE} bytes"
+          file "$KEY_FILE" || true
 
           if head -c 4 "$KEY_FILE" | grep -q '^ssh-'; then
-            echo "::error::This looks like a .pub file. Encode the private key: base64 -w0 ~/.ssh/uletay_deploy"
+            echo "::error::This looks like a .pub file. Encode the private key: base64 -w0 ~/.ssh/uletay_ci"
             exit 1
           fi
 
-          if ! ssh-keygen -y -f "$KEY_FILE" > "$HOME/.ssh/deploy_key.pub" 2>/dev/null; then
-            echo "::error::SSH key is invalid (libcrypto)."
-            echo "On server run: base64 -w0 ~/.ssh/uletay_deploy"
-            echo "Put result in Secret SSH_PRIVATE_KEY_B64 only."
-            echo "Delete SSH_PRIVATE_KEY from Variables and Secrets."
+          KEY_VALID=0
+          if ssh-keygen -y -f "$KEY_FILE" > "$HOME/.ssh/deploy_key.pub" 2>/dev/null; then
+            KEY_VALID=1
+            echo "Key is valid (no passphrase)."
+          elif [ -n "$SSH_KEY_PASSPHRASE" ] && ssh-keygen -y -f "$KEY_FILE" -P "$SSH_KEY_PASSPHRASE" > "$HOME/.ssh/deploy_key.pub" 2>/dev/null; then
+            KEY_VALID=1
+            echo "Key is valid (with passphrase)."
+          elif grep -q 'ENCRYPTED' "$KEY_FILE" 2>/dev/null; then
+            echo "::error::Key is encrypted. Set SSH_KEY_PASSPHRASE in Secrets, or create a key without password:"
+            echo "ssh-keygen -t ed25519 -f ~/.ssh/uletay_ci -N \"\" -C github-actions"
+            exit 1
+          fi
+
+          if [ "$KEY_VALID" -ne 1 ]; then
+            echo "::error::SSH key is invalid or base64 was corrupted."
+            echo "On server verify roundtrip:"
+            echo "  base64 -w0 ~/.ssh/uletay_ci | base64 -d > /tmp/t.key && ssh-keygen -y -f /tmp/t.key"
+            echo "Then put base64 -w0 output into SSH_PRIVATE_KEY_B64 (Secrets only)."
             exit 1
           fi
 
