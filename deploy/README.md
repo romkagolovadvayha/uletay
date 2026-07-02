@@ -1,47 +1,52 @@
 # Деплой на VPS (GitHub Actions)
 
-Автодеплой при push в `main` / `master`. Переменные и секреты берутся из GitHub Environment **`production`**.
+Автодеплой при push в `main` / `master`. Переменные и секреты — из GitHub Environment **`production`**.
+
+Стек на сервере: **nginx** (Expo web + reverse proxy) + **Next.js CMS** (PM2) + **MySQL**.
 
 ## 1. GitHub Environment
 
-**Settings → Environments → New environment → `production`**
+**Settings → Environments → `production`**
 
 ### Variables
 
 | Имя | Пример | Описание |
 |-----|--------|----------|
-| `DOMAIN` | `uletay.example.com` | Домен сайта (HTTPS выдаётся автоматически) |
-| `LE_EMAIL` | `admin@example.com` | Email для Let's Encrypt |
-| `DEPLOY_PATH` | `/var/www/uletay` | Путь на сервере (опционально) |
-| `SSH_PORT` | `22` | SSH-порт (опционально) |
-| `PHP_FPM_SOCKET` | `/run/php/php8.2-fpm.sock` | Сокет PHP-FPM (опционально) |
-| `ADMIN_USER` | `admin` | Логин админки (опционально) |
+| `DOMAIN` | `uletay.ru` | Домен |
+| `LE_EMAIL` | `you@mail.ru` | Email для Let's Encrypt |
+| `DEPLOY_PATH` | `/var/www/uletay` | Путь на сервере |
+| `SSH_PORT` | `22` | SSH-порт |
+| `CMS_PORT` | `3000` | Порт Next.js CMS |
+| `ADMIN_USER` | `admin` | Логин админки |
 
 ### Secrets
 
 | Имя | Описание |
 |-----|----------|
-| `SSH_HOST` | IP или hostname сервера |
+| `SSH_HOST` | IP VPS |
 | `SSH_USER` | SSH-пользователь |
-| `SSH_PRIVATE_KEY` | Приватный ключ (полностью, с `-----BEGIN...`) |
-| `DB_HOST` | MySQL host (обычно `127.0.0.1`) |
+| `SSH_PRIVATE_KEY` | Приватный SSH-ключ |
+| `DB_HOST` | `127.0.0.1` |
 | `DB_NAME` | Имя БД |
 | `DB_USER` | Пользователь MySQL |
 | `DB_PASS` | Пароль MySQL |
-| `ADMIN_PASSWORD` | Пароль админ-панели |
+| `ADMIN_PASSWORD` | Пароль админки |
+| `SESSION_SECRET` | Секрет сессии (опционально, иначе генерируется) |
 
-## 2. Подготовка сервера (Ubuntu/Debian)
+## 2. Подготовка сервера
 
 ```bash
 sudo apt update
-sudo apt install -y nginx certbot python3-certbot-nginx php-fpm php-mysql php-mbstring php-xml mysql-server rsync
+sudo apt install -y nginx certbot python3-certbot-nginx mysql-server rsync
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+sudo npm install -g pm2
 
-# Пользователь deploy с sudo только для nginx/certbot (рекомендуется настроить sudoers)
 sudo mkdir -p /var/www/uletay
 sudo chown -R $USER:www-data /var/www/uletay
 ```
 
-Создайте БД и пользователя MySQL:
+MySQL:
 
 ```sql
 CREATE DATABASE uletay CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -50,35 +55,30 @@ GRANT ALL ON uletay.* TO 'uletay'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Пользователь SSH должен иметь право:
+Sudoers (nginx + certbot + pm2):
 
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-sudo certbot ...
+```
+deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bin/certbot
 ```
 
 ## 3. Что делает деплой
 
-1. `npm ci` + `npm run build` с `EXPO_PUBLIC_API_URL=https://DOMAIN/api`
-2. `rsync` файлов на сервер (`dist/`, `api/`, `admin/`, `deploy/`)
-3. Генерация `api/config.deploy.php` на сервере
-4. `php api/install.php` (схема БД + сид)
-5. Nginx-конфиг из `deploy/nginx.site.conf.template`
-6. **Certbot**: если сертификата нет — выпускает HTTPS и редирект с HTTP
+1. `npm run build` — Expo web → `dist/`
+2. `rsync` на VPS
+3. На сервере: `cms/.env`, `npm ci`, `npm run build` в `cms/`
+4. `npm run db:install` — схема + сид
+5. PM2 запускает Next.js standalone
+6. nginx: `/` → `dist/`, `/api` и `/admin` → CMS
+7. certbot — HTTPS, если сертификата нет
 
 ## 4. URL после деплоя
 
 | Сервис | URL |
 |--------|-----|
 | Приложение | `https://DOMAIN/` |
-| API | `https://DOMAIN/api/data.php` |
-| Админка | `https://DOMAIN/admin/` |
+| API | `https://DOMAIN/api/data` |
+| Админка | `https://DOMAIN/admin` |
 
-## 5. Локальная разработка
-
-Локально по-прежнему `/uletay/` (см. `api/config.php`). На продакшене `base_path` пустой — приложение в корне домена.
-
-## 6. Ручной запуск
+## 5. Ручной запуск
 
 **Actions → Deploy → Run workflow**

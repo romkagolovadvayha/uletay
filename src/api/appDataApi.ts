@@ -33,7 +33,7 @@ function isFresh(cache: CachedAppData): boolean {
 }
 
 async function fetchRemoteAppData(): Promise<AppData> {
-  const response = await fetch(`${API_BASE_URL}/data.php`, {
+  const response = await fetch(`${API_BASE_URL}/data`, {
     headers: { Accept: 'application/json' },
   });
 

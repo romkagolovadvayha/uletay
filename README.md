@@ -1,38 +1,46 @@
 # УЛЕТАЙ 2026
 
-Мобильное и web-приложение фестиваля на **Expo / React Native** с PHP API и админ-панелью.
+Мобильное и web-приложение фестиваля на **Expo / React Native** с **Next.js** API и админ-панелью.
 
 ## Локальная разработка
 
 ```bash
 npm install
-npm run web          # http://localhost:8081
-npm run api:install  # MySQL + сид (нужен XAMPP/PHP)
+cp cms/.env.example cms/.env
+npm run cms:install   # MySQL + сид (нужен XAMPP/MySQL)
+
+# в двух терминалах:
+npm run cms:dev       # API + админка → http://localhost:3000
+npm run web           # приложение → http://localhost:8081
 ```
 
-API и админка локально: `http://localhost/uletay/api/data.php`, `http://localhost/uletay/admin/`  
+В `.env` приложения: `EXPO_PUBLIC_API_URL=http://localhost:3000/api`
+
+| Сервис | URL |
+|--------|-----|
+| API | `http://localhost:3000/api/data` |
+| Админка | `http://localhost:3000/admin` |
+
 Подробнее: [API_SETUP.md](API_SETUP.md)
 
 ---
 
 ## Развёртывание на Timeweb VPS
 
-Ниже — пошаговая инструкция для VPS на Timeweb (Ubuntu). После настройки каждый push в `master` будет автоматически выкатывать обновления через GitHub Actions.
+Пошаговая инструкция для VPS на Timeweb (Ubuntu). После настройки каждый push в `master` автоматически выкатывает обновления через GitHub Actions.
 
 ### 1. Создайте VPS в Timeweb
 
 1. [Панель Timeweb](https://timeweb.cloud/) → **Облачные серверы** → **Создать сервер**
 2. ОС: **Ubuntu 22.04** или **24.04**
-3. Тариф: от 1 vCPU / 1 GB RAM (для приложения + MySQL достаточно)
-4. Запишите **IP-адрес** сервера и root-пароль (или подключите SSH-ключ при создании)
+3. Тариф: от 1 vCPU / 2 GB RAM (Next.js + MySQL)
+4. Запишите **IP-адрес** и подключите SSH-ключ
 
 ### 2. Привяжите домен
 
-1. В Timeweb: **Домены** → ваш домен → **DNS**
-2. Добавьте A-запись:
-   - **Имя:** `@` (или поддомен, например `app`)
-   - **Значение:** IP вашего VPS
-3. Дождитесь обновления DNS (обычно 5–30 минут)
+1. **Домены** → ваш домен → **DNS**
+2. A-запись: `@` → IP VPS
+3. Подождите 5–30 минут
 
 ### 3. Подключитесь по SSH
 
@@ -40,7 +48,7 @@ API и админка локально: `http://localhost/uletay/api/data.php`, 
 ssh root@ВАШ_IP
 ```
 
-Рекомендуется создать отдельного пользователя для деплоя:
+Создайте пользователя для деплоя:
 
 ```bash
 adduser deploy
@@ -52,25 +60,17 @@ chmod 700 /home/deploy/.ssh
 chmod 600 /home/deploy/.ssh/authorized_keys
 ```
 
-Дальше работайте под `deploy` (или оставьте `root`, если так удобнее).
-
 ### 4. Установите ПО на сервере
 
 ```bash
 sudo apt update
-sudo apt install -y nginx certbot python3-certbot-nginx \
-  php-fpm php-mysql php-mbstring php-xml php-gd \
-  mysql-server rsync git
+sudo apt install -y nginx certbot python3-certbot-nginx mysql-server rsync git
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+sudo npm install -g pm2
 
 sudo mkdir -p /var/www/uletay
 sudo chown -R $USER:www-data /var/www/uletay
-```
-
-Проверьте сокет PHP-FPM (понадобится в GitHub):
-
-```bash
-ls /run/php/php*-fpm.sock
-# обычно: /run/php/php8.3-fpm.sock или php8.2-fpm.sock
 ```
 
 ### 5. Настройте MySQL
@@ -87,103 +87,89 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-### 6. Права для автодеплоя (nginx + HTTPS)
-
-Пользователь деплоя должен перезагружать nginx и запускать certbot без пароля:
+### 6. Права для автодеплоя
 
 ```bash
 sudo visudo
 ```
 
-Добавьте в конец (замените `deploy` на вашего пользователя):
-
 ```
-deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /bin/systemctl restart nginx, /usr/bin/certbot
+deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bin/certbot
 ```
 
 ### 7. SSH-ключ для GitHub Actions
 
-На **своём компьютере** (если ключа ещё нет):
-
 ```bash
 ssh-keygen -t ed25519 -C "github-deploy-uletay" -f ~/.ssh/uletay_deploy
-```
-
-Публичный ключ добавьте на VPS:
-
-```bash
 ssh-copy-id -i ~/.ssh/uletay_deploy.pub deploy@ВАШ_IP
 ```
 
-Приватный ключ (`~/.ssh/uletay_deploy`) понадобится в GitHub Secrets.
+Приватный ключ → GitHub Secret `SSH_PRIVATE_KEY`.
 
-### 8. Настройте GitHub Environment
+### 8. GitHub Environment `production`
 
 Репозиторий: **https://github.com/romkagolovadvayha/uletay**
 
-**Settings → Environments → New environment → `production`**
+**Settings → Environments → `production`**
 
 #### Variables
 
-| Имя | Пример | Описание |
-|-----|--------|----------|
-| `DOMAIN` | `uletay.ru` | Ваш домен (без `https://`) |
-| `LE_EMAIL` | `you@mail.ru` | Email для Let's Encrypt |
-| `DEPLOY_PATH` | `/var/www/uletay` | Путь на сервере |
-| `SSH_PORT` | `22` | SSH-порт Timeweb |
-| `PHP_FPM_SOCKET` | `/run/php/php8.3-fpm.sock` | Сокет из шага 4 |
-| `ADMIN_USER` | `admin` | Логин админки |
+| Имя | Пример |
+|-----|--------|
+| `DOMAIN` | `uletay.ru` |
+| `LE_EMAIL` | `you@mail.ru` |
+| `DEPLOY_PATH` | `/var/www/uletay` |
+| `SSH_PORT` | `22` |
+| `CMS_PORT` | `3000` |
+| `ADMIN_USER` | `admin` |
 
 #### Secrets
 
 | Имя | Значение |
 |-----|----------|
-| `SSH_HOST` | IP VPS из Timeweb |
-| `SSH_USER` | `deploy` (или `root`) |
-| `SSH_PRIVATE_KEY` | содержимое `~/.ssh/uletay_deploy` |
+| `SSH_HOST` | IP VPS |
+| `SSH_USER` | `deploy` |
+| `SSH_PRIVATE_KEY` | приватный ключ |
 | `DB_HOST` | `127.0.0.1` |
 | `DB_NAME` | `uletay` |
 | `DB_USER` | `uletay` |
-| `DB_PASS` | пароль из шага 5 |
-| `ADMIN_PASSWORD` | пароль входа в админ-панель |
+| `DB_PASS` | пароль MySQL |
+| `ADMIN_PASSWORD` | пароль админки |
+| `SESSION_SECRET` | случайная строка 32+ символов (опционально) |
 
 ### 9. Первый деплой
 
-Сделайте push в ветку `master` — workflow **Deploy** запустится автоматически.
-
-Или вручную: **Actions → Deploy → Run workflow**
+Push в `master` или **Actions → Deploy → Run workflow**.
 
 Что произойдёт:
 
-1. Сборка web-приложения
-2. Загрузка файлов на VPS по SSH
-3. Создание `api/config.deploy.php` и установка БД
-4. Настройка nginx
-5. **Автоматический HTTPS** — если сертификата ещё нет, certbot выпустит его и включит редирект с HTTP
+1. Сборка Expo web → `dist/`
+2. Загрузка на VPS
+3. Сборка Next.js CMS, установка БД
+4. PM2 запускает CMS
+5. nginx + **автоматический HTTPS** (certbot)
 
 ### 10. Проверка
 
 | Сервис | URL |
 |--------|-----|
 | Приложение | `https://ВАШ_ДОМЕН/` |
-| API | `https://ВАШ_ДОМЕН/api/data.php` |
-| Админка | `https://ВАШ_ДОМЕН/admin/` |
-
-Логин админки: значение `ADMIN_USER` / `ADMIN_PASSWORD` из GitHub Secrets.
+| API | `https://ВАШ_ДОМЕН/api/data` |
+| Админка | `https://ВАШ_ДОМЕН/admin` |
 
 ### 11. Обновления
 
-Любой push в `master` → автоматический деплой. Загруженные в админке картинки (`api/uploads/`) при деплое **не удаляются**.
+Push в `master` → автодеплой. Загруженные картинки (`uploads/`) **не удаляются**.
 
-### Возможные проблемы на Timeweb
+### Возможные проблемы
 
-**Certbot не выдаёт сертификат** — проверьте, что A-запись домена указывает на IP VPS и порт 80 открыт в файрволе Timeweb (панель → сеть → правила firewall).
+**Certbot** — A-запись на IP VPS, порт 80 открыт в firewall Timeweb.
 
-**502 Bad Gateway** — неверный `PHP_FPM_SOCKET` в Variables. Проверьте `ls /run/php/` на сервере.
+**502 Bad Gateway** — `pm2 status`, проверьте логи: `pm2 logs uletay-cms`.
 
-**Ошибка MySQL при деплое** — проверьте `DB_*` secrets и что MySQL запущен: `sudo systemctl status mysql`.
+**MySQL** — `sudo systemctl status mysql`, проверьте `DB_*` secrets.
 
-**SSH connection refused** — в Timeweb откройте порт 22 для вашего IP или для всех (0.0.0.0/0).
+**SSH** — откройте порт 22 в firewall Timeweb.
 
 ---
 
@@ -191,21 +177,22 @@ ssh-copy-id -i ~/.ssh/uletay_deploy.pub deploy@ВАШ_IP
 
 | Путь | Назначение |
 |------|------------|
-| `src/` | React Native / Expo приложение |
-| `api/` | PHP API + MySQL |
-| `admin/` | Web-админка контента |
-| `deploy/` | Скрипты nginx и автодеплоя |
+| `src/` | Expo / React Native приложение |
+| `cms/` | Next.js API + админка |
+| `deploy/` | nginx, PM2, скрипты деплоя |
 | `.github/workflows/deploy.yml` | GitHub Actions |
 
 ## Скрипты
 
 ```bash
-npm run web          # dev-сервер
-npm run build        # production-сборка web
-npm run typecheck    # проверка TypeScript
-npm run lint         # ESLint
-npm run seed:api     # экспорт сида в api/seed/content.json
-npm run api:install  # установка БД локально
+npm run web           # dev-сервер приложения
+npm run cms:dev       # API + админка (Next.js)
+npm run build         # production-сборка web
+npm run cms:build     # сборка CMS
+npm run cms:install   # установка БД
+npm run seed:api      # экспорт сида
+npm run typecheck     # TypeScript
+npm run lint          # ESLint
 ```
 
 ## Репозиторий
@@ -214,6 +201,7 @@ npm run api:install  # установка БД локально
 git clone git@github.com:romkagolovadvayha/uletay.git
 cd uletay
 npm install
+npm install --prefix cms
 ```
 
-Дополнительно по CI/CD: [deploy/README.md](deploy/README.md)
+CI/CD: [deploy/README.md](deploy/README.md)

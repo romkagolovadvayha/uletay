@@ -11,7 +11,8 @@ set -euo pipefail
 
 ADMIN_USER="${ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
-PHP_FPM_SOCKET="${PHP_FPM_SOCKET:-/run/php/php8.2-fpm.sock}"
+SESSION_SECRET="${SESSION_SECRET:-}"
+CMS_PORT="${CMS_PORT:-3000}"
 NGINX_SITE="/etc/nginx/sites-available/uletay"
 NGINX_ENABLED="/etc/nginx/sites-enabled/uletay"
 
@@ -20,31 +21,60 @@ if [[ -z "$ADMIN_PASSWORD" ]]; then
   exit 1
 fi
 
-mkdir -p "$DEPLOY_PATH/api/uploads/images"
-chmod -R 775 "$DEPLOY_PATH/api/uploads" || true
+if [[ -z "$SESSION_SECRET" ]]; then
+  SESSION_SECRET=$(openssl rand -hex 32)
+fi
 
-cat > "$DEPLOY_PATH/api/config.deploy.php" <<PHP
-<?php
-declare(strict_types=1);
+mkdir -p "$DEPLOY_PATH/uploads/images"
+chmod -R 775 "$DEPLOY_PATH/uploads" || true
 
-return [
-    'db_host' => '${DB_HOST}',
-    'db_name' => '${DB_NAME}',
-    'db_user' => '${DB_USER}',
-    'db_pass' => '${DB_PASS}',
-    'admin_username' => '${ADMIN_USER}',
-    'admin_password' => '${ADMIN_PASSWORD}',
-    'base_path' => '',
-    'cors_origin' => 'https://${DOMAIN}',
-];
-PHP
+cat > "$DEPLOY_PATH/cms/.env" <<ENV
+DB_HOST=${DB_HOST}
+DB_NAME=${DB_NAME}
+DB_USER=${DB_USER}
+DB_PASS=${DB_PASS}
+ADMIN_USER=${ADMIN_USER}
+ADMIN_PASSWORD=${ADMIN_PASSWORD}
+SESSION_SECRET=${SESSION_SECRET}
+CORS_ORIGIN=https://${DOMAIN}
+BASE_PATH=
+UPLOAD_DIR=${DEPLOY_PATH}/uploads
+PORT=${CMS_PORT}
+NODE_ENV=production
+ENV
 
-php "$DEPLOY_PATH/api/install.php"
+cd "$DEPLOY_PATH/cms"
+npm ci --omit=dev
+npm run build
+
+mkdir -p .next/standalone/.next
+cp -r .next/static .next/standalone/.next/static
+
+set -a
+source .env
+set +a
+npm run db:install
+
+ECOSYSTEM=$(sed \
+  -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g" \
+  -e "s|__CMS_PORT__|${CMS_PORT}|g" \
+  "$DEPLOY_PATH/deploy/ecosystem.config.cjs")
+
+echo "$ECOSYSTEM" | sudo tee "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs" > /dev/null
+
+if command -v pm2 >/dev/null 2>&1; then
+  pm2 startOrRestart "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs"
+  pm2 save || true
+else
+  sudo npm install -g pm2
+  pm2 startOrRestart "$DEPLOY_PATH/deploy/ecosystem.runtime.cjs"
+  pm2 save || true
+fi
 
 sed \
   -e "s|__DOMAIN__|${DOMAIN}|g" \
   -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g" \
-  -e "s|__PHP_FPM_SOCKET__|${PHP_FPM_SOCKET}|g" \
+  -e "s|__CMS_PORT__|${CMS_PORT}|g" \
   "$DEPLOY_PATH/deploy/nginx.site.conf.template" | sudo tee "$NGINX_SITE" > /dev/null
 
 sudo ln -sf "$NGINX_SITE" "$NGINX_ENABLED"
@@ -68,3 +98,4 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 echo "Deploy complete: https://${DOMAIN}"
+echo "Admin: https://${DOMAIN}/admin"

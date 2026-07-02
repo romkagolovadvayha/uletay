@@ -21,7 +21,7 @@ jobs:
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/var/www/uletay' }}
       LE_EMAIL: ${{ vars.LE_EMAIL }}
       SSH_PORT: ${{ vars.SSH_PORT || '22' }}
-      PHP_FPM_SOCKET: ${{ vars.PHP_FPM_SOCKET || '/run/php/php8.2-fpm.sock' }}
+      CMS_PORT: ${{ vars.CMS_PORT || '3000' }}
       ADMIN_USER: ${{ vars.ADMIN_USER || 'admin' }}
       EXPO_PUBLIC_API_URL: https://${{ vars.DOMAIN }}/api
 
@@ -40,7 +40,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Install app dependencies
         run: npm ci
 
       - name: Build web app
@@ -62,24 +62,27 @@ jobs:
 
           rsync -az --delete -e "$RSYNC_SSH" \
             --exclude 'node_modules' \
+            --exclude 'cms/node_modules' \
+            --exclude 'cms/.next' \
             --exclude '.git' \
             --exclude '.expo' \
-            --exclude 'api/uploads' \
-            --exclude 'api/config.deploy.php' \
+            --exclude 'uploads' \
+            --exclude 'cms/.env' \
             ./ "$TARGET/"
 
-      - name: Configure server (nginx + HTTPS)
+      - name: Configure server (Node CMS + nginx + HTTPS)
         run: |
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             "DOMAIN='$DOMAIN' \
              DEPLOY_PATH='$DEPLOY_PATH' \
              LE_EMAIL='$LE_EMAIL' \
+             CMS_PORT='$CMS_PORT' \
              DB_HOST='${{ secrets.DB_HOST }}' \
              DB_NAME='${{ secrets.DB_NAME }}' \
              DB_USER='${{ secrets.DB_USER }}' \
              DB_PASS='${{ secrets.DB_PASS }}' \
              ADMIN_USER='$ADMIN_USER' \
              ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}' \
-             PHP_FPM_SOCKET='$PHP_FPM_SOCKET' \
+             SESSION_SECRET='${{ secrets.SESSION_SECRET }}' \
              bash '$DEPLOY_PATH/deploy/remote-deploy.sh'"

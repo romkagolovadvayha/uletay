@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { defaultAppData } from '../src/storage/dataStore';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(root, 'api', 'seed');
+const outDir = join(root, 'cms', 'seed');
 mkdirSync(outDir, { recursive: true });
 
 const withDefaults = {
@@ -25,4 +25,4 @@ const withDefaults = {
 };
 
 writeFileSync(join(outDir, 'content.json'), JSON.stringify(withDefaults, null, 2), 'utf8');
-console.log('Exported api/seed/content.json');
+console.log('Exported cms/seed/content.json');

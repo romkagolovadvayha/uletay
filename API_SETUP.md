@@ -1,44 +1,83 @@
-# Backend setup (XAMPP)
+# API и админка (Next.js)
 
-## 1. Database
+CMS на **Next.js** в папке `cms/`: REST API + web-админка.
 
-1. Start **Apache** and **MySQL** in XAMPP.
-2. Run install:
+## Локальный запуск
 
 ```bash
-npm run seed:api
-npm run api:install
+# 1. MySQL (XAMPP) + сид
+cp cms/.env.example cms/.env   # при необходимости отредактируйте
+npm run cms:install
+
+# 2. CMS (API + админка)
+npm run cms:dev
 ```
 
-Default admin: **admin** / **uletay2026**
+| Сервис | URL |
+|--------|-----|
+| API | `http://localhost:3000/api/data` |
+| Админка | `http://localhost:3000/admin` |
+| Логин по умолчанию | `admin` / `uletay2026` |
 
-## 2. URLs
+## Expo-приложение
 
-| Service | URL |
-|---------|-----|
-| API (all app data) | `http://localhost/uletay/api/data.php` |
-| Admin panel | `http://localhost/uletay/admin/` |
-| Admin login | `http://localhost/uletay/admin/login.php` |
+```bash
+# .env
+EXPO_PUBLIC_API_URL=http://localhost:3000/api
 
-## 3. App
-
-Copy `.env.example` to `.env`:
-
-```
-EXPO_PUBLIC_API_URL=http://localhost/uletay/api
+npm run web
 ```
 
-The app loads **all content in one request** (`GET /data.php`) and caches it for **1 minute** in memory and AsyncStorage. No repeated API calls within the TTL.
+## API
 
-## 4. Admin
+### `GET /api/data`
 
-- Festival settings + hero image upload
-- Stages and **colors**
-- Schedule / autographs / food court (JSON editor + image upload by record ID)
-- Login/password stored in MySQL (`admin_users`)
+Публичный endpoint. Возвращает полный JSON `AppData`.
 
-## 5. Images
+### `PUT /api/data`
 
-Uploaded files are saved to `api/uploads/images/` and exposed as `/uletay/api/uploads/images/...`.
+Требует заголовок `Authorization: Bearer <token>`.
 
-Set `imageUrl` on performances, autographs, food vendors, or `heroImageUrl` on festival.
+### `POST /api/auth`
+
+```json
+{ "username": "admin", "password": "..." }
+```
+
+Ответ: `{ "token": "..." }` (7 дней).
+
+### `POST /api/upload`
+
+`multipart/form-data`: `file`, опционально `subdir`.
+
+Ответ: `{ "url": "/api/uploads/images/..." }`.
+
+### `GET /api/uploads/...`
+
+Отдача загруженных файлов.
+
+## Переменные окружения (`cms/.env`)
+
+| Переменная | Описание |
+|------------|----------|
+| `DB_HOST` | MySQL host |
+| `DB_NAME` | Имя БД |
+| `DB_USER` | Пользователь |
+| `DB_PASS` | Пароль |
+| `ADMIN_USER` | Логин админки |
+| `ADMIN_PASSWORD` | Пароль админки |
+| `SESSION_SECRET` | Секрет сессии (32+ символов) |
+| `CORS_ORIGIN` | CORS (`*` локально) |
+| `UPLOAD_DIR` | Папка загрузок (`../uploads` локально) |
+| `PORT` | Порт (3000) |
+
+## Сид
+
+```bash
+npm run seed:api      # экспорт в cms/seed/content.json
+npm run cms:install   # применить схему + сид в MySQL
+```
+
+## Деплой
+
+См. [README.md](README.md) и [deploy/README.md](deploy/README.md).

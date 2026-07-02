@@ -32,7 +32,12 @@ yarn-error.*
 
 # local env files
 .env*.local
-api/config.deploy.php
+cms/.env
+uploads/
+
+# cms build
+cms/.next/
+deploy/ecosystem.runtime.cjs
 
 # typescript
 *.tsbuildinfo

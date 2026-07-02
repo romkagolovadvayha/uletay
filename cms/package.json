@@ -1,0 +1,27 @@
+{
+  "name": "uletay-cms",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "db:install": "tsx scripts/install.ts"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "iron-session": "^8.0.4",
+    "mysql2": "^3.14.1",
+    "next": "^15.3.3",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "tsx": "^4.22.5",
+    "typescript": "^5.8.3"
+  }
+}

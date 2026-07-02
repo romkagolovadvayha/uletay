@@ -11,7 +11,7 @@ export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
   (Platform.OS === 'web' && typeof window !== 'undefined'
     ? `${window.location.origin}/api`
-    : 'http://localhost/uletay/api');
+    : 'http://localhost:3000/api');
 
 export const CACHE_TTL_MS = 60_000;
 
