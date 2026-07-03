@@ -1,6 +1,6 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LiveHeroCard } from './LiveArtistCard';
 import { NextUpItem } from './ScheduleListItem';
@@ -11,6 +11,7 @@ import { useNow } from '../hooks/useNow';
 import { ScheduleStackParamList } from '../navigation/types';
 import { openScheduleMainFromStack } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
+import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { PrimaryPerformance, getStageName, getUpcomingOnSameStage, isStartingSoon } from '../utils/scheduleHelpers';
@@ -49,6 +50,7 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
   }
 
   const headerTitle = status === 'live' ? 'СЕЙЧАС ВЫСТУПАЕТ' : isSoon ? 'СКОРО ВЫСТУПИТ' : 'СЛЕДУЮЩЕЕ ВЫСТУПЛЕНИЕ';
+  const performanceIsFavorite = isFavorite(performance.id);
 
   return (
     <>
@@ -61,6 +63,15 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
       />
 
       <View style={styles.buttonWrap}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => toggleFavorite(performance.id)}
+          style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.favoriteButtonText}>
+            {performanceIsFavorite ? 'В ИЗБРАННОМ' : 'ДОБАВИТЬ В ИЗБРАННОЕ'}
+          </Text>
+        </Pressable>
         <PrimaryButton
           label="СМОТРЕТЬ РАСПИСАНИЕ"
           onPress={() => openScheduleMainFromStack(navigation)}
@@ -90,6 +101,25 @@ const styles = StyleSheet.create({
   buttonWrap: {
     marginTop: spacing.lg,
     marginBottom: spacing.xl,
+    gap: spacing.sm,
+  },
+  favoriteButton: {
+    borderWidth: 1,
+    borderColor: colors.text,
+    borderRadius: radius.md,
+    paddingVertical: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 54,
+  },
+  favoriteButtonText: {
+    ...typography.button,
+    color: colors.text,
+    fontSize: 13,
+    letterSpacing: 0.4,
+  },
+  pressed: {
+    opacity: 0.9,
   },
   nextHeader: {},
   noMore: {
