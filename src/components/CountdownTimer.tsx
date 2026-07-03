@@ -51,7 +51,7 @@ export function CountdownTimer({ targetDate }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: 'rgba(28, 28, 30, 0.8)',
     borderRadius: radius.xl,
     borderWidth: 0,
     paddingTop: spacing.lg,

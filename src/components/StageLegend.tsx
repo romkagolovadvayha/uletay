@@ -28,6 +28,9 @@ export function StageLegend() {
 const styles = StyleSheet.create({
   legend: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
     gap: spacing.lg,
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.xs / 2,

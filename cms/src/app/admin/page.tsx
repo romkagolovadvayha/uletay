@@ -104,23 +104,41 @@ export default async function AdminPage({
                   Hero image URL
                   <input name="heroImageUrl" defaultValue={data.festival.heroImageUrl ?? ''} />
                 </label>
+                <label>
+                  Logo image URL
+                  <input name="logoImageUrl" defaultValue={data.festival.logoImageUrl ?? ''} />
+                </label>
               </div>
               {data.festival.heroImageUrl ? (
                 <img className="preview" src={data.festival.heroImageUrl} alt="hero" />
+              ) : null}
+              {data.festival.logoImageUrl ? (
+                <img className="preview logo-preview" src={data.festival.logoImageUrl} alt="logo" />
               ) : null}
               <button type="submit" className="btn-primary">
                 Сохранить фестиваль
               </button>
             </form>
             <form action={uploadImageAction} className="panel" encType="multipart/form-data">
+              <input type="hidden" name="target" value="festival_logo" />
+              <label>
+                Загрузить логотип
+                <input type="file" name="file" accept="image/*" required />
+                <span className="hint">{presetHint('logo')}</span>
+              </label>
+              <button type="submit" className="btn-primary">
+                Загрузить логотип
+              </button>
+            </form>
+            <form action={uploadImageAction} className="panel" encType="multipart/form-data">
               <input type="hidden" name="target" value="festival_hero" />
               <label>
-                Загрузить hero-картинку
+                Загрузить фон главной
                 <input type="file" name="file" accept="image/*" required />
                 <span className="hint">{presetHint('hero')}</span>
               </label>
               <button type="submit" className="btn-primary">
-                Загрузить
+                Загрузить фон
               </button>
             </form>
           </>

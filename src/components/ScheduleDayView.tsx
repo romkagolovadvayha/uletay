@@ -13,6 +13,7 @@ import { screenHeaderStyle } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import {
+  filterByFestivalDay,
   getDefaultFestivalDate,
   getFestivalDates,
   sortByStartTime,
@@ -36,7 +37,7 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
   );
 
   const dayPerformances = useMemo(
-    () => sortByStartTime(data.schedule.filter((item) => item.date === selectedDate)),
+    () => sortByStartTime(filterByFestivalDay(data.schedule, selectedDate)),
     [data.schedule, selectedDate],
   );
 

@@ -1,4 +1,4 @@
-export type ImagePreset = 'artist' | 'hero' | 'thumb';
+export type ImagePreset = 'artist' | 'hero' | 'thumb' | 'logo';
 
 export type ImagePresetConfig = {
   width: number;
@@ -21,6 +21,11 @@ export const IMAGE_PRESETS: Record<ImagePreset, ImagePresetConfig> = {
     width: 440,
     height: 440,
     label: '440×440',
+  },
+  logo: {
+    width: 900,
+    height: 360,
+    label: '900×360',
   },
 };
 

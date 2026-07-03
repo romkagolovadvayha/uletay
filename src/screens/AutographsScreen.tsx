@@ -15,6 +15,7 @@ import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { getAutographHighlight, type AutographHighlight } from '../utils/autographHelpers';
 import {
+  filterByFestivalDay,
   formatSoonCountdown,
   getDefaultFestivalDate,
   getFestivalDates,
@@ -37,7 +38,7 @@ export function AutographsScreen({ navigation }: Props) {
   );
 
   const daySessions = useMemo(
-    () => sortByStartTime(data.autographs.filter((item) => item.date === selectedDate)),
+    () => sortByStartTime(filterByFestivalDay(data.autographs, selectedDate)),
     [data.autographs, selectedDate],
   );
 

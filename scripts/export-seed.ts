@@ -12,6 +12,7 @@ const withDefaults = {
   festival: {
     ...defaultAppData.festival,
     heroImageUrl: null,
+    logoImageUrl: null,
   },
   stages: defaultAppData.stages.map((stage) => ({
     ...stage,

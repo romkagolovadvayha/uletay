@@ -5,7 +5,7 @@ export const festivalInfo = {
   year: 2026,
   startDate: '2026-07-08',
   endDate: '2026-07-12',
-  location: 'ЛАГУНОВО, УДМУРТИЯ',
+  location: 'Лагуново, Удмуртия',
   locationShort: 'Удмуртия, с. Лагуново',
   ageRating: '6+',
 };
@@ -181,7 +181,18 @@ function buildSchedule(items: RawPerformance[]): SchedulePerformance[] {
 
   return sorted.map((item, index) => {
     const sameStageNext = sorted.slice(index + 1).find((next) => next.stageId === item.stageId);
-    const endTime = sameStageNext ? sameStageNext.startTime : fromMinutes(toMinutes(item.startTime) + 60);
+    const startMinutes = toMinutes(item.startTime);
+    let endMinutes = startMinutes + 60;
+
+    if (sameStageNext && sameStageNext.date === item.date) {
+      let nextStart = toMinutes(sameStageNext.startTime);
+      if (nextStart <= startMinutes) {
+        nextStart += 24 * 60;
+      }
+      endMinutes = Math.min(nextStart, startMinutes + 60);
+    }
+
+    const endTime = fromMinutes(endMinutes);
 
     return {
       id: `${item.stageId}-${item.date}-${item.startTime}-${item.artist.slice(0, 12)}`,

@@ -5,9 +5,10 @@ import { SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { formatStartsIn, parseDateTime } from '../utils/scheduleHelpers';
-import { LiveBadge } from './LiveBadge';
+import { formatDayMonthLabel, formatStartsIn, formatTimeRange, parseDateTime } from '../utils/scheduleHelpers';
 import { CompetitionLabel } from './CompetitionLabel';
+import { LiveBadge } from './LiveBadge';
+import { PerformanceMetaDivider, PerformanceTimeDateRow, performanceTimeWeightStyle } from './PerformanceTimeDateRow';
 import { SoonBadge } from './SoonBadge';
 import { StageDot } from './StageDot';
 
@@ -135,20 +136,36 @@ type NextProps = {
   performance: SchedulePerformance;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
+  onPress?: () => void;
 };
 
-export function NextUpItem({ performance, isFavorite, onToggleFavorite }: NextProps) {
+export function NextUpItem({ performance, isFavorite, onToggleFavorite, onPress }: NextProps) {
   return (
-    <View style={styles.nextRow}>
-      <Text style={styles.nextTime}>{performance.startTime}</Text>
-      <View style={styles.nextMain}>
-        <Text style={styles.nextArtist} numberOfLines={2}>
-          {performance.artist}
-        </Text>
-        {performance.isCompetition ? <CompetitionLabel /> : null}
+    <Pressable
+      accessibilityRole={onPress ? 'button' : undefined}
+      onPress={onPress}
+      style={({ pressed }) => [styles.nextRow, pressed && styles.nextRowPressed]}
+    >
+      <View style={styles.nextBody}>
+        <PerformanceTimeDateRow
+          style={styles.nextTimeCol}
+          time={formatTimeRange(performance.startTime, performance.endTime)}
+          date={formatDayMonthLabel(performance.date)}
+          timeStyle={styles.nextTime}
+          dateStyle={styles.nextDate}
+        />
+        <PerformanceMetaDivider />
+        <View style={styles.nextMain}>
+          <Text style={styles.nextArtist} numberOfLines={2}>
+            {performance.artist}
+          </Text>
+          {performance.isCompetition ? <CompetitionLabel /> : null}
+        </View>
       </View>
-      <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={22} />
-    </View>
+      <View style={styles.nextFavorite}>
+        <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={22} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -262,20 +279,39 @@ const styles = StyleSheet.create({
   nextRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  nextTime: {
-    width: 48,
-    ...typography.scheduleTime,
-    color: colors.text,
-    fontSize: 13,
+  nextRowPressed: {
+    opacity: 0.88,
   },
+  nextBody: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minWidth: 0,
+  },
+  nextTimeCol: {
+    flexShrink: 1,
+    maxWidth: '46%',
+  },
+  nextTime: {
+    ...performanceTimeWeightStyle('extraBold'),
+  },
+  nextDate: {},
   nextMain: {
     flex: 1,
     gap: 2,
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  nextFavorite: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
   },
   nextArtist: {
     ...typography.scheduleArtist,

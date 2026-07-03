@@ -12,6 +12,7 @@ import { verifyAdminCredentials } from '@/lib/auth';
 import type { ImagePreset } from '@/lib/image-presets';
 import { ImageUploadError, saveUploadedImage } from '@/lib/upload';
 import { getSession } from '@/lib/session';
+import { capPerformanceEndTime } from '@/lib/schedule-time';
 import type {
   AdminTab,
   AppData,
@@ -52,6 +53,9 @@ function uploadErrorMessage(error: unknown): string {
 function presetForUploadTarget(target: string): ImagePreset {
   if (target === 'festival_hero') {
     return 'hero';
+  }
+  if (target === 'festival_logo') {
+    return 'logo';
   }
   if (target === 'foodcourt') {
     return 'thumb';
@@ -97,6 +101,7 @@ export async function saveFestivalAction(formData: FormData) {
     locationShort: String(formData.get('locationShort') ?? '').trim(),
     ageRating: String(formData.get('ageRating') ?? '').trim(),
     heroImageUrl: String(formData.get('heroImageUrl') ?? '').trim() || undefined,
+    logoImageUrl: String(formData.get('logoImageUrl') ?? '').trim() || undefined,
   };
 
   await saveAppData(data);
@@ -132,13 +137,15 @@ export async function upsertScheduleAction(formData: FormData) {
   const stageId = String(formData.get('stageId') ?? '').trim() as StageId;
   const date = String(formData.get('date') ?? '').trim();
   const startTime = String(formData.get('startTime') ?? '').trim();
-  const endTime = String(formData.get('endTime') ?? '').trim();
+  const rawEndTime = String(formData.get('endTime') ?? '').trim();
   const artist = String(formData.get('artist') ?? '').trim();
   const isCompetition = formData.get('isCompetition') === '1';
 
-  if (!stageId || !date || !startTime || !endTime || !artist) {
+  if (!stageId || !date || !startTime || !rawEndTime || !artist) {
     redirect('/admin?tab=schedule&error=' + encodeURIComponent('Заполните все обязательные поля'));
   }
+
+  const endTime = capPerformanceEndTime(startTime, rawEndTime);
 
   const ids = new Set(data.schedule.map((item) => item.id));
   const id = isNew
@@ -324,7 +331,7 @@ export async function uploadImageAction(formData: FormData) {
   const id = String(formData.get('id') ?? '');
   const file = formData.get('file');
   const tab: AdminTab =
-    target === 'festival_hero'
+    target === 'festival_hero' || target === 'festival_logo'
       ? 'festival'
       : target === 'schedule'
         ? 'schedule'
@@ -345,6 +352,8 @@ export async function uploadImageAction(formData: FormData) {
 
   if (target === 'festival_hero') {
     data.festival.heroImageUrl = url;
+  } else if (target === 'festival_logo') {
+    data.festival.logoImageUrl = url;
   } else if (target === 'schedule' && id) {
     data.schedule = data.schedule.map((item) =>
       item.id === id ? { ...item, imageUrl: url } : item,

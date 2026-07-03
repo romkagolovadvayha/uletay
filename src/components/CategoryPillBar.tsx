@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { CenteredHorizontalScroll } from './CenteredHorizontalScroll';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -19,7 +20,7 @@ type Props = {
 
 export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'default' }: Props) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
+    <CenteredHorizontalScroll contentContainerStyle={styles.container} rowStyle={styles.row}>
       {categories.map((category) => {
         const isActive = category.id === selectedId;
         const isFood = variant === 'food';
@@ -47,14 +48,16 @@ export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'd
           </Pressable>
         );
       })}
-    </ScrollView>
+    </CenteredHorizontalScroll>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.sm,
     paddingBottom: spacing.md,
+  },
+  row: {
+    gap: spacing.sm,
   },
   pill: {
     borderRadius: radius.pill,

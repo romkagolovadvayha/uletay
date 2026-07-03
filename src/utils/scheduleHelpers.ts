@@ -4,11 +4,13 @@ import {
   addDaysToDateString,
   FESTIVAL_TIMEZONE,
   formatFestivalClock,
+  getCurrentFestivalDayDate,
   getFestivalClockParts,
-  getFestivalDateString,
   parseFestivalDateOnly,
   parseFestivalLocalDateTime,
 } from './festivalTime';
+
+export { filterByFestivalDay } from './festivalTime';
 
 export type TimedStatus = 'live' | 'upcoming' | 'past';
 
@@ -47,6 +49,16 @@ export function formatTimeRange(startTime: string, endTime: string): string {
   return `${startTime} - ${endTime}`;
 }
 
+export { capPerformanceEndTime, MAX_PERFORMANCE_DURATION_MINUTES } from './performanceTime';
+
+export const SOON_WINDOW_MS = 30 * 60 * 1000;
+
+export function isStartingSoon(date: string, startTime: string, now = new Date()): boolean {
+  const start = parseDateTime(date, startTime);
+  const diffMs = start.getTime() - now.getTime();
+  return diffMs > 0 && diffMs <= SOON_WINDOW_MS;
+}
+
 export function formatDateLabel(date: string): string {
   const parsed = parseFestivalDateOnly(date);
   const formatter = new Intl.DateTimeFormat('ru-RU', {
@@ -56,6 +68,15 @@ export function formatDateLabel(date: string): string {
     weekday: 'long',
   });
   return formatter.format(parsed);
+}
+
+export function formatDayMonthLabel(date: string): string {
+  const parsed = parseFestivalDateOnly(date);
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: FESTIVAL_TIMEZONE,
+    day: 'numeric',
+    month: 'long',
+  }).format(parsed);
 }
 
 export function formatShortDate(date: string): string {
@@ -99,7 +120,7 @@ export function getDefaultFestivalDate(startDate: string, endDate: string, now =
     return startDate;
   }
 
-  const today = getFestivalDateString(now);
+  const today = getCurrentFestivalDayDate(now);
 
   if (dates.includes(today)) {
     return today;
@@ -118,7 +139,7 @@ export function getStageDotColor(stageId: StageId, stages?: Stage[]): string {
 }
 
 export function isSameFestivalDay(date: string, now = new Date()): boolean {
-  return date === getFestivalDateString(now);
+  return date === getCurrentFestivalDayDate(now);
 }
 
 export function getCurrentTimeMinutes(now = new Date()): number {
@@ -319,7 +340,11 @@ export function getPerformanceHighlight(
   }
 
   const primary = getPrimaryPerformance(dayPerformances, now, performance.stageId);
-  if (primary?.status === 'upcoming' && primary.performance.id === performance.id) {
+  if (
+    primary?.status === 'upcoming' &&
+    primary.performance.id === performance.id &&
+    isStartingSoon(performance.date, performance.startTime, now)
+  ) {
     return 'next';
   }
 

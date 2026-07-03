@@ -54,6 +54,7 @@ export interface FestivalInfo {
   locationShort: string;
   ageRating: string;
   heroImageUrl?: string;
+  logoImageUrl?: string;
 }
 
 export interface AppData {

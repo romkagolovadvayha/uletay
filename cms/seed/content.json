@@ -4,10 +4,11 @@
     "year": 2026,
     "startDate": "2026-07-08",
     "endDate": "2026-07-12",
-    "location": "ЛАГУНОВО, УДМУРТИЯ",
+    "location": "Лагуново, Удмуртия",
     "locationShort": "Удмуртия, с. Лагуново",
     "ageRating": "6+",
-    "heroImageUrl": null
+    "heroImageUrl": null,
+    "logoImageUrl": null
   },
   "stages": [
     {
@@ -43,7 +44,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-09",
       "startTime": "16:00",
-      "endTime": "17:05",
+      "endTime": "17:00",
       "artist": "КАЛИНОВ МОСТ"
     },
     {
@@ -51,7 +52,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-09",
       "startTime": "17:05",
-      "endTime": "18:10",
+      "endTime": "18:05",
       "artist": "МАРА"
     },
     {
@@ -59,7 +60,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-09",
       "startTime": "18:10",
-      "endTime": "19:15",
+      "endTime": "19:10",
       "artist": "МУЛЬТFИЛЬМЫ"
     },
     {
@@ -67,7 +68,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-09",
       "startTime": "19:15",
-      "endTime": "20:20",
+      "endTime": "20:15",
       "artist": "МОНГОЛ ШУУДАН"
     },
     {
@@ -75,7 +76,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-09",
       "startTime": "20:20",
-      "endTime": "21:25",
+      "endTime": "21:20",
       "artist": "УНДЕРВУД"
     },
     {
@@ -83,7 +84,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-09",
       "startTime": "21:25",
-      "endTime": "22:35",
+      "endTime": "22:25",
       "artist": "КРЕМАТОРИЙ"
     },
     {
@@ -91,7 +92,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-09",
       "startTime": "22:35",
-      "endTime": "14:00",
+      "endTime": "23:35",
       "artist": "LUMEN"
     },
     {
@@ -107,7 +108,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-10",
       "startTime": "15:00",
-      "endTime": "16:10",
+      "endTime": "16:00",
       "artist": "7Б"
     },
     {
@@ -115,7 +116,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-10",
       "startTime": "16:10",
-      "endTime": "17:20",
+      "endTime": "17:10",
       "artist": "СУРГАНОВА И ОРКЕСТР"
     },
     {
@@ -123,7 +124,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-10",
       "startTime": "17:20",
-      "endTime": "18:30",
+      "endTime": "18:20",
       "artist": "ЭПИДЕМИЯ"
     },
     {
@@ -131,7 +132,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-10",
       "startTime": "18:30",
-      "endTime": "19:40",
+      "endTime": "19:30",
       "artist": "МУРАКАМИ"
     },
     {
@@ -139,7 +140,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-10",
       "startTime": "19:40",
-      "endTime": "21:00",
+      "endTime": "20:40",
       "artist": "БРАВО"
     },
     {
@@ -147,7 +148,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-10",
       "startTime": "21:00",
-      "endTime": "22:10",
+      "endTime": "22:00",
       "artist": "СЕРЬГА"
     },
     {
@@ -155,7 +156,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-10",
       "startTime": "22:10",
-      "endTime": "23:30",
+      "endTime": "23:10",
       "artist": "ГОРШЕНЕВ"
     },
     {
@@ -163,7 +164,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-10",
       "startTime": "23:30",
-      "endTime": "14:00",
+      "endTime": "00:30",
       "artist": "АЛИСА"
     },
     {
@@ -179,7 +180,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-11",
       "startTime": "15:00",
-      "endTime": "16:20",
+      "endTime": "16:00",
       "artist": "ПИЛОТ"
     },
     {
@@ -187,7 +188,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-11",
       "startTime": "16:20",
-      "endTime": "17:40",
+      "endTime": "17:20",
       "artist": "КОСТЯ КУЛЯСОВ. АНИМАЦИЯ"
     },
     {
@@ -195,7 +196,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-11",
       "startTime": "17:40",
-      "endTime": "19:00",
+      "endTime": "18:40",
       "artist": "СЕРГЕЙ БОБУНЕЦ"
     },
     {
@@ -203,7 +204,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-11",
       "startTime": "19:00",
-      "endTime": "20:20",
+      "endTime": "20:00",
       "artist": "ВЯЧЕСЛАВ БУТУСОВ"
     },
     {
@@ -211,7 +212,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-11",
       "startTime": "20:20",
-      "endTime": "21:40",
+      "endTime": "21:20",
       "artist": "АРИЯ"
     },
     {
@@ -219,7 +220,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-11",
       "startTime": "21:40",
-      "endTime": "23:00",
+      "endTime": "22:40",
       "artist": "ПИКНИК"
     },
     {
@@ -227,7 +228,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-11",
       "startTime": "23:00",
-      "endTime": "12:00",
+      "endTime": "00:00",
       "artist": "ВАДИМ САМОЙЛОВ"
     },
     {
@@ -243,7 +244,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-12",
       "startTime": "13:00",
-      "endTime": "14:15",
+      "endTime": "14:00",
       "artist": "БРИГАДНЫЙ ПОДРЯД"
     },
     {
@@ -251,7 +252,7 @@
       "stageId": "ren-tv",
       "date": "2026-07-12",
       "startTime": "14:15",
-      "endTime": "15:30",
+      "endTime": "15:15",
       "artist": "ZNAKI"
     },
     {
@@ -347,7 +348,7 @@
       "stageId": "south",
       "date": "2026-07-09",
       "startTime": "01:00",
-      "endTime": "16:00",
+      "endTime": "02:00",
       "artist": "ТРОЛЛЬ ГНЕТ ЕЛЬ"
     },
     {
@@ -427,7 +428,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "01:00",
-      "endTime": "14:00",
+      "endTime": "02:00",
       "artist": "ROCK PRIVET"
     },
     {
@@ -443,7 +444,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "15:00",
-      "endTime": "16:05",
+      "endTime": "16:00",
       "artist": "ЛАСКАЛА / LASCALA"
     },
     {
@@ -451,7 +452,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "16:05",
-      "endTime": "17:10",
+      "endTime": "17:05",
       "artist": "ХМЫРОВ"
     },
     {
@@ -459,7 +460,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "17:10",
-      "endTime": "18:15",
+      "endTime": "18:10",
       "artist": "ПОЛНАЛЮБВИ / POLNALYUBVI"
     },
     {
@@ -467,7 +468,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "18:15",
-      "endTime": "19:20",
+      "endTime": "19:15",
       "artist": "ПЛАМЕНЕВ"
     },
     {
@@ -475,7 +476,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "19:20",
-      "endTime": "20:25",
+      "endTime": "20:20",
       "artist": "СЛОТ"
     },
     {
@@ -483,7 +484,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "20:25",
-      "endTime": "21:30",
+      "endTime": "21:25",
       "artist": "НЭИЛ ШЕРИ"
     },
     {
@@ -491,7 +492,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "21:30",
-      "endTime": "22:35",
+      "endTime": "22:30",
       "artist": "F.P.G."
     },
     {
@@ -499,7 +500,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "22:35",
-      "endTime": "23:40",
+      "endTime": "23:35",
       "artist": "ОПЕРАЦИЯ ПЛАСТИЛИН"
     },
     {
@@ -507,7 +508,7 @@
       "stageId": "south",
       "date": "2026-07-10",
       "startTime": "23:40",
-      "endTime": "01:00",
+      "endTime": "00:40",
       "artist": "AMATORY"
     },
     {
@@ -515,7 +516,7 @@
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "01:00",
-      "endTime": "14:00",
+      "endTime": "02:00",
       "artist": "ВИА «ВОЛГА-ВОЛГА»"
     },
     {
@@ -571,7 +572,7 @@
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "20:00",
-      "endTime": "21:10",
+      "endTime": "21:00",
       "artist": "ПОТОМУЧТО"
     },
     {
@@ -579,7 +580,7 @@
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "21:10",
-      "endTime": "22:20",
+      "endTime": "22:10",
       "artist": "БИРТМАН"
     },
     {
@@ -587,7 +588,7 @@
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "22:20",
-      "endTime": "23:30",
+      "endTime": "23:20",
       "artist": "ЙОРШ"
     },
     {
@@ -595,7 +596,7 @@
       "stageId": "south",
       "date": "2026-07-11",
       "startTime": "23:30",
-      "endTime": "01:10",
+      "endTime": "00:30",
       "artist": "RADIO TAPOK"
     },
     {
@@ -675,7 +676,7 @@
       "stageId": "west",
       "date": "2026-07-09",
       "startTime": "00:00",
-      "endTime": "12:00",
+      "endTime": "01:00",
       "artist": "СЕМЬ ШТУК БАКСОВ / 7000$"
     },
     {
@@ -683,7 +684,7 @@
       "stageId": "west",
       "date": "2026-07-09",
       "startTime": "12:00",
-      "endTime": "13:30",
+      "endTime": "13:00",
       "artist": "EMBERWOOD, ВЕТЕР, ЕЛЕНА JAYA",
       "isCompetition": true
     },
@@ -692,7 +693,7 @@
       "stageId": "west",
       "date": "2026-07-09",
       "startTime": "13:30",
-      "endTime": "15:00",
+      "endTime": "14:30",
       "artist": "НЕ МЕНЕЕ ПЯТИ ОБОРОТОВ",
       "isCompetition": true
     },
@@ -773,7 +774,7 @@
       "stageId": "west",
       "date": "2026-07-10",
       "startTime": "00:00",
-      "endTime": "12:00",
+      "endTime": "01:00",
       "artist": "РАВАННА / RAVANNA"
     },
     {
@@ -781,7 +782,7 @@
       "stageId": "west",
       "date": "2026-07-10",
       "startTime": "12:00",
-      "endTime": "13:30",
+      "endTime": "13:00",
       "artist": "СВОБОДНЫЙ РЕЖИМ, VERRONA EX GREAT REVIVAL, МОРРОЗ",
       "isCompetition": true
     },
@@ -880,7 +881,7 @@
       "stageId": "west",
       "date": "2026-07-11",
       "startTime": "00:00",
-      "endTime": "12:00",
+      "endTime": "01:00",
       "artist": "КЛЮЧЕВАЯ"
     },
     {
@@ -888,7 +889,7 @@
       "stageId": "west",
       "date": "2026-07-11",
       "startTime": "12:00",
-      "endTime": "13:30",
+      "endTime": "13:00",
       "artist": "СЕРДЦЕ ТРУ, VERMOL, ГАБАРИТ",
       "isCompetition": true
     },

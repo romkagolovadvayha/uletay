@@ -6,7 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AutographSessionRow } from '../components/AutographSessionRow';
 import { CategoryPillBar } from '../components/CategoryPillBar';
 import { DateTabBar } from '../components/DateTabBar';
-import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { ScheduleStageGrid } from '../components/ScheduleStageGrid';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -19,6 +18,7 @@ import { typography } from '../theme/typography';
 import { getAutographHighlight } from '../utils/autographHelpers';
 import { favoriteKey } from '../utils/favoriteKeys';
 import {
+  filterByFestivalDay,
   formatSoonCountdown,
   getDefaultFestivalDate,
   getFestivalDates,
@@ -68,12 +68,12 @@ export function MyScheduleScreen({ navigation }: Props) {
   );
 
   const dayPerformances = useMemo(
-    () => favoritePerformances.filter((item) => item.date === selectedDate),
+    () => filterByFestivalDay(favoritePerformances, selectedDate),
     [favoritePerformances, selectedDate],
   );
 
   const dayAutographs = useMemo(
-    () => favoriteAutographs.filter((item) => item.date === selectedDate),
+    () => filterByFestivalDay(favoriteAutographs, selectedDate),
     [favoriteAutographs, selectedDate],
   );
 
@@ -120,10 +120,6 @@ export function MyScheduleScreen({ navigation }: Props) {
 
       <View style={styles.tabsWrap}>
         <DateTabBar dates={festivalDates} selectedDate={selectedDate} onSelect={setSelectedDate} variant="red" />
-      </View>
-
-      <View style={styles.notificationsWrap}>
-        <FavoriteNotificationsCard />
       </View>
 
       {!hasAnyFavorites ? (
@@ -213,10 +209,6 @@ const styles = StyleSheet.create({
   tabsWrap: {
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.md,
-  },
-  notificationsWrap: {
-    paddingHorizontal: spacing.screen,
-    paddingBottom: spacing.sm,
   },
   listContent: {
     paddingHorizontal: spacing.screen,

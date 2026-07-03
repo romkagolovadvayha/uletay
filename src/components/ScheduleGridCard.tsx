@@ -5,7 +5,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { formatSoonCountdown, parseDateTime, type PerformanceHighlight } from '../utils/scheduleHelpers';
+import { formatSoonCountdown, formatTimeRange, parseDateTime, type PerformanceHighlight } from '../utils/scheduleHelpers';
 import { CompetitionLabel } from './CompetitionLabel';
 import { LiveBadge } from './LiveBadge';
 import { FavoriteStar } from './ScheduleListItem';
@@ -16,7 +16,6 @@ type Props = {
   top: number;
   height: number;
   highlight: PerformanceHighlight;
-  stageColor: string;
   now: Date;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
@@ -28,7 +27,6 @@ export function ScheduleGridCard({
   top,
   height,
   highlight,
-  stageColor,
   now,
   isFavorite,
   onToggleFavorite,
@@ -37,7 +35,7 @@ export function ScheduleGridCard({
   const isLive = highlight === 'live';
   const isUpcoming = highlight === 'next';
   const isPast = highlight === 'past';
-  const compact = height < 72;
+  const compact = height < 64;
   const soonCountdown = isUpcoming
     ? formatSoonCountdown(parseDateTime(performance.date, performance.startTime), now)
     : undefined;
@@ -51,34 +49,36 @@ export function ScheduleGridCard({
         {
           top,
           height,
-          borderLeftColor: stageColor,
           opacity: isPast ? 0.42 : 1,
+          justifyContent: 'center',
         },
         isLive && styles.cardLive,
         isUpcoming && styles.cardUpcoming,
         pressed && styles.pressed,
       ]}
     >
-      <View style={styles.header}>
-        <Text style={[styles.time, isLive && styles.timeLive]} numberOfLines={1}>
-          {compact ? performance.startTime : `${performance.startTime}–${performance.endTime}`}
+      <View style={styles.cardBody}>
+        <View style={styles.header}>
+          <Text style={[styles.time, isLive && styles.timeLive]} numberOfLines={1}>
+            {formatTimeRange(performance.startTime, performance.endTime)}
+          </Text>
+          {onToggleFavorite ? (
+            <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={16} />
+          ) : null}
+        </View>
+
+        <Text style={styles.artist} numberOfLines={compact ? 2 : 4}>
+          {performance.artist}
         </Text>
-        {onToggleFavorite ? (
-          <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={16} />
+
+        {!compact && performance.isCompetition ? <CompetitionLabel /> : null}
+
+        {(isLive || isUpcoming) && !compact ? (
+          <View style={styles.badgeRow}>
+            {isLive ? <LiveBadge compact /> : <SoonBadge compact countdown={soonCountdown} />}
+          </View>
         ) : null}
       </View>
-
-      <Text style={styles.artist} numberOfLines={compact ? 2 : 4}>
-        {performance.artist}
-      </Text>
-
-      {!compact && performance.isCompetition ? <CompetitionLabel /> : null}
-
-      {(isLive || isUpcoming) && !compact ? (
-        <View style={styles.badgeRow}>
-          {isLive ? <LiveBadge compact /> : <SoonBadge compact countdown={soonCountdown} />}
-        </View>
-      ) : null}
     </Pressable>
   );
 }
@@ -88,7 +88,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    borderLeftWidth: 3,
     backgroundColor: colors.surfaceCard,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.xs,
@@ -108,12 +107,14 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.88,
   },
+  cardBody: {
+    gap: 2,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.xs,
-    marginBottom: 2,
   },
   time: {
     ...typography.caption,
@@ -133,7 +134,6 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   badgeRow: {
-    marginTop: spacing.xs,
     alignSelf: 'flex-start',
   },
 });

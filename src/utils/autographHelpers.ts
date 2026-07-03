@@ -4,6 +4,7 @@ import {
   getEndDateTime,
   getPrimaryAutograph,
   isAutographLive,
+  isStartingSoon,
   sortByStartTime,
 } from './scheduleHelpers';
 
@@ -55,7 +56,11 @@ export function getAutographHighlight(
   }
 
   const primary = getPrimaryAutograph(daySessions, now, session.stageId);
-  if (primary?.status === 'upcoming' && primary.session.id === session.id) {
+  if (
+    primary?.status === 'upcoming' &&
+    primary.session.id === session.id &&
+    isStartingSoon(session.date, session.startTime, now)
+  ) {
     return 'next';
   }
 

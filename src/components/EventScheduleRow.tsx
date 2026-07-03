@@ -6,11 +6,13 @@ import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { LiveBadge } from './LiveBadge';
 import { CompetitionLabel } from './CompetitionLabel';
+import { performanceTimeWeightStyle } from './PerformanceTimeDateRow';
 import { SoonBadge } from './SoonBadge';
 import { FavoriteStar } from './ScheduleListItem';
 import { StageDot } from './StageDot';
 
 type SubtitleTone = 'performance' | 'autograph';
+type RowVariant = 'default' | 'autograph';
 
 type Props = {
   time: string;
@@ -18,6 +20,7 @@ type Props = {
   artist: string;
   subtitle?: string;
   subtitleTone?: SubtitleTone;
+  variant?: RowVariant;
   isLive?: boolean;
   isUpcoming?: boolean;
   soonCountdown?: string;
@@ -34,6 +37,7 @@ export function EventScheduleRow({
   artist,
   subtitle,
   subtitleTone,
+  variant = 'default',
   isLive,
   isUpcoming,
   soonCountdown,
@@ -49,7 +53,12 @@ export function EventScheduleRow({
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      <Text style={[styles.time, isLive && styles.timeLive]}>{time}</Text>
+      <Text
+        style={[styles.time, variant === 'autograph' && styles.timeAutograph, isLive && styles.timeLive]}
+        numberOfLines={2}
+      >
+        {time}
+      </Text>
       <StageDot stageId={stageId} size={7} />
       <View style={styles.main}>
         <Text style={styles.artist} numberOfLines={2}>
@@ -92,19 +101,28 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   time: {
-    width: 84,
+    flexShrink: 1,
+    maxWidth: '38%',
+    alignSelf: 'center',
     ...typography.scheduleTime,
     color: colors.text,
     fontSize: 13,
-    fontWeight: '600',
     lineHeight: 16,
   },
   timeLive: {
     color: colors.live,
   },
+  timeAutograph: {
+    ...performanceTimeWeightStyle('extraBold'),
+    color: colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 14,
+  },
   main: {
     flex: 1,
     gap: 2,
+    justifyContent: 'center',
+    minWidth: 0,
   },
   artist: {
     ...typography.scheduleArtist,
@@ -128,6 +146,8 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
     gap: spacing.sm,
   },
 });

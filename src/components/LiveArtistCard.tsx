@@ -8,14 +8,17 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import {
+  formatDayMonthLabel,
   formatSoonCountdown,
   formatTimeRange,
+  isStartingSoon,
   parseDateTime,
   TimedStatus,
 } from '../utils/scheduleHelpers';
 import { getRemoteImageSource } from '../utils/imageSource';
 import { CompetitionLabel } from './CompetitionLabel';
 import { LiveBadge } from './LiveBadge';
+import { PerformanceTimeDateRow, performanceTimeWeightStyle } from './PerformanceTimeDateRow';
 import { SoonBadge } from './SoonBadge';
 
 type CardProps = {
@@ -29,10 +32,11 @@ type CardProps = {
 
 export function LiveArtistCard({ performance, stageName, status, onPress, imageSource, now = new Date() }: CardProps) {
   const isLive = status === 'live';
-  const startsIn =
-    status === 'upcoming'
-      ? formatSoonCountdown(parseDateTime(performance.date, performance.startTime), now)
-      : null;
+  const isSoon =
+    status === 'upcoming' && isStartingSoon(performance.date, performance.startTime, now);
+  const startsIn = isSoon
+    ? formatSoonCountdown(parseDateTime(performance.date, performance.startTime), now)
+    : null;
 
   return (
     <Pressable
@@ -41,7 +45,7 @@ export function LiveArtistCard({ performance, stageName, status, onPress, imageS
       style={({ pressed }) => [
         styles.card,
         isLive && styles.cardLive,
-        status === 'upcoming' && styles.cardSoon,
+        isSoon && styles.cardSoon,
         pressed && styles.pressed,
       ]}
     >
@@ -56,12 +60,19 @@ export function LiveArtistCard({ performance, stageName, status, onPress, imageS
         </Text>
         {performance.isCompetition ? <CompetitionLabel /> : null}
         <Text style={styles.stage}>{stageName}</Text>
-        <Text style={styles.time}>
-          {startsIn ? `${performance.startTime} · ${startsIn}` : formatTimeRange(performance.startTime, performance.endTime)}
-        </Text>
+        <PerformanceTimeDateRow
+          style={styles.timeWrap}
+          time={
+            startsIn
+              ? `${formatTimeRange(performance.startTime, performance.endTime)} · ${startsIn}`
+              : formatTimeRange(performance.startTime, performance.endTime)
+          }
+          date={formatDayMonthLabel(performance.date)}
+          timeStyle={styles.cardTime}
+        />
       </View>
       <View style={styles.badgeWrap}>
-        {isLive ? <LiveBadge compact /> : status === 'upcoming' ? <SoonBadge compact countdown={startsIn ?? undefined} /> : null}
+        {isLive ? <LiveBadge compact /> : isSoon ? <SoonBadge compact countdown={startsIn ?? undefined} /> : null}
       </View>
     </Pressable>
   );
@@ -77,10 +88,11 @@ type HeroProps = {
 
 export function LiveHeroCard({ performance, stageName, status, imageSource, now = new Date() }: HeroProps) {
   const isLive = status === 'live';
-  const startsIn =
-    status === 'upcoming'
-      ? formatSoonCountdown(parseDateTime(performance.date, performance.startTime), now)
-      : null;
+  const isSoon =
+    status === 'upcoming' && isStartingSoon(performance.date, performance.startTime, now);
+  const startsIn = isSoon
+    ? formatSoonCountdown(parseDateTime(performance.date, performance.startTime), now)
+    : null;
 
   return (
     <View style={styles.heroCard}>
@@ -95,17 +107,24 @@ export function LiveHeroCard({ performance, stageName, status, imageSource, now 
         style={styles.heroGradient}
       />
       <View style={styles.heroBadge}>
-        {isLive ? <LiveBadge /> : status === 'upcoming' ? <SoonBadge countdown={startsIn ?? undefined} /> : null}
+        {isLive ? <LiveBadge /> : isSoon ? <SoonBadge countdown={startsIn ?? undefined} /> : null}
       </View>
       <View style={styles.heroContent}>
         <Text style={styles.heroArtist}>{performance.artist}</Text>
         {performance.isCompetition ? <CompetitionLabel style={styles.heroCompetition} /> : null}
         <Text style={styles.heroStage}>{stageName}</Text>
-        <Text style={styles.heroTime}>
-          {startsIn
-            ? `${formatTimeRange(performance.startTime, performance.endTime)} · ${startsIn}`
-            : formatTimeRange(performance.startTime, performance.endTime)}
-        </Text>
+        <PerformanceTimeDateRow
+          style={styles.heroTimeWrap}
+          time={
+            startsIn
+              ? `${formatTimeRange(performance.startTime, performance.endTime)} · ${startsIn}`
+              : formatTimeRange(performance.startTime, performance.endTime)
+          }
+          date={formatDayMonthLabel(performance.date)}
+          timeStyle={styles.heroTime}
+          dateStyle={styles.heroDate}
+          dividerStyle={styles.heroDivider}
+        />
       </View>
     </View>
   );
@@ -152,10 +171,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginTop: 1,
   },
-  time: {
-    ...typography.artistTime,
-    color: colors.text,
+  timeWrap: {
     marginTop: 2,
+  },
+  cardTime: {
+    ...performanceTimeWeightStyle('medium'),
   },
   badgeWrap: {
     position: 'absolute',
@@ -198,9 +218,21 @@ const styles = StyleSheet.create({
     ...typography.heroStage,
     color: colors.primary,
   },
+  heroTimeWrap: {
+    flexWrap: 'wrap',
+  },
   heroTime: {
-    ...typography.artistTime,
-    color: colors.text,
-    fontSize: 14,
+    ...performanceTimeWeightStyle('medium'),
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.72)',
+  },
+  heroDivider: {
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+  },
+  heroDate: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.72)',
+    textTransform: 'none',
+    letterSpacing: 0,
   },
 });

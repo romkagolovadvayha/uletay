@@ -1,11 +1,18 @@
 import { SchedulePerformance, StageId } from '../types';
+import { toFestivalDayTimelineMinutes } from './festivalTime';
+import { getPerformanceDurationMinutes } from './performanceTime';
 import { sortByStartTime } from './scheduleHelpers';
 
-export const SCHEDULE_GRID_PIXELS_PER_MINUTE = 2.25;
-export const SCHEDULE_GRID_MIN_CARD_HEIGHT = 52;
+export const SCHEDULE_GRID_BASE_PIXELS_PER_MINUTE = 1;
+/** @deprecated Use getScheduleGridPixelsPerMinute() for day-specific scale. */
+export const SCHEDULE_GRID_PIXELS_PER_MINUTE = SCHEDULE_GRID_BASE_PIXELS_PER_MINUTE;
+export const SCHEDULE_GRID_MIN_CARD_HEIGHT = 44;
+export const SCHEDULE_GRID_CARD_GAP = 3;
+export const SCHEDULE_GRID_CARD_TOP_OFFSET = 6;
 export const SCHEDULE_GRID_TIME_AXIS_WIDTH = 44;
 export const SCHEDULE_GRID_COLUMN_GAP = 6;
 export const SCHEDULE_GRID_HOUR_STEP = 60;
+export const SCHEDULE_GRID_DAY_PADDING_MINUTES = 15;
 
 export function parseTimeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
@@ -20,32 +27,39 @@ export function formatMinutesAsClock(totalMinutes: number): string {
 
 export function getPerformanceEndMinutes(performance: SchedulePerformance): number {
   const start = parseTimeToMinutes(performance.startTime);
-  let end = parseTimeToMinutes(performance.endTime);
-  if (end <= start) {
-    end += 24 * 60;
-  }
-  return end;
+  return start + getPerformanceDurationMinutes(performance.startTime, performance.endTime);
 }
 
-export function getDayScheduleBounds(performances: SchedulePerformance[]): { start: number; end: number } {
+export function getDayScheduleBounds(
+  performances: SchedulePerformance[],
+  festivalDay: string,
+): { start: number; end: number } {
   if (performances.length === 0) {
-    return { start: 12 * 60, end: 24 * 60 };
+    return { start: 0, end: 12 * 60 };
   }
 
   let start = Number.POSITIVE_INFINITY;
   let end = 0;
 
   for (const performance of performances) {
-    const performanceStart = parseTimeToMinutes(performance.startTime);
-    const performanceEnd = getPerformanceEndMinutes(performance);
-    start = Math.min(start, performanceStart);
-    end = Math.max(end, performanceEnd);
+    const timelineStart = toFestivalDayTimelineMinutes(
+      performance.date,
+      performance.startTime,
+      festivalDay,
+    );
+    if (timelineStart === null) {
+      continue;
+    }
+
+    const timelineEnd = timelineStart + getPerformanceDurationMinutes(performance.startTime, performance.endTime);
+    start = Math.min(start, timelineStart);
+    end = Math.max(end, timelineEnd);
   }
 
-  const padding = 30;
+  const padding = SCHEDULE_GRID_DAY_PADDING_MINUTES;
   return {
     start: Math.max(0, Math.floor(start / SCHEDULE_GRID_HOUR_STEP) * SCHEDULE_GRID_HOUR_STEP - padding),
-    end: Math.ceil(end / SCHEDULE_GRID_HOUR_STEP) * SCHEDULE_GRID_HOUR_STEP + padding,
+    end: Math.min(24 * 60, Math.ceil(end / SCHEDULE_GRID_HOUR_STEP) * SCHEDULE_GRID_HOUR_STEP + padding),
   };
 }
 
@@ -84,24 +98,78 @@ export type ScheduleGridCardLayout = {
   height: number;
 };
 
+export function getScheduleGridPixelsPerMinute(performances: SchedulePerformance[]): number {
+  if (performances.length === 0) {
+    return SCHEDULE_GRID_BASE_PIXELS_PER_MINUTE;
+  }
+
+  const minSlotHeight = SCHEDULE_GRID_MIN_CARD_HEIGHT + SCHEDULE_GRID_CARD_GAP;
+  let minDuration = Number.POSITIVE_INFINITY;
+
+  for (const performance of performances) {
+    minDuration = Math.min(
+      minDuration,
+      getPerformanceDurationMinutes(performance.startTime, performance.endTime),
+    );
+  }
+
+  if (!Number.isFinite(minDuration) || minDuration <= 0) {
+    return SCHEDULE_GRID_BASE_PIXELS_PER_MINUTE;
+  }
+
+  const required = minSlotHeight / minDuration;
+  return Math.max(SCHEDULE_GRID_BASE_PIXELS_PER_MINUTE, Math.ceil(required));
+}
+
+function resolveCardLayoutOverlaps(cards: ScheduleGridCardLayout[]): ScheduleGridCardLayout[] {
+  if (cards.length <= 1) {
+    return cards;
+  }
+
+  const sorted = [...cards].sort((a, b) => a.top - b.top);
+  const resolved: ScheduleGridCardLayout[] = [sorted[0]!];
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    const previous = resolved[resolved.length - 1]!;
+    const current = { ...sorted[index]! };
+    const minTop = previous.top + previous.height + SCHEDULE_GRID_CARD_GAP;
+
+    if (current.top < minTop) {
+      current.top = minTop;
+    }
+
+    resolved.push(current);
+  }
+
+  return resolved;
+}
+
 export function layoutPerformanceCards(
   performances: SchedulePerformance[],
-  dayStart: number,
+  festivalDay: string,
+  timelineStart: number,
+  pixelsPerMinute: number = SCHEDULE_GRID_BASE_PIXELS_PER_MINUTE,
 ): ScheduleGridCardLayout[] {
-  return performances.map((performance) => {
-    const start = parseTimeToMinutes(performance.startTime);
-    const end = getPerformanceEndMinutes(performance);
-    const duration = Math.max(end - start, 15);
-    const height = Math.max(duration * SCHEDULE_GRID_PIXELS_PER_MINUTE, SCHEDULE_GRID_MIN_CARD_HEIGHT);
+  const layouts = performances.map((performance) => {
+    const start = toFestivalDayTimelineMinutes(performance.date, performance.startTime, festivalDay) ?? 0;
+    const duration = getPerformanceDurationMinutes(performance.startTime, performance.endTime);
+    const rawHeight = duration * pixelsPerMinute;
+    const height = Math.max(rawHeight - SCHEDULE_GRID_CARD_GAP, SCHEDULE_GRID_MIN_CARD_HEIGHT);
 
     return {
       performance,
-      top: (start - dayStart) * SCHEDULE_GRID_PIXELS_PER_MINUTE,
+      top: (start - timelineStart) * pixelsPerMinute + SCHEDULE_GRID_CARD_TOP_OFFSET,
       height,
     };
   });
+
+  return resolveCardLayoutOverlaps(layouts);
 }
 
-export function minutesToGridOffset(minutes: number, dayStart: number): number {
-  return (minutes - dayStart) * SCHEDULE_GRID_PIXELS_PER_MINUTE;
+export function minutesToGridOffset(
+  minutes: number,
+  dayStart: number,
+  pixelsPerMinute: number = SCHEDULE_GRID_BASE_PIXELS_PER_MINUTE,
+): number {
+  return (minutes - dayStart) * pixelsPerMinute;
 }

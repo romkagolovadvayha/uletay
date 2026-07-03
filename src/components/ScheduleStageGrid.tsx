@@ -7,20 +7,23 @@ import { typography } from '../theme/typography';
 import { getStageColor } from '../config/api';
 import {
   formatFestivalClock,
-  getCurrentTimeMinutes,
+  formatFestivalDayTimelineLabel,
+  getNowFestivalDayTimelineMinutes,
+} from '../utils/festivalTime';
+import {
   getPerformanceHighlight,
   isSameFestivalDay,
   type PerformanceHighlight,
 } from '../utils/scheduleHelpers';
 import {
-  formatMinutesAsClock,
   getDayScheduleBounds,
   getHourMarkers,
+  getScheduleGridPixelsPerMinute,
   groupPerformancesByStage,
   layoutPerformanceCards,
   minutesToGridOffset,
+  SCHEDULE_GRID_CARD_GAP,
   SCHEDULE_GRID_COLUMN_GAP,
-  SCHEDULE_GRID_PIXELS_PER_MINUTE,
   SCHEDULE_GRID_TIME_AXIS_WIDTH,
 } from '../utils/scheduleGrid';
 import { ScheduleGridCard } from './ScheduleGridCard';
@@ -51,27 +54,39 @@ export function ScheduleStageGrid({
   const columnWidth =
     (columnsWidth - SCHEDULE_GRID_COLUMN_GAP * Math.max(stages.length - 1, 0)) / Math.max(stages.length, 1);
 
-  const { dayStart, gridHeight, hourMarkers, performancesByStage, highlights } = useMemo(() => {
-    const bounds = getDayScheduleBounds(performances);
-    const height = (bounds.end - bounds.start) * SCHEDULE_GRID_PIXELS_PER_MINUTE;
+  const { dayStart, gridHeight, hourMarkers, performancesByStage, highlights, pixelsPerMinute } = useMemo(() => {
+    const bounds = getDayScheduleBounds(performances, selectedDate);
+    const ppm = getScheduleGridPixelsPerMinute(performances);
     const grouped = groupPerformancesByStage(performances);
     const highlightMap = performances.reduce<Record<string, PerformanceHighlight>>((acc, performance) => {
       acc[performance.id] = getPerformanceHighlight(performance, performances, now);
       return acc;
     }, {});
 
+    let maxBottom = (bounds.end - bounds.start) * ppm;
+    for (const stagePerformances of Object.values(grouped)) {
+      if (!stagePerformances?.length) {
+        continue;
+      }
+
+      for (const card of layoutPerformanceCards(stagePerformances, selectedDate, bounds.start, ppm)) {
+        maxBottom = Math.max(maxBottom, card.top + card.height);
+      }
+    }
+
     return {
       dayStart: bounds.start,
-      gridHeight: height,
+      gridHeight: maxBottom + SCHEDULE_GRID_CARD_GAP,
       hourMarkers: getHourMarkers(bounds.start, bounds.end),
       performancesByStage: grouped,
       highlights: highlightMap,
+      pixelsPerMinute: ppm,
     };
-  }, [now, performances]);
+  }, [now, performances, selectedDate]);
 
   const showNowLine = isSameFestivalDay(selectedDate, now);
-  const currentMinutes = getCurrentTimeMinutes(now);
-  const nowTop = minutesToGridOffset(currentMinutes, dayStart);
+  const nowTimeline = getNowFestivalDayTimelineMinutes(now, selectedDate);
+  const nowTop = nowTimeline !== null ? minutesToGridOffset(nowTimeline, dayStart, pixelsPerMinute) : -1;
   const nowInRange = showNowLine && nowTop >= 0 && nowTop <= gridHeight;
 
   useEffect(() => {
@@ -79,17 +94,22 @@ export function ScheduleStageGrid({
       return;
     }
 
-    const top = minutesToGridOffset(getCurrentTimeMinutes(new Date()), dayStart);
-    if (top < 0 || top > gridHeight) {
+    const timeline = getNowFestivalDayTimelineMinutes(new Date(), selectedDate);
+    if (timeline === null) {
+      return;
+    }
+
+    const scrollTop = minutesToGridOffset(timeline, dayStart, pixelsPerMinute);
+    if (scrollTop < 0 || scrollTop > gridHeight) {
       return;
     }
 
     const timer = setTimeout(() => {
-      scrollRef.current?.scrollTo({ y: Math.max(0, top - 140), animated: false });
+      scrollRef.current?.scrollTo({ y: Math.max(0, scrollTop - 140), animated: false });
     }, 80);
 
     return () => clearTimeout(timer);
-  }, [selectedDate, dayStart, gridHeight]);
+  }, [selectedDate, dayStart, gridHeight, pixelsPerMinute]);
 
   if (performances.length === 0) {
     return (
@@ -130,10 +150,10 @@ export function ScheduleStageGrid({
       >
         <View style={[styles.grid, { width: contentWidth, height: gridHeight }]}>
           {hourMarkers.map((minute) => {
-            const top = minutesToGridOffset(minute, dayStart);
+            const top = minutesToGridOffset(minute, dayStart, pixelsPerMinute);
             return (
               <View key={minute} style={[styles.hourLine, { top }]} pointerEvents="none">
-                <Text style={styles.hourLabel}>{formatMinutesAsClock(minute)}</Text>
+                <Text style={styles.hourLabel}>{formatFestivalDayTimelineLabel(minute, selectedDate)}</Text>
                 <View style={styles.hourRule} />
               </View>
             );
@@ -144,8 +164,7 @@ export function ScheduleStageGrid({
 
             {stages.map((stage, index) => {
               const stagePerformances = performancesByStage[stage.id] ?? [];
-              const cards = layoutPerformanceCards(stagePerformances, dayStart);
-              const stageColor = getStageColor(stage.id, stages);
+              const cards = layoutPerformanceCards(stagePerformances, selectedDate, dayStart, pixelsPerMinute);
 
               return (
                 <View
@@ -165,7 +184,6 @@ export function ScheduleStageGrid({
                       top={card.top}
                       height={card.height}
                       highlight={highlights[card.performance.id] ?? 'default'}
-                      stageColor={stageColor}
                       now={now}
                       isFavorite={isFavorite(card.performance.id)}
                       onToggleFavorite={() => onToggleFavorite(card.performance.id)}
@@ -242,7 +260,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textTransform: 'none',
     letterSpacing: 0,
-    marginTop: -7,
+    marginTop: -5,
   },
   hourRule: {
     flex: 1,

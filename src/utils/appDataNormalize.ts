@@ -1,4 +1,5 @@
 import { AppData, FestivalInfo, Stage } from '../types';
+import { capPerformanceEndTime } from './performanceTime';
 
 export const defaultStageColors: Record<Stage['id'], string> = {
   south: '#F5C518',
@@ -19,10 +20,12 @@ export function normalizeAppData(data: AppData): AppData {
     festival: {
       ...data.festival,
       heroImageUrl: data.festival.heroImageUrl ?? undefined,
+      logoImageUrl: data.festival.logoImageUrl ?? undefined,
     },
     stages: withDefaultStages(data.stages),
     schedule: data.schedule.map((item) => ({
       ...item,
+      endTime: capPerformanceEndTime(item.startTime, item.endTime),
       imageUrl: item.imageUrl ?? undefined,
     })),
     autographs: data.autographs.map((item) => ({

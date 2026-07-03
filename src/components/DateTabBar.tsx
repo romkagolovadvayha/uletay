@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { CenteredHorizontalScroll } from './CenteredHorizontalScroll';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -15,7 +16,7 @@ type Props = {
 
 export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: Props) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
+    <CenteredHorizontalScroll contentContainerStyle={styles.container} rowStyle={styles.row}>
       {dates.map((date) => {
         const isActive = date === selectedDate;
         const { day, month, weekday } = formatDateTabParts(date);
@@ -36,14 +37,16 @@ export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: P
           </Pressable>
         );
       })}
-    </ScrollView>
+    </CenteredHorizontalScroll>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.sm,
     paddingBottom: spacing.md / 2,
+  },
+  row: {
+    gap: spacing.sm,
   },
   tab: {
     minWidth: 64,

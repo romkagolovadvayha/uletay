@@ -24,6 +24,7 @@ export function AutographSessionRow({
 }: Props) {
   return (
     <EventScheduleRow
+      variant="autograph"
       time={formatTimeRange(session.startTime, session.endTime)}
       stageId={session.stageId}
       artist={session.artist}

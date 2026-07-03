@@ -2,7 +2,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { LiveArtistCard } from '../components/LiveArtistCard';
@@ -12,12 +12,12 @@ import { useAppData } from '../context/DataContext';
 import { useStagePrimaryPerformances } from '../hooks/useCurrentLivePerformance';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
+import { openScheduleTabMain } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { FESTIVAL_TIMEZONE, parseFestivalDateOnly } from '../utils/festivalTime';
-import { getFestivalDates, getStageName, parseDateTime } from '../utils/scheduleHelpers';
+import { getStageName, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
 import { getRemoteImageSource } from '../utils/imageSource';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'HomeTab'>;
@@ -26,71 +26,107 @@ type Props = {
   navigation: Navigation;
 };
 
+const HERO_BACKGROUND_HEIGHT = 580;
+const PARALLAX_FACTOR = 0.42;
+
 export function FestivalHomeScreen({ navigation }: Props) {
   const { data } = useAppData();
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
+  const scrollY = useMemo(() => new Animated.Value(0), []);
+
+  const backgroundTranslateY = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, HERO_BACKGROUND_HEIGHT],
+        outputRange: [0, -HERO_BACKGROUND_HEIGHT * PARALLAX_FACTOR],
+        extrapolate: 'clamp',
+      }),
+    [scrollY],
+  );
+
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: true,
+      }),
+    [scrollY],
+  );
 
   const festivalStart = useMemo(
     () => parseDateTime(data.festival.startDate, '12:00'),
     [data.festival.startDate],
   );
 
-  const festivalDatesLabel = useMemo(() => {
-    const dates = getFestivalDates(data.festival.startDate, data.festival.endDate);
-    if (dates.length === 0) {
-      return '';
-    }
-    const [, , startDay] = dates[0].split('-');
-    const [, , endDay] = dates[dates.length - 1].split('-');
-    const month = new Intl.DateTimeFormat('ru-RU', { month: 'long', timeZone: FESTIVAL_TIMEZONE })
-      .format(parseFestivalDateOnly(dates[0]))
-      .replace('.', '')
-      .toUpperCase();
-    return `${Number(startDay)}-${Number(endDay)} ${month}`;
-  }, [data.festival.endDate, data.festival.startDate]);
-
   const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');
-  const sectionTitle = hasAnyLive ? 'СЕЙЧАС НА СЦЕНАХ' : 'СКОРО НА СЦЕНАХ';
+  const hasAnySoon = stagePrimaries.some(
+    (item) =>
+      item.status === 'upcoming' &&
+      isStartingSoon(item.performance.date, item.performance.startTime, now),
+  );
+  const sectionTitle = hasAnyLive
+    ? 'СЕЙЧАС НА СЦЕНАХ'
+    : hasAnySoon
+      ? 'СКОРО НА СЦЕНАХ'
+      : 'СЛЕДУЮЩИЕ ВЫСТУПЛЕНИЯ';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.parallaxBackground,
+          {
+            transform: [{ translateY: backgroundTranslateY }],
+          },
+        ]}
+      >
+        <Image
+          source={getRemoteImageSource(
+            data.festival.heroImageUrl,
+            require('../../assets/images/hero-crowd.png'),
+          )}
+          style={styles.parallaxImage}
+          contentFit="cover"
+          contentPosition="top"
+        />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.92)']}
+          locations={[0, 0.45, 1]}
+          style={styles.parallaxGradient}
+        />
+      </Animated.View>
+
+      <Animated.ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={onScroll}
+      >
+        <View style={styles.heroStack}>
+          <View style={styles.heroContent}>
             <Image
               source={getRemoteImageSource(
-                data.festival.heroImageUrl,
-                require('../../assets/images/hero-crowd.png'),
+                data.festival.logoImageUrl,
+                require('../../assets/images/festival-logo.png'),
               )}
-              style={styles.heroImage}
-              contentFit="cover"
+              style={styles.logoImage}
+              contentFit="contain"
             />
-            <LinearGradient
-              colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.55)', colors.overlayStrong]}
-              locations={[0, 0.55, 1]}
-              style={styles.heroGradient}
-            />
-            <View style={styles.heroContent}>
-              <View style={styles.logoBlock}>
-                <Text style={styles.logoTop}>ФЕСТИВАЛЬ НАСТОЯЩЕЙ МУЗЫКИ</Text>
-                <Text style={styles.logoMain}>УЛЕТАЙ</Text>
-                <Text style={styles.logoYear}>{data.festival.year}</Text>
-                <Text style={styles.logoDates}>{festivalDatesLabel}</Text>
-              </View>
-              <Text style={styles.location}>{data.festival.location}</Text>
-              <Text style={styles.age}>{data.festival.ageRating}</Text>
-            </View>
+            <Text style={styles.tagline}>ФЕСТИВАЛЬ НАСТОЯЩЕЙ МУЗЫКИ</Text>
+            <Text style={styles.location}>{data.festival.location}</Text>
           </View>
 
-        <View style={styles.section}>
-          <CountdownTimer targetDate={festivalStart} />
-        </View>
+          <View style={styles.overlaySection}>
+            <CountdownTimer targetDate={festivalStart} />
+          </View>
 
-        <View style={styles.section}>
-          <PrimaryButton
-            label="РАСПИСАНИЕ"
-            onPress={() => navigation.navigate('ScheduleTab', { screen: 'ScheduleMain' })}
-          />
+          <View style={styles.overlaySection}>
+            <PrimaryButton
+              label="РАСПИСАНИЕ"
+              onPress={() => openScheduleTabMain(navigation)}
+            />
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -118,7 +154,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
@@ -127,66 +163,61 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
+    overflow: 'hidden',
   },
   content: {
     paddingBottom: spacing.xxl,
   },
-  hero: {
-    minHeight: 310,
+  parallaxBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HERO_BACKGROUND_HEIGHT + 80,
+    zIndex: 0,
+  },
+  parallaxImage: {
+    ...StyleSheet.absoluteFill,
+  },
+  parallaxGradient: {
+    ...StyleSheet.absoluteFill,
+  },
+  heroStack: {
+    position: 'relative',
     marginBottom: spacing.section,
-  },
-  heroImage: {
-    ...StyleSheet.absoluteFill,
-  },
-  heroGradient: {
-    ...StyleSheet.absoluteFill,
+    zIndex: 1,
   },
   heroContent: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxl,
-    paddingTop: spacing.xxxl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+    minHeight: 340,
+    gap: spacing.sm,
   },
-  logoBlock: {
-    alignItems: 'center',
-    marginBottom: spacing.md,
+  logoImage: {
+    width: '100%',
+    maxWidth: 360,
+    height: 156,
+    marginBottom: spacing.xs,
   },
-  logoTop: {
+  tagline: {
     ...typography.logoTagline,
     color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  logoMain: {
-    ...typography.logoMain,
-    color: colors.primary,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-  },
-  logoYear: {
-    ...typography.logoYear,
-    color: colors.text,
-    marginTop: -6,
-  },
-  logoDates: {
-    ...typography.logoDates,
-    color: colors.text,
-    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   location: {
     ...typography.location,
     color: colors.text,
-    marginTop: spacing.sm,
-  },
-  age: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
+    textAlign: 'center',
     textTransform: 'none',
-    letterSpacing: 0,
-    fontSize: 12,
+    letterSpacing: 0.4,
+    fontSize: 13,
+  },
+  overlaySection: {
+    paddingHorizontal: spacing.screen,
+    marginBottom: spacing.section,
   },
   section: {
     paddingHorizontal: spacing.screen,

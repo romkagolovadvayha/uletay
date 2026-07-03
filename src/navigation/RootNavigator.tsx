@@ -24,6 +24,7 @@ import {
   RootTabParamList,
   ScheduleStackParamList,
 } from './types';
+import { popScheduleStackToMain } from './scheduleNavigation';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const ScheduleStack = createNativeStackNavigator<ScheduleStackParamList>();
@@ -153,9 +154,15 @@ export function RootNavigator() {
       <Tab.Screen
         name="ScheduleTab"
         component={ScheduleNavigator}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            popScheduleStackToMain(navigation);
+          },
+        })}
         options={{
           title: 'Расписание',
           tabBarIcon: ({ color }) => <TabIcon name="calendar-outline" color={color} />,
+          popToTopOnBlur: true,
         }}
       />
       <Tab.Screen

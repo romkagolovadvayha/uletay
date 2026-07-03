@@ -9,15 +9,16 @@ import { SectionHeader } from './SectionHeader';
 import { useAppData } from '../context/DataContext';
 import { useNow } from '../hooks/useNow';
 import { ScheduleStackParamList } from '../navigation/types';
+import { openScheduleMainFromStack } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { PrimaryPerformance, getStageName, getUpcomingOnSameStage } from '../utils/scheduleHelpers';
+import { PrimaryPerformance, getStageName, getUpcomingOnSameStage, isStartingSoon } from '../utils/scheduleHelpers';
 import { useFavorites } from '../hooks/useFavorites';
 
 type Props = {
   primary: PrimaryPerformance | null;
-  navigation: Pick<NativeStackNavigationProp<ScheduleStackParamList>, 'navigate'>;
+  navigation: Pick<NativeStackNavigationProp<ScheduleStackParamList>, 'dispatch' | 'getState' | 'navigate'>;
 };
 
 export function ScheduleLiveView({ primary, navigation }: Props) {
@@ -27,6 +28,10 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
 
   const performance = primary?.performance;
   const status = primary?.status ?? 'upcoming';
+  const isSoon =
+    performance != null &&
+    status === 'upcoming' &&
+    isStartingSoon(performance.date, performance.startTime, now);
 
   const upcoming = useMemo(
     () => (performance ? getUpcomingOnSameStage(performance, data.schedule) : []),
@@ -38,12 +43,12 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
       <View style={styles.emptyWrap}>
         <Text style={styles.emptyTitle}>Расписание завершено</Text>
         <Text style={styles.emptyText}>Нет предстоящих выступлений в программе</Text>
-        <PrimaryButton label="СМОТРЕТЬ РАСПИСАНИЕ" onPress={() => navigation.navigate('ScheduleMain')} />
+        <PrimaryButton label="СМОТРЕТЬ РАСПИСАНИЕ" onPress={() => openScheduleMainFromStack(navigation)} />
       </View>
     );
   }
 
-  const headerTitle = status === 'live' ? 'СЕЙЧАС ВЫСТУПАЕТ' : 'СКОРО ВЫСТУПИТ';
+  const headerTitle = status === 'live' ? 'СЕЙЧАС ВЫСТУПАЕТ' : isSoon ? 'СКОРО ВЫСТУПИТ' : 'СЛЕДУЮЩЕЕ ВЫСТУПЛЕНИЕ';
 
   return (
     <>
@@ -58,7 +63,7 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
       <View style={styles.buttonWrap}>
         <PrimaryButton
           label="СМОТРЕТЬ РАСПИСАНИЕ"
-          onPress={() => navigation.navigate('ScheduleMain')}
+          onPress={() => openScheduleMainFromStack(navigation)}
         />
       </View>
 
@@ -70,6 +75,7 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
             performance={item}
             isFavorite={isFavorite(item.id)}
             onToggleFavorite={() => toggleFavorite(item.id)}
+            onPress={() => navigation.navigate('LiveDetail', { performanceId: item.id })}
           />
         ))
       ) : (

@@ -5,6 +5,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { useAppData } from '../context/DataContext';
 import { MoreStackParamList, RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -39,6 +40,8 @@ export function MoreScreen({ navigation }: Props) {
           <Text style={styles.menuLabel}>Моё расписание</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
+
+        <FavoriteNotificationsCard />
 
         {items.map((item) => (
           <View key={item.label} style={styles.card}>
