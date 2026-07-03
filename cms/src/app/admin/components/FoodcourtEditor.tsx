@@ -4,6 +4,7 @@ import {
   upsertFoodcourtAction,
 } from '../actions';
 import { DeleteButton } from './DeleteButton';
+import { AdminImagePreview, AdminImageThumb } from './AdminImageThumb';
 import type { FoodCourtCategory, FoodCourtVendor } from '@/types';
 import { presetHint } from '@/lib/image-presets';
 
@@ -124,9 +125,11 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
             </label>
           </div>
 
-          {editing?.imageUrl ? (
-            <img className="preview thumb" src={editing.imageUrl} alt={editing.name} />
-          ) : null}
+          <AdminImagePreview
+            imageUrl={editing?.imageUrl}
+            alt={editing?.name ?? 'preview'}
+            className="preview thumb"
+          />
 
           <div className="form-actions">
             <button type="submit" className="btn-primary">
@@ -157,11 +160,11 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
             {filtered.map((item) => (
               <tr key={item.id}>
                 <td>
-                  {item.imageUrl ? (
-                    <img className="list-thumb" src={item.imageUrl} alt={item.name} />
-                  ) : (
-                    '—'
-                  )}
+                  <AdminImageThumb
+                    imageUrl={item.imageUrl}
+                    alt={item.name}
+                    className="list-thumb"
+                  />
                 </td>
                 <td>{item.name}</td>
                 <td>{CATEGORY_LABEL[item.category]}</td>

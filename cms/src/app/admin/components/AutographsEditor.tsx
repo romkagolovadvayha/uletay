@@ -4,6 +4,7 @@ import {
   upsertAutographAction,
 } from '../actions';
 import { DeleteButton } from './DeleteButton';
+import { AdminImagePreview, AdminImageThumb } from './AdminImageThumb';
 import type { AutographSession, Stage } from '@/types';
 import { presetHint } from '@/lib/image-presets';
 
@@ -122,9 +123,12 @@ export function AutographsEditor({ items, stages, editId, stageFilter, dateFilte
             </label>
           </div>
 
-          {editing?.imageUrl ? (
-            <img className="preview thumb" src={editing.imageUrl} alt={editing.artist} />
-          ) : null}
+          <AdminImagePreview
+            imageUrl={editing?.imageUrl}
+            artist={editing?.artist}
+            alt={editing?.artist ?? 'preview'}
+            className="preview thumb"
+          />
 
           <div className="form-actions">
             <button type="submit" className="btn-primary">
@@ -155,11 +159,12 @@ export function AutographsEditor({ items, stages, editId, stageFilter, dateFilte
             {filtered.map((item) => (
               <tr key={item.id}>
                 <td>
-                  {item.imageUrl ? (
-                    <img className="list-thumb" src={item.imageUrl} alt={item.artist} />
-                  ) : (
-                    '—'
-                  )}
+                  <AdminImageThumb
+                    imageUrl={item.imageUrl}
+                    artist={item.artist}
+                    alt={item.artist}
+                    className="list-thumb"
+                  />
                 </td>
                 <td>{item.date}</td>
                 <td>

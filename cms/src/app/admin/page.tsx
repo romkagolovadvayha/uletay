@@ -12,6 +12,10 @@ import {
 } from './actions';
 import type { AdminTab } from '@/types';
 import { presetHint } from '@/lib/image-presets';
+import {
+  resolveAdminFestivalHeroSrc,
+  resolveAdminFestivalLogoSrc,
+} from '@/lib/resolve-admin-image';
 
 const TABS: Record<AdminTab, string> = {
   festival: 'Фестиваль',
@@ -109,12 +113,16 @@ export default async function AdminPage({
                   <input name="logoImageUrl" defaultValue={data.festival.logoImageUrl ?? ''} />
                 </label>
               </div>
-              {data.festival.heroImageUrl ? (
-                <img className="preview" src={data.festival.heroImageUrl} alt="hero" />
-              ) : null}
-              {data.festival.logoImageUrl ? (
-                <img className="preview logo-preview" src={data.festival.logoImageUrl} alt="logo" />
-              ) : null}
+              <img
+                className="preview"
+                src={resolveAdminFestivalHeroSrc(data.festival.heroImageUrl)}
+                alt="hero"
+              />
+              <img
+                className="preview logo-preview"
+                src={resolveAdminFestivalLogoSrc(data.festival.logoImageUrl)}
+                alt="logo"
+              />
               <button type="submit" className="btn-primary">
                 Сохранить фестиваль
               </button>
