@@ -3,6 +3,11 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppData } from '../types';
 import { FavoriteType } from './favoriteKeys';
+import {
+  hasWebNotificationApi,
+  isSecureWebContext,
+  needsPwaForWebNotifications,
+} from './webNotifications';
 import { parseDateTime } from './scheduleHelpers';
 
 const REMINDER_LEAD_MS = 10 * 60 * 1000;
@@ -11,7 +16,12 @@ export const NOTIFICATIONS_ENABLED_KEY = '@uletay_notifications_enabled';
 
 const webReminderTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-export type NotificationPermissionStatus = 'granted' | 'denied' | 'undetermined' | 'unsupported';
+export type NotificationPermissionStatus =
+  | 'granted'
+  | 'denied'
+  | 'undetermined'
+  | 'unsupported'
+  | 'in-app-only';
 
 export type FavoriteReminderPayload = {
   id: string;
@@ -93,8 +103,11 @@ export async function saveNotificationsEnabled(enabled: boolean): Promise<void> 
 
 export async function getNotificationPermissionStatus(): Promise<NotificationPermissionStatus> {
   if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !('Notification' in window) || !window.isSecureContext) {
+    if (typeof window === 'undefined' || !isSecureWebContext()) {
       return 'unsupported';
+    }
+    if (!hasWebNotificationApi()) {
+      return needsPwaForWebNotifications() ? 'in-app-only' : 'unsupported';
     }
     if (Notification.permission === 'granted') {
       return 'granted';
@@ -116,10 +129,10 @@ export async function getNotificationPermissionStatus(): Promise<NotificationPer
 }
 
 export function startWebNotificationPermissionRequest(): Promise<NotificationPermission> | null {
-  if (Platform.OS !== 'web' || typeof window === 'undefined' || !('Notification' in window)) {
+  if (Platform.OS !== 'web' || typeof window === 'undefined' || !hasWebNotificationApi()) {
     return null;
   }
-  if (!window.isSecureContext) {
+  if (!isSecureWebContext()) {
     return null;
   }
   if (Notification.permission === 'granted') {
@@ -135,8 +148,11 @@ export async function requestNotificationPermissions(
   webPermissionPromise?: Promise<NotificationPermission> | null,
 ): Promise<boolean> {
   if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !('Notification' in window) || !window.isSecureContext) {
+    if (typeof window === 'undefined' || !isSecureWebContext()) {
       return false;
+    }
+    if (!hasWebNotificationApi()) {
+      return true;
     }
     if (Notification.permission === 'granted') {
       return true;

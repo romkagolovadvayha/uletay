@@ -19,7 +19,14 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "УЛЕТАЙ 2026",
+      "shortName": "УЛЕТАЙ",
+      "display": "standalone",
+      "themeColor": "#000000",
+      "backgroundColor": "#000000",
+      "startUrl": "/",
+      "scope": "/"
     },
     "plugins": [
       "expo-image",

@@ -28,6 +28,9 @@ function getEnableFailureMessage(status: NotificationPermissionStatus): string {
   if (status === 'unsupported') {
     return 'Уведомления недоступны. Откройте сайт по HTTPS или используйте другой браузер.';
   }
+  if (status === 'in-app-only') {
+    return 'Системные уведомления недоступны в этой вкладке. Напоминания будут внутри приложения.';
+  }
   return 'Не удалось включить уведомления. Попробуйте ещё раз.';
 }
 

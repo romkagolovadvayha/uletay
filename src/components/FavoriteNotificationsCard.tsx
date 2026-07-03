@@ -1,27 +1,106 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { createElement } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNotificationSettings } from '../context/NotificationSettingsContext';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { startWebNotificationPermissionRequest } from '../utils/favoriteNotifications';
+import { startWebNotificationPermissionRequest, NotificationPermissionStatus } from '../utils/favoriteNotifications';
+
+function getDisabledSubtitle(permission: NotificationPermissionStatus): string {
+  if (permission === 'unsupported') {
+    return 'Нужен HTTPS или браузер с поддержкой уведомлений';
+  }
+  if (permission === 'denied') {
+    return 'Разрешите уведомления в настройках устройства или браузера';
+  }
+  if (permission === 'in-app-only') {
+    return 'В Safari на iPhone системные push недоступны во вкладке. Напомним внутри приложения, пока сайт открыт. Для push: «Поделиться» → «На экран Домой».';
+  }
+  return 'За 10 минут до выступления или автограф-сессии';
+}
+
+function getEnabledSubtitle(): string {
+  if (Platform.OS === 'web') {
+    return 'Напомним за 10 минут, пока открыт сайт. На iPhone во вкладке Safari — баннер внутри приложения.';
+  }
+  return 'Напомним за 10 минут до избранного события';
+}
+
+type EnableButtonProps = {
+  busy: boolean;
+  disabled: boolean;
+  onEnable: (webPermissionPromise?: Promise<NotificationPermission> | null) => void;
+};
+
+function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
+  if (Platform.OS === 'web') {
+    return createElement(
+      'button',
+      {
+        type: 'button',
+        disabled: disabled || busy,
+        onClick: (event: MouseEvent) => {
+          event.preventDefault();
+          if (disabled || busy) {
+            return;
+          }
+          const webPermissionPromise = startWebNotificationPermissionRequest();
+          onEnable(webPermissionPromise);
+        },
+        style: {
+          backgroundColor: colors.primary,
+          borderRadius: radius.md,
+          paddingTop: 12,
+          paddingBottom: 12,
+          paddingLeft: 16,
+          paddingRight: 16,
+          minHeight: 44,
+          width: '100%',
+          border: 'none',
+          cursor: disabled || busy ? 'not-allowed' : 'pointer',
+          opacity: disabled || busy ? 0.45 : 1,
+          fontFamily: typography.button.fontFamily,
+          fontSize: 14,
+          fontWeight: '700',
+          color: colors.primaryText,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      },
+      busy
+        ? createElement(ActivityIndicator, { size: 'small', color: colors.primaryText })
+        : 'Включить уведомления',
+    );
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled || busy}
+      onPress={() => onEnable(undefined)}
+      style={({ pressed }) => [
+        styles.enableButton,
+        (disabled || busy) && styles.enableButtonDisabled,
+        pressed && !busy && styles.pressed,
+      ]}
+    >
+      {busy ? (
+        <ActivityIndicator size="small" color={colors.primaryText} />
+      ) : (
+        <Text style={styles.enableLabel}>Включить уведомления</Text>
+      )}
+    </Pressable>
+  );
+}
 
 export function FavoriteNotificationsCard() {
   const { enabled, permission, ready, busy, feedback, enableNotifications, disableNotifications } =
     useNotificationSettings();
 
-  const handleEnable = () => {
-    if (busy || permission === 'denied' || permission === 'unsupported') {
-      return;
-    }
-
-    const webPermissionPromise =
-      Platform.OS === 'web' ? startWebNotificationPermissionRequest() : undefined;
-
-    void enableNotifications(webPermissionPromise);
-  };
+  const enableDisabled = busy || permission === 'denied' || permission === 'unsupported';
 
   if (!ready) {
     return null;
@@ -34,11 +113,7 @@ export function FavoriteNotificationsCard() {
           <Ionicons name="notifications" size={22} color={colors.primary} />
           <View style={styles.textWrap}>
             <Text style={styles.title}>Уведомления включены</Text>
-            <Text style={styles.subtitle}>
-              {Platform.OS === 'web'
-                ? 'Напомним за 10 минут, пока открыт сайт'
-                : 'Напомним за 10 минут до избранного события'}
-            </Text>
+            <Text style={styles.subtitle}>{getEnabledSubtitle()}</Text>
           </View>
         </View>
         <Pressable
@@ -54,38 +129,20 @@ export function FavoriteNotificationsCard() {
     );
   }
 
-  const subtitle =
-    permission === 'unsupported'
-      ? 'Нужен HTTPS или браузер с поддержкой уведомлений'
-      : permission === 'denied'
-        ? 'Разрешите уведомления в настройках устройства или браузера'
-        : 'За 10 минут до выступления или автограф-сессии';
-
   return (
     <View style={styles.card}>
       <View style={styles.row}>
         <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
         <View style={styles.textWrap}>
           <Text style={styles.title}>Напоминания об избранном</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text style={styles.subtitle}>{getDisabledSubtitle(permission)}</Text>
         </View>
       </View>
-      <Pressable
-        accessibilityRole="button"
-        disabled={busy || permission === 'denied' || permission === 'unsupported'}
-        onPress={handleEnable}
-        style={({ pressed }) => [
-          styles.enableButton,
-          (busy || permission === 'denied' || permission === 'unsupported') && styles.enableButtonDisabled,
-          pressed && !busy && styles.pressed,
-        ]}
-      >
-        {busy ? (
-          <ActivityIndicator size="small" color={colors.primaryText} />
-        ) : (
-          <Text style={styles.enableLabel}>Включить уведомления</Text>
-        )}
-      </Pressable>
+      <EnableButton
+        busy={busy}
+        disabled={enableDisabled}
+        onEnable={(webPermissionPromise) => void enableNotifications(webPermissionPromise)}
+      />
       {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
     </View>
   );
