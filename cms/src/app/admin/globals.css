@@ -229,6 +229,15 @@ button[type='submit']:not(.btn-danger):not(.link-button) {
   margin-top: 12px;
 }
 
+.list-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+  background: #2c2c2e;
+}
+
 .stage-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

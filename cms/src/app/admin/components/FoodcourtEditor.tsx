@@ -144,6 +144,7 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
         <table className="data-table">
           <thead>
             <tr>
+              <th />
               <th>Название</th>
               <th>Категория</th>
               <th>Локация</th>
@@ -155,6 +156,13 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
           <tbody>
             {filtered.map((item) => (
               <tr key={item.id}>
+                <td>
+                  {item.imageUrl ? (
+                    <img className="list-thumb" src={item.imageUrl} alt={item.name} />
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td>{item.name}</td>
                 <td>{CATEGORY_LABEL[item.category]}</td>
                 <td>{item.location}</td>

@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
@@ -15,7 +14,7 @@ import {
   parseDateTime,
   TimedStatus,
 } from '../utils/scheduleHelpers';
-import { getRemoteImageSource } from '../utils/imageSource';
+import { ArtistImage } from './ArtistImage';
 import { CompetitionLabel } from './CompetitionLabel';
 import { LiveBadge } from './LiveBadge';
 import { PerformanceTimeDateRow, performanceTimeWeightStyle } from './PerformanceTimeDateRow';
@@ -26,12 +25,11 @@ type CardProps = {
   stageName: string;
   status: TimedStatus;
   onPress?: () => void;
-  imageSource?: number;
   now?: Date;
   style?: ViewStyle;
 };
 
-export function LiveArtistCard({ performance, stageName, status, onPress, imageSource, now = new Date(), style }: CardProps) {
+export function LiveArtistCard({ performance, stageName, status, onPress, now = new Date(), style }: CardProps) {
   const isLive = status === 'live';
   const isSoon =
     status === 'upcoming' && isStartingSoon(performance.date, performance.startTime, now);
@@ -51,11 +49,7 @@ export function LiveArtistCard({ performance, stageName, status, onPress, imageS
         pressed && styles.pressed,
       ]}
     >
-      <Image
-        source={getRemoteImageSource(performance.imageUrl, imageSource)}
-        style={styles.thumbnail}
-        contentFit="cover"
-      />
+      <ArtistImage imageUrl={performance.imageUrl} artist={performance.artist} style={styles.thumbnail} />
       <View style={styles.content}>
         <Text style={styles.artist} numberOfLines={1}>
           {performance.artist}
@@ -84,11 +78,10 @@ type HeroProps = {
   performance: SchedulePerformance;
   stageName: string;
   status: TimedStatus;
-  imageSource?: number;
   now?: Date;
 };
 
-export function LiveHeroCard({ performance, stageName, status, imageSource, now = new Date() }: HeroProps) {
+export function LiveHeroCard({ performance, stageName, status, now = new Date() }: HeroProps) {
   const isLive = status === 'live';
   const isSoon =
     status === 'upcoming' && isStartingSoon(performance.date, performance.startTime, now);
@@ -98,11 +91,7 @@ export function LiveHeroCard({ performance, stageName, status, imageSource, now 
 
   return (
     <View style={styles.heroCard}>
-      <Image
-        source={getRemoteImageSource(performance.imageUrl, imageSource)}
-        style={styles.heroImage}
-        contentFit="cover"
-      />
+      <ArtistImage imageUrl={performance.imageUrl} artist={performance.artist} style={styles.heroImage} variant="hero" />
       <LinearGradient
         colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.35)', colors.overlayStrong]}
         locations={[0, 0.45, 1]}

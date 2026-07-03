@@ -132,6 +132,16 @@ cd /var/www/uletay/cms && npm run db:install
 
 После этого обычные деплои не перезаписывают контент и `imageUrl`.
 
+**Восстановить картинки артистов с uletayfest.ru** (только где имя файла на сайте узнаваемо):
+
+```bash
+cd /var/www/uletay/cms
+npm run import:fest-images
+```
+
+По умолчанию заполняет только пустые `imageUrl`, уже загруженные в админке не трогает.
+Флаги: `--dry-run`, `--force`, `--external` (ссылки на tildacdn без скачивания).
+
 ## HTTPS не работает / нет редиректа
 
 На сервере:

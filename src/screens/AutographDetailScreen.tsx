@@ -1,10 +1,10 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArtistImage } from '../components/ArtistImage';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { AutographStackParamList } from '../navigation/types';
@@ -13,7 +13,6 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { formatDateLabel, formatTimeRange } from '../utils/scheduleHelpers';
-import { getRemoteImageSource } from '../utils/imageSource';
 
 type Props = NativeStackScreenProps<AutographStackParamList, 'AutographDetail'>;
 
@@ -43,14 +42,7 @@ export function AutographDetailScreen({ navigation, route }: Props) {
     <View style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap}>
-          <Image
-            source={getRemoteImageSource(
-              session.imageUrl ?? data.festival.heroImageUrl,
-              require('../../assets/images/hero-crowd.png'),
-            )}
-            style={styles.heroImage}
-            contentFit="cover"
-          />
+          <ArtistImage imageUrl={session.imageUrl} artist={session.artist} style={styles.heroImage} variant="hero" />
           <LinearGradient colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.7)']} style={styles.heroGradient} />
           <SafeAreaView edges={['top']} style={styles.heroTopBar}>
             <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} hitSlop={12}>

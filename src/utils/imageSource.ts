@@ -9,5 +9,8 @@ export function getRemoteImageSource(
   if (resolved) {
     return { uri: resolved };
   }
-  return fallback ?? require('../../assets/images/artist-nadi.png');
+  if (fallback) {
+    return fallback;
+  }
+  throw new Error('getRemoteImageSource: no image URL or fallback provided');
 }

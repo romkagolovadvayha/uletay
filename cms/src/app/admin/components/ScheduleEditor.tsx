@@ -147,6 +147,7 @@ export function ScheduleEditor({ items, stages, editId, stageFilter, dateFilter 
         <table className="data-table">
           <thead>
             <tr>
+              <th />
               <th>Дата</th>
               <th>Время</th>
               <th>Сцена</th>
@@ -157,6 +158,13 @@ export function ScheduleEditor({ items, stages, editId, stageFilter, dateFilter 
           <tbody>
             {filtered.map((item) => (
               <tr key={item.id}>
+                <td>
+                  {item.imageUrl ? (
+                    <img className="list-thumb" src={item.imageUrl} alt={item.artist} />
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td>{item.date}</td>
                 <td>
                   {item.startTime}–{item.endTime}
