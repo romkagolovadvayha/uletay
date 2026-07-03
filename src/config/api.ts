@@ -7,10 +7,25 @@ const DEFAULT_COLORS: Record<StageId, string> = {
   'ren-tv': '#FF5520',
 };
 
+const EXPO_DEV_PORTS = new Set(['8081', '8082', '19006', '19000']);
+
+function getWebApiBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:3000/api';
+  }
+
+  const { origin, port } = window.location;
+  if (EXPO_DEV_PORTS.has(port)) {
+    return 'http://localhost:3000/api';
+  }
+
+  return `${origin}/api`;
+}
+
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
   (Platform.OS === 'web' && typeof window !== 'undefined'
-    ? `${window.location.origin}/api`
+    ? getWebApiBaseUrl()
     : 'http://localhost:3000/api');
 
 export const CACHE_TTL_MS = 60_000;
@@ -22,6 +37,10 @@ export function resolveMediaUrl(path?: string | null): string | undefined {
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
   }
+  if (path.startsWith('/api/')) {
+    const apiOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+    return `${apiOrigin}${path}`;
+  }
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     if (path.startsWith('/')) {
@@ -29,7 +48,7 @@ export function resolveMediaUrl(path?: string | null): string | undefined {
     }
     return `${origin}/${path}`;
   }
-  return `http://localhost${path}`;
+  return `http://localhost${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 export function getStageColor(stageId: StageId, stages?: Stage[]): string {

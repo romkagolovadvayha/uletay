@@ -6,12 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FoodCourtCard } from '../components/FoodCourtCard';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
-import { FoodCourtStackParamList } from '../navigation/types';
+import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
-type Props = NativeStackScreenProps<FoodCourtStackParamList, 'FoodCourtDetail'>;
+type Props = NativeStackScreenProps<MoreStackParamList, 'FoodCourtDetail'>;
 
 export function FoodCourtDetailScreen({ navigation, route }: Props) {
   const { data } = useAppData();

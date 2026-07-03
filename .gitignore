@@ -39,7 +39,9 @@ uploads/
 cms/.next/
 deploy/ecosystem.runtime.cjs
 
-# typescript
+scripts/.fest-cache/
+scripts/fest-artist-sync-report.json
+*.traineddata
 *.tsbuildinfo
 
 # generated native folders

@@ -5,31 +5,36 @@ import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { AutographDetailScreen } from '../screens/AutographDetailScreen';
 import { AutographsScreen } from '../screens/AutographsScreen';
-import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { FoodCourtDetailScreen } from '../screens/FoodCourtDetailScreen';
 import { FoodCourtScreen } from '../screens/FoodCourtScreen';
+import { FestivalAboutScreen } from '../screens/FestivalAboutScreen';
+import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { FullScheduleScreen } from '../screens/FullScheduleScreen';
 import { LiveDetailScreen } from '../screens/LiveDetailScreen';
-import { MoreScreen } from '../screens/MoreScreen';
+import { MorePlaceholderScreen } from '../screens/MorePlaceholderScreen';
+import { PlaylistScreen } from '../screens/PlaylistScreen';
 import { MyScheduleScreen } from '../screens/MyScheduleScreen';
 import { ScheduleMainScreen } from '../screens/ScheduleMainScreen';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
 import { FavoriteNotificationHost } from '../components/FavoriteNotificationHost';
+import { MoreMenuSheet } from '../components/MoreMenuSheet';
+import { MoreMenuProvider, useMoreMenu } from '../context/MoreMenuContext';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import {
   AutographStackParamList,
-  FoodCourtStackParamList,
   MoreStackParamList,
   RootTabParamList,
   ScheduleStackParamList,
 } from './types';
-import { popScheduleStackToMain } from './scheduleNavigation';
+import {
+  createFlatTabListeners,
+  createNestedTabListeners,
+} from './scheduleNavigation';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const ScheduleStack = createNativeStackNavigator<ScheduleStackParamList>();
 const MoreStack = createNativeStackNavigator<MoreStackParamList>();
-const FoodCourtStack = createNativeStackNavigator<FoodCourtStackParamList>();
 const AutographStack = createNativeStackNavigator<AutographStackParamList>();
 
 const TAB_ICON_SIZE = 22;
@@ -70,20 +75,6 @@ function TabLabel({ color, children }: { color: string; children: string }) {
   );
 }
 
-function FoodCourtNavigator() {
-  return (
-    <FoodCourtStack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-      }}
-    >
-      <FoodCourtStack.Screen name="FoodCourtMain" component={FoodCourtScreen} />
-      <FoodCourtStack.Screen name="FoodCourtDetail" component={FoodCourtDetailScreen} />
-    </FoodCourtStack.Navigator>
-  );
-}
-
 function ScheduleNavigator() {
   return (
     <ScheduleStack.Navigator
@@ -117,20 +108,25 @@ function AutographNavigator() {
 function MoreNavigator() {
   return (
     <MoreStack.Navigator
+      initialRouteName="MoreHome"
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <MoreStack.Screen name="MoreHome" component={MoreScreen} />
+      <MoreStack.Screen name="MoreHome" component={MorePlaceholderScreen} />
+      <MoreStack.Screen name="FoodCourtMain" component={FoodCourtScreen} />
+      <MoreStack.Screen name="FoodCourtDetail" component={FoodCourtDetailScreen} />
+      <MoreStack.Screen name="FestivalAbout" component={FestivalAboutScreen} />
     </MoreStack.Navigator>
   );
 }
 
-export function RootNavigator() {
+function RootTabs() {
+  const { open } = useMoreMenu();
+
   return (
-    <View style={styles.root}>
-      <Tab.Navigator
+    <Tab.Navigator
       initialRouteName="HomeTab"
       screenOptions={{
         headerShown: false,
@@ -146,6 +142,7 @@ export function RootNavigator() {
       <Tab.Screen
         name="HomeTab"
         component={FestivalHomeScreen}
+        listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Главная',
           tabBarIcon: ({ color }) => <TabIcon name="home-outline" color={color} />,
@@ -154,14 +151,7 @@ export function RootNavigator() {
       <Tab.Screen
         name="ScheduleTab"
         component={ScheduleNavigator}
-        listeners={({ navigation }) => ({
-          blur: () => {
-            popScheduleStackToMain(navigation);
-          },
-          tabPress: () => {
-            popScheduleStackToMain(navigation);
-          },
-        })}
+        listeners={({ navigation }) => createNestedTabListeners(navigation, 'ScheduleTab')}
         options={{
           title: 'Расписание',
           tabBarIcon: ({ color }) => <TabIcon name="calendar-outline" color={color} />,
@@ -171,38 +161,59 @@ export function RootNavigator() {
       <Tab.Screen
         name="Autographs"
         component={AutographNavigator}
+        listeners={({ navigation }) => createNestedTabListeners(navigation, 'Autographs')}
         options={{
           title: 'Автографы',
           tabBarIcon: ({ color }) => <TabIcon name="ticket-outline" color={color} />,
+          popToTopOnBlur: true,
         }}
       />
       <Tab.Screen
         name="FavoritesTab"
         component={MyScheduleScreen}
+        listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Избранное',
           tabBarIcon: ({ color }) => <TabIcon name="star-outline" color={color} />,
         }}
       />
       <Tab.Screen
-        name="FoodCourt"
-        component={FoodCourtNavigator}
+        name="PlaylistTab"
+        component={PlaylistScreen}
+        listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
-          title: 'Фудкорт',
-          tabBarIcon: ({ color }) => <TabIcon name="restaurant-outline" color={color} />,
+          title: 'Плейлист',
+          tabBarIcon: ({ color }) => <TabIcon name="radio-outline" color={color} />,
         }}
       />
       <Tab.Screen
         name="MoreTab"
         component={MoreNavigator}
+        listeners={({ navigation }) =>
+          createNestedTabListeners(navigation, 'MoreTab', (event) => {
+            event.preventDefault();
+            open();
+          })
+        }
         options={{
           title: 'Ещё',
           tabBarIcon: ({ color }) => <TabIcon name="reorder-three-outline" color={color} />,
+          popToTopOnBlur: true,
         }}
       />
     </Tab.Navigator>
-      <FavoriteNotificationHost />
-      <FavoriteAddedToast />
-    </View>
+  );
+}
+
+export function RootNavigator() {
+  return (
+    <MoreMenuProvider>
+      <View style={styles.root}>
+        <RootTabs />
+        <MoreMenuSheet />
+        <FavoriteNotificationHost />
+        <FavoriteAddedToast />
+      </View>
+    </MoreMenuProvider>
   );
 }

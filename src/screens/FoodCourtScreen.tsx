@@ -5,14 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryPillBar } from '../components/CategoryPillBar';
 import { FoodCourtCard } from '../components/FoodCourtCard';
 import { useAppData } from '../context/DataContext';
-import { FoodCourtStackParamList } from '../navigation/types';
+import { MoreStackParamList } from '../navigation/types';
 import { FOOD_COURT_CATEGORIES, FoodCourtFilter } from '../utils/foodCourtHelpers';
 import { colors } from '../theme/colors';
 import { screenHeaderStyle } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
-type Props = NativeStackScreenProps<FoodCourtStackParamList, 'FoodCourtMain'>;
+type Props = NativeStackScreenProps<MoreStackParamList, 'FoodCourtMain'>;
 
 export function FoodCourtScreen({ navigation }: Props) {
   const { data } = useAppData();

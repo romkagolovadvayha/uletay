@@ -1,6 +1,18 @@
+import { ImageSource } from 'expo-image';
+import { resolveMediaUrl } from '../config/api';
+import { festArtistAssets } from '../data/festArtistAssets.generated';
 import festSources from '../../scripts/fest-artist-sources.json';
 
-const byNorm = new Map<string, string>();
+const festArtistUrls = festSources.artists as Record<string, string>;
+
+const artistAliases: Record<string, string> = {
+  ГОРШЕНЕВ: 'ГОРШЕНЕВА',
+  RAVANNA: 'РАВАННА / RAVANNA',
+  SELLOUT: 'СЕЛЛАУТ / SELLOUT',
+  'КОСТЯ КУЛЯСОВ': 'КОСТЯ КУЛЯСОВ. АНИМАЦИЯ',
+  POLNALYUBVI: 'ПОЛНАЛЮБВИ / POLNALYUBVI',
+  'ВИА ВОЛГА-ВОЛГА': 'ВИА «ВОЛГА-ВОЛГА»',
+};
 
 function normalize(name: string): string {
   return name
@@ -10,29 +22,36 @@ function normalize(name: string): string {
     .trim();
 }
 
-for (const [artist, url] of Object.entries(festSources.artists)) {
-  byNorm.set(normalize(artist), url);
-  const primary = artist.split('/')[0].trim();
-  byNorm.set(normalize(primary), url);
-}
+function resolveArtistKey(artist: string): string | undefined {
+  const candidates = [artist, artistAliases[artist]].filter(Boolean) as string[];
 
-export function getFestArtistImageUrl(artist?: string | null): string | undefined {
-  if (!artist) return undefined;
+  for (const candidate of candidates) {
+    if (festArtistAssets[candidate] || festArtistUrls[candidate]) return candidate;
 
-  const exact = festSources.artists[artist as keyof typeof festSources.artists];
-  if (exact) return exact;
+    const n = normalize(candidate);
+    for (const key of Object.keys({ ...festArtistAssets, ...festArtistUrls })) {
+      if (normalize(key) === n) return key;
+    }
 
-  const n = normalize(artist);
-  if (byNorm.has(n)) return byNorm.get(n);
-
-  const primary = normalize(artist.split('/')[0]);
-  if (byNorm.has(primary)) return byNorm.get(primary);
-
-  for (const [name, url] of byNorm) {
-    if (n.includes(name) || name.includes(n)) {
-      return url;
+    const primary = normalize(candidate.split('/')[0]);
+    for (const key of Object.keys({ ...festArtistAssets, ...festArtistUrls })) {
+      const k = normalize(key.split('/')[0]);
+      if (k === primary) return key;
     }
   }
 
   return undefined;
+}
+
+export function getFestArtistImageSource(artist?: string | null): ImageSource | number | undefined {
+  if (!artist) return undefined;
+  const key = resolveArtistKey(artist);
+  if (!key) return undefined;
+
+  const asset = festArtistAssets[key];
+  if (asset) return asset;
+
+  const url = festArtistUrls[key];
+  const resolved = resolveMediaUrl(url);
+  return resolved ? { uri: resolved } : undefined;
 }

@@ -31,7 +31,14 @@
     "plugins": [
       "expo-image",
       "expo-font",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true,
+          "enableBackgroundRecording": false
+        }
+      ]
     ]
   }
 }

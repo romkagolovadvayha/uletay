@@ -5,7 +5,7 @@ import React from 'react';
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { resolveMediaUrl } from '../config/api';
 import { colors } from '../theme/colors';
-import { getFestArtistImageUrl } from '../utils/festArtistImages';
+import { getFestArtistImageSource } from '../utils/festArtistImages';
 
 type Props = {
   imageUrl?: string | null;
@@ -16,11 +16,16 @@ type Props = {
 };
 
 export function ArtistImage({ imageUrl, artist, style, contentFit = 'cover', variant = 'thumbnail' }: Props) {
-  const resolved = resolveMediaUrl(imageUrl) ?? getFestArtistImageUrl(artist);
+  const festSource = getFestArtistImageSource(artist);
+  const cmsUrl = resolveMediaUrl(imageUrl);
   const iconSize = variant === 'hero' ? 72 : 32;
 
-  if (resolved) {
-    return <Image source={{ uri: resolved }} style={style} contentFit={contentFit} />;
+  if (festSource) {
+    return <Image source={festSource} style={style} contentFit={contentFit} />;
+  }
+
+  if (cmsUrl) {
+    return <Image source={{ uri: cmsUrl }} style={style} contentFit={contentFit} />;
   }
 
   return (

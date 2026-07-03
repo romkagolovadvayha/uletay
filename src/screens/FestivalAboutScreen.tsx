@@ -1,47 +1,40 @@
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { useAppData } from '../context/DataContext';
-import { MoreStackParamList, RootTabParamList } from '../navigation/types';
+import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { screenTitleSpacing } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography, appFont } from '../theme/typography';
 
-type Props = NativeStackScreenProps<MoreStackParamList, 'MoreHome'>;
+type Props = NativeStackScreenProps<MoreStackParamList, 'FestivalAbout'>;
 
-export function MoreScreen({ navigation }: Props) {
+export function FestivalAboutScreen({ navigation }: Props) {
   const { data } = useAppData();
-  const tabNavigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
 
   const items = [
     { label: 'О фестивале', value: `${data.festival.name} ${data.festival.year}` },
     { label: 'Даты', value: '8–12 июля 2026' },
     { label: 'Локация', value: data.festival.locationShort },
-    { label: 'Данные', value: 'Загружаются с сервера, кэш 1 мин' },
+    { label: 'Возраст', value: data.festival.ageRating },
   ];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>ЕЩЁ</Text>
-
         <Pressable
           accessibilityRole="button"
-          style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-          onPress={() => tabNavigation.navigate('FavoritesTab')}
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
         >
-          <Ionicons name="star-outline" size={20} color={colors.primary} />
-          <Text style={styles.menuLabel}>Моё расписание</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
+          <Text style={styles.backLabel}>Назад</Text>
         </Pressable>
 
-        <FavoriteNotificationsCard />
+        <Text style={styles.title}>О ФЕСТИВАЛЕ</Text>
 
         {items.map((item) => (
           <View key={item.label} style={styles.card}>
@@ -49,7 +42,6 @@ export function MoreScreen({ navigation }: Props) {
             <Text style={styles.cardValue}>{item.value}</Text>
           </View>
         ))}
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -64,28 +56,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xxl,
   },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+    alignSelf: 'flex-start',
+  },
+  backLabel: {
+    ...appFont('semiBold'),
+    color: colors.textSecondary,
+    fontSize: 15,
+  },
   title: {
     ...typography.screenTitle,
     color: colors.text,
     ...screenTitleSpacing,
-  },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  menuLabel: {
-    ...typography.body,
-    ...appFont('semiBold'),
-    color: colors.text,
-    fontSize: 15,
-    flex: 1,
   },
   card: {
     backgroundColor: colors.surface,

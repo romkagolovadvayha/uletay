@@ -19,7 +19,7 @@ import { useFavorites } from '../hooks/useFavorites';
 
 type Props = {
   primary: PrimaryPerformance | null;
-  navigation: Pick<NativeStackNavigationProp<ScheduleStackParamList>, 'dispatch' | 'getState' | 'navigate'>;
+  navigation: Pick<NativeStackNavigationProp<ScheduleStackParamList>, 'dispatch' | 'getState' | 'navigate' | 'replace'>;
 };
 
 export function ScheduleLiveView({ primary, navigation }: Props) {
@@ -86,7 +86,7 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
             performance={item}
             isFavorite={isFavorite(item.id)}
             onToggleFavorite={() => toggleFavorite(item.id)}
-            onPress={() => navigation.navigate('LiveDetail', { performanceId: item.id })}
+            onPress={() => navigation.replace('LiveDetail', { performanceId: item.id })}
           />
         ))
       ) : (

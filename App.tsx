@@ -4,9 +4,11 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DataProvider } from './src/context/DataContext';
+import { RadioPlayerProvider } from './src/context/RadioPlayerContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
 import { NotificationSettingsProvider } from './src/context/NotificationSettingsContext';
 import { useAppFonts } from './src/hooks/useAppFonts';
+import { linking } from './src/navigation/linking';
 import { navigationRef } from './src/navigation/navigationRef';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme/colors';
@@ -35,7 +37,7 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking}>
       <StatusBar style="light" />
       <RootNavigator />
     </NavigationContainer>
@@ -46,11 +48,13 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <DataProvider>
-        <FavoritesProvider>
-          <NotificationSettingsProvider>
-            <AppContent />
-          </NotificationSettingsProvider>
-        </FavoritesProvider>
+        <RadioPlayerProvider>
+          <FavoritesProvider>
+            <NotificationSettingsProvider>
+              <AppContent />
+            </NotificationSettingsProvider>
+          </FavoritesProvider>
+        </RadioPlayerProvider>
       </DataProvider>
     </SafeAreaProvider>
   );

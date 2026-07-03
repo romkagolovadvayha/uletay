@@ -1,11 +1,6 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { StageId } from '../types';
 
-export type FoodCourtStackParamList = {
-  FoodCourtMain: undefined;
-  FoodCourtDetail: { vendorId: string };
-};
-
 export type ScheduleStackParamList = {
   ScheduleMain: undefined;
   LiveDetail: { performanceId: string };
@@ -19,6 +14,9 @@ export type AutographStackParamList = {
 
 export type MoreStackParamList = {
   MoreHome: undefined;
+  FoodCourtMain: undefined;
+  FoodCourtDetail: { vendorId: string };
+  FestivalAbout: undefined;
 };
 
 export type RootTabParamList = {
@@ -26,7 +24,7 @@ export type RootTabParamList = {
   ScheduleTab: NavigatorScreenParams<ScheduleStackParamList>;
   Autographs: NavigatorScreenParams<AutographStackParamList>;
   FavoritesTab: undefined;
-  FoodCourt: NavigatorScreenParams<FoodCourtStackParamList>;
+  PlaylistTab: undefined;
   MoreTab: NavigatorScreenParams<MoreStackParamList>;
 };
 
