@@ -139,6 +139,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
                   stageName={getStageName(item.performance.stageId, data.stages)}
                   status={item.status}
                   now={now}
+                  style={styles.liveCard}
                   onPress={() =>
                     navigation.navigate('ScheduleTab', {
                       screen: 'LiveDetail',
@@ -225,6 +226,9 @@ const styles = StyleSheet.create({
   },
   liveCardWrap: {
     marginBottom: spacing.sm,
+  },
+  liveCard: {
+    backgroundColor: 'rgba(28, 28, 30, 0.8)',
   },
   emptyCard: {
     backgroundColor: colors.surface,

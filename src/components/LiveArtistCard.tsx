@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -28,9 +28,10 @@ type CardProps = {
   onPress?: () => void;
   imageSource?: number;
   now?: Date;
+  style?: ViewStyle;
 };
 
-export function LiveArtistCard({ performance, stageName, status, onPress, imageSource, now = new Date() }: CardProps) {
+export function LiveArtistCard({ performance, stageName, status, onPress, imageSource, now = new Date(), style }: CardProps) {
   const isLive = status === 'live';
   const isSoon =
     status === 'upcoming' && isStartingSoon(performance.date, performance.startTime, now);
@@ -46,6 +47,7 @@ export function LiveArtistCard({ performance, stageName, status, onPress, imageS
         styles.card,
         isLive && styles.cardLive,
         isSoon && styles.cardSoon,
+        style,
         pressed && styles.pressed,
       ]}
     >

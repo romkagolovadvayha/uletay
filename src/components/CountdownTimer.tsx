@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
-import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { getCountdown } from '../utils/scheduleHelpers';
@@ -32,7 +31,7 @@ export function CountdownTimer({ targetDate }: Props) {
   ];
 
   return (
-    <View style={styles.card}>
+    <View>
       <Text style={styles.title}>ДО ФЕСТИВАЛЯ</Text>
       <View style={styles.row}>
         {items.map((item, index) => (
@@ -50,14 +49,6 @@ export function CountdownTimer({ targetDate }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: 'rgba(28, 28, 30, 0.8)',
-    borderRadius: radius.xl,
-    borderWidth: 0,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg + 2,
-    paddingHorizontal: spacing.sm,
-  },
   title: {
     ...typography.countdownTitle,
     color: colors.textSecondary,
