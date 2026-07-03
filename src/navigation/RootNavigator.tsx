@@ -155,6 +155,9 @@ export function RootNavigator() {
         name="ScheduleTab"
         component={ScheduleNavigator}
         listeners={({ navigation }) => ({
+          blur: () => {
+            popScheduleStackToMain(navigation);
+          },
           tabPress: () => {
             popScheduleStackToMain(navigation);
           },
