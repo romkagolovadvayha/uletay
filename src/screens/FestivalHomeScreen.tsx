@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
+import { useHeroBackgroundPulse } from '../hooks/useHeroBackgroundPulse';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { LiveArtistCard } from '../components/LiveArtistCard';
@@ -34,6 +35,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
   const scrollY = useMemo(() => new Animated.Value(0), []);
+  const { scale: heroScale, flashOpacity } = useHeroBackgroundPulse();
 
   const backgroundTranslateY = useMemo(
     () =>
@@ -81,19 +83,32 @@ export function FestivalHomeScreen({ navigation }: Props) {
           },
         ]}
       >
-        <Image
-          source={getRemoteImageSource(
-            data.festival.heroImageUrl,
-            require('../../assets/images/hero-crowd.png'),
-          )}
-          style={styles.parallaxImage}
-          contentFit="cover"
-          contentPosition="top"
-        />
+        <Animated.View
+          style={[
+            styles.parallaxImageWrap,
+            {
+              transform: [{ scale: heroScale }],
+            },
+          ]}
+        >
+          <Image
+            source={getRemoteImageSource(
+              data.festival.heroImageUrl,
+              require('../../assets/images/hero-crowd.png'),
+            )}
+            style={styles.parallaxImage}
+            contentFit="cover"
+            contentPosition="top"
+          />
+        </Animated.View>
         <LinearGradient
           colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.92)']}
           locations={[0, 0.45, 1]}
           style={styles.parallaxGradient}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.parallaxFlash, { opacity: flashOpacity }]}
         />
       </Animated.View>
 
@@ -176,9 +191,17 @@ const styles = StyleSheet.create({
     right: 0,
     height: HERO_BACKGROUND_HEIGHT + 80,
     zIndex: 0,
+    overflow: 'hidden',
+  },
+  parallaxImageWrap: {
+    ...StyleSheet.absoluteFill,
   },
   parallaxImage: {
     ...StyleSheet.absoluteFill,
+  },
+  parallaxFlash: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: '#FFF8E7',
   },
   parallaxGradient: {
     ...StyleSheet.absoluteFill,

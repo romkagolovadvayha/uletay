@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMoreMenu } from '../context/MoreMenuContext';
+import { useIsTablet } from '../hooks/useIsTablet';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -28,8 +29,13 @@ type MenuItem = {
 
 export function MoreMenuSheet() {
   const insets = useSafeAreaInsets();
+  const isTablet = useIsTablet();
   const navigation = useNavigation<MoreNavigation>();
   const { visible, panel, close, showNotifications, showMenu } = useMoreMenu();
+
+  if (isTablet && panel === 'menu') {
+    return null;
+  }
 
   const menuItems: MenuItem[] = [
     {
@@ -62,9 +68,15 @@ export function MoreMenuSheet() {
       animationType="fade"
       onRequestClose={close}
     >
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, isTablet && styles.overlayTablet]}>
         <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        <View
+          style={[
+            styles.sheet,
+            isTablet && styles.sheetTablet,
+            { paddingBottom: Math.max(insets.bottom, spacing.lg) },
+          ]}
+        >
           {panel === 'menu' ? (
             <>
               <View style={styles.handle} />
@@ -107,6 +119,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+  overlayTablet: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxl,
+  },
   backdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: colors.overlayStrong,
@@ -119,6 +136,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
+  },
+  sheetTablet: {
+    width: '100%',
+    maxWidth: 480,
+    borderRadius: radius.xxl,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   handle: {
     alignSelf: 'center',

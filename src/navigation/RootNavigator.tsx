@@ -3,6 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
+import { useIsTablet } from '../hooks/useIsTablet';
 import { AutographDetailScreen } from '../screens/AutographDetailScreen';
 import { AutographsScreen } from '../screens/AutographsScreen';
 import { FoodCourtDetailScreen } from '../screens/FoodCourtDetailScreen';
@@ -60,6 +62,13 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     paddingTop: 2,
+  },
+  tabletTabBar: {
+    backgroundColor: colors.background,
+    borderRightColor: colors.borderStrong,
+    borderTopWidth: 0,
+    elevation: 0,
+    shadowOpacity: 0,
   },
 });
 
@@ -124,16 +133,20 @@ function MoreNavigator() {
 
 function RootTabs() {
   const { open } = useMoreMenu();
+  const isTablet = useIsTablet();
 
   return (
     <Tab.Navigator
       initialRouteName="HomeTab"
+      tabBar={(props) => <AdaptiveTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarPosition: isTablet ? 'left' : 'bottom',
+        tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon',
+        tabBarStyle: isTablet ? styles.tabletTabBar : styles.tabBar,
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,
-        tabBarItemStyle: styles.tabItem,
+        tabBarItemStyle: isTablet ? undefined : styles.tabItem,
         tabBarLabel: ({ color, children }) => (
           <TabLabel color={color}>{children}</TabLabel>
         ),
@@ -190,15 +203,18 @@ function RootTabs() {
         name="MoreTab"
         component={MoreNavigator}
         listeners={({ navigation }) =>
-          createNestedTabListeners(navigation, 'MoreTab', (event) => {
-            event.preventDefault();
-            open();
-          })
+          isTablet
+            ? createNestedTabListeners(navigation, 'MoreTab')
+            : createNestedTabListeners(navigation, 'MoreTab', (event) => {
+                event.preventDefault();
+                open();
+              })
         }
         options={{
           title: 'Ещё',
           tabBarIcon: ({ color }) => <TabIcon name="reorder-three-outline" color={color} />,
           popToTopOnBlur: true,
+          tabBarButton: isTablet ? () => null : undefined,
         }}
       />
     </Tab.Navigator>

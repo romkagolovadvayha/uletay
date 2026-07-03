@@ -10,6 +10,7 @@ import { NotificationSettingsProvider } from './src/context/NotificationSettings
 import { useAppFonts } from './src/hooks/useAppFonts';
 import { linking } from './src/navigation/linking';
 import { navigationRef } from './src/navigation/navigationRef';
+import { syncNestedStacksWithActiveTab } from './src/navigation/scheduleNavigation';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme/colors';
 
@@ -37,7 +38,16 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navigationTheme}
+      linking={linking}
+      onStateChange={() => {
+        if (navigationRef.isReady()) {
+          syncNestedStacksWithActiveTab(navigationRef);
+        }
+      }}
+    >
       <StatusBar style="light" />
       <RootNavigator />
     </NavigationContainer>

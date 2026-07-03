@@ -5,8 +5,16 @@ type NestedTabName = 'ScheduleTab' | 'Autographs' | 'MoreTab';
 
 const NESTED_TABS: NestedTabName[] = ['ScheduleTab', 'Autographs', 'MoreTab'];
 
+type RootTabNavigation = {
+  getState(): {
+    index?: number;
+    routes: { name: string; state?: { key?: string; index?: number } }[];
+  };
+  dispatch: NavigationProp<RootTabParamList>['dispatch'];
+};
+
 export function popTabStackToMain(
-  navigation: NavigationProp<RootTabParamList>,
+  navigation: RootTabNavigation,
   tabName: NestedTabName,
 ) {
   const state = navigation.getState();
@@ -22,22 +30,39 @@ export function popTabStackToMain(
   });
 }
 
-export function popScheduleStackToMain(navigation: NavigationProp<RootTabParamList>) {
+export function popScheduleStackToMain(navigation: RootTabNavigation) {
   popTabStackToMain(navigation, 'ScheduleTab');
 }
 
-export function popAutographStackToMain(navigation: NavigationProp<RootTabParamList>) {
+export function popAutographStackToMain(navigation: RootTabNavigation) {
   popTabStackToMain(navigation, 'Autographs');
 }
 
-export function popMoreStackToMain(navigation: NavigationProp<RootTabParamList>) {
+export function popMoreStackToMain(navigation: RootTabNavigation) {
   popTabStackToMain(navigation, 'MoreTab');
 }
 
-export function resetAllNestedTabStacks(navigation: NavigationProp<RootTabParamList>) {
+export function resetAllNestedTabStacks(navigation: RootTabNavigation) {
   for (const tabName of NESTED_TABS) {
     popTabStackToMain(navigation, tabName);
   }
+}
+
+export function popInactiveNestedTabStacks(
+  navigation: RootTabNavigation,
+  activeTabName?: string,
+) {
+  for (const tabName of NESTED_TABS) {
+    if (tabName !== activeTabName) {
+      popTabStackToMain(navigation, tabName);
+    }
+  }
+}
+
+export function syncNestedStacksWithActiveTab(navigation: RootTabNavigation) {
+  const state = navigation.getState();
+  const activeTabName = state.routes[state.index ?? 0]?.name;
+  popInactiveNestedTabStacks(navigation, activeTabName);
 }
 
 export function openScheduleTabMain(navigation: NavigationProp<RootTabParamList>) {
