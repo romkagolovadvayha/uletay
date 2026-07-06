@@ -42,6 +42,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
           FoodCourtMain: 'foodcourt',
           FoodCourtDetail: 'foodcourt/:vendorId',
           FestivalAbout: 'about',
+          FestivalRules: 'rules',
         },
       },
     },

@@ -52,6 +52,14 @@ export function MoreMenuSheet() {
       onPress: showNotifications,
     },
     {
+      icon: 'document-text-outline',
+      label: 'Правила и быт',
+      onPress: () => {
+        close();
+        navigation.navigate('MoreTab', { screen: 'FestivalRules' });
+      },
+    },
+    {
       icon: 'information-circle-outline',
       label: 'О фестивале',
       onPress: () => {

@@ -74,6 +74,25 @@ export interface FestivalInfo {
   logoImageUrl?: string;
 }
 
+export interface FestivalRulesLink {
+  label: string;
+  url: string;
+}
+
+export interface FestivalRulesBlock {
+  title?: string;
+  paragraphs?: string[];
+  items?: string[];
+  important?: boolean;
+  link?: FestivalRulesLink;
+}
+
+export interface FestivalRulesTab {
+  id: string;
+  label: string;
+  blocks: FestivalRulesBlock[];
+}
+
 export type {
   CombinedRoute,
   FestivalMapConfig,
@@ -99,6 +118,7 @@ export interface AppData {
   schedule: SchedulePerformance[];
   autographs: AutographSession[];
   foodcourt: FoodCourtVendor[];
+  rules: FestivalRulesTab[];
   festivalMap?: import('./map').FestivalMapConfig;
   mapZones?: import('./map').MapZonesGeoJson;
   mapPaths?: import('./map').MapPathsGeoJson;

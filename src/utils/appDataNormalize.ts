@@ -1,5 +1,6 @@
 import { AppData, FestivalInfo, Stage } from '../types';
 import { capPerformanceEndTime } from './performanceTime';
+import { festivalRules } from '../data/festivalRules';
 import { getDefaultMapData } from '../data/festivalMap';
 
 export const defaultStageColors: Record<Stage['id'], string> = {
@@ -40,6 +41,7 @@ export function normalizeAppData(data: AppData): AppData {
       menuImageUrls: item.menuImageUrls?.length ? item.menuImageUrls : undefined,
       menu: item.menu?.length ? item.menu : undefined,
     })),
+    rules: Array.isArray(data.rules) && data.rules.length ? data.rules : festivalRules,
     festivalMap: data.festivalMap ?? mapDefaults.festivalMap,
     mapZones: data.mapZones ?? mapDefaults.mapZones,
     mapPaths: data.mapPaths ?? mapDefaults.mapPaths,

@@ -128,6 +128,13 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       onPress: showNotifications,
     },
     {
+      key: 'rules',
+      icon: 'document-text-outline',
+      label: 'Правила и быт',
+      isActive: moreNestedRoute === 'FestivalRules',
+      onPress: () => tabNavigation.navigate('MoreTab', { screen: 'FestivalRules' }),
+    },
+    {
       key: 'about',
       icon: 'information-circle-outline',
       label: 'О фестивале',

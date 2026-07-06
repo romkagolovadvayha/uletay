@@ -17,6 +17,7 @@ export type MoreStackParamList = {
   FoodCourtMain: undefined;
   FoodCourtDetail: { vendorId: string };
   FestivalAbout: undefined;
+  FestivalRules: undefined;
 };
 
 export type RootTabParamList = {

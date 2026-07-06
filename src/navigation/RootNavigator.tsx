@@ -10,6 +10,7 @@ import { AutographsScreen } from '../screens/AutographsScreen';
 import { FoodCourtDetailScreen } from '../screens/FoodCourtDetailScreen';
 import { FoodCourtScreen } from '../screens/FoodCourtScreen';
 import { FestivalAboutScreen } from '../screens/FestivalAboutScreen';
+import { FestivalRulesScreen } from '../screens/FestivalRulesScreen';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { FullScheduleScreen } from '../screens/FullScheduleScreen';
 import { LiveDetailScreen } from '../screens/LiveDetailScreen';
@@ -128,6 +129,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="FoodCourtMain" component={FoodCourtScreen} />
       <MoreStack.Screen name="FoodCourtDetail" component={FoodCourtDetailScreen} />
       <MoreStack.Screen name="FestivalAbout" component={FestivalAboutScreen} />
+      <MoreStack.Screen name="FestivalRules" component={FestivalRulesScreen} />
     </MoreStack.Navigator>
   );
 }
