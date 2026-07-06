@@ -7,13 +7,18 @@ apply_nginx_template() {
   local output_path="${2:-/etc/nginx/sites-available/uletay}"
   local enabled_path="${3:-/etc/nginx/sites-enabled/uletay}"
   local www_domain="www.${DOMAIN}"
+  local sed_args=(
+    -e "s|__DOMAIN__|${DOMAIN}|g"
+    -e "s|__WWW_DOMAIN__|${www_domain}|g"
+    -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g"
+    -e "s|__CMS_PORT__|${CMS_PORT}|g"
+  )
 
-  sed \
-    -e "s|__DOMAIN__|${DOMAIN}|g" \
-    -e "s|__WWW_DOMAIN__|${www_domain}|g" \
-    -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g" \
-    -e "s|__CMS_PORT__|${CMS_PORT}|g" \
-    "$template_path" | sudo tee "$output_path" > /dev/null
+  sed "${sed_args[@]}" \
+    "${DEPLOY_PATH}/deploy/nginx.spa-locations.conf" \
+    | sudo tee "${DEPLOY_PATH}/deploy/nginx.spa-locations.active.conf" > /dev/null
+
+  sed "${sed_args[@]}" "$template_path" | sudo tee "$output_path" > /dev/null
 
   sudo rm -f /etc/nginx/sites-enabled/default
   sudo ln -sf "$output_path" "$enabled_path"
@@ -72,7 +77,7 @@ obtain_certificate() {
     fi
 
     echo "Expanding certificate to include ${www_domain}..."
-    sudo certbot certonly \
+    if ! sudo certbot certonly \
       --webroot \
       -w /var/www/certbot \
       -d "$DOMAIN" \
@@ -82,12 +87,14 @@ obtain_certificate() {
       --agree-tos \
       -m "$LE_EMAIL" \
       --no-eff-email \
-      --keep-until-expiring
+      --keep-until-expiring; then
+      echo "::warning::Could not add ${www_domain} to certificate — www redirect will work only after DNS is configured"
+    fi
     return 0
   fi
 
   echo "Requesting Let's Encrypt certificate for ${DOMAIN} and ${www_domain}..."
-  sudo certbot certonly \
+  if ! sudo certbot certonly \
     --webroot \
     -w /var/www/certbot \
     -d "$DOMAIN" \
@@ -96,7 +103,18 @@ obtain_certificate() {
     --agree-tos \
     -m "$LE_EMAIL" \
     --no-eff-email \
-    --keep-until-expiring
+    --keep-until-expiring; then
+    echo "Falling back to apex-only certificate for ${DOMAIN}..."
+    sudo certbot certonly \
+      --webroot \
+      -w /var/www/certbot \
+      -d "$DOMAIN" \
+      --non-interactive \
+      --agree-tos \
+      -m "$LE_EMAIL" \
+      --no-eff-email \
+      --keep-until-expiring
+  fi
 }
 
 setup_https_nginx() {
@@ -141,26 +159,30 @@ verify_https() {
     exit 1
   fi
 
-  code=$(curl -fsS -o /dev/null -w '%{http_code}' -H "Host: ${www_domain}" "http://127.0.0.1/")
-  location=$(curl -fsS -o /dev/null -w '%{redirect_url}' -H "Host: ${www_domain}" "http://127.0.0.1/")
-  if [[ "$code" != "301" && "$code" != "308" ]]; then
-    echo "www HTTP redirect expected (301), got ${code}"
-    exit 1
-  fi
-  if [[ "$location" != "https://${DOMAIN}/" && "$location" != "https://${DOMAIN}"* ]]; then
-    echo "www HTTP redirect should target https://${DOMAIN}, got ${location:-<empty>}"
-    exit 1
-  fi
+  if certificate_covers_www; then
+    code=$(curl -fsS -o /dev/null -w '%{http_code}' -H "Host: ${www_domain}" "http://127.0.0.1/")
+    location=$(curl -fsS -o /dev/null -w '%{redirect_url}' -H "Host: ${www_domain}" "http://127.0.0.1/")
+    if [[ "$code" != "301" && "$code" != "308" ]]; then
+      echo "www HTTP redirect expected (301), got ${code}"
+      exit 1
+    fi
+    if [[ "$location" != "https://${DOMAIN}/" && "$location" != "https://${DOMAIN}"* ]]; then
+      echo "www HTTP redirect should target https://${DOMAIN}, got ${location:-<empty>}"
+      exit 1
+    fi
 
-  code=$(curl -fsS -k -o /dev/null -w '%{http_code}' -H "Host: ${www_domain}" "https://127.0.0.1/")
-  location=$(curl -fsS -k -o /dev/null -w '%{redirect_url}' -H "Host: ${www_domain}" "https://127.0.0.1/")
-  if [[ "$code" != "301" && "$code" != "308" ]]; then
-    echo "www HTTPS redirect expected (301), got ${code}"
-    exit 1
-  fi
-  if [[ "$location" != "https://${DOMAIN}/" && "$location" != "https://${DOMAIN}"* ]]; then
-    echo "www HTTPS redirect should target https://${DOMAIN}, got ${location:-<empty>}"
-    exit 1
+    code=$(curl -fsS -k -o /dev/null -w '%{http_code}' -H "Host: ${www_domain}" "https://127.0.0.1/")
+    location=$(curl -fsS -k -o /dev/null -w '%{redirect_url}' -H "Host: ${www_domain}" "https://127.0.0.1/")
+    if [[ "$code" != "301" && "$code" != "308" ]]; then
+      echo "www HTTPS redirect expected (301), got ${code}"
+      exit 1
+    fi
+    if [[ "$location" != "https://${DOMAIN}/" && "$location" != "https://${DOMAIN}"* ]]; then
+      echo "www HTTPS redirect should target https://${DOMAIN}, got ${location:-<empty>}"
+      exit 1
+    fi
+  else
+    echo "Skipping www redirect checks — certificate does not include ${www_domain}"
   fi
 
   code=$(curl -fsS -k -o /dev/null -w '%{http_code}' -H "Host: ${DOMAIN}" \

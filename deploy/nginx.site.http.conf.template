@@ -66,5 +66,5 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
-    include __DEPLOY_PATH__/deploy/nginx.spa-locations.conf;
+    include __DEPLOY_PATH__/deploy/nginx.spa-locations.active.conf;
 }
