@@ -17,9 +17,22 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
   if (status === 'denied') {
     return (
       <View style={styles.banner}>
-        <Text style={styles.text}>Разрешите доступ к геолокации, чтобы видеть «Вы здесь»</Text>
+        <Text style={styles.text}>
+          Доступ к геолокации запрещён. Разрешите его в настройках браузера или телефона.
+        </Text>
         <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
-          <Text style={styles.btnText}>Разрешить</Text>
+          <Text style={styles.btnText}>Повторить</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (status === 'prompt') {
+    return (
+      <View style={styles.banner}>
+        <Text style={styles.text}>Нажмите, чтобы показать ваше местоположение на карте</Text>
+        <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
+          <Text style={styles.btnText}>Разрешить геолокацию</Text>
         </Pressable>
       </View>
     );
@@ -36,7 +49,7 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
   if (status === 'loading') {
     return (
       <View style={[styles.banner, styles.info]}>
-        <Text style={styles.text}>Запрашиваем доступ к геолокации…</Text>
+        <Text style={styles.text}>Проверяем доступ к геолокации…</Text>
       </View>
     );
   }
@@ -45,6 +58,9 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
     return (
       <View style={[styles.banner, styles.info]}>
         <Text style={styles.text}>Геолокация недоступна — включите GPS в настройках телефона</Text>
+        <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
+          <Text style={styles.btnText}>Повторить</Text>
+        </Pressable>
       </View>
     );
   }

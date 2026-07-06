@@ -41,6 +41,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
   const [followUser, setFollowUser] = useState(false);
   const [pickedZoneId, setPickedZoneId] = useState<string | null>(null);
+  const [highlightZoneId, setHighlightZoneId] = useState<string | null>(null);
   const [activeRoute, setActiveRoute] = useState<CombinedRoute | null>(null);
   const [routing, setRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
@@ -62,7 +63,9 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     return (zone as ZoneFeature | undefined) ?? null;
   }, [selectedZoneId, data.mapZones]);
 
-  const popupVisible = Boolean(selectedZone || activeRoute);
+  const mapSelectedZoneId = highlightZoneId ?? pickedZoneId;
+
+  const popupVisible = Boolean(pickedZoneId || activeRoute || routing);
 
   const outsideTerritory = useMemo(() => {
     if (!location || !mapConfig) return false;
@@ -71,6 +74,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
 
   const dismissPopup = useCallback(() => {
     setPickedZoneId(null);
+    setHighlightZoneId(null);
     setActiveRoute(null);
     setRouteError(null);
   }, []);
@@ -79,6 +83,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     useCallback(() => {
       return () => {
         setPickedZoneId(null);
+        setHighlightZoneId(null);
         setActiveRoute(null);
       };
     }, []),
@@ -110,7 +115,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
   }, [selectedZone]);
 
   const runRoute = useCallback(
-    async (target: { lat: number; lng: number }, targetName: string) => {
+    async (target: { lat: number; lng: number }, targetName: string, restoreZoneId?: string) => {
       setRouting(true);
       setRouteError(null);
       try {
@@ -123,7 +128,11 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
           mapPois: data.mapPois,
         });
         if (!combined) {
-          setRouteError('Не удалось проложить маршрут — проверьте дороги на карте в админке.');
+          setRouteError('Не удалось проложить маршрут. Попробуйте ещё раз.');
+          if (restoreZoneId) {
+            setPickedZoneId(restoreZoneId);
+            setHighlightZoneId(null);
+          }
           return;
         }
         setActiveRoute(combined);
@@ -140,7 +149,10 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
 
   const handleZoneRoute = useCallback(async () => {
     if (!selectedZone) return;
-    await runRoute(zoneTargetPoint(selectedZone), selectedZone.properties.name);
+    const zoneId = selectedZone.properties.id;
+    setHighlightZoneId(zoneId);
+    setPickedZoneId(null);
+    await runRoute(zoneTargetPoint(selectedZone), selectedZone.properties.name, zoneId);
   }, [selectedZone, runRoute]);
 
   if (!mapConfig?.enabled) {
@@ -162,12 +174,13 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
               paths={data.mapPaths}
               userLocation={location}
               routeSegments={activeRoute?.segments}
-              selectedZoneId={selectedZone?.properties.id}
+              selectedZoneId={mapSelectedZoneId}
               filter={filter}
               followUser={followUser}
               onZonePress={(zone) => {
                 setRouteError(null);
                 setActiveRoute(null);
+                setHighlightZoneId(null);
                 setPickedZoneId(zone.properties.id);
               }}
               onZoneRoute={handleZoneRoute}
@@ -198,8 +211,11 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
               userLocation={location}
               onClear={dismissPopup}
             />
-          ) : null}
-          {selectedZone ? (
+          ) : routing ? (
+            <View style={styles.routingPanel}>
+              <Text style={styles.routingText}>Строим маршрут…</Text>
+            </View>
+          ) : selectedZone ? (
             <MapZoneCard
               zone={selectedZone}
               userLocation={location}
@@ -247,5 +263,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.xxxl,
+  },
+  routingPanel: {
+    paddingVertical: spacing.sm,
+  },
+  routingText: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

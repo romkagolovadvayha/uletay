@@ -69,6 +69,7 @@ export async function buildCombinedRouteToTarget(options: {
       lng: entrance.lng,
     };
     const internal = findInternalPath(options.mapPaths, internalStart, target);
+    if (!internal) return null;
     segments.push({
       kind: 'internal',
       coordinates: internal.coordinates,
@@ -77,6 +78,7 @@ export async function buildCombinedRouteToTarget(options: {
     });
   } else if (options.userLocation) {
     const internal = findInternalPath(options.mapPaths, options.userLocation, target);
+    if (!internal) return null;
     segments.push({
       kind: 'internal',
       coordinates: internal.coordinates,
@@ -87,6 +89,7 @@ export async function buildCombinedRouteToTarget(options: {
     const entrances = entranceTargets(options.mapPois);
     const start = entrances[0] ?? target;
     const internal = findInternalPath(options.mapPaths, start, target);
+    if (!internal) return null;
     segments.push({
       kind: 'internal',
       coordinates: internal.coordinates,
@@ -95,19 +98,7 @@ export async function buildCombinedRouteToTarget(options: {
     });
   }
 
-  if (segments.length === 0) {
-    if (options.userLocation) {
-      const fallback = straightLineFallback(options.userLocation, target);
-      segments.push({
-        kind: 'internal',
-        coordinates: fallback.coordinates,
-        distanceMeters: fallback.distanceMeters,
-        durationSeconds: walkingDurationSeconds(fallback.distanceMeters),
-      });
-    } else {
-      return null;
-    }
-  }
+  if (segments.length === 0) return null;
 
   const totalDistanceMeters = segments.reduce((s, seg) => s + seg.distanceMeters, 0);
   const totalDurationSeconds = segments.reduce((s, seg) => s + seg.durationSeconds, 0);

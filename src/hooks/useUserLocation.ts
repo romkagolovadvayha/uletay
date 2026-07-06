@@ -1,15 +1,16 @@
 import * as Location from 'expo-location';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 import type { UserLocationState } from '../types/map';
 
-export type LocationStatus = 'loading' | 'granted' | 'denied' | 'unavailable';
+export type LocationStatus = 'loading' | 'granted' | 'denied' | 'prompt' | 'unavailable';
 
+const PERMISSION_TIMEOUT_MS = 5_000;
 const POSITION_TIMEOUT_MS = 20_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('location-timeout')), ms);
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
     promise
       .then((value) => {
         clearTimeout(timer);
@@ -30,10 +31,18 @@ function toLocationState(position: Location.LocationObject): UserLocationState {
   };
 }
 
+async function readPermissionStatus(): Promise<'granted' | 'denied' | 'prompt'> {
+  const { status } = await withTimeout(Location.getForegroundPermissionsAsync(), PERMISSION_TIMEOUT_MS);
+  if (status === Location.PermissionStatus.GRANTED) return 'granted';
+  if (status === Location.PermissionStatus.DENIED) return 'denied';
+  return 'prompt';
+}
+
 export function useUserLocation(enabled = true) {
   const [location, setLocation] = useState<UserLocationState | null>(null);
   const [status, setStatus] = useState<LocationStatus>('loading');
   const [reduceMotion, setReduceMotion] = useState(false);
+  const watchRef = useRef<Location.LocationSubscription | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -43,79 +52,141 @@ export function useUserLocation(enabled = true) {
     }
   }, []);
 
+  const stopWatch = useCallback(() => {
+    watchRef.current?.remove();
+    watchRef.current = null;
+  }, []);
+
+  const refreshPosition = useCallback(async () => {
+    try {
+      const last = await Location.getLastKnownPositionAsync();
+      if (last) {
+        setLocation(toLocationState(last));
+      }
+    } catch {
+      // Optional cache.
+    }
+
+    try {
+      const current = await withTimeout(
+        Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }),
+        POSITION_TIMEOUT_MS,
+      );
+      setLocation(toLocationState(current));
+    } catch {
+      // GPS fix can be slow; watchPositionAsync may still update later.
+    }
+  }, []);
+
+  const startWatch = useCallback(async () => {
+    stopWatch();
+    watchRef.current = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 4000,
+        distanceInterval: 5,
+      },
+      (update) => {
+        setLocation(toLocationState(update));
+      },
+    );
+  }, [stopWatch]);
+
   const requestPermission = useCallback(async () => {
     try {
-      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      const servicesEnabled = await withTimeout(Location.hasServicesEnabledAsync(), PERMISSION_TIMEOUT_MS);
       if (!servicesEnabled) {
         setStatus('unavailable');
         return false;
       }
 
-      let perm = (await Location.getForegroundPermissionsAsync()).status;
-      if (perm !== 'granted') {
-        perm = (await Location.requestForegroundPermissionsAsync()).status;
+      let permission = await readPermissionStatus();
+      if (permission === 'prompt') {
+        const { status: requested } = await withTimeout(
+          Location.requestForegroundPermissionsAsync(),
+          PERMISSION_TIMEOUT_MS,
+        );
+        if (requested === Location.PermissionStatus.GRANTED) {
+          permission = 'granted';
+        } else if (requested === Location.PermissionStatus.DENIED) {
+          permission = 'denied';
+        } else {
+          permission = 'prompt';
+        }
       }
-      if (perm !== 'granted') {
+
+      if (permission === 'denied') {
         setStatus('denied');
+        return false;
+      }
+      if (permission === 'prompt') {
+        setStatus('prompt');
         return false;
       }
 
       setStatus('granted');
-
-      try {
-        const last = await Location.getLastKnownPositionAsync();
-        if (last) {
-          setLocation(toLocationState(last));
-        }
-      } catch {
-        // Last known position is optional.
-      }
-
-      try {
-        const current = await withTimeout(
-          Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          }),
-          POSITION_TIMEOUT_MS,
-        );
-        setLocation(toLocationState(current));
-      } catch {
-        // GPS fix can be slow indoors; watchPositionAsync may still update later.
-      }
-
+      void refreshPosition();
+      void startWatch();
       return true;
     } catch {
-      setStatus('unavailable');
+      setStatus('prompt');
       return false;
     }
-  }, []);
+  }, [refreshPosition, startWatch]);
 
   useEffect(() => {
-    if (!enabled) return;
-    let subscription: Location.LocationSubscription | null = null;
+    if (!enabled) {
+      stopWatch();
+      return;
+    }
+
     let cancelled = false;
 
     void (async () => {
-      const ok = await requestPermission();
-      if (!ok || cancelled) return;
+      try {
+        const servicesEnabled = await withTimeout(Location.hasServicesEnabledAsync(), PERMISSION_TIMEOUT_MS);
+        if (cancelled) return;
+        if (!servicesEnabled) {
+          setStatus('unavailable');
+          return;
+        }
 
-      subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 4000,
-          distanceInterval: 5,
-        },
-        (update) => {
-          setLocation(toLocationState(update));
-        },
-      );
+        const permission = await readPermissionStatus();
+        if (cancelled) return;
+
+        if (permission === 'granted') {
+          setStatus('granted');
+          void refreshPosition();
+          void startWatch();
+          return;
+        }
+
+        if (permission === 'denied') {
+          setStatus('denied');
+          return;
+        }
+
+        // Undetermined — on web the browser prompt must follow a user tap.
+        if (Platform.OS === 'web') {
+          setStatus('prompt');
+          return;
+        }
+
+        await requestPermission();
+      } catch {
+        if (!cancelled) {
+          setStatus('prompt');
+        }
+      }
     })();
 
     return () => {
       cancelled = true;
-      subscription?.remove();
+      stopWatch();
     };
-  }, [enabled, requestPermission]);
+  }, [enabled, refreshPosition, requestPermission, startWatch, stopWatch]);
 
   return {
     location,
