@@ -1,24 +1,16 @@
 import Link from 'next/link';
-import {
-  deleteFoodcourtAction,
-  upsertFoodcourtAction,
-} from '../actions';
-import { DeleteButton } from './DeleteButton';
-import { AdminImagePreview, AdminImageThumb } from './AdminImageThumb';
+import { upsertFoodcourtAction } from '../actions';
+import { AdminImagePreview } from './AdminImageThumb';
+import { FoodcourtSortableTable } from './FoodcourtSortableTable';
 import type { FoodCourtCategory, FoodCourtVendor } from '@/types';
 import { presetHint } from '@/lib/image-presets';
+import { resolveAdminImageSrc } from '@/lib/resolve-admin-image';
 
 const CATEGORIES: { value: FoodCourtCategory; label: string }[] = [
   { value: 'hot', label: 'Горячее' },
   { value: 'drinks', label: 'Напитки' },
   { value: 'desserts', label: 'Десерты' },
 ];
-
-const CATEGORY_LABEL: Record<FoodCourtCategory, string> = {
-  hot: 'Горячее',
-  drinks: 'Напитки',
-  desserts: 'Десерты',
-};
 
 type Props = {
   items: FoodCourtVendor[];
@@ -38,7 +30,11 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
   if (categoryFilter) {
     filtered = filtered.filter((item) => item.category === categoryFilter);
   }
-  filtered.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+
+  const tableItems = filtered.map((item) => ({
+    ...item,
+    imageSrc: resolveAdminImageSrc(item.imageUrl),
+  }));
 
   return (
     <>
@@ -144,47 +140,15 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
 
       <div className="panel table-wrap">
         <p className="hint">{filtered.length} записей</p>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th />
-              <th>Название</th>
-              <th>Категория</th>
-              <th>Локация</th>
-              <th>Часы</th>
-              <th>Цена</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <AdminImageThumb
-                    imageUrl={item.imageUrl}
-                    alt={item.name}
-                    className="list-thumb"
-                  />
-                </td>
-                <td>{item.name}</td>
-                <td>{CATEGORY_LABEL[item.category]}</td>
-                <td>{item.location}</td>
-                <td>{item.hours}</td>
-                <td>{item.priceFrom}</td>
-                <td className="row-actions">
-                  <Link
-                    className="btn-secondary btn-sm"
-                    href={`/admin?tab=foodcourt&edit=${encodeURIComponent(item.id)}`}
-                  >
-                    Изменить
-                  </Link>
-                  <DeleteButton action={deleteFoodcourtAction} id={item.id} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 ? <p className="hint">Нет записей</p> : null}
+        {filtered.length > 0 ? (
+          <FoodcourtSortableTable
+            key={tableItems.map((item) => item.id).join('|')}
+            items={tableItems}
+            sortable={!categoryFilter}
+          />
+        ) : (
+          <p className="hint">Нет записей</p>
+        )}
       </div>
     </>
   );

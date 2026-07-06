@@ -332,6 +332,43 @@ export async function deleteFoodcourtAction(formData: FormData) {
   redirect('/admin?tab=foodcourt&ok=1');
 }
 
+export async function reorderFoodcourtAction(
+  ids: string[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireSession();
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return { ok: false, error: 'Пустой список' };
+  }
+
+  const data = await getAppData();
+  const byId = new Map(data.foodcourt.map((item) => [item.id, item]));
+  const seen = new Set<string>();
+  const reordered: FoodCourtVendor[] = [];
+
+  for (const id of ids) {
+    if (typeof id !== 'string' || !id.trim() || seen.has(id)) {
+      continue;
+    }
+    const item = byId.get(id);
+    if (!item) {
+      return { ok: false, error: 'Неизвестная запись' };
+    }
+    seen.add(id);
+    reordered.push(item);
+  }
+
+  for (const item of data.foodcourt) {
+    if (!seen.has(item.id)) {
+      reordered.push(item);
+    }
+  }
+
+  data.foodcourt = reordered;
+  await saveAppData(data);
+  return { ok: true };
+}
+
 function parseGeoJson<T>(raw: FormDataEntryValue | null, label: string): T {
   try {
     return JSON.parse(String(raw ?? '')) as T;
