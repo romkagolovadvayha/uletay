@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { festAssetUrl } from './repo-assets';
 
@@ -26,13 +26,32 @@ function normalize(name: string): string {
 
 let cachedSources: Record<string, string> | null = null;
 
+function resolveSourcesPath(): string | null {
+  const candidates = [
+    path.join(process.cwd(), 'data', 'fest-artist-sources.json'),
+    path.resolve(process.cwd(), '..', 'scripts', 'fest-artist-sources.json'),
+    path.resolve(process.cwd(), 'scripts', 'fest-artist-sources.json'),
+  ];
+  return candidates.find((candidate) => existsSync(candidate)) ?? null;
+}
+
 function loadSources(): Record<string, string> {
   if (cachedSources) return cachedSources;
 
-  const sourcesPath = path.resolve(process.cwd(), '..', 'scripts', 'fest-artist-sources.json');
-  const raw = readFileSync(sourcesPath, 'utf8');
-  const parsed = JSON.parse(raw) as SourcesFile;
-  cachedSources = parsed.artists;
+  const sourcesPath = resolveSourcesPath();
+  if (!sourcesPath) {
+    cachedSources = {};
+    return cachedSources;
+  }
+
+  try {
+    const raw = readFileSync(sourcesPath, 'utf8');
+    const parsed = JSON.parse(raw) as SourcesFile;
+    cachedSources = parsed.artists ?? {};
+  } catch {
+    cachedSources = {};
+  }
+
   return cachedSources;
 }
 

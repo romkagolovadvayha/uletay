@@ -32,6 +32,8 @@ jobs:
       ADMIN_PASSWORD: ${{ vars.ADMIN_PASSWORD || secrets.ADMIN_PASSWORD }}
       SESSION_SECRET: ${{ vars.SESSION_SECRET || secrets.SESSION_SECRET }}
       EXPO_PUBLIC_API_URL: https://${{ vars.DOMAIN || secrets.DOMAIN }}/api
+      EXPO_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.EXPO_PUBLIC_YANDEX_MAPS_API_KEY || secrets.EXPO_PUBLIC_YANDEX_MAPS_API_KEY }}
+      NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
 
     steps:
       - name: Checkout
@@ -85,12 +87,15 @@ jobs:
           find dist/assets -name 'Montserrat_400Regular*.ttf' | grep -q .
         env:
           EXPO_PUBLIC_API_URL: ${{ env.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.EXPO_PUBLIC_YANDEX_MAPS_API_KEY || secrets.EXPO_PUBLIC_YANDEX_MAPS_API_KEY }}
 
       - name: Build CMS
         run: |
           npm ci --prefix cms
           npm run build --prefix cms
           cp -r cms/.next/static cms/.next/standalone/.next/static
+          mkdir -p cms/.next/standalone/data
+          cp -r cms/data/. cms/.next/standalone/data/
           mkdir -p cms/.next/standalone/node_modules
           cp -a cms/node_modules/sharp cms/.next/standalone/node_modules/
           if [ -d cms/node_modules/@img ]; then
@@ -198,4 +203,5 @@ jobs:
              ADMIN_USER='$ADMIN_USER' \
              ADMIN_PASSWORD='$ADMIN_PASSWORD' \
              SESSION_SECRET='$SESSION_SECRET' \
+             NEXT_PUBLIC_YANDEX_MAPS_API_KEY='${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:-}' \
              bash '$DEPLOY_PATH/deploy/remote-deploy.sh'"

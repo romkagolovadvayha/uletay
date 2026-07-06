@@ -46,6 +46,7 @@ BASE_PATH=
 UPLOAD_DIR=${DEPLOY_PATH}/uploads
 PORT=${CMS_PORT}
 NODE_ENV=production
+NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:-}
 ENV
 
 cd "$DEPLOY_PATH/cms"
@@ -58,6 +59,8 @@ fi
 
 mkdir -p .next/standalone/.next
 cp -r .next/static .next/standalone/.next/static
+mkdir -p .next/standalone/data
+cp -r data/. .next/standalone/data/ 2>/dev/null || true
 
 mkdir -p .next/standalone/node_modules
 if [ -d node_modules/sharp ]; then

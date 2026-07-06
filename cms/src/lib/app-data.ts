@@ -18,7 +18,13 @@ export async function getAppData(): Promise<AppData> {
     throw new Error('Invalid app content JSON');
   }
 
-  return content;
+  return {
+    ...content,
+    schedule: Array.isArray(content.schedule) ? content.schedule : [],
+    autographs: Array.isArray(content.autographs) ? content.autographs : [],
+    foodcourt: Array.isArray(content.foodcourt) ? content.foodcourt : [],
+    stages: Array.isArray(content.stages) ? content.stages : [],
+  };
 }
 
 export async function saveAppData(content: AppData): Promise<void> {

@@ -21,23 +21,24 @@ function stageLabel(stages: Stage[], stageId: string): string {
 }
 
 export function ScheduleEditor({ items, stages, editId, stageFilter, dateFilter }: Props) {
+  const rows = items ?? [];
   const isNew = editId === 'new';
   const editing = isNew
     ? null
     : editId
-      ? items.find((item) => item.id === editId) ?? null
+      ? rows.find((item) => item.id === editId) ?? null
       : null;
 
-  let filtered = [...items];
+  let filtered = [...rows];
   if (stageFilter) {
     filtered = filtered.filter((item) => item.stageId === stageFilter);
   }
   if (dateFilter) {
     filtered = filtered.filter((item) => item.date === dateFilter);
   }
-  filtered.sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
+  filtered.sort((a, b) => `${a.date ?? ''}${a.startTime ?? ''}`.localeCompare(`${b.date ?? ''}${b.startTime ?? ''}`));
 
-  const dates = [...new Set(items.map((item) => item.date))].sort();
+  const dates = [...new Set(rows.map((item) => item.date).filter(Boolean))].sort();
 
   return (
     <>
