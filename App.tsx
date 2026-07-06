@@ -13,6 +13,7 @@ import { linking } from './src/navigation/linking';
 import { navigationRef } from './src/navigation/navigationRef';
 import { syncNestedStacksWithActiveTab } from './src/navigation/scheduleNavigation';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { WebSeoManager } from './src/components/WebSeoManager';
 import { colors } from './src/theme/colors';
 
 const navigationTheme = {
@@ -50,6 +51,7 @@ function AppContent() {
       }}
     >
       <StatusBar style="light" />
+      <WebSeoManager />
       <RootNavigator />
     </NavigationContainer>
   );

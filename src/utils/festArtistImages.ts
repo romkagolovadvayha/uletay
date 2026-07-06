@@ -55,3 +55,15 @@ export function getFestArtistImageSource(artist?: string | null): ImageSource | 
   const resolved = resolveMediaUrl(url);
   return resolved ? { uri: resolved } : undefined;
 }
+
+/** CMS upload first, then bundled fest artist assets. */
+export function resolveArtistImageSource(
+  imageUrl?: string | null,
+  artist?: string | null,
+): ImageSource | number | undefined {
+  const cmsUrl = resolveMediaUrl(imageUrl);
+  if (cmsUrl) {
+    return { uri: cmsUrl };
+  }
+  return getFestArtistImageSource(artist);
+}

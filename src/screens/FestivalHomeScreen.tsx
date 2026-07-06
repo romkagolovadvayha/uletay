@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { LiveArtistCard } from '../components/LiveArtistCard';
@@ -82,9 +82,6 @@ export function FestivalHomeScreen({ navigation }: Props) {
     }, [heroPlayer]),
   );
 
-  const heroVideoStyle =
-    Platform.OS === 'android' ? styles.parallaxVideoMediaOverlay : styles.parallaxVideoFill;
-
   const backgroundTranslateY = useMemo(
     () =>
       scrollY.interpolate({
@@ -132,22 +129,30 @@ export function FestivalHomeScreen({ navigation }: Props) {
         ]}
       >
         <View style={styles.parallaxVideoCrop}>
-          <Image
-            source={HERO_VIDEO_POSTER}
-            style={styles.parallaxVideoFill}
-            contentFit="cover"
-            contentPosition="center"
-          />
-          <VideoView
-            style={[heroVideoStyle, !heroVideoReady && styles.parallaxVideoHidden]}
-            player={heroPlayer}
-            contentFit="cover"
-            nativeControls={false}
-            playsInline
-            useExoShutter={false}
-            surfaceType={Platform.OS === 'android' ? 'textureView' : undefined}
-            onFirstFrameRender={() => setHeroVideoReady(true)}
-          />
+          <View style={styles.parallaxVideoLayer}>
+            <Image
+              source={HERO_VIDEO_POSTER}
+              style={styles.parallaxVideoMedia}
+              contentFit="cover"
+              contentPosition="center"
+            />
+          </View>
+          <View style={styles.parallaxVideoLayer}>
+            <VideoView
+              style={[
+                styles.parallaxVideoMedia,
+                !heroVideoReady && styles.parallaxVideoHidden,
+                Platform.OS === 'web' ? styles.parallaxVideoMediaWeb : null,
+              ]}
+              player={heroPlayer}
+              contentFit="cover"
+              nativeControls={false}
+              playsInline
+              useExoShutter={false}
+              surfaceType={Platform.OS === 'android' ? 'textureView' : undefined}
+              onFirstFrameRender={() => setHeroVideoReady(true)}
+            />
+          </View>
         </View>
         <LinearGradient
           colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.92)']}
@@ -240,20 +245,21 @@ const styles = StyleSheet.create({
   parallaxVideoCrop: {
     ...StyleSheet.absoluteFill,
     overflow: 'hidden',
+  },
+  parallaxVideoLayer: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  parallaxVideoMediaOverlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
+  parallaxVideoMedia: {
     height: '100%',
-    minWidth: '100%',
     aspectRatio: HERO_VIDEO_ASPECT_RATIO,
-    alignSelf: 'center',
+    minWidth: '100%',
   },
-  parallaxVideoFill: {
-    ...StyleSheet.absoluteFill,
-  },
+  parallaxVideoMediaWeb: {
+    // Web maps RN styles to CSS on the underlying <video> element.
+    objectPosition: 'center center',
+  } as ViewStyle,
   parallaxVideoHidden: {
     opacity: 0,
   },

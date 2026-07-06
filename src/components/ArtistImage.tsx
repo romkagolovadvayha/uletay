@@ -3,9 +3,8 @@ import { Image, ImageStyle } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
-import { resolveMediaUrl } from '../config/api';
 import { colors } from '../theme/colors';
-import { getFestArtistImageSource } from '../utils/festArtistImages';
+import { resolveArtistImageSource } from '../utils/festArtistImages';
 
 type Props = {
   imageUrl?: string | null;
@@ -16,16 +15,11 @@ type Props = {
 };
 
 export function ArtistImage({ imageUrl, artist, style, contentFit = 'cover', variant = 'thumbnail' }: Props) {
-  const festSource = getFestArtistImageSource(artist);
-  const cmsUrl = resolveMediaUrl(imageUrl);
+  const source = resolveArtistImageSource(imageUrl, artist);
   const iconSize = variant === 'hero' ? 72 : 32;
 
-  if (festSource) {
-    return <Image source={festSource} style={style} contentFit={contentFit} />;
-  }
-
-  if (cmsUrl) {
-    return <Image source={{ uri: cmsUrl }} style={style} contentFit={contentFit} />;
+  if (source) {
+    return <Image source={source} style={style} contentFit={contentFit} />;
   }
 
   return (

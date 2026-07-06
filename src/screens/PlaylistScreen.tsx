@@ -14,8 +14,7 @@ import { radius } from '../theme/radius';
 import { screenTitleSpacing } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography, appFont } from '../theme/typography';
-import { getRemoteImageSource } from '../utils/imageSource';
-import { getFestArtistImageSource } from '../utils/festArtistImages';
+import { resolveArtistImageSource } from '../utils/festArtistImages';
 import { RADIO_STATION_NAME } from '../config/radio';
 import { formatDayMonthLabel, formatTimeRange, getStageName } from '../utils/scheduleHelpers';
 import { useAppData } from '../context/DataContext';
@@ -43,11 +42,10 @@ export function PlaylistScreen() {
 
   const displayArtist = nowPlaying?.artist || 'Улетайрадио';
   const displayTitle = nowPlaying?.title || 'В эфире';
-  const scheduleArtworkUrl = matchedPerformance?.imageUrl;
-  const festArtwork = getFestArtistImageSource(nowPlaying?.artist ?? displayArtist);
-  const artworkSource = scheduleArtworkUrl
-    ? getRemoteImageSource(scheduleArtworkUrl)
-    : festArtwork;
+  const artworkSource = resolveArtistImageSource(
+    matchedPerformance?.imageUrl,
+    nowPlaying?.artist ?? displayArtist,
+  );
   const stageName = matchedPerformance ? getStageName(matchedPerformance.stageId, data.stages) : null;
 
   const openMatchedPerformance = () => {
