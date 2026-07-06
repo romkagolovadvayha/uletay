@@ -74,7 +74,7 @@ export function MapZoneCard({
         </View>
 
         <Text style={styles.territoryNote}>
-          Вы вне площадки — маршрут построим до въезда по улицам, затем по тропинкам фестиваля.
+          Вы находитесь не на фестивале — маршрут по карте можно построить только на площадке.
         </Text>
 
         {festivalDistanceM != null ? (

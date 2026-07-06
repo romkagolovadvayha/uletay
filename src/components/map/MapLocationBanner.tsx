@@ -41,7 +41,7 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
   if (outsideTerritory) {
     return (
       <View style={[styles.banner, styles.info]}>
-        <Text style={styles.text}>Вы вне площадки — карта фестиваля доступна, маршрут можно построить из вашего города</Text>
+        <Text style={styles.text}>Вы находитесь не на фестивале</Text>
       </View>
     );
   }

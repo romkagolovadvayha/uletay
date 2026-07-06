@@ -149,11 +149,17 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
 
   const handleZoneRoute = useCallback(async () => {
     if (!selectedZone) return;
+
+    if (location && mapConfig && !isInsideTerritory(location, mapConfig)) {
+      setRouteError('Вы находитесь не на фестивале');
+      return;
+    }
+
     const zoneId = selectedZone.properties.id;
     setHighlightZoneId(zoneId);
     setPickedZoneId(null);
     await runRoute(zoneTargetPoint(selectedZone), selectedZone.properties.name, zoneId);
-  }, [selectedZone, runRoute]);
+  }, [selectedZone, runRoute, location, mapConfig]);
 
   if (!mapConfig?.enabled) {
     return (
