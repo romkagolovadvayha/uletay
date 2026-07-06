@@ -33,6 +33,10 @@ const PARALLAX_FACTOR = 0.42;
 const HERO_VIDEO_ASPECT_RATIO = 16 / 9;
 
 const HERO_VIDEO_POSTER = require('../../assets/images/hero-video-poster.webp');
+const HERO_VIDEO_SOURCE =
+  Platform.OS === 'android'
+    ? require('../../assets/videos/background.webm')
+    : require('../../assets/videos/background.mp4');
 
 export function FestivalHomeScreen({ navigation }: Props) {
   const { data } = useAppData();
@@ -40,7 +44,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
   const stagePrimaries = useStagePrimaryPerformances();
   const scrollY = useMemo(() => new Animated.Value(0), []);
   const [heroVideoReady, setHeroVideoReady] = useState(false);
-  const heroPlayer = useVideoPlayer(require('../../assets/videos/background.webm'), (player) => {
+  const heroPlayer = useVideoPlayer(HERO_VIDEO_SOURCE, (player) => {
     player.loop = true;
     player.muted = true;
   });
