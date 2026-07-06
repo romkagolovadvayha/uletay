@@ -14,6 +14,9 @@ import { mapColors } from '../../theme/map';
 import type { MapZoneProperties } from '../../types/map';
 import { filterZoneFeatures, MAP_CAMERA_2D } from '../../utils/map/layerStyles';
 import { overlayToImageCoordinates } from '../../utils/map/overlayGeoref';
+import { shouldShowZoneLabel, zoneLabelText } from '../../utils/map/zoneDisplay';
+import { zoneFillImageRotation, zoneLabelRotation, ZONE_LABEL_MIN_ZOOM } from '../../utils/map/zoneDecor';
+import { zoneFillImageCoordinates, zoneImageLayout } from '../../utils/map/zoneFillImage';
 import type { FestivalMapViewProps } from './types';
 
 export function FestivalMapView({
@@ -39,6 +42,54 @@ export function FestivalMapView({
 
   const zonesGeoJson = useMemo(
     () => ({ type: 'FeatureCollection' as const, features: filteredZones }),
+    [filteredZones],
+  );
+
+  const zoneLabelsGeoJson = useMemo(
+    () => ({
+      type: 'FeatureCollection' as const,
+      features: filteredZones
+        .filter((feature) => shouldShowZoneLabel(feature.properties))
+        .map((feature) => {
+          const layout = zoneImageLayout(feature);
+          return {
+            type: 'Feature' as const,
+            properties: {
+              label: zoneLabelText(feature.properties),
+              heightMeters: layout.heightMeters,
+              widthMeters: layout.widthMeters,
+              labelRotation: zoneLabelRotation(feature.properties, layout),
+            },
+            geometry: {
+              type: 'Point' as const,
+              coordinates: [layout.center.lng, layout.center.lat] as [number, number],
+            },
+          };
+        }),
+    }),
+    [filteredZones],
+  );
+
+  const zoneFillImages = useMemo(
+    () =>
+      filteredZones
+        .map((feature) => {
+          const imageUrl = resolveMediaUrl(feature.properties.fillImageUrl);
+          if (!imageUrl) return null;
+          const layout = zoneImageLayout(feature);
+          return {
+            id: feature.properties.id,
+            url: imageUrl,
+            coordinates: zoneFillImageCoordinates(layout, zoneFillImageRotation(feature.properties, layout)),
+            opacity: feature.properties.fillImageOpacity ?? 0.92,
+          };
+        })
+        .filter(Boolean) as {
+        id: string;
+        url: string;
+        coordinates: [[number, number], [number, number], [number, number], [number, number]];
+        opacity: number;
+      }[],
     [filteredZones],
   );
 
@@ -122,6 +173,20 @@ export function FestivalMapView({
             />
           </ImageSource>
         ) : null}
+        {zoneFillImages.map((item) => (
+          <ImageSource
+            key={`zone-fill-${item.id}`}
+            id={`zone-fill-${item.id}`}
+            url={item.url}
+            coordinates={item.coordinates}
+          >
+            <Layer
+              id={`zone-fill-layer-${item.id}`}
+              type="raster"
+              paint={{ 'raster-opacity': item.opacity }}
+            />
+          </ImageSource>
+        ))}
         {zonesGeoJson.features.length > 0 ? (
           <GeoJSONSource
             id="zones"
@@ -169,6 +234,44 @@ export function FestivalMapView({
                   3,
                   ['coalesce', ['get', 'strokeWidth'], 1],
                 ],
+              }}
+            />
+          </GeoJSONSource>
+        ) : null}
+        {zoneLabelsGeoJson.features.length > 0 ? (
+          <GeoJSONSource id="zone-labels" data={zoneLabelsGeoJson as GeoJSON.GeoJSON}>
+            <Layer
+              id="zone-labels-text"
+              type="symbol"
+              minzoom={ZONE_LABEL_MIN_ZOOM}
+              layout={{
+                'text-field': ['get', 'label'],
+                'text-font': ['Open Sans Semibold', 'Arial Unicode MS Regular'],
+                'text-size': [
+                  'interpolate',
+                  ['exponential', 2],
+                  ['zoom'],
+                  ZONE_LABEL_MIN_ZOOM,
+                  0,
+                  ZONE_LABEL_MIN_ZOOM + 0.5,
+                  ['*', 0.18, ['get', 'heightMeters']],
+                  16,
+                  ['*', 0.5, ['get', 'heightMeters']],
+                  18,
+                  ['*', 1.0, ['get', 'heightMeters']],
+                  20,
+                  ['*', 2.0, ['get', 'heightMeters']],
+                ],
+                'text-rotate': ['get', 'labelRotation'],
+                'text-anchor': 'center',
+                'text-max-width': ['*', 0.85, ['get', 'widthMeters']],
+                'text-allow-overlap': true,
+                'text-ignore-placement': true,
+              }}
+              paint={{
+                'text-color': '#ffffff',
+                'text-halo-color': 'rgba(0,0,0,0.75)',
+                'text-halo-width': 1.5,
               }}
             />
           </GeoJSONSource>

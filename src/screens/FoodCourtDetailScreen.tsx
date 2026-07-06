@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +11,7 @@ import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { getRemoteImageSource } from '../utils/imageSource';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'FoodCourtDetail'>;
 
@@ -60,8 +62,47 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
 
         <View style={styles.locationRow}>
           <Ionicons name="location-outline" size={16} color={colors.text} />
-          <Text style={styles.locationText}>{vendor.distance}</Text>
+          <Text style={styles.locationText}>{vendor.location}</Text>
         </View>
+
+        {vendor.legalName ? (
+          <Text style={styles.metaLine}>{vendor.legalName}</Text>
+        ) : null}
+        {vendor.contacts ? (
+          <Text style={styles.metaLine}>{vendor.contacts}</Text>
+        ) : null}
+        {vendor.notes ? (
+          <Text style={styles.notes}>{vendor.notes}</Text>
+        ) : null}
+
+        {vendor.menu?.map((section) => (
+          <View key={section.title} style={styles.menuSection}>
+            <Text style={styles.menuTitle}>{section.title}</Text>
+            {section.items.map((item) => (
+              <View key={`${section.title}-${item.name}`} style={styles.menuRow}>
+                <View style={styles.menuItemText}>
+                  <Text style={styles.menuItemName}>{item.name}</Text>
+                  {item.portion ? (
+                    <Text style={styles.menuItemPortion}>{item.portion}</Text>
+                  ) : null}
+                  {item.description ? (
+                    <Text style={styles.menuItemDesc}>{item.description}</Text>
+                  ) : null}
+                </View>
+                <Text style={styles.menuItemPrice}>{item.price}</Text>
+              </View>
+            ))}
+          </View>
+        ))}
+
+        {vendor.menuImageUrls?.map((url) => (
+          <Image
+            key={url}
+            source={getRemoteImageSource(url)}
+            style={styles.menuImage}
+            contentFit="contain"
+          />
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -111,6 +152,78 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontSize: 14,
+  },
+  metaLine: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginTop: spacing.sm,
+  },
+  notes: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  menuSection: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  menuTitle: {
+    ...typography.artistName,
+    color: colors.primary,
+    fontSize: 15,
+    marginBottom: spacing.xs,
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  menuItemText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  menuItemName: {
+    ...typography.body,
+    color: colors.text,
+    fontSize: 14,
+  },
+  menuItemPortion: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontSize: 12,
+    textTransform: 'none',
+    letterSpacing: 0,
+    marginTop: 2,
+  },
+  menuItemDesc: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontSize: 12,
+    textTransform: 'none',
+    letterSpacing: 0,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  menuItemPrice: {
+    ...typography.body,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  menuImage: {
+    width: '100%',
+    height: 480,
+    marginTop: spacing.lg,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceCard,
   },
   empty: {
     ...typography.body,

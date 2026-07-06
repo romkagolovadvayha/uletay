@@ -31,6 +31,18 @@ export interface AutographSession {
 
 export type FoodCourtCategory = 'hot' | 'drinks' | 'desserts';
 
+export interface FoodCourtMenuItem {
+  name: string;
+  price: string;
+  portion?: string;
+  description?: string;
+}
+
+export interface FoodCourtMenuSection {
+  title: string;
+  items: FoodCourtMenuItem[];
+}
+
 export interface FoodCourtVendor {
   id: string;
   name: string;
@@ -43,6 +55,11 @@ export interface FoodCourtVendor {
   distance: string;
   imageTint: string;
   imageUrl?: string;
+  legalName?: string;
+  contacts?: string;
+  notes?: string;
+  menu?: FoodCourtMenuSection[];
+  menuImageUrls?: string[];
 }
 
 export interface FestivalInfo {

@@ -34,6 +34,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#5a5a5e',
       strokeWidth: 1,
       extrusionHeight: 4,
+      showLabel: true,
     },
     camping: {
       fillColor: '#5DA849',
@@ -41,6 +42,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#4a8639',
       strokeWidth: 1,
       extrusionHeight: 2,
+      showLabel: false,
     },
     parking: {
       fillColor: '#C4A86C',
@@ -48,6 +50,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#9a8454',
       strokeWidth: 1,
       extrusionHeight: 0,
+      showLabel: false,
     },
     autocamp: {
       fillColor: '#F5D547',
@@ -55,6 +58,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#c4a838',
       strokeWidth: 1,
       extrusionHeight: 1.5,
+      showLabel: false,
     },
     comfort: {
       fillColor: '#E8913A',
@@ -62,6 +66,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#b8722e',
       strokeWidth: 1,
       extrusionHeight: 3,
+      showLabel: true,
     },
     trade: {
       fillColor: '#D4B896',
@@ -69,6 +74,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#a89278',
       strokeWidth: 1,
       extrusionHeight: 3,
+      showLabel: true,
     },
     stage_area: {
       fillColor: '#8E8E93',
@@ -76,6 +82,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#636366',
       strokeWidth: 2,
       extrusionHeight: 10,
+      showLabel: true,
     },
     service: {
       fillColor: '#AEAEB2',
@@ -83,6 +90,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#8e8e93',
       strokeWidth: 1,
       extrusionHeight: 1,
+      showLabel: true,
     },
     toilet: {
       fillColor: '#5AC8FA',
@@ -90,6 +98,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#32ADE6',
       strokeWidth: 1,
       extrusionHeight: 2.5,
+      showLabel: true,
     },
     shower: {
       fillColor: '#64D2FF',
@@ -97,6 +106,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#0EBCF3',
       strokeWidth: 1,
       extrusionHeight: 2.5,
+      showLabel: true,
     },
     water: {
       fillColor: '#007AFF',
@@ -104,6 +114,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#0055CC',
       strokeWidth: 1,
       extrusionHeight: 1,
+      showLabel: true,
     },
     fence: {
       fillColor: '#FF3B30',
@@ -111,6 +122,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#FF3B30',
       strokeWidth: 2,
       extrusionHeight: 0,
+      showLabel: false,
     },
     custom: {
       fillColor: '#AEAEB2',
@@ -118,6 +130,7 @@ export function defaultZoneProps(zoneType: MapZoneType, name: string, id: string
       strokeColor: '#8e8e93',
       strokeWidth: 1,
       extrusionHeight: 1,
+      showLabel: true,
     },
   };
 

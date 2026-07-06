@@ -512,7 +512,7 @@ export const defaultMapPois: MapPoisGeoJson = {
         id: 'poi-foodcourt',
         name: 'Фуд-корт',
         category: 'foodcourt',
-        link: { type: 'foodcourt', id: 'fc-5' },
+        link: { type: 'none' },
         description: 'Улица Центральная',
       },
       geometry: { type: 'Point', coordinates: [53.62235, 56.60672] },

@@ -301,7 +301,12 @@ export async function upsertFoodcourtAction(formData: FormData) {
     distance,
     imageTint,
     ...(priceRange ? { priceRange } : {}),
-    ...(imageUrl ? { imageUrl } : {}),
+    ...(imageUrl ? { imageUrl } : existing?.imageUrl ? { imageUrl: existing.imageUrl } : {}),
+    ...(existing?.legalName ? { legalName: existing.legalName } : {}),
+    ...(existing?.contacts ? { contacts: existing.contacts } : {}),
+    ...(existing?.notes ? { notes: existing.notes } : {}),
+    ...(existing?.menu?.length ? { menu: existing.menu } : {}),
+    ...(existing?.menuImageUrls?.length ? { menuImageUrls: existing.menuImageUrls } : {}),
   };
 
   if (isNew) {

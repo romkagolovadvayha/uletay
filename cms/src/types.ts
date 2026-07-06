@@ -31,6 +31,18 @@ export interface AutographSession {
 
 export type FoodCourtCategory = 'hot' | 'drinks' | 'desserts';
 
+export interface FoodCourtMenuItem {
+  name: string;
+  price: string;
+  portion?: string;
+  description?: string;
+}
+
+export interface FoodCourtMenuSection {
+  title: string;
+  items: FoodCourtMenuItem[];
+}
+
 export interface FoodCourtVendor {
   id: string;
   name: string;
@@ -43,6 +55,11 @@ export interface FoodCourtVendor {
   distance: string;
   imageTint: string;
   imageUrl?: string;
+  legalName?: string;
+  contacts?: string;
+  notes?: string;
+  menu?: FoodCourtMenuSection[];
+  menuImageUrls?: string[];
 }
 
 export interface FestivalInfo {
@@ -108,6 +125,15 @@ export interface MapZoneProperties {
   strokeWidth?: number;
   description?: string;
   extrusionHeight?: number;
+  /** Подпись на карте (по умолчанию — для зданий и сервисных объектов) */
+  showLabel?: boolean;
+  /** Фоновое изображение внутри полигона */
+  fillImageUrl?: string;
+  fillImageOpacity?: number;
+  /** Поворот фона внутри полигона (°), по умолчанию как у формы */
+  fillImageRotation?: number;
+  /** Поворот подписи внутри полигона (°), по умолчанию как у формы */
+  labelRotation?: number;
   /** Прямоугольная раскладка — для редактора (W/H/угол) */
   layout?: {
     center: LatLng;

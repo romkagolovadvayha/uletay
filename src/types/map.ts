@@ -45,6 +45,15 @@ export interface MapZoneProperties {
   strokeWidth?: number;
   description?: string;
   extrusionHeight?: number;
+  /** Подпись на карте (по умолчанию — для зданий и сервисных объектов) */
+  showLabel?: boolean;
+  /** Фоновое изображение внутри полигона */
+  fillImageUrl?: string;
+  fillImageOpacity?: number;
+  /** Поворот фона внутри полигона (°), по умолчанию как у формы */
+  fillImageRotation?: number;
+  /** Поворот подписи внутри полигона (°), по умолчанию как у формы */
+  labelRotation?: number;
   layout?: {
     center: LatLng;
     widthMeters: number;

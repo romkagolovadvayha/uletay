@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { verifyBearerToken } from '@/lib/auth';
 import type { ImagePreset } from '@/lib/image-presets';
-import { ImageUploadError, saveUploadedImage } from '@/lib/upload';
+import { ImageUploadError, saveUploadedImage, saveUploadedMapScheme } from '@/lib/upload';
 import { jsonResponse, optionsResponse } from '@/lib/api-response';
 import { getSession } from '@/lib/session';
 
@@ -27,9 +27,15 @@ export async function POST(request: NextRequest) {
     const file = form.get('file');
     const subdir = String(form.get('subdir') ?? 'images');
     const preset = String(form.get('preset') ?? 'artist') as ImagePreset;
+    const kind = String(form.get('kind') ?? '');
 
     if (!(file instanceof File)) {
       return jsonResponse({ error: 'File is required' }, 400);
+    }
+
+    if (kind === 'map') {
+      const uploaded = await saveUploadedMapScheme(file);
+      return jsonResponse(uploaded);
     }
 
     const url = await saveUploadedImage(file, subdir, preset);

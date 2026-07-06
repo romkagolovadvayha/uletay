@@ -37,6 +37,8 @@ export function normalizeAppData(data: AppData): AppData {
     foodcourt: data.foodcourt.map((item) => ({
       ...item,
       imageUrl: item.imageUrl ?? undefined,
+      menuImageUrls: item.menuImageUrls?.length ? item.menuImageUrls : undefined,
+      menu: item.menu?.length ? item.menu : undefined,
     })),
     festivalMap: data.festivalMap ?? mapDefaults.festivalMap,
     mapZones: data.mapZones ?? mapDefaults.mapZones,

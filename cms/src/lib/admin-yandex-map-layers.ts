@@ -1,3 +1,4 @@
+import { ensureZoneLabelFont, zoneLabelCssRules } from '@/lib/zone-label-css';
 import type { MapPathsGeoJson, MapZoneProperties, MapZonesGeoJson } from '@/types';
 import type { YandexMapsBundle } from './yandex-maps-loader';
 import { pathFeatureStyle, zoneFeatureStyle } from './map-draw-styles';
@@ -95,6 +96,7 @@ export function ensureAdminMapStyles() {
   const id = 'admin-yandex-map-styles';
   if (typeof document === 'undefined' || document.getElementById(id)) return;
 
+  ensureZoneLabelFont();
   const style = document.createElement('style');
   style.id = id;
   style.textContent = `
@@ -103,6 +105,11 @@ export function ensureAdminMapStyles() {
       opacity: var(--admin-scheme-opacity, 0.85);
       transform: rotate(var(--admin-scheme-rotation, 0deg));
       transform-origin: center center;
+    }
+    ${zoneLabelCssRules('admin')}
+    .admin-zone-fill-image {
+      transform-origin: center center;
+      pointer-events: none;
     }
   `;
   document.head.appendChild(style);

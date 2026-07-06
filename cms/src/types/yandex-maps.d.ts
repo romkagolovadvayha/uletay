@@ -39,6 +39,7 @@ declare global {
     YMapListener: new (props: {
       layer?: string;
       onClick?: (object: YandexDomEventObject, event?: YandexMapClickEvent) => void;
+      onUpdate?: (event: { location?: { zoom?: number } }) => void;
     }) => YandexMapEntity;
   };
 

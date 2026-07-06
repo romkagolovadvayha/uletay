@@ -9,12 +9,22 @@ import { filterZoneFeatures } from '../../utils/map/layerStyles';
 import { pathFeatureStyle, zoneFeatureStyle } from '../../utils/map/featureStyles';
 import { overlayToYandexLayoutBounds } from '../../utils/map/overlayGeoref';
 import { loadYandexMaps } from '../../utils/map/yandexMapsLoader';
+import { shouldShowZoneLabel, zoneLabelText } from '../../utils/map/zoneDisplay';
+import {
+  applyZoneLabelBoxStyle,
+  createZoneLabelElements,
+  zoneFillImageRotation,
+  zoneLabelRotation,
+} from '../../utils/map/zoneDecor';
+import { zoneFillImageBounds, zoneImageLayout } from '../../utils/map/zoneFillImage';
+import { ensureZoneLabelFont, zoneLabelCssRules } from '../../utils/map/zoneLabelCss';
 import { useLatestRef } from '../../hooks/useLatestRef';
 
 const STYLE_ID = 'fest-yandex-map-styles';
 
 function ensureMapStyles() {
   if (typeof document === 'undefined' || document.getElementById(STYLE_ID)) return;
+  ensureZoneLabelFont();
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `
@@ -35,6 +45,13 @@ function ensureMapStyles() {
       box-sizing: border-box;
       transform: translate(-50%, -50%);
     }
+    ${zoneLabelCssRules('fest')}
+    .fest-zone-fill-image {
+      opacity: var(--fest-zone-fill-opacity, 0.92);
+      transform: rotate(var(--fest-zone-fill-rotation, 0deg));
+      transform-origin: center center;
+      pointer-events: none;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -54,8 +71,10 @@ const FEST_MARKER_SOURCE = 'fest-markers';
 const LAYER_Z = {
   paths: 1400,
   overlay: 2000,
+  zoneImages: 3500,
   routes: 3400,
   zones: 3600,
+  zoneLabels: 3700,
   markers: 3800,
 } as const;
 
@@ -128,17 +147,43 @@ export function FestivalMapView({
   const onMapPressRef = useLatestRef(onMapPress);
 
   const zoneFeaturesRef = useRef<YandexMapEntity[]>([]);
+  const zoneImageRefs = useRef<YandexMapEntity[]>([]);
+  const zoneLabelRefs = useRef<YandexMapEntity[]>([]);
   const pathFeaturesRef = useRef<YandexMapEntity[]>([]);
   const routeFeaturesRef = useRef<YandexMapEntity[]>([]);
   const userMarkerRef = useRef<YandexMapEntity | null>(null);
   const schemeOverlayRef = useRef<YandexMapEntity | null>(null);
   const listenerRef = useRef<YandexMapEntity | null>(null);
   const bundleRef = useRef<Awaited<ReturnType<typeof loadYandexMaps>> | null>(null);
+  const zoneLabelDecorRef = useRef<
+    {
+      box: HTMLDivElement;
+      textEl: HTMLSpanElement;
+      layout: ReturnType<typeof zoneImageLayout>;
+      labelRotation: number;
+    }[]
+  >([]);
+  const mapZoomRef = useRef(config.defaultZoom);
+  const refreshZoneLabelSizesRef = useRef<() => void>(() => {});
 
   const filteredZones = useMemo(() => filterZoneFeatures(zones?.features ?? [], filter), [zones, filter]);
   const zonesByIdRef = useRef(
     new Map<string, GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>>(),
   );
+
+  useEffect(() => {
+    refreshZoneLabelSizesRef.current = () => {
+      for (const item of zoneLabelDecorRef.current) {
+        applyZoneLabelBoxStyle(
+          item.box,
+          item.textEl,
+          item.layout,
+          item.labelRotation,
+          mapZoomRef.current,
+        );
+      }
+    };
+  });
 
   const overlayUrl = useMemo(
     () => resolveMediaUrl(config.adminOverlay?.imageUrl),
@@ -193,6 +238,13 @@ export function FestivalMapView({
 
         const listener = new YMapListener({
           layer: 'any',
+          onUpdate: (event: { location?: { zoom?: number } }) => {
+            const zoom = event?.location?.zoom;
+            if (typeof zoom === 'number') {
+              mapZoomRef.current = zoom;
+              refreshZoneLabelSizesRef.current();
+            }
+          },
           onClick: (object: YandexDomEventObject) => {
             let zone = object?.entity?.properties?.__zone as
               | GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>
@@ -272,17 +324,21 @@ export function FestivalMapView({
       readyRef.current = false;
       setMapReady(false);
       /* eslint-disable react-hooks/exhaustive-deps -- Yandex map entities are torn down on unmount */
-      const zones = zoneFeaturesRef.current;
-      const paths = pathFeaturesRef.current;
-      const routes = routeFeaturesRef.current;
+      const zoneItems = zoneFeaturesRef.current;
+      const zoneImages = zoneImageRefs.current;
+      const zoneLabels = zoneLabelRefs.current;
+      const pathItems = pathFeaturesRef.current;
+      const routeItems = routeFeaturesRef.current;
       /* eslint-enable react-hooks/exhaustive-deps */
       const map = mapRef.current;
       if (map) {
         if (schemeOverlayRef.current) map.removeChild(schemeOverlayRef.current);
         if (listenerRef.current) map.removeChild(listenerRef.current);
-        removeAll(map, zones);
-        removeAll(map, paths);
-        removeAll(map, routes);
+        removeAll(map, zoneItems);
+        removeAll(map, zoneImages);
+        removeAll(map, zoneLabels);
+        removeAll(map, pathItems);
+        removeAll(map, routeItems);
         if (userMarkerRef.current) map.removeChild(userMarkerRef.current);
         map.destroy?.();
       }
@@ -342,6 +398,67 @@ export function FestivalMapView({
       zoneFeaturesRef.current.push(item);
     });
   }, [filteredZones, selectedZoneId, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const bundle = bundleRef.current;
+    if (!map || !mapReady || !bundle) return;
+
+    removeAll(map, zoneImageRefs.current);
+    removeAll(map, zoneLabelRefs.current);
+    zoneLabelDecorRef.current = [];
+
+    const styleRules: string[] = [];
+    filteredZones.forEach((feature) => {
+      if (feature.geometry.type !== 'Polygon') return;
+      const props = feature.properties;
+      const layout = zoneImageLayout(feature);
+
+      const imageUrl = resolveMediaUrl(props.fillImageUrl);
+      if (imageUrl) {
+        const opacity = props.fillImageOpacity ?? 0.92;
+        const imageRotation = zoneFillImageRotation(props, layout);
+        const classSuffix = props.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        styleRules.push(
+          `.fest-zone-fill-image--${classSuffix}{opacity:${opacity};transform:rotate(${imageRotation}deg);}`,
+        );
+        const overlay = new bundle.YMapImageOverlay({
+          bounds: zoneFillImageBounds(layout),
+          imageUrl,
+          className: `fest-zone-fill-image fest-zone-fill-image--${classSuffix}`,
+          zIndex: LAYER_Z.zoneImages,
+        });
+        map.addChild(overlay);
+        zoneImageRefs.current.push(overlay);
+      }
+
+      if (shouldShowZoneLabel(props)) {
+        const labelRotation = zoneLabelRotation(props, layout);
+        const { box, textEl } = createZoneLabelElements(zoneLabelText(props));
+        applyZoneLabelBoxStyle(box, textEl, layout, labelRotation, mapZoomRef.current);
+        zoneLabelDecorRef.current.push({ box, textEl, layout, labelRotation });
+        const marker = new bundle.ymaps3.YMapMarker(
+          {
+            source: FEST_MARKER_SOURCE,
+            coordinates: [layout.center.lng, layout.center.lat],
+            zIndex: LAYER_Z.zoneLabels,
+          },
+          box,
+        );
+        map.addChild(marker);
+        zoneLabelRefs.current.push(marker);
+      }
+    });
+
+    const styleId = 'fest-zone-fill-dynamic';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = styleRules.join('\n');
+  }, [filteredZones, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

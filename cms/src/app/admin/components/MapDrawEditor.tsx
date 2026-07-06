@@ -24,6 +24,16 @@ import {
 import { useMapEditorHistory } from '@/lib/use-map-editor-history';
 import { useLatestRef } from '@/hooks/useLatestRef';
 import { overlayToYandexLayoutBounds } from '@/lib/map-overlay-georef';
+import {
+  applyZoneLabelBoxStyle,
+  createZoneLabelElements,
+  shouldShowZoneLabel,
+  zoneFillImageBounds,
+  zoneFillImageRotation,
+  zoneImageLayout,
+  zoneLabelRotation,
+  zoneLabelText,
+} from '@/lib/zone-map-helpers';
 import { YANDEX_MAPS_API_KEY } from '@/lib/yandex-maps-config';
 import { loadYandexMaps, type YandexMapsBundle } from '@/lib/yandex-maps-loader';
 import type {
@@ -67,11 +77,22 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
   const bundleRef = useRef<YandexMapsBundle | null>(null);
   const listenerRef = useRef<YandexMapEntity | null>(null);
   const featureRefs = useRef<YandexMapEntity[]>([]);
+  const zoneDecorRefs = useRef<YandexMapEntity[]>([]);
   const handleRefs = useRef<YandexMapEntity[]>([]);
   const overlayRef = useRef<YandexMapEntity | null>(null);
   const draggingRef = useRef(false);
   const featureEntityRef = useRef<Map<string, YandexMapEntity>>(new Map());
   const lastDragCoordRef = useRef<YandexLngLat | null>(null);
+  const mapZoomRef = useRef(config.defaultZoom);
+  const zoneLabelDecorRef = useRef<
+    {
+      box: HTMLDivElement;
+      textEl: HTMLSpanElement;
+      layout: RectLayout;
+      labelRotation: number;
+    }[]
+  >([]);
+  const refreshZoneLabelSizesRef = useRef<() => void>(() => {});
 
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
@@ -85,6 +106,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
     paths: initialPaths,
   });
   const [dirty, setDirty] = useState(false);
+  const [zoneImageUploading, setZoneImageUploading] = useState(false);
 
   const markDirty = useCallback(() => setDirty(true), []);
 
@@ -130,6 +152,32 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
       markDirty();
     },
     [markDirty, setPaths],
+  );
+
+  const uploadZoneFillImage = useCallback(
+    async (zoneId: string, file: File) => {
+      setZoneImageUploading(true);
+      try {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('kind', 'map');
+        const res = await fetch('/api/upload', { method: 'POST', body: form, credentials: 'include' });
+        const payload = (await res.json()) as { url?: string; error?: string };
+        if (!res.ok || !payload.url) {
+          throw new Error(payload.error ?? 'Не удалось загрузить изображение');
+        }
+        updateZone(zoneId, (f) => ({
+          ...f,
+          properties: { ...f.properties, fillImageUrl: payload.url },
+        }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Ошибка загрузки';
+        window.alert(message);
+      } finally {
+        setZoneImageUploading(false);
+      }
+    },
+    [updateZone],
   );
 
   const deleteSelection = useCallback(() => {
@@ -374,6 +422,13 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
 
         const listener = new ymaps3.YMapListener({
           layer: 'any',
+          onUpdate: (event: { location?: { zoom?: number } }) => {
+            const zoom = event?.location?.zoom;
+            if (typeof zoom === 'number') {
+              mapZoomRef.current = zoom;
+              refreshZoneLabelSizesRef.current();
+            }
+          },
           onClick: (object, evt) => {
             if (draggingRef.current) return;
             const props = object?.entity?.properties as Record<string, unknown> | undefined;
@@ -406,11 +461,13 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
       if (map) {
         /* eslint-disable react-hooks/exhaustive-deps -- Yandex map entities are torn down on unmount */
         const features = featureRefs.current;
+        const zoneDecor = zoneDecorRefs.current;
         const handles = handleRefs.current;
         /* eslint-enable react-hooks/exhaustive-deps */
         if (overlayRef.current) map.removeChild(overlayRef.current);
         if (listenerRef.current) map.removeChild(listenerRef.current);
         removeAll(map, features);
+        removeAll(map, zoneDecor);
         removeAll(map, handles);
         map.destroy?.();
       }
@@ -425,6 +482,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
     if (!map || !ready || !bundle || draggingRef.current) return;
 
     removeAll(map, featureRefs.current);
+    removeAll(map, zoneDecorRefs.current);
     featureEntityRef.current.clear();
 
     for (const feature of zones.features) {
@@ -450,6 +508,52 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
       featureRefs.current.push(item);
       featureEntityRef.current.set(`path-${feature.properties.id}`, item);
     }
+
+    const styleRules: string[] = [];
+    zoneLabelDecorRef.current = [];
+    for (const feature of zones.features) {
+      const props = feature.properties;
+      const zoneLayout = zoneImageLayout(feature);
+
+      if (props.fillImageUrl) {
+        const classSuffix = props.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const opacity = props.fillImageOpacity ?? 0.92;
+        const imageRotation = zoneFillImageRotation(props, zoneLayout);
+        styleRules.push(
+          `.admin-zone-fill-image--${classSuffix}{opacity:${opacity};transform:rotate(${imageRotation}deg);}`,
+        );
+        const overlay = new bundle.YMapImageOverlay({
+          bounds: zoneFillImageBounds(zoneLayout),
+          imageUrl: props.fillImageUrl,
+          className: `admin-zone-fill-image admin-zone-fill-image--${classSuffix}`,
+        });
+        map.addChild(overlay);
+        zoneDecorRefs.current.push(overlay);
+      }
+
+      if (shouldShowZoneLabel(props)) {
+        const labelRotation = zoneLabelRotation(props, zoneLayout);
+        const { box, textEl } = createZoneLabelElements(zoneLabelText(props));
+        applyZoneLabelBoxStyle(box, textEl, zoneLayout, labelRotation, mapZoomRef.current);
+        zoneLabelDecorRef.current.push({ box, textEl, layout: zoneLayout, labelRotation });
+        const marker = new bundle.ymaps3.YMapMarker(
+          { coordinates: [zoneLayout.center.lng, zoneLayout.center.lat] },
+          box,
+        );
+        map.addChild(marker);
+        zoneDecorRefs.current.push(marker);
+      }
+    }
+
+    const styleId = 'admin-zone-fill-dynamic';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = styleRules.join('\n');
+    refreshZoneLabelSizesRef.current();
 
     if (draftCoords.length >= 2 && tool === 'line') {
       const draft = new bundle.ymaps3.YMapFeature({
@@ -734,6 +838,20 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
 
   const layout = selectedZone?.properties.layout;
 
+  useEffect(() => {
+    refreshZoneLabelSizesRef.current = () => {
+      for (const item of zoneLabelDecorRef.current) {
+        applyZoneLabelBoxStyle(
+          item.box,
+          item.textEl,
+          item.layout,
+          item.labelRotation,
+          mapZoomRef.current,
+        );
+      }
+    };
+  });
+
   const layerItems = useMemo(() => {
     const items: { kind: 'zone' | 'path'; id: string; label: string; group: string }[] = [];
     for (const f of zones.features) {
@@ -925,6 +1043,121 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                 ))}
               </select>
             </label>
+            <label className="map-draw-checkbox">
+              <input
+                type="checkbox"
+                checked={shouldShowZoneLabel(selectedZone.properties)}
+                onChange={(e) =>
+                  updateZone(selectedZone.properties.id, (f) => ({
+                    ...f,
+                    properties: { ...f.properties, showLabel: e.target.checked },
+                  }))
+                }
+              />
+              Показывать название на карте
+            </label>
+            <label>
+              Поворот подписи (°)
+              <input
+                type="number"
+                step="1"
+                value={Math.round(
+                  selectedZone.properties.labelRotation ??
+                    zoneImageLayout(selectedZone).rotation,
+                )}
+                onChange={(e) =>
+                  updateZone(selectedZone.properties.id, (f) => ({
+                    ...f,
+                    properties: {
+                      ...f.properties,
+                      labelRotation: clamp(Number(e.target.value), -180, 180),
+                    },
+                  }))
+                }
+              />
+            </label>
+          </div>
+          <div className="map-zone-image-controls">
+            <span className="map-zone-image-title">Фон полигона</span>
+            <div className="map-zone-image-row">
+              <label className="file-label">
+                PNG / JPEG
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  disabled={zoneImageUploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.currentTarget.value = '';
+                    if (file) void uploadZoneFillImage(selectedZone.properties.id, file);
+                  }}
+                />
+              </label>
+              {selectedZone.properties.fillImageUrl ? (
+                <button
+                  type="button"
+                  className="link-button danger"
+                  onClick={() =>
+                    updateZone(selectedZone.properties.id, (f) => ({
+                      ...f,
+                      properties: { ...f.properties, fillImageUrl: undefined, fillImageOpacity: undefined, fillImageRotation: undefined },
+                    }))
+                  }
+                >
+                  Удалить фон
+                </button>
+              ) : null}
+            </div>
+            {selectedZone.properties.fillImageUrl ? (
+              <>
+                <img
+                  src={selectedZone.properties.fillImageUrl}
+                  alt="Превью фона зоны"
+                  className="map-zone-image-preview"
+                />
+                <label>
+                  Прозрачность фона ({Math.round((selectedZone.properties.fillImageOpacity ?? 0.92) * 100)}%)
+                  <input
+                    type="range"
+                    min={0.2}
+                    max={1}
+                    step={0.05}
+                    value={selectedZone.properties.fillImageOpacity ?? 0.92}
+                    onChange={(e) =>
+                      updateZone(selectedZone.properties.id, (f) => ({
+                        ...f,
+                        properties: {
+                          ...f.properties,
+                          fillImageOpacity: Number(e.target.value),
+                        },
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  Поворот картинки (°)
+                  <input
+                    type="number"
+                    step="1"
+                    value={Math.round(
+                      selectedZone.properties.fillImageRotation ??
+                        zoneImageLayout(selectedZone).rotation,
+                    )}
+                    onChange={(e) =>
+                      updateZone(selectedZone.properties.id, (f) => ({
+                        ...f,
+                        properties: {
+                          ...f.properties,
+                          fillImageRotation: clamp(Number(e.target.value), -180, 180),
+                        },
+                      }))
+                    }
+                  />
+                </label>
+              </>
+            ) : (
+              <p className="hint">Загрузите картинку — она заполнит полигон (по его границам).</p>
+            )}
           </div>
           {layout ? (
             <div className="overlay-controls">
