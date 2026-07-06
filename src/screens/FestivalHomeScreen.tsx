@@ -3,7 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
@@ -47,7 +47,31 @@ export function FestivalHomeScreen({ navigation }: Props) {
   const heroPlayer = useVideoPlayer(HERO_VIDEO_SOURCE, (player) => {
     player.loop = true;
     player.muted = true;
+    if (Platform.OS === 'ios') {
+      player.allowsExternalPlayback = false;
+    }
+    player.play();
   });
+
+  useEffect(() => {
+    const playingListener = heroPlayer.addListener('playingChange', ({ isPlaying }) => {
+      if (isPlaying) {
+        setHeroVideoReady(true);
+      }
+    });
+    const statusListener = heroPlayer.addListener('statusChange', ({ status }) => {
+      if (status === 'readyToPlay') {
+        heroPlayer.play();
+      }
+    });
+
+    heroPlayer.play();
+
+    return () => {
+      playingListener.remove();
+      statusListener.remove();
+    };
+  }, [heroPlayer]);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,6 +81,9 @@ export function FestivalHomeScreen({ navigation }: Props) {
       };
     }, [heroPlayer]),
   );
+
+  const heroVideoStyle =
+    Platform.OS === 'android' ? styles.parallaxVideoMediaOverlay : styles.parallaxVideoFill;
 
   const backgroundTranslateY = useMemo(
     () =>
@@ -105,8 +132,14 @@ export function FestivalHomeScreen({ navigation }: Props) {
         ]}
       >
         <View style={styles.parallaxVideoCrop}>
+          <Image
+            source={HERO_VIDEO_POSTER}
+            style={styles.parallaxVideoFill}
+            contentFit="cover"
+            contentPosition="center"
+          />
           <VideoView
-            style={styles.parallaxVideoMedia}
+            style={[heroVideoStyle, !heroVideoReady && styles.parallaxVideoHidden]}
             player={heroPlayer}
             contentFit="cover"
             nativeControls={false}
@@ -116,16 +149,6 @@ export function FestivalHomeScreen({ navigation }: Props) {
             onFirstFrameRender={() => setHeroVideoReady(true)}
           />
         </View>
-        {!heroVideoReady ? (
-          <View style={styles.parallaxVideoCrop}>
-            <Image
-              source={HERO_VIDEO_POSTER}
-              style={styles.parallaxVideoMedia}
-              contentFit="cover"
-              contentPosition="center"
-            />
-          </View>
-        ) : null}
         <LinearGradient
           colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.92)']}
           locations={[0, 0.45, 1]}
@@ -219,10 +242,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
   },
-  parallaxVideoMedia: {
+  parallaxVideoMediaOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     height: '100%',
     minWidth: '100%',
     aspectRatio: HERO_VIDEO_ASPECT_RATIO,
+    alignSelf: 'center',
+  },
+  parallaxVideoFill: {
+    ...StyleSheet.absoluteFill,
+  },
+  parallaxVideoHidden: {
+    opacity: 0,
   },
   parallaxGradient: {
     ...StyleSheet.absoluteFill,
