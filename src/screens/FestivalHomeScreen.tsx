@@ -1,9 +1,10 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
-import { useHeroBackgroundPulse } from '../hooks/useHeroBackgroundPulse';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { LiveArtistCard } from '../components/LiveArtistCard';
@@ -29,13 +30,29 @@ type Props = {
 
 const HERO_BACKGROUND_HEIGHT = 580;
 const PARALLAX_FACTOR = 0.42;
+const HERO_VIDEO_ASPECT_RATIO = 16 / 9;
+
+const HERO_VIDEO_POSTER = require('../../assets/images/hero-video-poster.webp');
 
 export function FestivalHomeScreen({ navigation }: Props) {
   const { data } = useAppData();
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
   const scrollY = useMemo(() => new Animated.Value(0), []);
-  const { scale: heroScale, flashOpacity } = useHeroBackgroundPulse();
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
+  const heroPlayer = useVideoPlayer(require('../../assets/videos/background.webm'), (player) => {
+    player.loop = true;
+    player.muted = true;
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      heroPlayer.play();
+      return () => {
+        heroPlayer.pause();
+      };
+    }, [heroPlayer]),
+  );
 
   const backgroundTranslateY = useMemo(
     () =>
@@ -83,32 +100,32 @@ export function FestivalHomeScreen({ navigation }: Props) {
           },
         ]}
       >
-        <Animated.View
-          style={[
-            styles.parallaxImageWrap,
-            {
-              transform: [{ scale: heroScale }],
-            },
-          ]}
-        >
-          <Image
-            source={getRemoteImageSource(
-              data.festival.heroImageUrl,
-              require('../../assets/images/hero-crowd.png'),
-            )}
-            style={styles.parallaxImage}
+        <View style={styles.parallaxVideoCrop}>
+          <VideoView
+            style={styles.parallaxVideoMedia}
+            player={heroPlayer}
             contentFit="cover"
-            contentPosition="top"
+            nativeControls={false}
+            playsInline
+            useExoShutter={false}
+            surfaceType={Platform.OS === 'android' ? 'textureView' : undefined}
+            onFirstFrameRender={() => setHeroVideoReady(true)}
           />
-        </Animated.View>
+        </View>
+        {!heroVideoReady ? (
+          <View style={styles.parallaxVideoCrop}>
+            <Image
+              source={HERO_VIDEO_POSTER}
+              style={styles.parallaxVideoMedia}
+              contentFit="cover"
+              contentPosition="center"
+            />
+          </View>
+        ) : null}
         <LinearGradient
           colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.92)']}
           locations={[0, 0.45, 1]}
           style={styles.parallaxGradient}
-        />
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.parallaxFlash, { opacity: flashOpacity }]}
         />
       </Animated.View>
 
@@ -193,15 +210,15 @@ const styles = StyleSheet.create({
     zIndex: 0,
     overflow: 'hidden',
   },
-  parallaxImageWrap: {
+  parallaxVideoCrop: {
     ...StyleSheet.absoluteFill,
+    overflow: 'hidden',
+    alignItems: 'center',
   },
-  parallaxImage: {
-    ...StyleSheet.absoluteFill,
-  },
-  parallaxFlash: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: '#FFF8E7',
+  parallaxVideoMedia: {
+    height: '100%',
+    minWidth: '100%',
+    aspectRatio: HERO_VIDEO_ASPECT_RATIO,
   },
   parallaxGradient: {
     ...StyleSheet.absoluteFill,
