@@ -61,6 +61,7 @@
     "build": "expo export",
     "seed:api": "tsx scripts/export-seed.ts",
     "fest:sync-images": "node scripts/sync-fest-artist-images.mjs",
+    "fest:fetch-web-images": "node scripts/fetch-artist-images-web.mjs",
     "cms:dev": "npm --prefix cms run dev",
     "cms:build": "npm --prefix cms run build",
     "cms:install": "npm --prefix cms run db:install",

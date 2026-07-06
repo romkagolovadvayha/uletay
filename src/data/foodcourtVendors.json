@@ -1475,6 +1475,7 @@
     "priceFrom": "от 150 ₽",
     "priceRange": "150 — 450 ₽",
     "imageTint": "#C4A035",
+    "imageUrl": "/api/fest-assets/images/foodcourt/blinberi.jpg",
     "menu": [
       {
         "title": "Блины",
@@ -1741,6 +1742,7 @@
     "priceFrom": "от 80 ₽",
     "priceRange": "80 — 750 ₽",
     "imageTint": "#D4382A",
+    "imageUrl": "/api/fest-assets/images/foodcourt/raketa.jpg",
     "menu": [
       {
         "title": "Шаурма",
@@ -2322,6 +2324,7 @@
     "priceFrom": "от 100 ₽",
     "priceRange": "100 — 850 ₽",
     "imageTint": "#B8322A",
+    "imageUrl": "/api/fest-assets/images/foodcourt/shashlyk-mashina.jpg",
     "menu": [
       {
         "title": "Шаурма",

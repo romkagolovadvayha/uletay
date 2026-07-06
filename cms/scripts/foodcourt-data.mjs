@@ -528,6 +528,7 @@ export const foodcourtVendors = [
     priceFrom: 'от 150 ₽',
     priceRange: '150 — 450 ₽',
     imageTint: '#C4A035',
+    imageUrl: img('blinberi'),
     menu: [
       sec('Блины', [
         mi('Сгущёнка / клубника / вишня', '250 ₽', '160 г'),
@@ -621,6 +622,7 @@ export const foodcourtVendors = [
     priceFrom: 'от 80 ₽',
     priceRange: '80 — 750 ₽',
     imageTint: '#D4382A',
+    imageUrl: img('raketa'),
     menu: [
       sec('Шаурма', [
         mi('Куриная стандарт', '500 ₽', '320 г'),
@@ -836,6 +838,7 @@ export const foodcourtVendors = [
     priceFrom: 'от 100 ₽',
     priceRange: '100 — 850 ₽',
     imageTint: '#B8322A',
+    imageUrl: img('shashlyk-mashina'),
     menu: [
       sec('Шаурма', [
         mi('Классическая с курочкой', '500 ₽', '300 г'),

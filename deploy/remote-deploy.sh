@@ -71,7 +71,7 @@ if [ -d node_modules/@img ]; then
 fi
 
 set -a
-source .env
+source "$DEPLOY_PATH/cms/.env"
 set +a
 # Schema only — do not re-seed app_content (preserves uploaded images and admin edits)
 npm run db:migrate
@@ -105,7 +105,7 @@ fi
 echo "Using PM2: $PM2_BIN"
 
 set -a
-source .env
+source "$DEPLOY_PATH/cms/.env"
 set +a
 export HOSTNAME=127.0.0.1
 

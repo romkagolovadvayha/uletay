@@ -47,7 +47,6 @@ export function FestivalRulesScreen(_props: Props) {
   const { data } = useAppData();
   const tabs = data.rules;
   const [selectedTabId, setSelectedTabId] = useState(tabs[0]?.id ?? '');
-  const [rulesDropdownOpen, setRulesDropdownOpen] = useState(false);
 
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === selectedTabId) ?? tabs[0],
@@ -69,33 +68,15 @@ export function FestivalRulesScreen(_props: Props) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {rulesDropdownOpen ? (
-        <Pressable
-          accessibilityRole="button"
-          style={styles.dropdownBackdrop}
-          onPress={() => setRulesDropdownOpen(false)}
-        />
-      ) : null}
-
       <View style={styles.header}>
         <Text style={styles.title}>ПРАВИЛА И БЫТ</Text>
       </View>
 
       <View style={styles.tabsWrap}>
-        <RulesTabBar
-          tabs={tabs}
-          selectedId={activeTab.id}
-          onSelect={setSelectedTabId}
-          dropdownOpen={rulesDropdownOpen}
-          onDropdownOpenChange={setRulesDropdownOpen}
-        />
+        <RulesTabBar tabs={tabs} selectedId={activeTab.id} onSelect={setSelectedTabId} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        onScrollBeginDrag={() => setRulesDropdownOpen(false)}
-      >
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {activeTab.blocks.map((block, index) => (
           <RulesBlockView key={`${activeTab.id}-${index}`} block={block} />
         ))}
@@ -116,11 +97,6 @@ const styles = StyleSheet.create({
   },
   tabsWrap: {
     paddingHorizontal: spacing.screen,
-    zIndex: 20,
-  },
-  dropdownBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 10,
   },
   content: {
     paddingHorizontal: spacing.screen,
