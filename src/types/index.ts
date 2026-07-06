@@ -57,10 +57,33 @@ export interface FestivalInfo {
   logoImageUrl?: string;
 }
 
+export type {
+  CombinedRoute,
+  FestivalMapConfig,
+  LatLng,
+  MapFilterId,
+  MapPathsGeoJson,
+  MapPoiCategory,
+  MapPoiLink,
+  MapPoiProperties,
+  MapPoisGeoJson,
+  MapViewMode,
+  MapZoneProperties,
+  MapZoneType,
+  MapZonesGeoJson,
+  RouteSegment,
+  RouteSegmentKind,
+  UserLocationState,
+} from './map';
+
 export interface AppData {
   festival: FestivalInfo;
   stages: Stage[];
   schedule: SchedulePerformance[];
   autographs: AutographSession[];
   foodcourt: FoodCourtVendor[];
+  festivalMap?: import('./map').FestivalMapConfig;
+  mapZones?: import('./map').MapZonesGeoJson;
+  mapPaths?: import('./map').MapPathsGeoJson;
+  mapPois?: import('./map').MapPoisGeoJson;
 }

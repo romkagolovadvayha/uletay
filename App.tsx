@@ -2,6 +2,7 @@ import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DataProvider } from './src/context/DataContext';
 import { RadioPlayerProvider } from './src/context/RadioPlayerContext';
@@ -56,21 +57,26 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <DataProvider>
-        <RadioPlayerProvider>
-          <FavoritesProvider>
-            <NotificationSettingsProvider>
-              <AppContent />
-            </NotificationSettingsProvider>
-          </FavoritesProvider>
-        </RadioPlayerProvider>
-      </DataProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <DataProvider>
+          <RadioPlayerProvider>
+            <FavoritesProvider>
+              <NotificationSettingsProvider>
+                <AppContent />
+              </NotificationSettingsProvider>
+            </FavoritesProvider>
+          </RadioPlayerProvider>
+        </DataProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   loader: {
     flex: 1,
     backgroundColor: colors.background,

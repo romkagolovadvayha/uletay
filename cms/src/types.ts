@@ -57,12 +57,128 @@ export interface FestivalInfo {
   logoImageUrl?: string;
 }
 
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+export interface MapAdminOverlay {
+  imageUrl: string;
+  opacity?: number;
+  /** Центр схемы на карте */
+  center: LatLng;
+  /** Ширина схемы в метрах (масштаб) */
+  widthMeters: number;
+  /** Высота / ширина (из пропорций PNG) */
+  aspectRatio?: number;
+  /** Поворот по часовой, градусы */
+  rotation?: number;
+}
+
+export interface FestivalMapConfig {
+  center: LatLng;
+  defaultZoom: number;
+  enabled: boolean;
+  territoryBounds?: { sw: LatLng; ne: LatLng };
+  adminOverlay?: MapAdminOverlay;
+}
+
+export type MapZoneType =
+  | 'building'
+  | 'camping'
+  | 'parking'
+  | 'autocamp'
+  | 'comfort'
+  | 'trade'
+  | 'stage_area'
+  | 'service'
+  | 'toilet'
+  | 'shower'
+  | 'water'
+  | 'fence'
+  | 'custom';
+
+export interface MapZoneProperties {
+  id: string;
+  name: string;
+  zoneType: MapZoneType;
+  fillColor: string;
+  fillOpacity: number;
+  strokeColor?: string;
+  strokeWidth?: number;
+  description?: string;
+  extrusionHeight?: number;
+  /** Прямоугольная раскладка — для редактора (W/H/угол) */
+  layout?: {
+    center: LatLng;
+    widthMeters: number;
+    heightMeters: number;
+    rotation: number;
+  };
+}
+
+export type MapPathProperties = {
+  id: string;
+  name?: string;
+  pathKind?: 'road' | 'walkway' | 'fence';
+};
+
+export type MapPoiCategory =
+  | 'stage'
+  | 'foodcourt'
+  | 'toilet'
+  | 'shower'
+  | 'water'
+  | 'medical'
+  | 'info'
+  | 'entrance'
+  | 'parking'
+  | 'custom';
+
+export interface MapPoiLink {
+  type: 'stage' | 'foodcourt' | 'none';
+  id?: string;
+}
+
+export interface MapPoiProperties {
+  id: string;
+  name: string;
+  category: MapPoiCategory;
+  description?: string;
+  link?: MapPoiLink;
+}
+
+export type MapPathsGeoJson = GeoJSON.FeatureCollection<
+  GeoJSON.LineString,
+  MapPathProperties
+>;
+
+export type MapZonesGeoJson = GeoJSON.FeatureCollection<
+  GeoJSON.Polygon,
+  MapZoneProperties
+>;
+
+export type MapPoisGeoJson = GeoJSON.FeatureCollection<
+  GeoJSON.Point,
+  MapPoiProperties
+>;
+
 export interface AppData {
   festival: FestivalInfo;
   stages: Stage[];
   schedule: SchedulePerformance[];
   autographs: AutographSession[];
   foodcourt: FoodCourtVendor[];
+  festivalMap?: FestivalMapConfig;
+  mapZones?: MapZonesGeoJson;
+  mapPaths?: MapPathsGeoJson;
+  mapPois?: MapPoisGeoJson;
 }
 
-export type AdminTab = 'festival' | 'stages' | 'schedule' | 'autographs' | 'foodcourt';
+export type AdminTab =
+  | 'festival'
+  | 'stages'
+  | 'schedule'
+  | 'autographs'
+  | 'foodcourt'
+  | 'map';

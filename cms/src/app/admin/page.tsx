@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AutographsEditor } from './components/AutographsEditor';
 import { FoodcourtEditor } from './components/FoodcourtEditor';
+import { MapEditor } from './components/MapEditor';
 import { ScheduleEditor } from './components/ScheduleEditor';
 import {
   loadAdminData,
@@ -23,6 +24,7 @@ const TABS: Record<AdminTab, string> = {
   schedule: 'Расписание',
   autographs: 'Автографы',
   foodcourt: 'Фудкорт',
+  map: 'Карта',
 };
 
 export default async function AdminPage({
@@ -33,6 +35,7 @@ export default async function AdminPage({
     ok?: string;
     error?: string;
     edit?: string;
+    editPoi?: string;
     stage?: string;
     date?: string;
     category?: string;
@@ -207,6 +210,10 @@ export default async function AdminPage({
             editId={params.edit}
             categoryFilter={params.category}
           />
+        ) : null}
+
+        {activeTab === 'map' ? (
+          <MapEditor data={data} editPoiId={params.editPoi} />
         ) : null}
       </main>
     </>

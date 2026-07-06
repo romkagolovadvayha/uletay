@@ -16,6 +16,7 @@ import { LiveDetailScreen } from '../screens/LiveDetailScreen';
 import { MorePlaceholderScreen } from '../screens/MorePlaceholderScreen';
 import { PlaylistScreen } from '../screens/PlaylistScreen';
 import { MyScheduleScreen } from '../screens/MyScheduleScreen';
+import { FestivalMapScreen } from '../screens/FestivalMapScreen';
 import { ScheduleMainScreen } from '../screens/ScheduleMainScreen';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
 import { FavoriteNotificationHost } from '../components/FavoriteNotificationHost';
@@ -159,6 +160,15 @@ function RootTabs() {
         options={{
           title: 'Главная',
           tabBarIcon: ({ color }) => <TabIcon name="home-outline" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="MapTab"
+        component={FestivalMapScreen}
+        listeners={({ navigation }) => createFlatTabListeners(navigation)}
+        options={{
+          title: 'Карта',
+          tabBarIcon: ({ color }) => <TabIcon name="map-outline" color={color} />,
         }}
       />
       <Tab.Screen

@@ -7,6 +7,10 @@ module.exports = defineConfig([
   {
     ignores: [
       'dist/**',
+      'dist-web/**',
+      'dist-web-check/**',
+      '.expo/**',
+      '**/_expo/**',
       'node_modules/**',
       'cms/.next/**',
       'cms/node_modules/**',

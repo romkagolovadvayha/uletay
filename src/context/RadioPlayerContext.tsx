@@ -1,4 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Platform } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { fetchRadioNowPlaying, RadioNowPlaying } from '../api/radioNowPlayingApi';
@@ -17,18 +25,113 @@ type RadioPlayerContextValue = {
   play: () => void;
   pause: () => void;
   refreshNowPlaying: () => Promise<void>;
+  setPlaylistActive: (active: boolean) => void;
+};
+
+type RadioAudioEngineProps = {
+  engineRef: React.MutableRefObject<{ play: () => void; pause: () => void } | null>;
+  pendingPlayRef: React.MutableRefObject<boolean>;
+  onPlaybackChange: (state: { playing: boolean; isBuffering: boolean }) => void;
+  nowPlaying: RadioNowPlaying | null;
+  matchedPerformance: SchedulePerformance | null;
 };
 
 const RadioPlayerContext = createContext<RadioPlayerContextValue | undefined>(undefined);
 
-export function RadioPlayerProvider({ children }: { children: React.ReactNode }) {
-  const { data } = useAppData();
+function RadioAudioEngine({
+  engineRef,
+  pendingPlayRef,
+  onPlaybackChange,
+  nowPlaying,
+  matchedPerformance,
+}: RadioAudioEngineProps) {
   const player = useAudioPlayer({ uri: RADIO_STREAM_URL });
   const status = useAudioPlayerStatus(player);
+  const lockScreenActiveRef = useRef(false);
+
+  useEffect(() => {
+    void setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: 'doNotMix',
+    });
+  }, []);
+
+  useEffect(() => {
+    engineRef.current = {
+      play: () => {
+        player.play();
+      },
+      pause: () => {
+        player.pause();
+      },
+    };
+
+    if (pendingPlayRef.current) {
+      pendingPlayRef.current = false;
+      player.play();
+    }
+
+    return () => {
+      engineRef.current = null;
+    };
+  }, [engineRef, pendingPlayRef, player]);
+
+  useEffect(() => {
+    onPlaybackChange({
+      playing: status.playing,
+      isBuffering: status.isBuffering,
+    });
+  }, [onPlaybackChange, status.isBuffering, status.playing]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || !status.playing) {
+      return;
+    }
+
+    player.setActiveForLockScreen(true, {
+      title: nowPlaying?.title || RADIO_STATION_NAME,
+      artist: nowPlaying?.artist || RADIO_STATION_NAME,
+      albumTitle: RADIO_STATION_NAME,
+      artworkUrl: matchedPerformance?.imageUrl,
+    });
+    lockScreenActiveRef.current = true;
+  }, [
+    matchedPerformance?.imageUrl,
+    nowPlaying?.artist,
+    nowPlaying?.title,
+    player,
+    status.playing,
+  ]);
+
+  const pauseForLockScreen = useCallback(() => {
+    if (Platform.OS === 'web' || !lockScreenActiveRef.current) {
+      return;
+    }
+    player.setActiveForLockScreen(false);
+    lockScreenActiveRef.current = false;
+  }, [player]);
+
+  useEffect(() => {
+    if (!status.playing) {
+      pauseForLockScreen();
+    }
+  }, [pauseForLockScreen, status.playing]);
+
+  return null;
+}
+
+export function RadioPlayerProvider({ children }: { children: React.ReactNode }) {
+  const { data } = useAppData();
   const [nowPlaying, setNowPlaying] = useState<RadioNowPlaying | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMetadataLoading, setIsMetadataLoading] = useState(false);
-  const lockScreenActiveRef = useRef(false);
+  const [playlistActive, setPlaylistActive] = useState(false);
+  const [audioMounted, setAudioMounted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const engineRef = useRef<{ play: () => void; pause: () => void } | null>(null);
+  const pendingPlayRef = useRef(false);
 
   const matchedPerformance = useMemo(
     () =>
@@ -52,14 +155,10 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    void setAudioModeAsync({
-      playsInSilentMode: true,
-      shouldPlayInBackground: true,
-      interruptionMode: 'doNotMix',
-    });
-  }, []);
+    if (!playlistActive) {
+      return;
+    }
 
-  useEffect(() => {
     const timeoutId = setTimeout(() => {
       void refreshNowPlaying();
     }, 0);
@@ -71,63 +170,43 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       clearTimeout(timeoutId);
       clearInterval(intervalId);
     };
-  }, [refreshNowPlaying]);
+  }, [playlistActive, refreshNowPlaying]);
 
-  const updateLockScreen = useCallback(
-    (active: boolean) => {
-      if (Platform.OS === 'web') {
-        return;
-      }
-
-      if (active) {
-        player.setActiveForLockScreen(true, {
-          title: nowPlaying?.title || RADIO_STATION_NAME,
-          artist: nowPlaying?.artist || RADIO_STATION_NAME,
-          albumTitle: RADIO_STATION_NAME,
-          artworkUrl: matchedPerformance?.imageUrl,
-        });
-        lockScreenActiveRef.current = true;
-        return;
-      }
-
-      if (lockScreenActiveRef.current) {
-        player.setActiveForLockScreen(false);
-        lockScreenActiveRef.current = false;
-      }
+  const handlePlaybackChange = useCallback(
+    (state: { playing: boolean; isBuffering: boolean }) => {
+      setIsPlaying(state.playing);
+      setIsBuffering(state.isBuffering);
     },
-    [matchedPerformance?.imageUrl, nowPlaying?.artist, nowPlaying?.title, player],
+    [],
   );
 
   const play = useCallback(() => {
     setError(null);
-    updateLockScreen(true);
-    player.play();
-  }, [player, updateLockScreen]);
+    if (!audioMounted) {
+      pendingPlayRef.current = true;
+      setAudioMounted(true);
+      return;
+    }
+    engineRef.current?.play();
+  }, [audioMounted]);
 
   const pause = useCallback(() => {
-    player.pause();
-    updateLockScreen(false);
-  }, [player, updateLockScreen]);
+    pendingPlayRef.current = false;
+    engineRef.current?.pause();
+  }, []);
 
   const togglePlayback = useCallback(() => {
-    if (status.playing) {
+    if (isPlaying) {
       pause();
       return;
     }
     play();
-  }, [pause, play, status.playing]);
-
-  useEffect(() => {
-    if (!status.playing) {
-      return;
-    }
-    updateLockScreen(true);
-  }, [nowPlaying?.artist, nowPlaying?.title, matchedPerformance?.imageUrl, status.playing, updateLockScreen]);
+  }, [isPlaying, pause, play]);
 
   const value = useMemo(
     () => ({
-      isPlaying: status.playing,
-      isLoading: status.isBuffering || isMetadataLoading,
+      isPlaying,
+      isLoading: isBuffering || isMetadataLoading,
       error,
       nowPlaying,
       matchedPerformance,
@@ -135,22 +214,36 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       play,
       pause,
       refreshNowPlaying,
+      setPlaylistActive,
     }),
     [
       error,
+      isBuffering,
       isMetadataLoading,
+      isPlaying,
       matchedPerformance,
       nowPlaying,
       pause,
       play,
       refreshNowPlaying,
-      status.isBuffering,
-      status.playing,
       togglePlayback,
     ],
   );
 
-  return <RadioPlayerContext.Provider value={value}>{children}</RadioPlayerContext.Provider>;
+  return (
+    <RadioPlayerContext.Provider value={value}>
+      {audioMounted ? (
+        <RadioAudioEngine
+          engineRef={engineRef}
+          pendingPlayRef={pendingPlayRef}
+          onPlaybackChange={handlePlaybackChange}
+          nowPlaying={nowPlaying}
+          matchedPerformance={matchedPerformance}
+        />
+      ) : null}
+      {children}
+    </RadioPlayerContext.Provider>
+  );
 }
 
 export function useRadioPlayer() {

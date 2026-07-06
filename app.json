@@ -38,7 +38,14 @@
           "enableBackgroundPlayback": true,
           "enableBackgroundRecording": false
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Чтобы показать ваше местоположение на карте фестиваля"
+        }
+      ],
+      "@maplibre/maplibre-react-native"
     ]
   }
 }

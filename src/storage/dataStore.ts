@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { autographSessions } from '../data/autographs';
 import { foodCourtVendors } from '../data/foodcourt';
+import { getDefaultMapData } from '../data/festivalMap';
 import { festivalInfo, schedulePerformances, stages } from '../data/schedule';
 import { AppData } from '../types';
 import { normalizeAppData, withDefaultStages } from '../utils/appDataNormalize';
@@ -13,6 +14,7 @@ export const defaultAppData: AppData = normalizeAppData({
   schedule: schedulePerformances,
   autographs: autographSessions,
   foodcourt: foodCourtVendors,
+  ...getDefaultMapData(),
 });
 
 export function mergeStoredAppData(parsed: Partial<AppData>): AppData {

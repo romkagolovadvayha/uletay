@@ -21,6 +21,7 @@ export type MoreStackParamList = {
 
 export type RootTabParamList = {
   HomeTab: undefined;
+  MapTab: { poiId?: string } | undefined;
   ScheduleTab: NavigatorScreenParams<ScheduleStackParamList>;
   Autographs: NavigatorScreenParams<AutographStackParamList>;
   FavoritesTab: undefined;

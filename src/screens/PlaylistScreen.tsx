@@ -1,9 +1,9 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PerformanceTimeDateRow } from '../components/PerformanceTimeDateRow';
@@ -31,7 +31,15 @@ export function PlaylistScreen() {
     matchedPerformance,
     togglePlayback,
     refreshNowPlaying,
+    setPlaylistActive,
   } = useRadioPlayer();
+
+  useFocusEffect(
+    useCallback(() => {
+      setPlaylistActive(true);
+      return () => setPlaylistActive(false);
+    }, [setPlaylistActive]),
+  );
 
   const displayArtist = nowPlaying?.artist || 'Улетайрадио';
   const displayTitle = nowPlaying?.title || 'В эфире';

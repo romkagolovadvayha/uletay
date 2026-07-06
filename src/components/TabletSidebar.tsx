@@ -25,6 +25,7 @@ import { appFont, typography } from '../theme/typography';
 
 const MAIN_TAB_ROUTES: (keyof RootTabParamList)[] = [
   'HomeTab',
+  'MapTab',
   'ScheduleTab',
   'Autographs',
   'FavoritesTab',
@@ -108,15 +109,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       return;
     }
     resetAllNestedTabStacks(tabNavigation);
-    if (routeName === 'HomeTab') {
-      tabNavigation.navigate('HomeTab');
-      return;
-    }
-    if (routeName === 'FavoritesTab') {
-      tabNavigation.navigate('FavoritesTab');
-      return;
-    }
-    tabNavigation.navigate('PlaylistTab');
+    tabNavigation.navigate(routeName);
   };
 
   const extraItems: ExtraItem[] = [
@@ -172,6 +165,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
 
           const tabIcons: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
             HomeTab: 'home-outline',
+            MapTab: 'map-outline',
             ScheduleTab: 'calendar-outline',
             Autographs: 'ticket-outline',
             FavoritesTab: 'star-outline',

@@ -85,3 +85,51 @@ export async function saveUploadedImage(
 
   return `${config.uploadUrl}/${safeSubdir}/${filename}`;
 }
+
+/** PNG/JPEG схемы карты — без WebP, сохраняем прозрачность. */
+export async function saveUploadedMapScheme(
+  file: File,
+): Promise<{ url: string; width: number; height: number }> {
+  if (!file || file.size === 0) {
+    throw new ImageUploadError('Файл пустой');
+  }
+
+  const mime = resolveMime(file);
+  if (!mime) {
+    throw new ImageUploadError('Поддерживаются JPG, PNG, WebP и GIF');
+  }
+
+  const targetDir = path.join(config.uploadDir, 'maps');
+  await mkdir(targetDir, { recursive: true });
+
+  const input = Buffer.from(await file.arrayBuffer());
+  let pipeline = sharp(input, { animated: false }).rotate();
+  const meta = await pipeline.metadata();
+  const width = meta.width ?? 1;
+  const height = meta.height ?? 1;
+  const maxSide = Math.max(width, height);
+
+  if (maxSide > 4096) {
+    pipeline = pipeline.resize(4096, 4096, { fit: 'inside', withoutEnlargement: true });
+  }
+
+  const ext = mime === 'image/jpeg' ? '.jpg' : mime === 'image/png' ? '.png' : '.webp';
+  let output: Buffer;
+  if (ext === '.png') {
+    output = await pipeline.png().toBuffer();
+  } else if (ext === '.jpg') {
+    output = await pipeline.jpeg({ quality: 90 }).toBuffer();
+  } else {
+    output = await pipeline.webp({ quality: 90 }).toBuffer();
+  }
+
+  const filename = `map_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
+  await writeFile(path.join(targetDir, filename), output);
+
+  const finalMeta = await sharp(output).metadata();
+  return {
+    url: `${config.uploadUrl}/maps/${filename}`,
+    width: finalMeta.width ?? width,
+    height: finalMeta.height ?? height,
+  };
+}

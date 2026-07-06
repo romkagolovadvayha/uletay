@@ -13,6 +13,12 @@ export const linking: LinkingOptions<RootTabParamList> = {
   config: {
     screens: {
       HomeTab: '',
+      MapTab: {
+        path: 'map/:poiId?',
+        parse: {
+          poiId: (value: string) => value,
+        },
+      },
       ScheduleTab: {
         path: 'schedule',
         screens: {

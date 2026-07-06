@@ -10,7 +10,7 @@ import {
 import { getAppData, saveAppData } from '@/lib/app-data';
 import { verifyAdminCredentials } from '@/lib/auth';
 import type { ImagePreset } from '@/lib/image-presets';
-import { ImageUploadError, saveUploadedImage } from '@/lib/upload';
+import { ImageUploadError, saveUploadedImage, saveUploadedMapScheme } from '@/lib/upload';
 import { getSession } from '@/lib/session';
 import { capPerformanceEndTime } from '@/lib/schedule-time';
 import type {
@@ -19,9 +19,14 @@ import type {
   AutographSession,
   FoodCourtCategory,
   FoodCourtVendor,
+  MapPoiCategory,
+  MapPathsGeoJson,
+  MapPoisGeoJson,
+  MapZonesGeoJson,
   SchedulePerformance,
   StageId,
 } from '@/types';
+import { defaultOverlayFromBounds } from '@/lib/map-overlay-georef';
 
 async function requireSession() {
   const session = await getSession();
@@ -322,6 +327,248 @@ export async function deleteFoodcourtAction(formData: FormData) {
   data.foodcourt = data.foodcourt.filter((item) => item.id !== id);
   await saveAppData(data);
   redirect('/admin?tab=foodcourt&ok=1');
+}
+
+function parseGeoJson<T>(raw: FormDataEntryValue | null, label: string): T {
+  try {
+    return JSON.parse(String(raw ?? '')) as T;
+  } catch {
+    redirect('/admin?tab=map&error=' + encodeURIComponent(`Некорректный JSON: ${label}`));
+    throw new Error('unreachable');
+  }
+}
+
+export async function saveMapConfigAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  const existing = data.festivalMap;
+
+  const swLat = String(formData.get('swLat') ?? '').trim();
+  const swLng = String(formData.get('swLng') ?? '').trim();
+  const neLat = String(formData.get('neLat') ?? '').trim();
+  const neLng = String(formData.get('neLng') ?? '').trim();
+
+  const center = {
+    lat: Number(formData.get('centerLat') ?? existing?.center.lat ?? 56.606975),
+    lng: Number(formData.get('centerLng') ?? existing?.center.lng ?? 53.622461),
+  };
+
+  const territoryBounds =
+    swLat && swLng && neLat && neLng
+      ? {
+          sw: { lat: Number(swLat), lng: Number(swLng) },
+          ne: { lat: Number(neLat), lng: Number(neLng) },
+        }
+      : existing?.territoryBounds;
+
+  data.festivalMap = {
+    enabled: formData.get('enabled') === '1',
+    defaultZoom: Number(formData.get('defaultZoom') ?? existing?.defaultZoom ?? 14),
+    center,
+    ...(territoryBounds ? { territoryBounds } : {}),
+    ...(existing?.adminOverlay ? { adminOverlay: existing.adminOverlay } : {}),
+  };
+
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
+}
+
+export async function uploadMapSchemeAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  const file = formData.get('file');
+
+  if (!(file instanceof File) || file.size === 0) {
+    redirect('/admin?tab=map&error=' + encodeURIComponent('Выберите PNG/JPEG файл'));
+  }
+
+  let uploaded: { url: string; width: number; height: number };
+  try {
+    uploaded = await saveUploadedMapScheme(file);
+  } catch (error) {
+    redirect('/admin?tab=map&error=' + encodeURIComponent(uploadErrorMessage(error)));
+  }
+
+  const existingMap = data.festivalMap;
+  const center = existingMap?.center ?? { lat: 56.606975, lng: 53.622461 };
+  const aspectRatio = uploaded.height / uploaded.width;
+  const prev = existingMap?.adminOverlay;
+
+  const adminOverlay = prev
+    ? {
+        ...prev,
+        imageUrl: uploaded.url,
+        aspectRatio,
+      }
+    : defaultOverlayFromBounds(
+        uploaded.url,
+        center,
+        existingMap?.territoryBounds,
+        aspectRatio,
+      );
+
+  data.festivalMap = {
+    enabled: existingMap?.enabled ?? true,
+    defaultZoom: existingMap?.defaultZoom ?? 14,
+    center,
+    territoryBounds: existingMap?.territoryBounds,
+    adminOverlay,
+  };
+
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
+}
+
+export async function saveMapOverlayGeorefAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  const existing = data.festivalMap?.adminOverlay;
+
+  if (!existing?.imageUrl) {
+    redirect('/admin?tab=map&error=' + encodeURIComponent('Сначала загрузите схему'));
+  }
+
+  const centerLat = Number(formData.get('centerLat'));
+  const centerLng = Number(formData.get('centerLng'));
+  const widthMeters = Number(formData.get('widthMeters'));
+  const aspectRatio = Number(formData.get('aspectRatio'));
+  const rotation = Number(formData.get('rotation'));
+  const opacity = Number(formData.get('opacity'));
+
+  if (
+    !Number.isFinite(centerLat) ||
+    !Number.isFinite(centerLng) ||
+    !Number.isFinite(widthMeters) ||
+    widthMeters <= 0
+  ) {
+    redirect('/admin?tab=map&error=' + encodeURIComponent('Некорректные параметры привязки'));
+  }
+
+  data.festivalMap = {
+    enabled: data.festivalMap?.enabled ?? true,
+    defaultZoom: data.festivalMap?.defaultZoom ?? 14,
+    center: data.festivalMap?.center ?? { lat: centerLat, lng: centerLng },
+    territoryBounds: data.festivalMap?.territoryBounds,
+    adminOverlay: {
+      imageUrl: existing.imageUrl,
+      center: { lat: centerLat, lng: centerLng },
+      widthMeters,
+      aspectRatio: Number.isFinite(aspectRatio) ? aspectRatio : existing.aspectRatio ?? 0.72,
+      rotation: Number.isFinite(rotation) ? rotation : 0,
+      opacity: Number.isFinite(opacity) ? opacity : existing.opacity ?? 0.5,
+    },
+  };
+
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
+}
+
+export async function removeMapSchemeAction(_formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  if (data.festivalMap) {
+    const { adminOverlay: _removed, ...rest } = data.festivalMap;
+    data.festivalMap = rest;
+  }
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
+}
+
+export async function saveMapLayersAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+
+  data.mapZones = parseGeoJson<MapZonesGeoJson>(formData.get('mapZones'), 'зоны');
+  data.mapPaths = parseGeoJson<MapPathsGeoJson>(formData.get('mapPaths'), 'дорожки');
+  data.mapPois = parseGeoJson<MapPoisGeoJson>(formData.get('mapPois'), 'POI');
+
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
+}
+
+export async function saveMapGeoJsonAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+
+  data.mapZones = parseGeoJson<MapZonesGeoJson>(formData.get('mapZones'), 'зоны');
+  data.mapPaths = parseGeoJson<MapPathsGeoJson>(formData.get('mapPaths'), 'дорожки');
+
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
+}
+
+export async function upsertMapPoiAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  const isNew = formData.get('isNew') === '1';
+  const existingId = String(formData.get('id') ?? '').trim();
+  const poiId = String(formData.get('poiId') ?? '').trim() || existingId;
+  const name = String(formData.get('name') ?? '').trim();
+  const category = String(formData.get('category') ?? 'custom') as MapPoiCategory;
+  const lng = Number(formData.get('lng'));
+  const lat = Number(formData.get('lat'));
+  const description = String(formData.get('description') ?? '').trim();
+  const linkType = String(formData.get('linkType') ?? 'none');
+  const linkId = String(formData.get('linkId') ?? '').trim();
+
+  if (!poiId || !name || !Number.isFinite(lng) || !Number.isFinite(lat)) {
+    redirect('/admin?tab=map&error=' + encodeURIComponent('Заполните обязательные поля POI'));
+  }
+
+  const collection = data.mapPois ?? { type: 'FeatureCollection' as const, features: [] };
+  const link =
+    linkType === 'none'
+      ? undefined
+      : { type: linkType as 'stage' | 'foodcourt', ...(linkId ? { id: linkId } : {}) };
+
+  const feature: GeoJSON.Feature<
+    GeoJSON.Point,
+    {
+      id: string;
+      name: string;
+      category: MapPoiCategory;
+      description?: string;
+      link?: { type: 'stage' | 'foodcourt'; id?: string };
+    }
+  > = {
+    type: 'Feature',
+    properties: {
+      id: poiId,
+      name,
+      category,
+      ...(description ? { description } : {}),
+      ...(link ? { link } : {}),
+    },
+    geometry: { type: 'Point', coordinates: [lng, lat] },
+  };
+
+  if (isNew) {
+    collection.features.push(feature);
+  } else {
+    const index = collection.features.findIndex((f) => f.properties.id === existingId);
+    if (index === -1) {
+      redirect('/admin?tab=map&error=' + encodeURIComponent('POI не найден'));
+    }
+    collection.features[index] = feature;
+  }
+
+  data.mapPois = collection;
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
+}
+
+export async function deleteMapPoiAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  const id = String(formData.get('id') ?? '').trim();
+  if (data.mapPois) {
+    data.mapPois = {
+      ...data.mapPois,
+      features: data.mapPois.features.filter((f) => f.properties.id !== id),
+    };
+  }
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
 }
 
 export async function uploadImageAction(formData: FormData) {

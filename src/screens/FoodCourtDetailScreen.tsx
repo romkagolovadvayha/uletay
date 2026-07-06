@@ -1,4 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { CompositeNavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -6,21 +8,34 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FoodCourtCard } from '../components/FoodCourtCard';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
-import { MoreStackParamList } from '../navigation/types';
+import { MoreStackParamList, RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'FoodCourtDetail'>;
+type MapNavigation = CompositeNavigationProp<
+  NativeStackScreenProps<MoreStackParamList, 'FoodCourtDetail'>['navigation'],
+  BottomTabNavigationProp<RootTabParamList>
+>;
 
 export function FoodCourtDetailScreen({ navigation, route }: Props) {
   const { data } = useAppData();
   const { isFoodFavorite, toggleFoodFavorite } = useFavorites();
+  const tabNavigation = navigation.getParent<MapNavigation>();
 
   const vendor = useMemo(
     () => data.foodcourt.find((item) => item.id === route.params.vendorId),
     [data.foodcourt, route.params.vendorId],
   );
+
+  const mapPoiId = useMemo(() => {
+    if (!vendor) return undefined;
+    const poi = data.mapPois?.features.find(
+      (f) => f.properties.link?.type === 'foodcourt' && f.properties.link.id === vendor.id,
+    );
+    return poi?.properties.id;
+  }, [data.mapPois, vendor]);
 
   if (!vendor) {
     return (
@@ -62,6 +77,17 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
           <Ionicons name="location-outline" size={16} color={colors.text} />
           <Text style={styles.locationText}>{vendor.distance}</Text>
         </View>
+
+        {mapPoiId && tabNavigation ? (
+          <Pressable
+            accessibilityRole="button"
+            style={styles.mapButton}
+            onPress={() => tabNavigation.navigate('MapTab', { poiId: mapPoiId })}
+          >
+            <Ionicons name="map-outline" size={18} color={colors.background} />
+            <Text style={styles.mapButtonText}>На карте</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -111,6 +137,22 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontSize: 14,
+  },
+  mapButton: {
+    marginTop: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    minHeight: 48,
+    paddingHorizontal: spacing.lg,
+  },
+  mapButtonText: {
+    ...typography.body,
+    color: colors.background,
+    fontWeight: '600',
   },
   empty: {
     ...typography.body,

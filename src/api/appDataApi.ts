@@ -3,6 +3,7 @@ import { AppData } from '../types';
 import { API_BASE_URL, CACHE_TTL_MS, CachedAppData } from '../config/api';
 import { defaultAppData } from '../storage/dataStore';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { normalizeAppData } from '../utils/appDataNormalize';
 
 const CACHE_KEY = '@uletay_api_cache_v1';
 const FETCH_TIMEOUT_MS = 8_000;
@@ -67,7 +68,7 @@ export async function loadAppDataFromApi(force = false): Promise<AppData> {
 
   inFlight = (async () => {
     try {
-      const data = await fetchRemoteAppData();
+      const data = normalizeAppData(await fetchRemoteAppData());
       const cache: CachedAppData = { data, fetchedAt: Date.now() };
       memoryCache = cache;
       await writeStorageCache(cache);
