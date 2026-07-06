@@ -76,10 +76,6 @@ set +a
 # Schema only — do not re-seed app_content (preserves uploaded images and admin edits)
 npm run db:migrate
 
-echo "Syncing foodcourt vendors into app_content..."
-cd "$DEPLOY_PATH"
-node cms/scripts/patch-foodcourt-db.mjs
-
 export PATH="/usr/local/bin:/usr/local/node/bin:$(npm prefix -g 2>/dev/null)/bin:${PATH}"
 
 if ! command -v pm2 >/dev/null 2>&1; then
