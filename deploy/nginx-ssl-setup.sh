@@ -185,7 +185,7 @@ verify_https() {
     echo "Skipping www redirect checks — certificate does not include ${www_domain}"
   fi
 
-  code=$(curl -fsS -k -o /dev/null -w '%{http_code}' -H "Host: ${DOMAIN}" \
+  code=$(curl -sS -k -o /dev/null -w '%{http_code}' -H "Host: ${DOMAIN}" \
     "https://127.0.0.1/__uletay-404-check__")
   if [[ "$code" != "404" ]]; then
     echo "Custom 404 page expected (404), got ${code}"
