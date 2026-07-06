@@ -1,6 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +10,6 @@ import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { getRemoteImageSource } from '../utils/imageSource';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'FoodCourtDetail'>;
 
@@ -95,14 +93,6 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
           </View>
         ))}
 
-        {vendor.menuImageUrls?.map((url) => (
-          <Image
-            key={url}
-            source={getRemoteImageSource(url)}
-            style={styles.menuImage}
-            contentFit="contain"
-          />
-        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -217,13 +207,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: '600',
-  },
-  menuImage: {
-    width: '100%',
-    height: 480,
-    marginTop: spacing.lg,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceCard,
   },
   empty: {
     ...typography.body,
