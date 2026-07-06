@@ -1,3 +1,5 @@
+import { nearestPointOnLine } from '@turf/nearest-point-on-line';
+import { lineString, point } from '@turf/helpers';
 import type { MapPathsGeoJson } from '../../types/map';
 import { haversineMeters, coordToLatLng } from './geo';
 
@@ -12,7 +14,8 @@ type GraphEdge = {
   weight: number;
 };
 
-const SNAP_THRESHOLD_M = 45;
+/** Max distance from a road/path to snap user or building target. */
+const SNAP_THRESHOLD_M = 180;
 const NODE_MERGE_M = 2;
 
 function nodeKey(lng: number, lat: number): string {
@@ -50,6 +53,7 @@ function addEdge(
   to: string,
   weight: number,
 ) {
+  if (from === to || weight <= 0) return;
   const list = adjacency.get(from) ?? [];
   list.push({ to, weight });
   adjacency.set(from, list);
@@ -60,6 +64,7 @@ export function buildGraph(paths?: MapPathsGeoJson) {
   const adjacency = new Map<string, GraphEdge[]>();
 
   for (const feature of paths?.features ?? []) {
+    if (feature.geometry.type !== 'LineString') continue;
     const coords = feature.geometry.coordinates;
     for (let i = 0; i < coords.length - 1; i += 1) {
       const [lng1, lat1] = coords[i];
@@ -78,18 +83,64 @@ export function buildGraph(paths?: MapPathsGeoJson) {
   return { nodes, adjacency };
 }
 
-function nearestNodeOnGraph(
-  point: { lat: number; lng: number },
-  nodes: Map<string, GraphNode>,
-): { nodeId: string; distance: number } | null {
-  let best: { nodeId: string; distance: number } | null = null;
-  for (const node of nodes.values()) {
-    const distance = haversineMeters(point, { lat: node.lat, lng: node.lng });
+type PathSnap = {
+  lng: number;
+  lat: number;
+  distance: number;
+  segment: [[number, number], [number, number]];
+};
+
+function nearestPointOnPaths(
+  paths: MapPathsGeoJson | undefined,
+  target: { lat: number; lng: number },
+): PathSnap | null {
+  let best: PathSnap | null = null;
+  const targetPoint = point([target.lng, target.lat]);
+
+  for (const feature of paths?.features ?? []) {
+    if (feature.geometry.type !== 'LineString' || feature.geometry.coordinates.length < 2) continue;
+    const coords = feature.geometry.coordinates as [number, number][];
+    const nearest = nearestPointOnLine(lineString(coords), targetPoint);
+    const [lng, lat] = nearest.geometry.coordinates;
+    const distance = haversineMeters(target, { lat, lng });
     if (!best || distance < best.distance) {
-      best = { nodeId: node.id, distance };
+      const segmentIndex = Math.max(
+        0,
+        Math.min(coords.length - 2, Number(nearest.properties.index ?? 0)),
+      );
+      best = {
+        lng,
+        lat,
+        distance,
+        segment: [coords[segmentIndex], coords[segmentIndex + 1]],
+      };
     }
   }
+
   return best;
+}
+
+function attachSnapToGraph(
+  nodes: Map<string, GraphNode>,
+  adjacency: Map<string, GraphEdge[]>,
+  snap: PathSnap,
+): string | null {
+  if (snap.distance > SNAP_THRESHOLD_M) return null;
+
+  const snapId = getOrCreateNode(nodes, snap.lng, snap.lat);
+  const [start, end] = snap.segment;
+  const startId = getOrCreateNode(nodes, start[0], start[1]);
+  const endId = getOrCreateNode(nodes, end[0], end[1]);
+
+  const toStart = haversineMeters({ lat: snap.lat, lng: snap.lng }, coordToLatLng(start));
+  const toEnd = haversineMeters({ lat: snap.lat, lng: snap.lng }, coordToLatLng(end));
+
+  addEdge(adjacency, snapId, startId, toStart);
+  addEdge(adjacency, startId, snapId, toStart);
+  addEdge(adjacency, snapId, endId, toEnd);
+  addEdge(adjacency, endId, snapId, toEnd);
+
+  return snapId;
 }
 
 function reconstructPath(
@@ -109,24 +160,13 @@ function reconstructPath(
   });
 }
 
-export function findInternalPath(
-  paths: MapPathsGeoJson | undefined,
-  start: { lat: number; lng: number },
+function runAStar(
+  nodes: Map<string, GraphNode>,
+  adjacency: Map<string, GraphEdge[]>,
+  startId: string,
+  endId: string,
   end: { lat: number; lng: number },
 ): { coordinates: [number, number][]; distanceMeters: number } | null {
-  const { nodes, adjacency } = buildGraph(paths);
-  if (nodes.size === 0) return null;
-
-  const startSnap = nearestNodeOnGraph(start, nodes);
-  const endSnap = nearestNodeOnGraph(end, nodes);
-  if (!startSnap || !endSnap) return null;
-  if (startSnap.distance > SNAP_THRESHOLD_M || endSnap.distance > SNAP_THRESHOLD_M) {
-    return null;
-  }
-
-  const startId = startSnap.nodeId;
-  const endId = endSnap.nodeId;
-
   const open = new Set<string>([startId]);
   const cameFrom = new Map<string, string | null>();
   const gScore = new Map<string, number>();
@@ -167,6 +207,50 @@ export function findInternalPath(
   }
 
   return null;
+}
+
+function straightLinePath(
+  start: { lat: number; lng: number },
+  end: { lat: number; lng: number },
+): { coordinates: [number, number][]; distanceMeters: number } {
+  const coordinates: [number, number][] = [
+    [start.lng, start.lat],
+    [end.lng, end.lat],
+  ];
+  return {
+    coordinates,
+    distanceMeters: haversineMeters(start, end),
+  };
+}
+
+export function findInternalPath(
+  paths: MapPathsGeoJson | undefined,
+  start: { lat: number; lng: number },
+  end: { lat: number; lng: number },
+): { coordinates: [number, number][]; distanceMeters: number } {
+  const { nodes, adjacency } = buildGraph(paths);
+  if (nodes.size === 0) {
+    return straightLinePath(start, end);
+  }
+
+  const startSnap = nearestPointOnPaths(paths, start);
+  const endSnap = nearestPointOnPaths(paths, end);
+  if (!startSnap || !endSnap) {
+    return straightLinePath(start, end);
+  }
+
+  const startId = attachSnapToGraph(nodes, adjacency, startSnap);
+  const endId = attachSnapToGraph(nodes, adjacency, endSnap);
+  if (!startId || !endId) {
+    return straightLinePath(start, end);
+  }
+
+  const routed = runAStar(nodes, adjacency, startId, endId, end);
+  if (routed) {
+    return routed;
+  }
+
+  return straightLinePath(start, end);
 }
 
 export function walkingDurationSeconds(distanceMeters: number): number {

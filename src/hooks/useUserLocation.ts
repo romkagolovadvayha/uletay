@@ -5,6 +5,31 @@ import type { UserLocationState } from '../types/map';
 
 export type LocationStatus = 'loading' | 'granted' | 'denied' | 'unavailable';
 
+const POSITION_TIMEOUT_MS = 20_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('location-timeout')), ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+function toLocationState(position: Location.LocationObject): UserLocationState {
+  return {
+    lat: position.coords.latitude,
+    lng: position.coords.longitude,
+    accuracy: position.coords.accuracy,
+  };
+}
+
 export function useUserLocation(enabled = true) {
   const [location, setLocation] = useState<UserLocationState | null>(null);
   const [status, setStatus] = useState<LocationStatus>('loading');
@@ -19,22 +44,45 @@ export function useUserLocation(enabled = true) {
   }, []);
 
   const requestPermission = useCallback(async () => {
-    setStatus('loading');
     try {
-      const { status: perm } = await Location.requestForegroundPermissionsAsync();
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        setStatus('unavailable');
+        return false;
+      }
+
+      let perm = (await Location.getForegroundPermissionsAsync()).status;
+      if (perm !== 'granted') {
+        perm = (await Location.requestForegroundPermissionsAsync()).status;
+      }
       if (perm !== 'granted') {
         setStatus('denied');
         return false;
       }
+
       setStatus('granted');
-      const current = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      setLocation({
-        lat: current.coords.latitude,
-        lng: current.coords.longitude,
-        accuracy: current.coords.accuracy,
-      });
+
+      try {
+        const last = await Location.getLastKnownPositionAsync();
+        if (last) {
+          setLocation(toLocationState(last));
+        }
+      } catch {
+        // Last known position is optional.
+      }
+
+      try {
+        const current = await withTimeout(
+          Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          }),
+          POSITION_TIMEOUT_MS,
+        );
+        setLocation(toLocationState(current));
+      } catch {
+        // GPS fix can be slow indoors; watchPositionAsync may still update later.
+      }
+
       return true;
     } catch {
       setStatus('unavailable');
@@ -45,10 +93,12 @@ export function useUserLocation(enabled = true) {
   useEffect(() => {
     if (!enabled) return;
     let subscription: Location.LocationSubscription | null = null;
+    let cancelled = false;
 
-    (async () => {
+    void (async () => {
       const ok = await requestPermission();
-      if (!ok) return;
+      if (!ok || cancelled) return;
+
       subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
@@ -56,16 +106,13 @@ export function useUserLocation(enabled = true) {
           distanceInterval: 5,
         },
         (update) => {
-          setLocation({
-            lat: update.coords.latitude,
-            lng: update.coords.longitude,
-            accuracy: update.coords.accuracy,
-          });
+          setLocation(toLocationState(update));
         },
       );
     })();
 
     return () => {
+      cancelled = true;
       subscription?.remove();
     };
   }, [enabled, requestPermission]);

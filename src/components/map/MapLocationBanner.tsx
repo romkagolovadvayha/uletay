@@ -36,7 +36,15 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
   if (status === 'loading') {
     return (
       <View style={[styles.banner, styles.info]}>
-        <Text style={styles.text}>Определяем местоположение…</Text>
+        <Text style={styles.text}>Запрашиваем доступ к геолокации…</Text>
+      </View>
+    );
+  }
+
+  if (status === 'unavailable') {
+    return (
+      <View style={[styles.banner, styles.info]}>
+        <Text style={styles.text}>Геолокация недоступна — включите GPS в настройках телефона</Text>
       </View>
     );
   }

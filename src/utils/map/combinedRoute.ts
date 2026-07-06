@@ -1,3 +1,4 @@
+import { ROAD_ENTRANCE } from '../../data/festivalMap';
 import type {
   CombinedRoute,
   FestivalMapConfig,
@@ -17,9 +18,10 @@ function poiCoord(poi: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>): LatLng
 }
 
 function entranceTargets(pois?: MapPoisGeoJson): LatLng[] {
-  return (pois?.features ?? [])
+  const fromPois = (pois?.features ?? [])
     .filter((f) => f.properties.category === 'entrance' || f.properties.category === 'parking')
     .map(poiCoord);
+  return fromPois.length > 0 ? fromPois : [ROAD_ENTRANCE];
 }
 
 function nearestTarget(from: LatLng, targets: LatLng[]): LatLng {
@@ -67,39 +69,45 @@ export async function buildCombinedRouteToTarget(options: {
       lng: entrance.lng,
     };
     const internal = findInternalPath(options.mapPaths, internalStart, target);
-    if (internal) {
-      segments.push({
-        kind: 'internal',
-        coordinates: internal.coordinates,
-        distanceMeters: internal.distanceMeters,
-        durationSeconds: walkingDurationSeconds(internal.distanceMeters),
-      });
-    }
+    segments.push({
+      kind: 'internal',
+      coordinates: internal.coordinates,
+      distanceMeters: internal.distanceMeters,
+      durationSeconds: walkingDurationSeconds(internal.distanceMeters),
+    });
   } else if (options.userLocation) {
     const internal = findInternalPath(options.mapPaths, options.userLocation, target);
-    if (internal) {
-      segments.push({
-        kind: 'internal',
-        coordinates: internal.coordinates,
-        distanceMeters: internal.distanceMeters,
-        durationSeconds: walkingDurationSeconds(internal.distanceMeters),
-      });
-    }
+    segments.push({
+      kind: 'internal',
+      coordinates: internal.coordinates,
+      distanceMeters: internal.distanceMeters,
+      durationSeconds: walkingDurationSeconds(internal.distanceMeters),
+    });
   } else {
     const entrances = entranceTargets(options.mapPois);
     const start = entrances[0] ?? target;
     const internal = findInternalPath(options.mapPaths, start, target);
-    if (internal) {
-      segments.push({
-        kind: 'internal',
-        coordinates: internal.coordinates,
-        distanceMeters: internal.distanceMeters,
-        durationSeconds: walkingDurationSeconds(internal.distanceMeters),
-      });
-    }
+    segments.push({
+      kind: 'internal',
+      coordinates: internal.coordinates,
+      distanceMeters: internal.distanceMeters,
+      durationSeconds: walkingDurationSeconds(internal.distanceMeters),
+    });
   }
 
-  if (segments.length === 0) return null;
+  if (segments.length === 0) {
+    if (options.userLocation) {
+      const fallback = straightLineFallback(options.userLocation, target);
+      segments.push({
+        kind: 'internal',
+        coordinates: fallback.coordinates,
+        distanceMeters: fallback.distanceMeters,
+        durationSeconds: walkingDurationSeconds(fallback.distanceMeters),
+      });
+    } else {
+      return null;
+    }
+  }
 
   const totalDistanceMeters = segments.reduce((s, seg) => s + seg.distanceMeters, 0);
   const totalDurationSeconds = segments.reduce((s, seg) => s + seg.durationSeconds, 0);
