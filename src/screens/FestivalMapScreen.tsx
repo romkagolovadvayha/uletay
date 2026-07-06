@@ -126,6 +126,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
           mapConfig,
           mapPaths: data.mapPaths,
           mapPois: data.mapPois,
+          mapZones: data.mapZones,
         });
         if (!combined) {
           setRouteError('Не удалось проложить маршрут. Попробуйте ещё раз.');
@@ -144,7 +145,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
         setRouting(false);
       }
     },
-    [location, mapConfig, data.mapPaths, data.mapPois],
+    [location, mapConfig, data.mapPaths, data.mapPois, data.mapZones],
   );
 
   const handleZoneRoute = useCallback(async () => {

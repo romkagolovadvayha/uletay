@@ -8,22 +8,47 @@ export type MapLayersState = {
   paths: MapPathsGeoJson;
 };
 
+const EMPTY_ZONES: MapZonesGeoJson = { type: 'FeatureCollection', features: [] };
+const EMPTY_PATHS: MapPathsGeoJson = { type: 'FeatureCollection', features: [] };
+
 const MAX_HISTORY = 40;
 
-function cloneState(state: MapLayersState): MapLayersState {
+function isFeatureCollection(value: unknown): value is MapZonesGeoJson | MapPathsGeoJson {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { type?: string }).type === 'FeatureCollection' &&
+    Array.isArray((value as { features?: unknown }).features)
+  );
+}
+
+export function normalizeMapLayersState(state: Partial<MapLayersState> | null | undefined): MapLayersState {
   return {
-    zones: JSON.parse(JSON.stringify(state.zones)) as MapZonesGeoJson,
-    paths: JSON.parse(JSON.stringify(state.paths)) as MapPathsGeoJson,
+    zones: isFeatureCollection(state?.zones) ? state.zones : EMPTY_ZONES,
+    paths: isFeatureCollection(state?.paths) ? state.paths : EMPTY_PATHS,
+  };
+}
+
+function cloneGeoJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function cloneState(state: MapLayersState): MapLayersState {
+  const normalized = normalizeMapLayersState(state);
+  return {
+    zones: cloneGeoJson(normalized.zones),
+    paths: cloneGeoJson(normalized.paths),
   };
 }
 
 export function useMapEditorHistory(initial: MapLayersState) {
+  const normalizedInitial = normalizeMapLayersState(initial);
   const pastRef = useRef<MapLayersState[]>([]);
   const futureRef = useRef<MapLayersState[]>([]);
-  const currentRef = useRef<MapLayersState>(cloneState(initial));
+  const currentRef = useRef<MapLayersState>(cloneState(normalizedInitial));
 
-  const [zones, setZones] = useState(initial.zones);
-  const [paths, setPaths] = useState(initial.paths);
+  const [zones, setZones] = useState(normalizedInitial.zones);
+  const [paths, setPaths] = useState(normalizedInitial.paths);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -34,9 +59,10 @@ export function useMapEditorHistory(initial: MapLayersState) {
 
   const applyState = useCallback(
     (next: MapLayersState) => {
-      currentRef.current = cloneState(next);
-      setZones(next.zones);
-      setPaths(next.paths);
+      const normalized = cloneState(next);
+      currentRef.current = normalized;
+      setZones(normalized.zones);
+      setPaths(normalized.paths);
       syncFlags();
     },
     [syncFlags],

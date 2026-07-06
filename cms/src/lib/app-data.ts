@@ -1,6 +1,24 @@
 import type { RowDataPacket } from 'mysql2';
-import type { AppData } from '@/types';
+import type { AppData, MapPathsGeoJson, MapZonesGeoJson } from '@/types';
 import { getPool } from './db';
+
+const EMPTY_ZONES: MapZonesGeoJson = { type: 'FeatureCollection', features: [] };
+const EMPTY_PATHS: MapPathsGeoJson = { type: 'FeatureCollection', features: [] };
+
+function normalizeFeatureCollection<T extends MapZonesGeoJson | MapPathsGeoJson>(
+  value: unknown,
+  fallback: T,
+): T {
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { type?: string }).type === 'FeatureCollection' &&
+    Array.isArray((value as { features?: unknown }).features)
+  ) {
+    return value as T;
+  }
+  return fallback;
+}
 
 export async function getAppData(): Promise<AppData> {
   const pool = getPool();
@@ -24,6 +42,8 @@ export async function getAppData(): Promise<AppData> {
     autographs: Array.isArray(content.autographs) ? content.autographs : [],
     foodcourt: Array.isArray(content.foodcourt) ? content.foodcourt : [],
     stages: Array.isArray(content.stages) ? content.stages : [],
+    mapZones: normalizeFeatureCollection(content.mapZones, EMPTY_ZONES),
+    mapPaths: normalizeFeatureCollection(content.mapPaths, EMPTY_PATHS),
   };
 }
 

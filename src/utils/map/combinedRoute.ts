@@ -5,12 +5,13 @@ import type {
   LatLng,
   MapPathsGeoJson,
   MapPoisGeoJson,
+  MapZonesGeoJson,
   MapPoiProperties,
   RouteSegment,
 } from '../../types/map';
-import { fetchDrivingRoute, straightLineFallback } from './externalRouting';
+import { fetchDrivingRoute } from './externalRouting';
 import { formatDistance, formatDuration, haversineMeters, isInsideTerritory } from './geo';
-import { findInternalPath, walkingDurationSeconds } from './pathfinding';
+import { findInternalPathAsync } from './pathfinding';
 
 function poiCoord(poi: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>): LatLng {
   const [lng, lat] = poi.geometry.coordinates;
@@ -45,6 +46,7 @@ export async function buildCombinedRouteToTarget(options: {
   mapConfig?: FestivalMapConfig;
   mapPaths?: MapPathsGeoJson;
   mapPois?: MapPoisGeoJson;
+  mapZones?: MapZonesGeoJson;
 }): Promise<CombinedRoute | null> {
   const target = options.target;
   const segments: RouteSegment[] = [];
@@ -54,9 +56,7 @@ export async function buildCombinedRouteToTarget(options: {
 
   if (options.userLocation && !inside) {
     const entrance = nearestTarget(options.userLocation, entranceTargets(options.mapPois));
-    const external =
-      (await fetchDrivingRoute(options.userLocation, entrance)) ??
-      straightLineFallback(options.userLocation, entrance);
+    const external = await fetchDrivingRoute(options.userLocation, entrance);
     segments.push({
       kind: 'external',
       coordinates: external.coordinates,
@@ -68,33 +68,33 @@ export async function buildCombinedRouteToTarget(options: {
       lat: entrance.lat,
       lng: entrance.lng,
     };
-    const internal = findInternalPath(options.mapPaths, internalStart, target);
+    const internal = await findInternalPathAsync(options.mapPaths, internalStart, target, options.mapZones);
     if (!internal) return null;
     segments.push({
       kind: 'internal',
       coordinates: internal.coordinates,
       distanceMeters: internal.distanceMeters,
-      durationSeconds: walkingDurationSeconds(internal.distanceMeters),
+      durationSeconds: internal.durationSeconds,
     });
   } else if (options.userLocation) {
-    const internal = findInternalPath(options.mapPaths, options.userLocation, target);
+    const internal = await findInternalPathAsync(options.mapPaths, options.userLocation, target, options.mapZones);
     if (!internal) return null;
     segments.push({
       kind: 'internal',
       coordinates: internal.coordinates,
       distanceMeters: internal.distanceMeters,
-      durationSeconds: walkingDurationSeconds(internal.distanceMeters),
+      durationSeconds: internal.durationSeconds,
     });
   } else {
     const entrances = entranceTargets(options.mapPois);
     const start = entrances[0] ?? target;
-    const internal = findInternalPath(options.mapPaths, start, target);
+    const internal = await findInternalPathAsync(options.mapPaths, start, target, options.mapZones);
     if (!internal) return null;
     segments.push({
       kind: 'internal',
       coordinates: internal.coordinates,
       distanceMeters: internal.distanceMeters,
-      durationSeconds: walkingDurationSeconds(internal.distanceMeters),
+      durationSeconds: internal.durationSeconds,
     });
   }
 
@@ -108,11 +108,11 @@ export async function buildCombinedRouteToTarget(options: {
 
   let summary = '';
   if (externalSeg && internalSeg) {
-    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до въезда, затем ${formatDistance(internalSeg.distanceMeters)} пешком по дорогам и тропинкам до ${options.targetName}`;
+    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до въезда (~${formatDuration(externalSeg.durationSeconds)}), затем ${formatDistance(internalSeg.distanceMeters)} пешком до ${options.targetName} (~${formatDuration(internalSeg.durationSeconds)})`;
   } else if (externalSeg) {
-    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до ${options.targetName}`;
+    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до ${options.targetName} (~${formatDuration(externalSeg.durationSeconds)})`;
   } else if (internalSeg) {
-    summary = `${formatDistance(internalSeg.distanceMeters)} пешком по дорогам и тропинкам до ${options.targetName} (~${formatDuration(internalSeg.durationSeconds)})`;
+    summary = `${formatDistance(internalSeg.distanceMeters)} пешком до ${options.targetName} (~${formatDuration(internalSeg.durationSeconds)})`;
   }
 
   return {
@@ -129,6 +129,7 @@ export async function buildCombinedRoute(options: {
   mapConfig?: FestivalMapConfig;
   mapPaths?: MapPathsGeoJson;
   mapPois?: MapPoisGeoJson;
+  mapZones?: MapZonesGeoJson;
 }): Promise<CombinedRoute | null> {
   return buildCombinedRouteToTarget({
     userLocation: options.userLocation,
@@ -137,6 +138,7 @@ export async function buildCombinedRoute(options: {
     mapConfig: options.mapConfig,
     mapPaths: options.mapPaths,
     mapPois: options.mapPois,
+    mapZones: options.mapZones,
   });
 }
 

@@ -1,6 +1,14 @@
 import { nearestPointOnLine } from '@turf/nearest-point-on-line';
 import { lineString, point } from '@turf/helpers';
-import type { LatLng, MapPathProperties, MapPathsGeoJson } from '../../types/map';
+import type { LatLng, MapPathProperties, MapPathsGeoJson, MapZonesGeoJson } from '../../types/map';
+import { fetchWalkingRoute, fetchWalkingDurationForPath, type RouteRequestOptions } from './externalRouting';
+import {
+  extractFenceZones,
+  fenceAvoidZonesParam,
+  routeCrossesFenceZones,
+  routableDrawnFeatures,
+  type FenceZones,
+} from './fenceRouting';
 import { haversineMeters, coordToLatLng } from './geo';
 
 type GraphNode = {
@@ -12,6 +20,9 @@ type GraphNode = {
 type GraphEdge = {
   to: string;
   weight: number;
+  featureIndex: number;
+  fromIndex: number;
+  toIndex: number;
 };
 
 type PathSnap = {
@@ -23,9 +34,29 @@ type PathSnap = {
   segmentIndex: number;
 };
 
-/** Only draw off-road connectors when start/end is farther than this from a path. */
+type CameFromEntry = {
+  prev: string | null;
+  edge: GraphEdge | null;
+};
+
+/** Yandex/OSRM only when start/end is farther than this from a drawn path. */
 const CONNECTOR_THRESHOLD_M = 10;
-const MERGE_STEPS_M = [12, 28, 45] as const;
+const EXACT_MERGE_M = 2;
+const MERGE_STEPS_M = [6, 12] as const;
+const VIRTUAL_FEATURE = -1;
+
+type RouteContext = {
+  fenceZones: FenceZones;
+  routeOptions: RouteRequestOptions;
+};
+
+function createRouteContext(mapZones?: MapZonesGeoJson): RouteContext {
+  const fenceZones = extractFenceZones(mapZones);
+  return {
+    fenceZones,
+    routeOptions: { avoidZones: fenceAvoidZonesParam(fenceZones) },
+  };
+}
 
 function nodeKey(lng: number, lat: number): string {
   return `${lng.toFixed(6)},${lat.toFixed(6)}`;
@@ -50,8 +81,10 @@ function getOrCreateNode(
   lng: number,
   lat: number,
   mergeM: number,
+  isEndpoint: boolean,
 ): string {
-  const existing = findExistingNodeId(nodes, lng, lat, mergeM);
+  const mergeRadius = isEndpoint ? mergeM : EXACT_MERGE_M;
+  const existing = findExistingNodeId(nodes, lng, lat, mergeRadius);
   if (existing) return existing;
   const id = nodeKey(lng, lat);
   nodes.set(id, { id, lng, lat });
@@ -63,50 +96,38 @@ function addEdge(
   from: string,
   to: string,
   weight: number,
+  meta: Pick<GraphEdge, 'featureIndex' | 'fromIndex' | 'toIndex'>,
 ) {
   if (from === to || weight <= 0) return;
   const list = adjacency.get(from) ?? [];
-  list.push({ to, weight });
+  list.push({ to, weight, ...meta });
   adjacency.set(from, list);
 }
 
-/** Only roads and walkways are walkable; fence lines are decorative barriers. */
-function isRoutablePath(
-  feature: GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>,
-): boolean {
-  return feature.properties.pathKind !== 'fence';
-}
-
 function routableFeatures(paths?: MapPathsGeoJson) {
-  return (paths?.features ?? []).filter(
-    (f): f is GeoJSON.Feature<GeoJSON.LineString, MapPathProperties> =>
-      f.geometry.type === 'LineString' &&
-      f.geometry.coordinates.length >= 2 &&
-      isRoutablePath(f as GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>),
-  );
+  return routableDrawnFeatures(paths);
 }
 
 export function buildGraph(paths: MapPathsGeoJson | undefined, mergeM: number = MERGE_STEPS_M[0]) {
   const nodes = new Map<string, GraphNode>();
   const adjacency = new Map<string, GraphEdge[]>();
+  const features = routableFeatures(paths);
 
-  for (const feature of routableFeatures(paths)) {
-    const coords = feature.geometry.coordinates;
-    for (let i = 0; i < coords.length - 1; i += 1) {
+  for (let featureIndex = 0; featureIndex < features.length; featureIndex += 1) {
+    const coords = features[featureIndex].geometry.coordinates;
+    const lastIndex = coords.length - 1;
+    for (let i = 0; i < lastIndex; i += 1) {
       const [lng1, lat1] = coords[i];
       const [lng2, lat2] = coords[i + 1];
-      const a = getOrCreateNode(nodes, lng1, lat1, mergeM);
-      const b = getOrCreateNode(nodes, lng2, lat2, mergeM);
-      const weight = haversineMeters(
-        { lat: lat1, lng: lng1 },
-        { lat: lat2, lng: lng2 },
-      );
-      addEdge(adjacency, a, b, weight);
-      addEdge(adjacency, b, a, weight);
+      const a = getOrCreateNode(nodes, lng1, lat1, mergeM, i === 0);
+      const b = getOrCreateNode(nodes, lng2, lat2, mergeM, i + 1 === lastIndex);
+      const weight = haversineMeters({ lat: lat1, lng: lng1 }, { lat: lat2, lng: lng2 });
+      addEdge(adjacency, a, b, weight, { featureIndex, fromIndex: i, toIndex: i + 1 });
+      addEdge(adjacency, b, a, weight, { featureIndex, fromIndex: i + 1, toIndex: i });
     }
   }
 
-  return { nodes, adjacency };
+  return { nodes, adjacency, features };
 }
 
 function nearestPointOnPaths(
@@ -147,42 +168,107 @@ function attachSnapToGraph(
   snap: PathSnap,
   mergeM: number,
 ): string {
-  const snapId = getOrCreateNode(nodes, snap.lng, snap.lat, mergeM);
+  const snapId = getOrCreateNode(nodes, snap.lng, snap.lat, mergeM, true);
   const [start, end] = snap.segment;
-  const startId = getOrCreateNode(nodes, start[0], start[1], mergeM);
-  const endId = getOrCreateNode(nodes, end[0], end[1], mergeM);
+  const startId = getOrCreateNode(nodes, start[0], start[1], mergeM, true);
+  const endId = getOrCreateNode(nodes, end[0], end[1], mergeM, true);
 
   const toStart = haversineMeters({ lat: snap.lat, lng: snap.lng }, coordToLatLng(start));
   const toEnd = haversineMeters({ lat: snap.lat, lng: snap.lng }, coordToLatLng(end));
 
-  addEdge(adjacency, snapId, startId, toStart);
-  addEdge(adjacency, startId, snapId, toStart);
-  addEdge(adjacency, snapId, endId, toEnd);
-  addEdge(adjacency, endId, snapId, toEnd);
+  addEdge(adjacency, snapId, startId, toStart, {
+    featureIndex: VIRTUAL_FEATURE,
+    fromIndex: snap.segmentIndex,
+    toIndex: snap.segmentIndex,
+  });
+  addEdge(adjacency, startId, snapId, toStart, {
+    featureIndex: VIRTUAL_FEATURE,
+    fromIndex: snap.segmentIndex,
+    toIndex: snap.segmentIndex,
+  });
+  addEdge(adjacency, snapId, endId, toEnd, {
+    featureIndex: VIRTUAL_FEATURE,
+    fromIndex: snap.segmentIndex + 1,
+    toIndex: snap.segmentIndex + 1,
+  });
+  addEdge(adjacency, endId, snapId, toEnd, {
+    featureIndex: VIRTUAL_FEATURE,
+    fromIndex: snap.segmentIndex + 1,
+    toIndex: snap.segmentIndex + 1,
+  });
 
   return snapId;
 }
 
-function reconstructPath(
-  cameFrom: Map<string, string | null>,
+function reconstructNodeChain(
+  cameFrom: Map<string, CameFromEntry>,
   endId: string,
-  nodes: Map<string, GraphNode>,
-): [number, number][] {
+): string[] {
   const chain: string[] = [];
   let current: string | null = endId;
   while (current) {
     chain.unshift(current);
-    current = cameFrom.get(current) ?? null;
+    current = cameFrom.get(current)?.prev ?? null;
   }
-  return chain.map((id) => {
-    const node = nodes.get(id)!;
-    return [node.lng, node.lat] as [number, number];
-  });
+  return chain;
+}
+
+function appendPolylineSlice(
+  coords: [number, number][],
+  lineCoords: [number, number][],
+  fromIndex: number,
+  toIndex: number,
+) {
+  if (fromIndex === toIndex) {
+    appendUnique(coords, lineCoords[fromIndex]);
+    return;
+  }
+  const step = fromIndex < toIndex ? 1 : -1;
+  for (let i = fromIndex; ; i += step) {
+    appendUnique(coords, lineCoords[i]);
+    if (i === toIndex) break;
+  }
+}
+
+function expandNodeChain(
+  nodeChain: string[],
+  cameFrom: Map<string, CameFromEntry>,
+  nodes: Map<string, GraphNode>,
+  features: GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>[],
+): [number, number][] {
+  if (nodeChain.length === 0) return [];
+  if (nodeChain.length === 1) {
+    const node = nodes.get(nodeChain[0])!;
+    return [[node.lng, node.lat]];
+  }
+
+  const result: [number, number][] = [];
+
+  for (let i = 1; i < nodeChain.length; i += 1) {
+    const toId = nodeChain[i];
+    const entry = cameFrom.get(toId);
+    const edge = entry?.edge;
+    if (!edge) continue;
+
+    if (edge.featureIndex === VIRTUAL_FEATURE) {
+      const prevNode = nodes.get(nodeChain[i - 1])!;
+      appendUnique(result, [prevNode.lng, prevNode.lat]);
+      const nextNode = nodes.get(toId)!;
+      appendUnique(result, [nextNode.lng, nextNode.lat]);
+      continue;
+    }
+
+    const lineCoords = features[edge.featureIndex].geometry.coordinates as [number, number][];
+    appendPolylineSlice(result, lineCoords, edge.fromIndex, edge.toIndex);
+  }
+
+  return result;
 }
 
 function runAStar(
   nodes: Map<string, GraphNode>,
   adjacency: Map<string, GraphEdge[]>,
+  features: GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>[],
   startId: string,
   endId: string,
   end: LatLng,
@@ -193,11 +279,11 @@ function runAStar(
   }
 
   const open = new Set<string>([startId]);
-  const cameFrom = new Map<string, string | null>();
+  const cameFrom = new Map<string, CameFromEntry>();
   const gScore = new Map<string, number>();
   for (const id of nodes.keys()) gScore.set(id, Infinity);
   gScore.set(startId, 0);
-  cameFrom.set(startId, null);
+  cameFrom.set(startId, { prev: null, edge: null });
 
   const fScore = new Map<string, number>();
   const heuristic = (id: string) => {
@@ -209,13 +295,14 @@ function runAStar(
   while (open.size > 0) {
     const current = [...open].sort((a, b) => (fScore.get(a) ?? Infinity) - (fScore.get(b) ?? Infinity))[0];
     if (current === endId) {
-      return reconstructPath(cameFrom, endId, nodes);
+      const chain = reconstructNodeChain(cameFrom, endId);
+      return expandNodeChain(chain, cameFrom, nodes, features);
     }
     open.delete(current);
     for (const edge of adjacency.get(current) ?? []) {
       const tentative = (gScore.get(current) ?? Infinity) + edge.weight;
       if (tentative < (gScore.get(edge.to) ?? Infinity)) {
-        cameFrom.set(edge.to, current);
+        cameFrom.set(edge.to, { prev: current, edge });
         gScore.set(edge.to, tentative);
         fScore.set(edge.to, tentative + heuristic(edge.to));
         open.add(edge.to);
@@ -258,10 +345,10 @@ function dijkstraAll(
   startId: string,
 ) {
   const dist = new Map<string, number>();
-  const prev = new Map<string, string | null>();
+  const cameFrom = new Map<string, CameFromEntry>();
   for (const id of nodes.keys()) dist.set(id, Infinity);
   dist.set(startId, 0);
-  prev.set(startId, null);
+  cameFrom.set(startId, { prev: null, edge: null });
 
   const open = new Set<string>([startId]);
   const visited = new Set<string>();
@@ -275,40 +362,37 @@ function dijkstraAll(
     for (const edge of adjacency.get(current) ?? []) {
       const tentative = (dist.get(current) ?? Infinity) + edge.weight;
       if (tentative < (dist.get(edge.to) ?? Infinity)) {
+        cameFrom.set(edge.to, { prev: current, edge });
         dist.set(edge.to, tentative);
-        prev.set(edge.to, current);
         open.add(edge.to);
       }
     }
   }
 
-  return { dist, prev };
+  return { dist, cameFrom };
 }
 
-function pathFromPrev(
-  prev: Map<string, string | null>,
+function expandPathBetween(
+  cameFrom: Map<string, CameFromEntry>,
   startId: string,
   endId: string,
   nodes: Map<string, GraphNode>,
+  features: GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>[],
 ): [number, number][] | null {
   if (startId === endId) {
     const node = nodes.get(startId)!;
     return [[node.lng, node.lat]];
   }
-  if (!prev.has(endId)) return null;
 
   const chain: string[] = [];
   let current: string | null = endId;
   while (current) {
     chain.unshift(current);
-    current = prev.get(current) ?? null;
+    current = cameFrom.get(current)?.prev ?? null;
   }
   if (chain[0] !== startId) return null;
 
-  return chain.map((id) => {
-    const node = nodes.get(id)!;
-    return [node.lng, node.lat] as [number, number];
-  });
+  return expandNodeChain(chain, cameFrom, nodes, features);
 }
 
 function appendUnique(coords: [number, number][], next: [number, number]) {
@@ -339,42 +423,78 @@ function pathLengthMeters(coordinates: [number, number][]): number {
   return distanceMeters;
 }
 
-function composeRoute(
+async function appendWalkingSegment(
+  coordinates: [number, number][],
+  from: LatLng,
+  to: LatLng,
+  routeOptions: RouteRequestOptions,
+) {
+  const segment = await fetchWalkingRoute(from, to, routeOptions);
+  for (const coord of segment.coordinates) {
+    appendUnique(coordinates, coord);
+  }
+}
+
+async function composeRouteAsync(
   start: LatLng,
   startSnap: PathSnap,
-  roadCoords: [number, number][],
+  drawnCoords: [number, number][],
   endSnap: PathSnap,
   end: LatLng,
-): { coordinates: [number, number][]; distanceMeters: number } {
+  ctx: RouteContext,
+): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
   const coordinates: [number, number][] = [];
 
-  appendUnique(coordinates, [start.lng, start.lat]);
   if (startSnap.distance > CONNECTOR_THRESHOLD_M) {
+    await appendWalkingSegment(
+      coordinates,
+      start,
+      { lat: startSnap.lat, lng: startSnap.lng },
+      ctx.routeOptions,
+    );
+  } else {
+    appendUnique(coordinates, [start.lng, start.lat]);
     appendUnique(coordinates, [startSnap.lng, startSnap.lat]);
   }
 
-  for (const coord of roadCoords) {
+  for (const coord of drawnCoords) {
     appendUnique(coordinates, coord);
   }
 
   if (endSnap.distance > CONNECTOR_THRESHOLD_M) {
+    await appendWalkingSegment(
+      coordinates,
+      { lat: endSnap.lat, lng: endSnap.lng },
+      end,
+      ctx.routeOptions,
+    );
+  } else {
     appendUnique(coordinates, [endSnap.lng, endSnap.lat]);
+    appendUnique(coordinates, [end.lng, end.lat]);
   }
-  appendUnique(coordinates, [end.lng, end.lat]);
+
+  if (routeCrossesFenceZones(coordinates, ctx.fenceZones)) {
+    return null;
+  }
+
+  const distanceMeters = pathLengthMeters(coordinates);
+  const durationSeconds = await fetchWalkingDurationForPath(coordinates, ctx.routeOptions);
 
   return {
     coordinates,
-    distanceMeters: pathLengthMeters(coordinates),
+    distanceMeters,
+    durationSeconds,
   };
 }
 
-function tryGraphRoute(
+async function tryGraphRouteAsync(
   paths: MapPathsGeoJson,
   start: LatLng,
   end: LatLng,
   mergeM: number,
-): { coordinates: [number, number][]; distanceMeters: number } | null {
-  const { nodes, adjacency } = buildGraph(paths, mergeM);
+  ctx: RouteContext,
+): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
+  const { nodes, adjacency, features } = buildGraph(paths, mergeM);
   if (nodes.size === 0) return null;
 
   const startSnap = nearestPointOnPaths(paths, start);
@@ -384,19 +504,21 @@ function tryGraphRoute(
   const startId = attachSnapToGraph(nodes, adjacency, startSnap, mergeM);
   const endId = attachSnapToGraph(nodes, adjacency, endSnap, mergeM);
 
-  const roadCoords = runAStar(nodes, adjacency, startId, endId, end);
-  if (!roadCoords) return null;
+  const drawnCoords = runAStar(nodes, adjacency, features, startId, endId, end);
+  if (!drawnCoords || drawnCoords.length < 2) return null;
+  if (routeCrossesFenceZones(drawnCoords, ctx.fenceZones)) return null;
 
-  return composeRoute(start, startSnap, roadCoords, endSnap, end);
+  return composeRouteAsync(start, startSnap, drawnCoords, endSnap, end, ctx);
 }
 
-function tryBridgedRoute(
+async function tryBridgedRouteAsync(
   paths: MapPathsGeoJson,
   start: LatLng,
   end: LatLng,
   mergeM: number,
-): { coordinates: [number, number][]; distanceMeters: number } | null {
-  const { nodes, adjacency } = buildGraph(paths, mergeM);
+  ctx: RouteContext,
+): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
+  const { nodes, adjacency, features } = buildGraph(paths, mergeM);
   if (nodes.size === 0) return null;
 
   const startSnap = nearestPointOnPaths(paths, start);
@@ -406,9 +528,10 @@ function tryBridgedRoute(
   const startId = attachSnapToGraph(nodes, adjacency, startSnap, mergeM);
   const endId = attachSnapToGraph(nodes, adjacency, endSnap, mergeM);
 
-  const direct = runAStar(nodes, adjacency, startId, endId, end);
+  const direct = runAStar(nodes, adjacency, features, startId, endId, end);
   if (direct) {
-    return composeRoute(start, startSnap, direct, endSnap, end);
+    if (routeCrossesFenceZones(direct, ctx.fenceZones)) return null;
+    return composeRouteAsync(start, startSnap, direct, endSnap, end, ctx);
   }
 
   const components = assignComponents(nodes, adjacency);
@@ -421,177 +544,80 @@ function tryBridgedRoute(
   const fromStart = dijkstraAll(nodes, adjacency, startId);
   const fromEnd = dijkstraAll(nodes, adjacency, endId);
 
-  let bestNodeA: string | null = null;
-  let bestNodeB: string | null = null;
-  let bestTotal = Infinity;
+  const candidates: { nodeA: string; nodeB: string; total: number }[] = [];
 
   for (const [nodeA, compA] of components) {
     if (compA !== startComp) continue;
     const distA = fromStart.dist.get(nodeA) ?? Infinity;
     if (!Number.isFinite(distA)) continue;
-    const coordA = nodes.get(nodeA)!;
 
     for (const [nodeB, compB] of components) {
       if (compB !== endComp) continue;
       const distB = fromEnd.dist.get(nodeB) ?? Infinity;
       if (!Number.isFinite(distB)) continue;
+      const coordA = nodes.get(nodeA)!;
       const coordB = nodes.get(nodeB)!;
       const bridge = haversineMeters(
         { lat: coordA.lat, lng: coordA.lng },
         { lat: coordB.lat, lng: coordB.lng },
       );
-      const total = distA + bridge + distB;
-      if (total < bestTotal) {
-        bestTotal = total;
-        bestNodeA = nodeA;
-        bestNodeB = nodeB;
-      }
+      candidates.push({ nodeA, nodeB, total: distA + bridge + distB });
     }
   }
 
-  if (!bestNodeA || !bestNodeB) return null;
+  candidates.sort((a, b) => a.total - b.total);
 
-  const pathToBridge = pathFromPrev(fromStart.prev, startId, bestNodeA, nodes);
-  const pathFromBridge = pathFromPrev(fromEnd.prev, endId, bestNodeB, nodes);
-  if (!pathToBridge || !pathFromBridge) return null;
+  for (const candidate of candidates.slice(0, 8)) {
+    const pathToBridge = expandPathBetween(fromStart.cameFrom, startId, candidate.nodeA, nodes, features);
+    const pathFromBridge = expandPathBetween(fromEnd.cameFrom, endId, candidate.nodeB, nodes, features);
+    if (!pathToBridge || !pathFromBridge) continue;
 
-  const bridgeNode = nodes.get(bestNodeB)!;
-  const roadCoords = stitchCoords(pathToBridge, [[bridgeNode.lng, bridgeNode.lat]], [...pathFromBridge].reverse());
+    const bridgeFrom = nodes.get(candidate.nodeA)!;
+    const bridgeTo = nodes.get(candidate.nodeB)!;
+    const bridgeRoute = await fetchWalkingRoute(
+      { lat: bridgeFrom.lat, lng: bridgeFrom.lng },
+      { lat: bridgeTo.lat, lng: bridgeTo.lng },
+      ctx.routeOptions,
+    );
 
-  return composeRoute(start, startSnap, roadCoords, endSnap, end);
-}
+    const drawnCoords = stitchCoords(
+      pathToBridge,
+      bridgeRoute.coordinates,
+      [...pathFromBridge].reverse(),
+    );
+    if (routeCrossesFenceZones(drawnCoords, ctx.fenceZones)) continue;
 
-function slicePolyline(
-  coords: [number, number][],
-  fromIndex: number,
-  toIndex: number,
-): [number, number][] {
-  if (fromIndex === toIndex) {
-    return [coords[fromIndex]];
-  }
-  if (fromIndex < toIndex) {
-    return coords.slice(fromIndex, toIndex + 1);
-  }
-  return coords.slice(toIndex, fromIndex + 1).reverse();
-}
-
-function tryPolylineRoute(
-  paths: MapPathsGeoJson,
-  start: LatLng,
-  end: LatLng,
-): { coordinates: [number, number][]; distanceMeters: number } | null {
-  const features = routableFeatures(paths);
-  if (features.length === 0) return null;
-
-  const startSnap = nearestPointOnPaths(paths, start);
-  const endSnap = nearestPointOnPaths(paths, end);
-  if (!startSnap || !endSnap) return null;
-
-  const startFeature = features[startSnap.featureIndex];
-  const endFeature = features[endSnap.featureIndex];
-  const startCoords = startFeature.geometry.coordinates as [number, number][];
-  const endCoords = endFeature.geometry.coordinates as [number, number][];
-
-  let roadCoords: [number, number][];
-
-  if (startFeature === endFeature) {
-    roadCoords = slicePolyline(startCoords, startSnap.segmentIndex, endSnap.segmentIndex);
-    roadCoords = stitchCoords([[startSnap.lng, startSnap.lat]], roadCoords, [[endSnap.lng, endSnap.lat]]);
-  } else {
-    const startEndIdx = startCoords.length - 1;
-    const endEndIdx = endCoords.length - 1;
-    const startCandidates = [
-      { idx: 0, coord: startCoords[0] },
-      { idx: startEndIdx, coord: startCoords[startEndIdx] },
-    ];
-    const endCandidates = [
-      { idx: 0, coord: endCoords[0] },
-      { idx: endEndIdx, coord: endCoords[endEndIdx] },
-    ];
-
-    let bestLegs: [number, number][] | null = null;
-    let bestDist = Infinity;
-
-    for (const startCandidate of startCandidates) {
-      const legA = slicePolyline(startCoords, startSnap.segmentIndex, startCandidate.idx);
-      legA[0] = [startSnap.lng, startSnap.lat];
-
-      for (const endCandidate of endCandidates) {
-        const legB = slicePolyline(endCoords, endCandidate.idx, endSnap.segmentIndex);
-        legB[legB.length - 1] = [endSnap.lng, endSnap.lat];
-        const bridge = haversineMeters(
-          coordToLatLng(startCandidate.coord),
-          coordToLatLng(endCandidate.coord),
-        );
-        const total =
-          pathLengthMeters(legA) + bridge + pathLengthMeters(legB);
-        if (total < bestDist) {
-          bestDist = total;
-          bestLegs = stitchCoords(legA, [endCandidate.coord], legB);
-        }
-      }
-    }
-
-    if (!bestLegs) return null;
-    roadCoords = bestLegs;
+    const composed = await composeRouteAsync(start, startSnap, drawnCoords, endSnap, end, ctx);
+    if (composed) return composed;
   }
 
-  return composeRoute(start, startSnap, roadCoords, endSnap, end);
-}
-
-function tryConnectorRoute(
-  paths: MapPathsGeoJson | undefined,
-  start: LatLng,
-  end: LatLng,
-): { coordinates: [number, number][]; distanceMeters: number } {
-  const startSnap = nearestPointOnPaths(paths, start);
-  const endSnap = nearestPointOnPaths(paths, end);
-
-  if (startSnap && endSnap) {
-    const roadCoords: [number, number][] = [
-      [startSnap.lng, startSnap.lat],
-      [endSnap.lng, endSnap.lat],
-    ];
-    return composeRoute(start, startSnap, roadCoords, endSnap, end);
-  }
-
-  return {
-    coordinates: [
-      [start.lng, start.lat],
-      [end.lng, end.lat],
-    ],
-    distanceMeters: haversineMeters(start, end),
-  };
+  return null;
 }
 
 /**
- * Route along drawn map paths when possible; otherwise approximate via nearest roads.
+ * Route strictly along drawn paths; Yandex/OSRM only to reach or leave the path network.
  */
-export function findInternalPath(
+export async function findInternalPathAsync(
   paths: MapPathsGeoJson | undefined,
   start: LatLng,
   end: LatLng,
-): { coordinates: [number, number][]; distanceMeters: number } | null {
-  if (!paths?.features.length) {
-    return tryConnectorRoute(paths, start, end);
-  }
+  mapZones?: MapZonesGeoJson,
+): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
+  if (!paths?.features.length) return null;
+
+  const ctx = createRouteContext(mapZones);
 
   for (const mergeM of MERGE_STEPS_M) {
-    const exact = tryGraphRoute(paths, start, end, mergeM);
+    const exact = await tryGraphRouteAsync(paths, start, end, mergeM, ctx);
     if (exact) return exact;
   }
 
   for (const mergeM of MERGE_STEPS_M) {
-    const bridged = tryBridgedRoute(paths, start, end, mergeM);
+    const bridged = await tryBridgedRouteAsync(paths, start, end, mergeM, ctx);
     if (bridged) return bridged;
   }
 
-  const polyline = tryPolylineRoute(paths, start, end);
-  if (polyline) return polyline;
-
-  return tryConnectorRoute(paths, start, end);
+  return null;
 }
 
-export function walkingDurationSeconds(distanceMeters: number): number {
-  return distanceMeters / 1.4;
-}
+export { walkingDurationSeconds } from './externalRouting';

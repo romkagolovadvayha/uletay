@@ -91,7 +91,7 @@ export function MapZoneCard({
           onPress={onRoute}
           style={styles.primary}
         />
-        <Text style={styles.routeHint}>По дорогам и тропинкам площадки</Text>
+        <Text style={styles.routeHint}>По дорогам Яндекса и тропинкам площадки</Text>
         {routeError ? <Text style={styles.routeError}>{routeError}</Text> : null}
 
         {festivalCenter ? (
@@ -137,7 +137,7 @@ export function MapZoneCard({
         onPress={onRoute}
         style={styles.primary}
       />
-      <Text style={styles.routeHint}>По дорогам и тропинкам площадки</Text>
+      <Text style={styles.routeHint}>По дорогам Яндекса и тропинкам площадки</Text>
       {routeError ? <Text style={styles.routeError}>{routeError}</Text> : null}
     </View>
   );
