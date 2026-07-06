@@ -35,7 +35,6 @@ export default async function AdminPage({
     ok?: string;
     error?: string;
     edit?: string;
-    editPoi?: string;
     stage?: string;
     date?: string;
     category?: string;
@@ -213,7 +212,7 @@ export default async function AdminPage({
         ) : null}
 
         {activeTab === 'map' ? (
-          <MapEditor data={data} editPoiId={params.editPoi} />
+          <MapEditor data={data} />
         ) : null}
       </main>
     </>

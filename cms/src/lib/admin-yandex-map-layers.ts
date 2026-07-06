@@ -1,4 +1,4 @@
-import type { MapPathsGeoJson, MapPoisGeoJson, MapZoneProperties, MapZonesGeoJson } from '@/types';
+import type { MapPathsGeoJson, MapZoneProperties, MapZonesGeoJson } from '@/types';
 import type { YandexMapsBundle } from './yandex-maps-loader';
 import { pathFeatureStyle, zoneFeatureStyle } from './map-draw-styles';
 
@@ -53,28 +53,6 @@ export function syncPathFeatures(
   });
 }
 
-export function syncPoiFeatures(
-  map: YandexMapInstance,
-  bundle: YandexMapsBundle,
-  pois: MapPoisGeoJson,
-  bucket: YandexMapEntity[],
-  options?: { radius?: number; fill?: string },
-) {
-  removeMapChildren(map, bucket);
-  const fill = options?.fill ?? '#FFC107';
-  pois.features.forEach((feature) => {
-    if (feature.geometry.type !== 'Point') return;
-    const [lng, lat] = feature.geometry.coordinates;
-    const el = document.createElement('div');
-    el.className = 'admin-poi-marker';
-    el.style.background = fill;
-
-    const marker = new bundle.ymaps3.YMapMarker({ coordinates: [lng, lat] }, el);
-    map.addChild(marker);
-    bucket.push(marker);
-  });
-}
-
 export function upsertImageOverlay(
   map: YandexMapInstance,
   bundle: YandexMapsBundle,
@@ -125,15 +103,6 @@ export function ensureAdminMapStyles() {
       opacity: var(--admin-scheme-opacity, 0.85);
       transform: rotate(var(--admin-scheme-rotation, 0deg));
       transform-origin: center center;
-    }
-    .admin-poi-marker {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid #000;
-      box-sizing: border-box;
-      transform: translate(-50%, -50%);
-      background: #ffc107;
     }
   `;
   document.head.appendChild(style);

@@ -2,8 +2,6 @@ import type {
   FestivalMapConfig,
   MapFilterId,
   MapPathsGeoJson,
-  MapPoiProperties,
-  MapPoisGeoJson,
   MapZoneProperties,
   MapZonesGeoJson,
   RouteSegment,
@@ -14,18 +12,14 @@ export type FestivalMapViewProps = {
   config: FestivalMapConfig;
   zones?: MapZonesGeoJson;
   paths?: MapPathsGeoJson;
-  pois?: MapPoisGeoJson;
   userLocation?: UserLocationState | null;
   routeSegments?: RouteSegment[];
   selectedZoneId?: string | null;
-  selectedPoiId?: string | null;
   filter: MapFilterId;
   followUser: boolean;
   onZonePress: (zone: GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>) => void;
-  onPoiPress: (poi: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>) => void;
   onMapPress?: () => void;
   onZoneRoute?: () => void;
-  onPoiRoute?: () => void;
   routing?: boolean;
   onMapReady?: (api: FestivalMapApi) => void;
 };

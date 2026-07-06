@@ -1,12 +1,11 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import type { MapPathsGeoJson, MapPoisGeoJson, MapZonesGeoJson } from '@/types';
+import type { MapPathsGeoJson, MapZonesGeoJson } from '@/types';
 
 export type MapLayersState = {
   zones: MapZonesGeoJson;
   paths: MapPathsGeoJson;
-  pois: MapPoisGeoJson;
 };
 
 const MAX_HISTORY = 40;
@@ -15,7 +14,6 @@ function cloneState(state: MapLayersState): MapLayersState {
   return {
     zones: JSON.parse(JSON.stringify(state.zones)) as MapZonesGeoJson,
     paths: JSON.parse(JSON.stringify(state.paths)) as MapPathsGeoJson,
-    pois: JSON.parse(JSON.stringify(state.pois)) as MapPoisGeoJson,
   };
 }
 
@@ -26,7 +24,6 @@ export function useMapEditorHistory(initial: MapLayersState) {
 
   const [zones, setZones] = useState(initial.zones);
   const [paths, setPaths] = useState(initial.paths);
-  const [pois, setPois] = useState(initial.pois);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -40,7 +37,6 @@ export function useMapEditorHistory(initial: MapLayersState) {
       currentRef.current = cloneState(next);
       setZones(next.zones);
       setPaths(next.paths);
-      setPois(next.pois);
       syncFlags();
     },
     [syncFlags],
@@ -83,7 +79,6 @@ export function useMapEditorHistory(initial: MapLayersState) {
   return {
     zones,
     paths,
-    pois,
     setZones: (updater: MapZonesGeoJson | ((prev: MapZonesGeoJson) => MapZonesGeoJson)) =>
       setLayers((prev) => ({
         ...prev,
@@ -93,11 +88,6 @@ export function useMapEditorHistory(initial: MapLayersState) {
       setLayers((prev) => ({
         ...prev,
         paths: typeof updater === 'function' ? updater(prev.paths) : updater,
-      })),
-    setPois: (updater: MapPoisGeoJson | ((prev: MapPoisGeoJson) => MapPoisGeoJson)) =>
-      setLayers((prev) => ({
-        ...prev,
-        pois: typeof updater === 'function' ? updater(prev.pois) : updater,
       })),
     undo,
     redo,

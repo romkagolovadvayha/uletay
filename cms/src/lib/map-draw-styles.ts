@@ -1,6 +1,6 @@
 import type { MapPathProperties, MapZoneProperties, MapZoneType } from '@/types';
 
-export type DrawTool = 'select' | 'rect' | 'polygon' | 'line' | 'point';
+export type DrawTool = 'select' | 'rect' | 'polygon' | 'line';
 
 export type PathKind = NonNullable<MapPathProperties['pathKind']>;
 

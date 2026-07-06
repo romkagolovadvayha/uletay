@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { applySchemeOverlayStyle, ensureAdminMapStyles, upsertImageOverlay } from '@/lib/admin-yandex-map-layers';
 import {
   defaultZoneProps,
@@ -32,9 +31,6 @@ import type {
   MapAdminOverlay,
   MapPathProperties,
   MapPathsGeoJson,
-  MapPoiCategory,
-  MapPoiProperties,
-  MapPoisGeoJson,
   MapZoneProperties,
   MapZoneType,
   MapZonesGeoJson,
@@ -44,30 +40,11 @@ type Props = {
   config: FestivalMapConfig;
   zones: MapZonesGeoJson;
   paths: MapPathsGeoJson;
-  pois: MapPoisGeoJson;
   overlay?: MapAdminOverlay;
-  editPoiId?: string;
   saveAction: (formData: FormData) => void | Promise<void>;
 };
 
-type Selection =
-  | { kind: 'zone'; id: string }
-  | { kind: 'path'; id: string }
-  | { kind: 'poi'; id: string }
-  | null;
-
-const POI_CATEGORIES: { value: MapPoiCategory; label: string }[] = [
-  { value: 'stage', label: 'Сцена' },
-  { value: 'foodcourt', label: 'Фудкорт' },
-  { value: 'toilet', label: 'Туалеты' },
-  { value: 'shower', label: 'Душ' },
-  { value: 'water', label: 'Вода' },
-  { value: 'medical', label: 'Медпункт' },
-  { value: 'info', label: 'Инфо' },
-  { value: 'entrance', label: 'Въезд' },
-  { value: 'parking', label: 'Парковка' },
-  { value: 'custom', label: 'Другое' },
-];
+type Selection = { kind: 'zone'; id: string } | { kind: 'path'; id: string } | null;
 
 function removeAll(map: YandexMapInstance, items: YandexMapEntity[]) {
   for (const item of items) {
@@ -84,8 +61,7 @@ function updateMapGeometry(entity: YandexMapEntity | undefined, geometry: GeoJSO
   entity?.update?.({ geometry });
 }
 
-export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths, pois: initialPois, overlay, editPoiId, saveAction }: Props) {
-  const router = useRouter();
+export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths, overlay, saveAction }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<YandexMapInstance | null>(null);
   const bundleRef = useRef<YandexMapsBundle | null>(null);
@@ -102,59 +78,23 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
   const [tool, setTool] = useState<DrawTool>('select');
   const [newZoneType, setNewZoneType] = useState<MapZoneType>('building');
   const [newPathKind, setNewPathKind] = useState<MapPathProperties['pathKind']>('road');
-  const [newPoiCategory, setNewPoiCategory] = useState<MapPoiCategory>('custom');
   const [selection, setSelection] = useState<Selection>(null);
   const [draftCoords, setDraftCoords] = useState<[number, number][]>([]);
-  const { zones, paths, pois, setZones, setPaths, setPois, undo, redo, canUndo, canRedo } =
-    useMapEditorHistory({ zones: initialZones, paths: initialPaths, pois: initialPois });
+  const { zones, paths, setZones, setPaths, undo, redo, canUndo, canRedo } = useMapEditorHistory({
+    zones: initialZones,
+    paths: initialPaths,
+  });
   const [dirty, setDirty] = useState(false);
 
   const markDirty = useCallback(() => setDirty(true), []);
 
-  const openPoiEdit = useCallback(
-    (poiId: string) => {
-      setSelection({ kind: 'poi', id: poiId });
-      const savedOnServer = initialPois.features.some((f) => f.properties.id === poiId);
-      if (!savedOnServer) {
-        window.requestAnimationFrame(() => {
-          document.querySelector('.map-draw-props')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        });
-        return;
-      }
-      router.push(`/admin?tab=map&editPoi=${encodeURIComponent(poiId)}`, { scroll: false });
-      window.requestAnimationFrame(() => {
-        document.getElementById('poi-edit-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      });
-    },
-    [initialPois.features, router],
-  );
-
-  const selectObject = useCallback(
-    (kind: NonNullable<Selection>['kind'], id: string) => {
-      if (kind === 'poi') {
-        openPoiEdit(id);
-        return;
-      }
-      setSelection({ kind, id });
-      if (editPoiId) {
-        router.replace('/admin?tab=map', { scroll: false });
-      }
-    },
-    [editPoiId, openPoiEdit, router],
-  );
+  const selectObject = useCallback((kind: NonNullable<Selection>['kind'], id: string) => {
+    setSelection({ kind, id });
+  }, []);
 
   const selectObjectRef = useLatestRef(selectObject);
-  const editPoiIdRef = useLatestRef(editPoiId);
-  const routerRef = useLatestRef(router);
 
-  const selectionFromUrl = useMemo((): Selection | null => {
-    if (editPoiId && editPoiId !== 'new' && pois.features.some((f) => f.properties.id === editPoiId)) {
-      return { kind: 'poi', id: editPoiId };
-    }
-    return null;
-  }, [editPoiId, pois.features]);
-
-  const activeSelection = selectionFromUrl ?? selection;
+  const activeSelection = selection;
 
   const selectedZone = useMemo(
     () => (activeSelection?.kind === 'zone' ? zones.features.find((f) => f.properties.id === activeSelection.id) : undefined),
@@ -163,10 +103,6 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
   const selectedPath = useMemo(
     () => (activeSelection?.kind === 'path' ? paths.features.find((f) => f.properties.id === activeSelection.id) : undefined),
     [activeSelection, paths],
-  );
-  const selectedPoi = useMemo(
-    () => (activeSelection?.kind === 'poi' ? pois.features.find((f) => f.properties.id === activeSelection.id) : undefined),
-    [activeSelection, pois],
   );
 
   const overlayBounds = useMemo(() => {
@@ -196,29 +132,16 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
     [markDirty, setPaths],
   );
 
-  const updatePoi = useCallback(
-    (id: string, updater: (p: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>) => GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>) => {
-      setPois((prev) => ({
-        ...prev,
-        features: prev.features.map((f) => (f.properties.id === id ? updater(f) : f)),
-      }));
-      markDirty();
-    },
-    [markDirty, setPois],
-  );
-
   const deleteSelection = useCallback(() => {
     if (!activeSelection) return;
     if (activeSelection.kind === 'zone') {
       setZones((prev) => ({ ...prev, features: prev.features.filter((f) => f.properties.id !== activeSelection.id) }));
-    } else if (activeSelection.kind === 'path') {
-      setPaths((prev) => ({ ...prev, features: prev.features.filter((f) => f.properties.id !== activeSelection.id) }));
     } else {
-      setPois((prev) => ({ ...prev, features: prev.features.filter((f) => f.properties.id !== activeSelection.id) }));
+      setPaths((prev) => ({ ...prev, features: prev.features.filter((f) => f.properties.id !== activeSelection.id) }));
     }
     setSelection(null);
     markDirty();
-  }, [activeSelection, markDirty, setZones, setPaths, setPois]);
+  }, [activeSelection, markDirty, setZones, setPaths]);
 
   const duplicateSelection = useCallback(() => {
     if (!activeSelection) return;
@@ -281,27 +204,9 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         ],
       }));
       setSelection({ kind: 'path', id });
-    } else {
-      const src = pois.features.find((f) => f.properties.id === activeSelection.id);
-      if (!src) return;
-      const id = newMapId('poi');
-      const [lng, lat] = src.geometry.coordinates;
-      const c = nudgeLatLng(lat, lng, offset.northM, offset.eastM);
-      setPois((prev) => ({
-        ...prev,
-        features: [
-          ...prev.features,
-          {
-            type: 'Feature',
-            properties: { ...src.properties, id, name: `${src.properties.name} (копия)` },
-            geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
-          },
-        ],
-      }));
-      setSelection({ kind: 'poi', id });
     }
     markDirty();
-  }, [activeSelection, zones, paths, pois, markDirty, setZones, setPaths, setPois]);
+  }, [activeSelection, zones, paths, markDirty, setZones, setPaths]);
 
   const convertZoneToRect = useCallback(() => {
     if (!selectedZone || selectedZone.properties.layout) return;
@@ -382,25 +287,8 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         markDirty();
         return;
       }
-      if (tool === 'point') {
-        const id = newMapId('poi');
-        setPois((prev) => ({
-          ...prev,
-          features: [
-            ...prev.features,
-            {
-              type: 'Feature',
-              properties: { id, name: 'Новая точка', category: newPoiCategory },
-              geometry: { type: 'Point', coordinates: [lng, lat] },
-            },
-          ],
-        }));
-        setSelection({ kind: 'poi', id });
-        setTool('select');
-        markDirty();
-      }
     },
-    [tool, newZoneType, newPoiCategory, markDirty, setPois, setZones],
+    [tool, newZoneType, markDirty, setZones],
   );
 
   const handleMapClickRef = useLatestRef(handleMapClick);
@@ -450,7 +338,6 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         '2': 'rect',
         '3': 'line',
         '4': 'polygon',
-        '5': 'point',
       };
       if (toolKeys[e.key]) {
         const next = toolKeys[e.key];
@@ -493,16 +380,13 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
             const editorKind = props?.__editorKind as string | undefined;
             const editorId = props?.__editorId as string | undefined;
             if (editorKind && editorId && toolRef.current === 'select') {
-              selectObjectRef.current(editorKind as 'zone' | 'path' | 'poi', editorId);
+              selectObjectRef.current(editorKind as 'zone' | 'path', editorId);
               return;
             }
             if (toolRef.current !== 'select' && evt?.coordinates) {
               handleMapClickRef.current(evt.coordinates);
             } else if (toolRef.current === 'select') {
               setSelection(null);
-              if (editPoiIdRef.current) {
-                routerRef.current.replace('/admin?tab=map', { scroll: false });
-              }
             }
           },
         });
@@ -533,7 +417,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
       mapRef.current = null;
       bundleRef.current = null;
     };
-  }, [config.center.lat, config.center.lng, config.defaultZoom, editPoiIdRef, handleMapClickRef, routerRef, selectObjectRef, toolRef]);
+  }, [config.center.lat, config.center.lng, config.defaultZoom, handleMapClickRef, selectObjectRef, toolRef]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -565,33 +449,6 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
       map.addChild(item);
       featureRefs.current.push(item);
       featureEntityRef.current.set(`path-${feature.properties.id}`, item);
-    }
-
-    for (const feature of pois.features) {
-      const [lng, lat] = feature.geometry.coordinates;
-      const poiId = feature.properties.id;
-      const isSelected = activeSelection?.kind === 'poi' && activeSelection.id === poiId;
-      const el = document.createElement('div');
-      el.className = 'admin-poi-marker editor-poi-marker';
-      if (isSelected) el.classList.add('selected');
-      el.style.cursor = 'pointer';
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (toolRef.current !== 'select') return;
-        selectObjectRef.current('poi', poiId);
-      });
-
-      const marker = new bundle.ymaps3.YMapMarker(
-        {
-          coordinates: [lng, lat],
-          properties: { __editorKind: 'poi', __editorId: poiId },
-          zIndex: isSelected ? 3100 : 2000,
-        },
-        el,
-      );
-      map.addChild(marker);
-      featureRefs.current.push(marker);
-      featureEntityRef.current.set(`poi-${poiId}`, marker);
     }
 
     if (draftCoords.length >= 2 && tool === 'line') {
@@ -629,15 +486,8 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
       });
     }
 
-    // POI поверх PNG-схемы — иначе маска перехватывает клики и drag
-    for (const feature of pois.features) {
-      const entity = featureEntityRef.current.get(`poi-${feature.properties.id}`);
-      if (entity) {
-        map.removeChild(entity);
-        map.addChild(entity);
-      }
-    }
-  }, [ready, zones, paths, pois, draftCoords, tool, overlay, overlayBounds, activeSelection, selectObjectRef, toolRef]);
+    // Ручки поверх PNG-схемы
+  }, [ready, zones, paths, draftCoords, tool, overlay, overlayBounds, activeSelection, selectObjectRef, toolRef]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -875,35 +725,17 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
       });
     }
 
-    if (selectedPoi) {
-      const poiId = selectedPoi.properties.id;
-      const [lng, lat] = selectedPoi.geometry.coordinates;
-      addCenterHandle(
-        [lng, lat],
-        (_anchor, _initial, current) => {
-          featureEntityRef.current.get(`poi-${poiId}`)?.update?.({ coordinates: current });
-        },
-        (_anchor, _initial, current) => {
-          updatePoi(poiId, (f) => ({
-            ...f,
-            geometry: { type: 'Point', coordinates: current },
-          }));
-        },
-        () => [[lng, lat]],
-      );
-    }
-
     // Ручки поверх PNG-схемы
     for (const handle of handleRefs.current) {
       map.removeChild(handle);
       map.addChild(handle);
     }
-  }, [ready, selectedZone, selectedPath, selectedPoi, updateZone, updatePath, updatePoi]);
+  }, [ready, selectedZone, selectedPath, updateZone, updatePath]);
 
   const layout = selectedZone?.properties.layout;
 
   const layerItems = useMemo(() => {
-    const items: { kind: 'zone' | 'path' | 'poi'; id: string; label: string; group: string }[] = [];
+    const items: { kind: 'zone' | 'path'; id: string; label: string; group: string }[] = [];
     for (const f of zones.features) {
       items.push({
         kind: 'zone',
@@ -920,22 +752,14 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         group: PATH_KIND_LABELS[f.properties.pathKind ?? 'road'],
       });
     }
-    for (const f of pois.features) {
-      items.push({
-        kind: 'poi',
-        id: f.properties.id,
-        label: f.properties.name,
-        group: POI_CATEGORIES.find((c) => c.value === f.properties.category)?.label ?? 'POI',
-      });
-    }
     return items;
-  }, [zones, paths, pois]);
+  }, [zones, paths]);
 
   return (
     <div className="panel map-draw-editor">
       <h2>Редактор карты</h2>
       <p className="hint">
-        Прямоугольник — здания, линия — дороги/заборы, полигон — зоны, точка — POI. Выделите объект
+        Прямоугольник — здания, линия — дороги/заборы, полигон — зоны. Выделите объект
         и перетащите жёлтый маркер в центре; синие точки — вершины для изменения формы.
         инструменты, Enter — завершить линию/полигон, Del — удалить, Esc — отмена, Ctrl+Z / Ctrl+Y — отмена/повтор.
       </p>
@@ -947,7 +771,6 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
             ['rect', 'Прямоугольник (2)'],
             ['line', 'Линия (3)'],
             ['polygon', 'Полигон (4)'],
-            ['point', 'Точка (5)'],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -987,19 +810,6 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
               {Object.entries(PATH_KIND_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-
-        {tool === 'point' ? (
-          <label className="map-draw-preset">
-            Категория POI
-            <select value={newPoiCategory} onChange={(e) => setNewPoiCategory(e.target.value as MapPoiCategory)}>
-              {POI_CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
                 </option>
               ))}
             </select>
@@ -1228,51 +1038,14 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         </div>
       ) : null}
 
-      {activeSelection && selectedPoi ? (
-        <div className="map-draw-props">
-          <h3>POI: {selectedPoi.properties.name}</h3>
-          <div className="grid">
-            <label>
-              Название
-              <input
-                value={selectedPoi.properties.name}
-                onChange={(e) =>
-                  updatePoi(selectedPoi.properties.id, (f) => ({
-                    ...f,
-                    properties: { ...f.properties, name: e.target.value },
-                  }))
-                }
-              />
-            </label>
-            <label>
-              Категория
-              <select
-                value={selectedPoi.properties.category}
-                onChange={(e) =>
-                  updatePoi(selectedPoi.properties.id, (f) => ({
-                    ...f,
-                    properties: { ...f.properties, category: e.target.value as MapPoiCategory },
-                  }))
-                }
-              >
-                {POI_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </div>
-      ) : null}
-
       <form action={saveAction} className="map-draw-save">
         <input type="hidden" name="mapZones" value={JSON.stringify(zones)} />
         <input type="hidden" name="mapPaths" value={JSON.stringify(paths)} />
-        <input type="hidden" name="mapPois" value={JSON.stringify(pois)} />
         <button type="submit" className="btn-primary" disabled={!dirty}>
           {dirty ? 'Сохранить слои карты' : 'Нет изменений'}
         </button>
         <span className="hint">
-          Зон: {zones.features.length} · Линий: {paths.features.length} · POI: {pois.features.length}
+          Зон: {zones.features.length} · Линий: {paths.features.length}
         </span>
       </form>
     </div>

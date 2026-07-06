@@ -19,9 +19,7 @@ import type {
   AutographSession,
   FoodCourtCategory,
   FoodCourtVendor,
-  MapPoiCategory,
   MapPathsGeoJson,
-  MapPoisGeoJson,
   MapZonesGeoJson,
   SchedulePerformance,
   StageId,
@@ -480,7 +478,6 @@ export async function saveMapLayersAction(formData: FormData) {
 
   data.mapZones = parseGeoJson<MapZonesGeoJson>(formData.get('mapZones'), 'зоны');
   data.mapPaths = parseGeoJson<MapPathsGeoJson>(formData.get('mapPaths'), 'дорожки');
-  data.mapPois = parseGeoJson<MapPoisGeoJson>(formData.get('mapPois'), 'POI');
 
   await saveAppData(data);
   redirect('/admin?tab=map&ok=1');
@@ -493,80 +490,6 @@ export async function saveMapGeoJsonAction(formData: FormData) {
   data.mapZones = parseGeoJson<MapZonesGeoJson>(formData.get('mapZones'), 'зоны');
   data.mapPaths = parseGeoJson<MapPathsGeoJson>(formData.get('mapPaths'), 'дорожки');
 
-  await saveAppData(data);
-  redirect('/admin?tab=map&ok=1');
-}
-
-export async function upsertMapPoiAction(formData: FormData) {
-  await requireSession();
-  const data = await getAppData();
-  const isNew = formData.get('isNew') === '1';
-  const existingId = String(formData.get('id') ?? '').trim();
-  const poiId = String(formData.get('poiId') ?? '').trim() || existingId;
-  const name = String(formData.get('name') ?? '').trim();
-  const category = String(formData.get('category') ?? 'custom') as MapPoiCategory;
-  const lng = Number(formData.get('lng'));
-  const lat = Number(formData.get('lat'));
-  const description = String(formData.get('description') ?? '').trim();
-  const linkType = String(formData.get('linkType') ?? 'none');
-  const linkId = String(formData.get('linkId') ?? '').trim();
-
-  if (!poiId || !name || !Number.isFinite(lng) || !Number.isFinite(lat)) {
-    redirect('/admin?tab=map&error=' + encodeURIComponent('Заполните обязательные поля POI'));
-  }
-
-  const collection = data.mapPois ?? { type: 'FeatureCollection' as const, features: [] };
-  const link =
-    linkType === 'none'
-      ? undefined
-      : { type: linkType as 'stage' | 'foodcourt', ...(linkId ? { id: linkId } : {}) };
-
-  const feature: GeoJSON.Feature<
-    GeoJSON.Point,
-    {
-      id: string;
-      name: string;
-      category: MapPoiCategory;
-      description?: string;
-      link?: { type: 'stage' | 'foodcourt'; id?: string };
-    }
-  > = {
-    type: 'Feature',
-    properties: {
-      id: poiId,
-      name,
-      category,
-      ...(description ? { description } : {}),
-      ...(link ? { link } : {}),
-    },
-    geometry: { type: 'Point', coordinates: [lng, lat] },
-  };
-
-  if (isNew) {
-    collection.features.push(feature);
-  } else {
-    const index = collection.features.findIndex((f) => f.properties.id === existingId);
-    if (index === -1) {
-      redirect('/admin?tab=map&error=' + encodeURIComponent('POI не найден'));
-    }
-    collection.features[index] = feature;
-  }
-
-  data.mapPois = collection;
-  await saveAppData(data);
-  redirect('/admin?tab=map&ok=1');
-}
-
-export async function deleteMapPoiAction(formData: FormData) {
-  await requireSession();
-  const data = await getAppData();
-  const id = String(formData.get('id') ?? '').trim();
-  if (data.mapPois) {
-    data.mapPois = {
-      ...data.mapPois,
-      features: data.mapPois.features.filter((f) => f.properties.id !== id),
-    };
-  }
   await saveAppData(data);
   redirect('/admin?tab=map&ok=1');
 }

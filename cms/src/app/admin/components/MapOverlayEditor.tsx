@@ -8,7 +8,6 @@ import {
   removeMapChildren,
   upsertImageOverlay,
   syncPathFeatures,
-  syncPoiFeatures,
   syncZoneFeatures,
 } from '@/lib/admin-yandex-map-layers';
 import { YANDEX_MAPS_API_KEY } from '@/lib/yandex-maps-config';
@@ -18,7 +17,6 @@ import type {
   FestivalMapConfig,
   MapAdminOverlay,
   MapPathsGeoJson,
-  MapPoisGeoJson,
   MapZonesGeoJson,
 } from '@/types';
 
@@ -26,7 +24,6 @@ type Props = {
   config: FestivalMapConfig;
   zones: MapZonesGeoJson;
   paths: MapPathsGeoJson;
-  pois: MapPoisGeoJson;
   overlay?: MapAdminOverlay;
   uploadAction: (formData: FormData) => void | Promise<void>;
   saveGeorefAction: (formData: FormData) => void | Promise<void>;
@@ -140,7 +137,6 @@ export function MapOverlayEditor({
   config,
   zones,
   paths,
-  pois,
   overlay,
   uploadAction,
   saveGeorefAction,
@@ -151,7 +147,6 @@ export function MapOverlayEditor({
   const bundleRef = useRef<YandexMapsBundle | null>(null);
   const zoneRef = useRef<YandexMapEntity[]>([]);
   const pathRef = useRef<YandexMapEntity[]>([]);
-  const poiRef = useRef<YandexMapEntity[]>([]);
   const overlayRef = useRef<YandexMapEntity | null>(null);
   const dragMarkerRef = useRef<YandexMapEntity | null>(null);
   const draggingRef = useRef(false);
@@ -223,13 +218,11 @@ export function MapOverlayEditor({
         /* eslint-disable react-hooks/exhaustive-deps -- Yandex map entities are torn down on unmount */
         const zones = zoneRef.current;
         const paths = pathRef.current;
-        const pois = poiRef.current;
         /* eslint-enable react-hooks/exhaustive-deps */
         if (overlayRef.current) map.removeChild(overlayRef.current);
         if (dragMarkerRef.current) map.removeChild(dragMarkerRef.current);
         removeMapChildren(map, zones);
         removeMapChildren(map, paths);
-        removeMapChildren(map, pois);
         map.destroy?.();
       }
       mapRef.current = null;
@@ -247,13 +240,11 @@ export function MapOverlayEditor({
     if (showVectors) {
       syncZoneFeatures(map, bundle, zones, zoneRef.current);
       syncPathFeatures(map, bundle, paths, pathRef.current);
-      syncPoiFeatures(map, bundle, pois, poiRef.current, { fill: '#FFFFFF' });
     } else {
       removeMapChildren(map, zoneRef.current);
       removeMapChildren(map, pathRef.current);
-      removeMapChildren(map, poiRef.current);
     }
-  }, [ready, zones, paths, pois, showVectors]);
+  }, [ready, zones, paths, showVectors]);
 
   useEffect(() => {
     const map = mapRef.current;

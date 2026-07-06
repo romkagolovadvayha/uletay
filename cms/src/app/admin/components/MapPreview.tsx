@@ -8,7 +8,6 @@ import {
   removeMapChildren,
   upsertImageOverlay,
   syncPathFeatures,
-  syncPoiFeatures,
   syncZoneFeatures,
 } from '@/lib/admin-yandex-map-layers';
 import { YANDEX_MAPS_API_KEY } from '@/lib/yandex-maps-config';
@@ -17,7 +16,6 @@ import type {
   FestivalMapConfig,
   MapAdminOverlay,
   MapPathsGeoJson,
-  MapPoisGeoJson,
   MapZonesGeoJson,
 } from '@/types';
 
@@ -25,17 +23,15 @@ type Props = {
   config: FestivalMapConfig;
   zones: MapZonesGeoJson;
   paths: MapPathsGeoJson;
-  pois: MapPoisGeoJson;
   overlay?: MapAdminOverlay;
 };
 
-export function MapPreview({ config, zones, paths, pois, overlay }: Props) {
+export function MapPreview({ config, zones, paths, overlay }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<YandexMapInstance | null>(null);
   const bundleRef = useRef<YandexMapsBundle | null>(null);
   const zoneRef = useRef<YandexMapEntity[]>([]);
   const pathRef = useRef<YandexMapEntity[]>([]);
-  const poiRef = useRef<YandexMapEntity[]>([]);
   const overlayRef = useRef<YandexMapEntity | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -100,12 +96,10 @@ export function MapPreview({ config, zones, paths, pois, overlay }: Props) {
         /* eslint-disable react-hooks/exhaustive-deps -- Yandex map entities are torn down on unmount */
         const zones = zoneRef.current;
         const paths = pathRef.current;
-        const pois = poiRef.current;
         /* eslint-enable react-hooks/exhaustive-deps */
         if (overlayRef.current) map.removeChild(overlayRef.current);
         removeMapChildren(map, zones);
         removeMapChildren(map, paths);
-        removeMapChildren(map, pois);
         map.destroy?.();
       }
       mapRef.current = null;
@@ -121,7 +115,6 @@ export function MapPreview({ config, zones, paths, pois, overlay }: Props) {
 
     syncZoneFeatures(map, bundle, zones, zoneRef.current);
     syncPathFeatures(map, bundle, paths, pathRef.current);
-    syncPoiFeatures(map, bundle, pois, poiRef.current);
 
     if (overlay?.imageUrl && overlayBounds) {
       applySchemeOverlayStyle(containerRef.current, {
@@ -136,7 +129,7 @@ export function MapPreview({ config, zones, paths, pois, overlay }: Props) {
       map.removeChild(overlayRef.current);
       overlayRef.current = null;
     }
-  }, [ready, zones, paths, pois, overlay, overlayBounds]);
+  }, [ready, zones, paths, overlay, overlayBounds]);
 
   if (!YANDEX_MAPS_API_KEY) {
     return (

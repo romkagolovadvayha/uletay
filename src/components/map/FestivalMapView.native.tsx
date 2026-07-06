@@ -11,7 +11,7 @@ import { StyleSheet, View } from 'react-native';
 import { useLatestRef } from '../../hooks/useLatestRef';
 import { resolveMediaUrl } from '../../config/api';
 import { mapColors } from '../../theme/map';
-import type { MapPoiProperties, MapZoneProperties } from '../../types/map';
+import type { MapZoneProperties } from '../../types/map';
 import { filterZoneFeatures, MAP_CAMERA_2D } from '../../utils/map/layerStyles';
 import { overlayToImageCoordinates } from '../../utils/map/overlayGeoref';
 import type { FestivalMapViewProps } from './types';
@@ -20,15 +20,12 @@ export function FestivalMapView({
   config,
   zones,
   paths,
-  pois,
   userLocation,
   routeSegments,
   selectedZoneId,
-  selectedPoiId,
   filter,
   followUser,
   onZonePress,
-  onPoiPress,
   onMapPress,
   onMapReady,
 }: FestivalMapViewProps) {
@@ -43,11 +40,6 @@ export function FestivalMapView({
   const zonesGeoJson = useMemo(
     () => ({ type: 'FeatureCollection' as const, features: filteredZones }),
     [filteredZones],
-  );
-
-  const poisGeoJson = useMemo(
-    () => ({ type: 'FeatureCollection' as const, features: pois?.features ?? [] }),
-    [pois],
   );
 
   const pitch = MAP_CAMERA_2D.pitch;
@@ -177,40 +169,6 @@ export function FestivalMapView({
                   3,
                   ['coalesce', ['get', 'strokeWidth'], 1],
                 ],
-              }}
-            />
-          </GeoJSONSource>
-        ) : null}
-        {poisGeoJson.features.length > 0 ? (
-          <GeoJSONSource
-            id="pois"
-            data={poisGeoJson as GeoJSON.GeoJSON}
-            onPress={(e) => {
-              e.stopPropagation();
-              const feature = e.nativeEvent.features?.[0] as
-                | GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>
-                | undefined;
-              if (feature) onPoiPress(feature);
-            }}
-          >
-            <Layer
-              id="pois-circle"
-              type="circle"
-              paint={{
-                'circle-radius': [
-                  'case',
-                  ['==', ['get', 'id'], selectedPoiId ?? ''],
-                  10,
-                  7,
-                ],
-                'circle-color': [
-                  'case',
-                  ['==', ['get', 'id'], selectedPoiId ?? ''],
-                  '#FFC107',
-                  '#FFFFFF',
-                ],
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#000000',
               }}
             />
           </GeoJSONSource>
