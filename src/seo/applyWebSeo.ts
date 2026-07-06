@@ -9,15 +9,22 @@ function upsertMeta(name: string, content: string, attribute: 'name' | 'property
   }
 
   const selector = `meta[${attribute}="${name}"]`;
-  let element = document.head.querySelector(selector);
+  const matches = document.head.querySelectorAll(selector);
 
-  if (!element) {
-    element = document.createElement('meta');
+  if (matches.length === 0) {
+    const element = document.createElement('meta');
     element.setAttribute(attribute, name);
+    element.setAttribute('content', content);
     document.head.appendChild(element);
+    return;
   }
 
-  element.setAttribute('content', content);
+  matches.forEach((element, index) => {
+    element.setAttribute('content', content);
+    if (index > 0) {
+      element.remove();
+    }
+  });
 }
 
 function upsertLink(rel: string, href: string) {
@@ -25,15 +32,22 @@ function upsertLink(rel: string, href: string) {
     return;
   }
 
-  let element = document.head.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+  const matches = document.head.querySelectorAll(`link[rel="${rel}"]`);
 
-  if (!element) {
-    element = document.createElement('link');
+  if (matches.length === 0) {
+    const element = document.createElement('link');
     element.rel = rel;
+    element.href = href;
     document.head.appendChild(element);
+    return;
   }
 
-  element.href = href;
+  matches.forEach((element, index) => {
+    (element as HTMLLinkElement).href = href;
+    if (index > 0) {
+      element.remove();
+    }
+  });
 }
 
 export function applyWebSeo(meta: SeoMeta) {

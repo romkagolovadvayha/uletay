@@ -70,7 +70,8 @@ function patchIndexHtml() {
   }
 
   if (!html.includes('lang=')) {
-    html = html.replace('<html', '<html lang="ru"');
+    html = html.replace('<html lang="en">', '<html lang="ru">');
+    html = html.replace('<html>', '<html lang="ru">');
   }
 
   writeFileSync(indexPath, html, 'utf8');

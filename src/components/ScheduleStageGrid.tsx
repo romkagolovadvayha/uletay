@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SchedulePerformance, Stage } from '../types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -48,8 +48,8 @@ export function ScheduleStageGrid({
   onPressPerformance,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
-  const { width: windowWidth } = useWindowDimensions();
-  const contentWidth = windowWidth - spacing.screen * 2;
+  const [layoutWidth, setLayoutWidth] = useState(0);
+  const contentWidth = Math.max(0, layoutWidth - spacing.screen * 2);
   const columnsWidth = contentWidth - SCHEDULE_GRID_TIME_AXIS_WIDTH;
   const columnWidth =
     (columnsWidth - SCHEDULE_GRID_COLUMN_GAP * Math.max(stages.length - 1, 0)) / Math.max(stages.length, 1);
@@ -119,8 +119,20 @@ export function ScheduleStageGrid({
     );
   }
 
+  if (layoutWidth === 0) {
+    return (
+      <View
+        style={styles.wrap}
+        onLayout={(event) => setLayoutWidth(event.nativeEvent.layout.width)}
+      />
+    );
+  }
+
   return (
-    <View style={styles.wrap}>
+    <View
+      style={styles.wrap}
+      onLayout={(event) => setLayoutWidth(event.nativeEvent.layout.width)}
+    >
       <View style={[styles.headerRow, { width: contentWidth }]}>
         <View style={styles.timeAxisHeader} />
         {stages.map((stage, index) => (

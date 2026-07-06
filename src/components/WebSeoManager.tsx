@@ -1,10 +1,8 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { useAppData } from '../context/DataContext';
-import { navigationRef } from '../navigation/navigationRef';
-import { applyWebSeo } from '../seo/applyWebSeo';
-import { resolveSeoMeta, type NavState } from '../seo/routeSeo';
 import { SITE_URL } from '../seo/site';
+import { setWebSeoAppData, syncWebSeo } from '../seo/syncWebSeo';
 
 function redirectWwwToApex() {
   if (typeof window === 'undefined') {
@@ -35,19 +33,14 @@ export function WebSeoManager() {
     }
 
     redirectWwwToApex();
+    setWebSeoAppData(data);
 
-    const updateSeo = () => {
-      if (!navigationRef.isReady()) {
-        return;
-      }
+    const onPopState = () => syncWebSeo();
+    window.addEventListener('popstate', onPopState);
 
-      applyWebSeo(resolveSeoMeta(navigationRef.getRootState() as NavState, data));
+    return () => {
+      window.removeEventListener('popstate', onPopState);
     };
-
-    updateSeo();
-
-    const unsubscribe = navigationRef.addListener('state', updateSeo);
-    return unsubscribe;
   }, [data]);
 
   return null;

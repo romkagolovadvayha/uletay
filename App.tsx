@@ -14,6 +14,7 @@ import { navigationRef } from './src/navigation/navigationRef';
 import { syncNestedStacksWithActiveTab } from './src/navigation/scheduleNavigation';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { WebSeoManager } from './src/components/WebSeoManager';
+import { syncWebSeo } from './src/seo/syncWebSeo';
 import { colors } from './src/theme/colors';
 
 const navigationTheme = {
@@ -44,10 +45,14 @@ function AppContent() {
       ref={navigationRef}
       theme={navigationTheme}
       linking={linking}
+      onReady={() => {
+        syncWebSeo();
+      }}
       onStateChange={() => {
         if (navigationRef.isReady()) {
           syncNestedStacksWithActiveTab(navigationRef);
         }
+        requestAnimationFrame(() => syncWebSeo());
       }}
     >
       <StatusBar style="light" />
