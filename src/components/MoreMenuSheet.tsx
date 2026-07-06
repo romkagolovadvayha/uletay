@@ -18,6 +18,7 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 import { FavoriteNotificationsCard } from './FavoriteNotificationsCard';
+import { ScreenTitle } from './ScreenTitle';
 
 type MoreNavigation = BottomTabNavigationProp<RootTabParamList>;
 
@@ -88,7 +89,7 @@ export function MoreMenuSheet() {
           {panel === 'menu' ? (
             <>
               <View style={styles.handle} />
-              <Text style={styles.title}>Ещё</Text>
+              <ScreenTitle style={styles.title}>Ещё</ScreenTitle>
               {menuItems.map((item) => (
                 <Pressable
                   key={item.label}
@@ -112,7 +113,7 @@ export function MoreMenuSheet() {
                 <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
                 <Text style={styles.backLabel}>Назад</Text>
               </Pressable>
-              <Text style={styles.title}>Оповещения</Text>
+              <ScreenTitle style={styles.title}>Оповещения</ScreenTitle>
               <FavoriteNotificationsCard />
             </>
           )}

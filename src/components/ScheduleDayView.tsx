@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DateTabBar } from './DateTabBar';
 import { ScheduleStageGrid } from './ScheduleStageGrid';
+import { ScreenTitle } from './ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useNow } from '../hooks/useNow';
@@ -44,7 +45,7 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>РАСПИСАНИЕ</Text>
+        <ScreenTitle style={styles.title}>РАСПИСАНИЕ</ScreenTitle>
       </View>
 
       <View style={styles.tabsWrap}>

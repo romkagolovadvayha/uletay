@@ -7,6 +7,7 @@ import React, { useCallback } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PerformanceTimeDateRow } from '../components/PerformanceTimeDateRow';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -61,7 +62,7 @@ export function PlaylistScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>ПЛЕЙЛИСТ</Text>
+        <ScreenTitle style={styles.title}>ПЛЕЙЛИСТ</ScreenTitle>
         <Text style={styles.subtitle}>{RADIO_STATION_NAME}</Text>
 
         <View style={styles.playerCard}>

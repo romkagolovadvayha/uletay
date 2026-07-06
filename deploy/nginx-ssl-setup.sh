@@ -6,9 +6,11 @@ apply_nginx_template() {
   local template_path="$1"
   local output_path="${2:-/etc/nginx/sites-available/uletay}"
   local enabled_path="${3:-/etc/nginx/sites-enabled/uletay}"
+  local www_domain="www.${DOMAIN}"
 
   sed \
     -e "s|__DOMAIN__|${DOMAIN}|g" \
+    -e "s|__WWW_DOMAIN__|${www_domain}|g" \
     -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g" \
     -e "s|__CMS_PORT__|${CMS_PORT}|g" \
     "$template_path" | sudo tee "$output_path" > /dev/null
@@ -51,21 +53,45 @@ SSL
   fi
 }
 
+certificate_covers_www() {
+  local www_domain="www.${DOMAIN}"
+  sudo certbot certificates 2>/dev/null | grep -q "Domains:.*${www_domain}"
+}
+
 obtain_certificate() {
   local cert_dir="/etc/letsencrypt/live/${DOMAIN}"
-  if [[ -f "${cert_dir}/fullchain.pem" ]]; then
-    echo "Certificate already present: ${cert_dir}"
-    return 0
-  fi
+  local www_domain="www.${DOMAIN}"
 
   ensure_certbot
   sudo mkdir -p /var/www/certbot
 
-  echo "Requesting Let's Encrypt certificate for ${DOMAIN}..."
+  if [[ -f "${cert_dir}/fullchain.pem" ]]; then
+    if certificate_covers_www; then
+      echo "Certificate already covers ${DOMAIN} and ${www_domain}"
+      return 0
+    fi
+
+    echo "Expanding certificate to include ${www_domain}..."
+    sudo certbot certonly \
+      --webroot \
+      -w /var/www/certbot \
+      -d "$DOMAIN" \
+      -d "$www_domain" \
+      --expand \
+      --non-interactive \
+      --agree-tos \
+      -m "$LE_EMAIL" \
+      --no-eff-email \
+      --keep-until-expiring
+    return 0
+  fi
+
+  echo "Requesting Let's Encrypt certificate for ${DOMAIN} and ${www_domain}..."
   sudo certbot certonly \
     --webroot \
     -w /var/www/certbot \
     -d "$DOMAIN" \
+    -d "$www_domain" \
     --non-interactive \
     --agree-tos \
     -m "$LE_EMAIL" \
@@ -99,16 +125,48 @@ setup_https_nginx() {
 
 verify_https() {
   local html_check="/tmp/uletay-https-check.html"
+  local www_domain="www.${DOMAIN}"
+  local code
+  local location
+
   curl -fsS -k "https://127.0.0.1/" -H "Host: ${DOMAIN}" -o "$html_check" \
     || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check"; exit 1; }
   head -c 200 "$html_check" | grep -qiE 'html|УЛЕТАЙ|root' \
     || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check"; exit 1; }
   rm -f "$html_check"
 
-  local code
   code=$(curl -fsS -o /dev/null -w '%{http_code}' -H "Host: ${DOMAIN}" "http://127.0.0.1/")
   if [[ "$code" != "301" && "$code" != "308" ]]; then
     echo "HTTP redirect to HTTPS expected (301), got ${code}"
+    exit 1
+  fi
+
+  code=$(curl -fsS -o /dev/null -w '%{http_code}' -H "Host: ${www_domain}" "http://127.0.0.1/")
+  location=$(curl -fsS -o /dev/null -w '%{redirect_url}' -H "Host: ${www_domain}" "http://127.0.0.1/")
+  if [[ "$code" != "301" && "$code" != "308" ]]; then
+    echo "www HTTP redirect expected (301), got ${code}"
+    exit 1
+  fi
+  if [[ "$location" != "https://${DOMAIN}/" && "$location" != "https://${DOMAIN}"* ]]; then
+    echo "www HTTP redirect should target https://${DOMAIN}, got ${location:-<empty>}"
+    exit 1
+  fi
+
+  code=$(curl -fsS -k -o /dev/null -w '%{http_code}' -H "Host: ${www_domain}" "https://127.0.0.1/")
+  location=$(curl -fsS -k -o /dev/null -w '%{redirect_url}' -H "Host: ${www_domain}" "https://127.0.0.1/")
+  if [[ "$code" != "301" && "$code" != "308" ]]; then
+    echo "www HTTPS redirect expected (301), got ${code}"
+    exit 1
+  fi
+  if [[ "$location" != "https://${DOMAIN}/" && "$location" != "https://${DOMAIN}"* ]]; then
+    echo "www HTTPS redirect should target https://${DOMAIN}, got ${location:-<empty>}"
+    exit 1
+  fi
+
+  code=$(curl -fsS -k -o /dev/null -w '%{http_code}' -H "Host: ${DOMAIN}" \
+    "https://127.0.0.1/__uletay-404-check__")
+  if [[ "$code" != "404" ]]; then
+    echo "Custom 404 page expected (404), got ${code}"
     exit 1
   fi
 }

@@ -15,6 +15,7 @@ import {
   TimedStatus,
 } from '../utils/scheduleHelpers';
 import { ArtistImage } from './ArtistImage';
+import { ScreenTitle } from './ScreenTitle';
 import { CompetitionLabel } from './CompetitionLabel';
 import { LiveBadge } from './LiveBadge';
 import { PerformanceTimeDateRow, performanceTimeWeightStyle } from './PerformanceTimeDateRow';
@@ -101,7 +102,7 @@ export function LiveHeroCard({ performance, stageName, status, now = new Date() 
         {isLive ? <LiveBadge /> : isSoon ? <SoonBadge countdown={startsIn ?? undefined} /> : null}
       </View>
       <View style={styles.heroContent}>
-        <Text style={styles.heroArtist}>{performance.artist}</Text>
+        <ScreenTitle style={styles.heroArtist}>{performance.artist}</ScreenTitle>
         {performance.isCompetition ? <CompetitionLabel style={styles.heroCompetition} /> : null}
         <Text style={styles.heroStage}>{stageName}</Text>
         <PerformanceTimeDateRow

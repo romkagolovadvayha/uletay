@@ -16,6 +16,11 @@ CMS_PORT="${CMS_PORT:-3000}"
 NGINX_SITE="/etc/nginx/sites-available/uletay"
 NGINX_ENABLED="/etc/nginx/sites-enabled/uletay"
 
+if [[ "$DOMAIN" == www.* ]]; then
+  echo "DOMAIN must be the apex mirror without www (e.g. uletay.ru), got ${DOMAIN}"
+  exit 1
+fi
+
 if [[ -z "$ADMIN_PASSWORD" ]]; then
   echo "ADMIN_PASSWORD is required"
   exit 1
@@ -27,6 +32,11 @@ fi
 
 if [ ! -f "$DEPLOY_PATH/dist/index.html" ]; then
   echo "Missing $DEPLOY_PATH/dist/index.html — Expo build was not synced"
+  exit 1
+fi
+
+if [ ! -f "$DEPLOY_PATH/dist/404.html" ]; then
+  echo "Missing $DEPLOY_PATH/dist/404.html — rebuild web app with public/404.html"
   exit 1
 fi
 

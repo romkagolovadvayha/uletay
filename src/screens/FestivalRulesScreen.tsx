@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RulesTabBar } from '../components/RulesTabBar';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { MoreStackParamList } from '../navigation/types';
 import { FestivalRulesBlock } from '../types';
@@ -57,7 +58,7 @@ export function FestivalRulesScreen(_props: Props) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>ПРАВИЛА И БЫТ</Text>
+          <ScreenTitle style={styles.title}>ПРАВИЛА И БЫТ</ScreenTitle>
         </View>
         <View style={styles.empty}>
           <Text style={styles.emptyText}>Раздел пока не заполнен</Text>
@@ -69,7 +70,7 @@ export function FestivalRulesScreen(_props: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>ПРАВИЛА И БЫТ</Text>
+        <ScreenTitle style={styles.title}>ПРАВИЛА И БЫТ</ScreenTitle>
       </View>
 
       <View style={styles.tabsWrap}>

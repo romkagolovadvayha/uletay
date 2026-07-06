@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryPillBar } from '../components/CategoryPillBar';
 import { FoodCourtCard } from '../components/FoodCourtCard';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { MoreStackParamList } from '../navigation/types';
 import { FOOD_COURT_CATEGORIES, FoodCourtFilter } from '../utils/foodCourtHelpers';
@@ -28,7 +29,7 @@ export function FoodCourtScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>ФУДКОРТ</Text>
+        <ScreenTitle style={styles.title}>ФУДКОРТ</ScreenTitle>
       </View>
 
       <View style={styles.tabsWrap}>

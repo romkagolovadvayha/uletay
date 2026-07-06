@@ -5,6 +5,7 @@ import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArtistImage } from '../components/ArtistImage';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { AutographStackParamList } from '../navigation/types';
@@ -59,7 +60,7 @@ export function AutographDetailScreen({ navigation, route }: Props) {
         </View>
 
         <View style={styles.body}>
-          <Text style={styles.artist}>{session.artist}</Text>
+          <ScreenTitle style={styles.artist}>{session.artist}</ScreenTitle>
           <Text style={styles.label}>АВТОГРАФ-СЕССИЯ</Text>
           <Text style={styles.time}>{formatTimeRange(session.startTime, session.endTime)}</Text>
           <Text style={styles.date}>{dateLabel}</Text>

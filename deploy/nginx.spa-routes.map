@@ -1,0 +1,15 @@
+# Valid client-side routes for the Expo web app.
+# Keep in sync with src/navigation/linking.ts
+map $uri $is_spa_route {
+    default 0;
+    ~^/$ 1;
+    ~^/map(/.*)?$ 1;
+    ~^/schedule(/.*)?$ 1;
+    ~^/autographs(/.*)?$ 1;
+    ~^/favorites/?$ 1;
+    ~^/playlist/?$ 1;
+    ~^/more/?$ 1;
+    ~^/foodcourt(/.*)?$ 1;
+    ~^/about/?$ 1;
+    ~^/rules/?$ 1;
+}

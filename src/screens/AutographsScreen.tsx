@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AutographSessionRow } from '../components/AutographSessionRow';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { DateTabBar } from '../components/DateTabBar';
 import { StageLegend } from '../components/StageLegend';
 import { useAppData } from '../context/DataContext';
@@ -54,7 +55,7 @@ export function AutographsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>АВТОГРАФ-СЕССИИ</Text>
+        <ScreenTitle style={styles.title}>АВТОГРАФ-СЕССИИ</ScreenTitle>
       </View>
 
       <View style={styles.tabsWrap}>

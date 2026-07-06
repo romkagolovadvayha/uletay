@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -34,7 +35,7 @@ export function FestivalAboutScreen({ navigation }: Props) {
           <Text style={styles.backLabel}>Назад</Text>
         </Pressable>
 
-        <Text style={styles.title}>О ФЕСТИВАЛЕ</Text>
+        <ScreenTitle style={styles.title}>О ФЕСТИВАЛЕ</ScreenTitle>
 
         {items.map((item) => (
           <View key={item.label} style={styles.card}>

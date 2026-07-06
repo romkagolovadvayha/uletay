@@ -14,7 +14,7 @@
 
 | Имя | Пример | Описание |
 |-----|--------|----------|
-| `DOMAIN` | `uletay.ru` | Домен |
+| `DOMAIN` | `uletay.ru` | Основное зеркало **без www** |
 | `LE_EMAIL` | `you@mail.ru` | Email для Let's Encrypt |
 | `SSH_HOST` | `185.x.x.x` | IP VPS |
 | `SSH_USER` | `root` | SSH-пользователь |
@@ -120,7 +120,7 @@ deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bi
 4. `npm run db:migrate` — только схема БД (контент и картинки не трогаются)
 5. PM2 запускает Next.js standalone
 6. nginx: `/` → `dist/`, `/api`, `/admin`, `/_next` → CMS
-7. Let's Encrypt: `certbot certonly --webroot`, затем nginx SSL-шаблон + редирект HTTP→HTTPS
+7. Let's Encrypt: `certbot certonly --webroot` для `DOMAIN` и `www.DOMAIN`, затем nginx SSL-шаблон + редирект HTTP→HTTPS и **www → без www (301)**
 
 Файлы nginx: `deploy/nginx.site.http.conf.template` (временно), `deploy/nginx.site.ssl.conf.template` (прод).
 
@@ -177,7 +177,16 @@ curl -I https://uletayapp.ru   # 200
 sudo ss -tlnp | grep ':443'    # nginx слушает 443
 ```
 
-Убедитесь, что DNS **A**-запись домена указывает на IP VPS.
+Убедитесь, что DNS **A**-записи `DOMAIN` и `www.DOMAIN` указывают на IP VPS.
+
+Проверка зеркала:
+
+```bash
+curl -I http://www.uletay.ru    # 301 → https://uletay.ru/...
+curl -I https://www.uletay.ru   # 301 → https://uletay.ru/...
+```
+
+В [Яндекс.Вебмастер](https://webmaster.yandex.ru/) и Google Search Console укажите основное зеркало **без www**.
 
 ## 4. URL после деплоя
 

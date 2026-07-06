@@ -7,6 +7,7 @@ import { AutographSessionRow } from '../components/AutographSessionRow';
 import { CategoryPillBar } from '../components/CategoryPillBar';
 import { DateTabBar } from '../components/DateTabBar';
 import { ScheduleStageGrid } from '../components/ScheduleStageGrid';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useNow } from '../hooks/useNow';
@@ -107,7 +108,7 @@ export function MyScheduleScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>МОЁ РАСПИСАНИЕ</Text>
+        <ScreenTitle style={styles.title}>МОЁ РАСПИСАНИЕ</ScreenTitle>
       </View>
 
       <View style={styles.sectionTabsWrap}>

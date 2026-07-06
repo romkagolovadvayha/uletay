@@ -10,7 +10,18 @@ const indexPath = join(distDir, 'index.html');
 const SITE_NAME = 'УЛЕТАЙ 2026';
 const DESCRIPTION =
   'Официальное приложение фестиваля УЛЕТАЙ в Лагуново, Удмуртия: расписание концертов, карта площадки, автограф-сессии, фудкорт и радио в эфире.';
-const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://uletay.ru';
+const SITE_URL = (() => {
+  const raw = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://uletay.ru';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.hostname.startsWith('www.')) {
+      parsed.hostname = parsed.hostname.slice(4);
+    }
+    return parsed.origin;
+  } catch {
+    return raw.replace(/\/$/, '');
+  }
+})();
 
 function copyPublicFiles() {
   if (!existsSync(publicDir)) {

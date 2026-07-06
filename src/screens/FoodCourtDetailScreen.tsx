@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FoodCourtCard } from '../components/FoodCourtCard';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { MoreStackParamList } from '../navigation/types';
@@ -54,7 +55,7 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <FoodCourtCard vendor={vendor} large />
 
-        <Text style={styles.name}>{vendor.name.toUpperCase()}</Text>
+        <ScreenTitle style={styles.name}>{vendor.name.toUpperCase()}</ScreenTitle>
         <Text style={styles.description}>{vendor.description}</Text>
         <Text style={styles.price}>{vendor.priceFrom.replace('от ', '')}</Text>
 

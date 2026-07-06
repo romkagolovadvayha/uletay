@@ -1,3 +1,19 @@
+include __DEPLOY_PATH__/deploy/nginx.spa-routes.map;
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __WWW_DOMAIN__;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 http://__DOMAIN__$request_uri;
+    }
+}
+
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -50,9 +66,5 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
-    location / {
-        root __DEPLOY_PATH__/dist;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-    }
+    include __DEPLOY_PATH__/deploy/nginx.spa-locations.conf;
 }
