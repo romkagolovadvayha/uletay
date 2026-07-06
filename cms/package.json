@@ -8,7 +8,8 @@
     "start": "next start -p 3000",
     "db:install": "tsx scripts/install.ts",
     "db:migrate": "tsx scripts/migrate.ts",
-    "import:fest-images": "tsx scripts/import-fest-images.ts"
+    "import:fest-images": "tsx scripts/import-fest-images.ts",
+    "foodcourt:sync-db": "node scripts/patch-foodcourt-db.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

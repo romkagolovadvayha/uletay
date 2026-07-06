@@ -1,7 +1,7 @@
 /** @typedef {{ name: string; price: string; portion?: string; description?: string }} MenuItem */
 /** @typedef {{ title: string; items: MenuItem[] }} MenuSection */
 
-const img = (name) => `/api/uploads/images/foodcourt/${name}.jpg`;
+const img = (name) => `/api/fest-assets/images/foodcourt/${name}.jpg`;
 
 /** @param {string} name @param {string} price @param {string} [portion] @param {string} [description] */
 const mi = (name, price, portion, description) => ({
