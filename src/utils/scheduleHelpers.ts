@@ -6,6 +6,7 @@ import {
   formatFestivalClock,
   getCurrentFestivalDayDate,
   getFestivalClockParts,
+  getFestivalDayWindow,
   parseFestivalDateOnly,
   parseFestivalLocalDateTime,
 } from './festivalTime';
@@ -391,6 +392,18 @@ export function getCountdown(target: Date, now = new Date()) {
     seconds: totalSeconds % 60,
     isFinished: diff <= 0,
   };
+}
+
+export function isFestivalStarted(startDate: string, now = new Date()): boolean {
+  return now >= parseDateTime(startDate, '12:00');
+}
+
+export function isFestivalEnded(endDate: string, now = new Date()): boolean {
+  return now >= getFestivalDayWindow(endDate).end;
+}
+
+export function isFestivalOngoing(startDate: string, endDate: string, now = new Date()): boolean {
+  return isFestivalStarted(startDate, now) && !isFestivalEnded(endDate, now);
 }
 
 // Backward-compatible alias

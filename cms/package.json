@@ -10,7 +10,11 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "import:fest-images": "tsx scripts/import-fest-images.ts",
     "foodcourt:sync-db": "node scripts/patch-foodcourt-db.mjs",
-    "foodcourt:reset-db": "node scripts/patch-foodcourt-db.mjs --force"
+    "foodcourt:reset-db": "node scripts/patch-foodcourt-db.mjs --force",
+    "autographs:patch-db": "node scripts/patch-autographs-db.mjs",
+    "autographs:patch-db:dry": "node scripts/patch-autographs-db.mjs --dry-run",
+    "schedule:patch-db": "node scripts/patch-schedule-db.mjs",
+    "schedule:patch-db:dry": "node scripts/patch-schedule-db.mjs --dry-run"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

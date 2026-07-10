@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { NowTimeTrail } from './NowTimeTrail';
 import { SchedulePerformance, Stage } from '../types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -27,6 +28,10 @@ import {
   SCHEDULE_GRID_TIME_AXIS_WIDTH,
 } from '../utils/scheduleGrid';
 import { ScheduleGridCard } from './ScheduleGridCard';
+
+const NOW_TRAIL_HEIGHT = 104;
+const NOW_LINE_HEIGHT = 12;
+const NOW_RULE_HEIGHT = 2;
 
 type Props = {
   performances: SchedulePerformance[];
@@ -208,10 +213,19 @@ export function ScheduleStageGrid({
           </View>
 
           {nowInRange ? (
-            <View style={[styles.nowLine, { top: nowTop }]} pointerEvents="none">
-              <Text style={styles.nowTime}>{formatFestivalClock(now)}</Text>
-              <View style={styles.nowRule} />
-              <View style={styles.nowDot} />
+            <View
+              style={[styles.nowMarker, { top: nowTop - NOW_LINE_HEIGHT / 2 }]}
+              pointerEvents="none"
+            >
+              <View style={styles.nowLine}>
+                <Text style={styles.nowTime}>{formatFestivalClock(now)}</Text>
+                <View style={styles.nowRuleArea}>
+                  <View style={styles.nowTrail}>
+                    <NowTimeTrail height={NOW_TRAIL_HEIGHT} />
+                  </View>
+                  <View style={styles.nowRule} />
+                </View>
+              </View>
             </View>
           ) : null}
         </View>
@@ -291,36 +305,49 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: '100%',
   },
-  nowLine: {
+  nowMarker: {
     position: 'absolute',
     left: 0,
     right: 0,
+    zIndex: 7,
+  },
+  nowLine: {
+    height: NOW_LINE_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 5,
   },
   nowTime: {
     width: SCHEDULE_GRID_TIME_AXIS_WIDTH,
-    ...typography.scheduleTime,
     color: colors.live,
     fontSize: 11,
-    marginTop: -8,
+    lineHeight: NOW_LINE_HEIGHT,
+    fontWeight: '800',
+    letterSpacing: 0.1,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  nowRuleArea: {
+    flex: 1,
+    height: NOW_LINE_HEIGHT,
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'visible',
+  },
+  nowTrail: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: NOW_TRAIL_HEIGHT,
+    bottom: (NOW_LINE_HEIGHT + NOW_RULE_HEIGHT) / 2,
+    overflow: 'hidden',
   },
   nowRule: {
-    flex: 1,
-    height: 2,
+    height: NOW_RULE_HEIGHT,
     backgroundColor: colors.live,
     shadowColor: colors.live,
-    shadowOpacity: 0.45,
-    shadowRadius: 6,
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
-  },
-  nowDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.live,
-    marginLeft: -1,
   },
   empty: {
     paddingVertical: spacing.xxxl,

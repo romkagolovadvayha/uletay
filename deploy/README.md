@@ -140,6 +140,22 @@ cd /var/www/uletay/cms && npm run foodcourt:sync-db
 
 Полная замена фудкорта сидами — только осознанно: `npm run foodcourt:reset-db`.
 
+**Применить правки расписания автограф-сессий** (добавляет недостающие, исправляет известные ошибки, переносит `imageUrl` со старых записей на новые, остальное в админке не трогает) — вручную на VPS после деплоя:
+
+```bash
+cd /var/www/uletay/cms
+npm run autographs:patch-db:dry   # посмотреть, что изменится
+npm run autographs:patch-db
+```
+
+**Применить правки расписания выступлений** (то же: точечные изменения, перенос `imageUrl`, остальное не трогает):
+
+```bash
+cd /var/www/uletay/cms
+npm run schedule:patch-db:dry
+npm run schedule:patch-db
+```
+
 **Восстановить картинки артистов с uletayfest.ru** (только где имя файла на сайте узнаваемо):
 
 ```bash

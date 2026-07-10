@@ -182,7 +182,11 @@ export function FestivalHomeScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.overlaySection}>
-            <CountdownTimer targetDate={festivalStart} />
+            <CountdownTimer
+              targetDate={festivalStart}
+              festivalStartDate={data.festival.startDate}
+              festivalEndDate={data.festival.endDate}
+            />
           </View>
 
           <View style={styles.overlaySection}>
