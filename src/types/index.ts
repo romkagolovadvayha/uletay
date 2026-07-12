@@ -13,6 +13,8 @@ export interface SchedulePerformance {
   date: string;
   startTime: string;
   endTime: string;
+  headlinerId: string;
+  /** Denormalized display name synced from headliner. */
   artist: string;
   isCompetition?: boolean;
   imageUrl?: string;
@@ -24,6 +26,8 @@ export interface AutographSession {
   date: string;
   startTime: string;
   endTime: string;
+  headlinerId: string;
+  /** Denormalized display name synced from headliner. */
   artist: string;
   location?: string;
   imageUrl?: string;
@@ -64,11 +68,11 @@ export interface FoodCourtVendor {
 
 export interface Headliner {
   id: string;
-  year: number;
   name: string;
   description: string;
   imageTint: string;
   imageUrl?: string;
+  years: number[];
 }
 
 export interface FestivalInfo {

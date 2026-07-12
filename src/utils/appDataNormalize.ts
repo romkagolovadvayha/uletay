@@ -3,6 +3,7 @@ import { capPerformanceEndTime } from './performanceTime';
 import { festivalRules } from '../data/festivalRules';
 import { headliners as defaultHeadliners } from '../data/headliners';
 import { getDefaultMapData } from '../data/festivalMap';
+import { syncAppHeadliners } from './headlinersCore';
 
 export const defaultStageColors: Record<Stage['id'], string> = {
   south: '#F5C518',
@@ -19,7 +20,7 @@ export function withDefaultStages(stages: Stage[]): Stage[] {
 
 export function normalizeAppData(data: AppData): AppData {
   const mapDefaults = getDefaultMapData();
-  return {
+  const base: AppData = {
     ...data,
     festival: {
       ...data.festival,
@@ -42,18 +43,23 @@ export function normalizeAppData(data: AppData): AppData {
       menuImageUrls: item.menuImageUrls?.length ? item.menuImageUrls : undefined,
       menu: item.menu?.length ? item.menu : undefined,
     })),
-    headliners: (Array.isArray(data.headliners) && data.headliners.length ? data.headliners : defaultHeadliners).map(
-      (item) => ({
-        ...item,
-        imageUrl: item.imageUrl ?? undefined,
-      }),
-    ),
+    headliners:
+      Array.isArray(data.headliners) && data.headliners.length ? data.headliners : defaultHeadliners,
     rules: Array.isArray(data.rules) && data.rules.length ? data.rules : festivalRules,
     festivalMap: data.festivalMap ?? mapDefaults.festivalMap,
     mapZones: data.mapZones ?? mapDefaults.mapZones,
     mapPaths: data.mapPaths ?? mapDefaults.mapPaths,
     mapPois: data.mapPois ?? mapDefaults.mapPois,
   };
+
+  return syncAppHeadliners({
+    ...base,
+    headliners: base.headliners.map((item) => ({
+      ...item,
+      imageUrl: item.imageUrl ?? undefined,
+      years: Array.isArray(item.years) ? item.years : [],
+    })),
+  });
 }
 
 export function mergeFestivalDefaults(festival: FestivalInfo, fallback: FestivalInfo): FestivalInfo {

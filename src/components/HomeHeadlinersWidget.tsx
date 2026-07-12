@@ -10,29 +10,41 @@ import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { filterHeadlinersByYear } from '../utils/headlinerHelpers';
 
-const PREVIEW_LIMIT = 5;
-
 type Props = {
-  year: number;
+  year?: number;
+  limit?: number;
+  title?: string;
+  moreLabel?: string;
+  hint?: string;
   onPressHeadliner: (headliner: Headliner) => void;
   onPressAll: () => void;
 };
 
-export function HomeHeadlinersWidget({ year, onPressHeadliner, onPressAll }: Props) {
+export function HomeHeadlinersWidget({
+  year,
+  limit = 5,
+  title,
+  moreLabel = 'ВСЕ ХЭДЛАЙНЕРЫ',
+  hint = 'Анонсированные артисты фестиваля',
+  onPressHeadliner,
+  onPressAll,
+}: Props) {
   const { data } = useAppData();
 
-  const headliners = useMemo(
-    () => filterHeadlinersByYear(data.headliners, year).slice(0, PREVIEW_LIMIT),
-    [data.headliners, year],
-  );
+  const headliners = useMemo(() => {
+    const list = year != null ? filterHeadlinersByYear(data.headliners, year) : data.headliners;
+    return list.slice(0, limit);
+  }, [data.headliners, limit, year]);
 
   if (headliners.length === 0) {
     return null;
   }
 
+  const sectionTitle = title ?? (year != null ? `ХЭДЛАЙНЕРЫ ${year}` : 'ХЭДЛАЙНЕРЫ');
+
   return (
     <View style={styles.wrap}>
-      <SectionHeader title={`ХЭДЛАЙНЕРЫ ${year}`} />
+      <SectionHeader title={sectionTitle} />
       {headliners.map((headliner) => (
         <HeadlinerCard
           key={headliner.id}
@@ -40,8 +52,8 @@ export function HomeHeadlinersWidget({ year, onPressHeadliner, onPressAll }: Pro
           onPress={() => onPressHeadliner(headliner)}
         />
       ))}
-      <PrimaryButton label="ВСЕ ХЭДЛАЙНЕРЫ" onPress={onPressAll} />
-      <Text style={styles.hint}>Анонсированные артисты фестиваля</Text>
+      <PrimaryButton label={moreLabel} onPress={onPressAll} />
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }

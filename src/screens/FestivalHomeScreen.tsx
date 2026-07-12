@@ -23,6 +23,7 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { getStageName, isFestivalStarted, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
+import { hasScheduleForYear } from '../utils/headlinerHelpers';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'HomeTab'>;
 
@@ -110,7 +111,10 @@ export function FestivalHomeScreen({ navigation }: Props) {
   );
 
   const festivalStarted = isFestivalStarted(data.festival.startDate, now);
+  const nextFestivalYear = data.festival.year + 1;
+  const hasNextYearSchedule = hasScheduleForYear(data.schedule, nextFestivalYear);
   const showPreFestivalHeadliners = festivalActive && !festivalStarted;
+  const showPostFestivalHeadliners = !festivalActive && !hasNextYearSchedule;
   const showLiveSection = festivalActive && festivalStarted;
 
   const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');
@@ -126,17 +130,28 @@ export function FestivalHomeScreen({ navigation }: Props) {
       : 'СЛЕДУЮЩИЕ ВЫСТУПЛЕНИЯ';
 
   const openHeadlinersMain = useCallback(() => {
-    navigation.navigate('MoreTab', { screen: 'HeadlinersMain' });
-  }, [navigation]);
+    if (festivalActive) {
+      navigation.navigate('MoreTab', { screen: 'HeadlinersMain' });
+      return;
+    }
+    navigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' });
+  }, [festivalActive, navigation]);
 
   const openHeadlinerDetail = useCallback(
     (headlinerId: string) => {
-      navigation.navigate('MoreTab', {
+      if (festivalActive) {
+        navigation.navigate('MoreTab', {
+          screen: 'HeadlinerDetail',
+          params: { headlinerId },
+        });
+        return;
+      }
+      navigation.navigate('HeadlinersTab', {
         screen: 'HeadlinerDetail',
         params: { headlinerId },
       });
     },
-    [navigation],
+    [festivalActive, navigation],
   );
 
   return (
@@ -205,20 +220,27 @@ export function FestivalHomeScreen({ navigation }: Props) {
             />
           </View>
 
-          <View style={styles.overlaySection}>
-            {festivalActive ? (
+          {festivalActive ? (
+            <View style={styles.overlaySection}>
               <PrimaryButton
                 label="РАСПИСАНИЕ"
                 onPress={() => openScheduleTabMain(navigation)}
               />
-            ) : (
-              <PrimaryButton
-                label="ХЭДЛАЙНЕРЫ"
-                onPress={() => navigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' })}
-              />
-            )}
-          </View>
+            </View>
+          ) : null}
         </View>
+
+        {showPostFestivalHeadliners ? (
+          <View style={styles.section}>
+            <HomeHeadlinersWidget
+              limit={3}
+              moreLabel="ЕЩЁ"
+              hint=""
+              onPressHeadliner={(headliner) => openHeadlinerDetail(headliner.id)}
+              onPressAll={openHeadlinersMain}
+            />
+          </View>
+        ) : null}
 
         {showPreFestivalHeadliners ? (
           <View style={styles.section}>

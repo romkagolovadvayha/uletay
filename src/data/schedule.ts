@@ -1,4 +1,5 @@
 import { Stage, SchedulePerformance } from '../types';
+import { buildHeadlinerId } from '../utils/headlinersCore';
 
 export const festivalInfo = {
   name: 'УЛЕТАЙ',
@@ -199,6 +200,7 @@ function buildSchedule(items: RawPerformance[]): SchedulePerformance[] {
       date: item.date,
       startTime: item.startTime,
       endTime,
+      headlinerId: buildHeadlinerId(item.artist),
       artist: item.artist,
       isCompetition: item.isCompetition,
     };

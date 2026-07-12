@@ -1,4 +1,5 @@
 import { AutographSession } from '../types';
+import { buildHeadlinerId } from '../utils/headlinersCore';
 
 type RawAutograph = {
   stageId: AutographSession['stageId'];
@@ -77,5 +78,6 @@ const rawAutographs: RawAutograph[] = [
 export const autographSessions: AutographSession[] = rawAutographs.map((item) => ({
   id: `auto-${item.stageId}-${item.date}-${item.startTime}-${item.artist.slice(0, 8)}`,
   location: 'ПАЛАТОЧНЫЙ ГОРОДОК',
+  headlinerId: buildHeadlinerId(item.artist),
   ...item,
 }));

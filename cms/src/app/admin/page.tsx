@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AutographsEditor } from './components/AutographsEditor';
 import { FoodcourtEditor } from './components/FoodcourtEditor';
+import { HeadlinersEditor } from './components/HeadlinersEditor';
 import { MapEditor } from './components/MapEditor';
 import { ScheduleEditor } from './components/ScheduleEditor';
 import {
@@ -23,6 +24,7 @@ const TABS: Record<AdminTab, string> = {
   stages: 'Сцены',
   schedule: 'Расписание',
   autographs: 'Автографы',
+  headliners: 'Хэдлайнеры',
   foodcourt: 'Фудкорт',
   map: 'Карта',
 };
@@ -187,6 +189,7 @@ export default async function AdminPage({
           <ScheduleEditor
             items={data.schedule}
             stages={data.stages}
+            headliners={data.headliners}
             editId={params.edit}
             stageFilter={params.stage}
             dateFilter={params.date}
@@ -197,10 +200,15 @@ export default async function AdminPage({
           <AutographsEditor
             items={data.autographs}
             stages={data.stages}
+            headliners={data.headliners}
             editId={params.edit}
             stageFilter={params.stage}
             dateFilter={params.date}
           />
+        ) : null}
+
+        {activeTab === 'headliners' ? (
+          <HeadlinersEditor items={data.headliners} editId={params.edit} />
         ) : null}
 
         {activeTab === 'foodcourt' ? (

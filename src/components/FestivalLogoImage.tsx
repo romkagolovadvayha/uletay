@@ -1,5 +1,5 @@
 import { Image, ImageStyle } from 'expo-image';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleProp } from 'react-native';
 import { BUNDLED_FESTIVAL_LOGO, resolveFestivalLogoSource } from '../utils/imageSource';
 
@@ -9,11 +9,8 @@ type Props = {
 };
 
 export function FestivalLogoImage({ logoImageUrl, style }: Props) {
-  const [useBundledFallback, setUseBundledFallback] = useState(false);
-
-  useEffect(() => {
-    setUseBundledFallback(false);
-  }, [logoImageUrl]);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const useBundledFallback = Boolean(logoImageUrl && failedUrl === logoImageUrl);
 
   const source = useBundledFallback
     ? BUNDLED_FESTIVAL_LOGO
@@ -26,7 +23,7 @@ export function FestivalLogoImage({ logoImageUrl, style }: Props) {
       style={style}
       contentFit="contain"
       recyclingKey={logoImageUrl ?? 'default'}
-      onError={() => setUseBundledFallback(true)}
+      onError={() => setFailedUrl(logoImageUrl ?? null)}
     />
   );
 }

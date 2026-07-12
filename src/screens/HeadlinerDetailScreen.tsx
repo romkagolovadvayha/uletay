@@ -46,7 +46,11 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
 
         <HeadlinerCard headliner={headliner} large />
         <Text style={styles.name}>{headliner.name.toUpperCase()}</Text>
-        <Text style={styles.year}>УЛЕТАЙ {headliner.year}</Text>
+        <Text style={styles.year}>
+          {headliner.years.length
+            ? headliner.years.map((year) => `УЛЕТАЙ ${year}`).join(' · ')
+            : 'УЛЕТАЙ'}
+        </Text>
         <Text style={styles.description}>{headliner.description}</Text>
       </ScrollView>
     </SafeAreaView>

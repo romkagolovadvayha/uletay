@@ -49,7 +49,15 @@ export function HeadlinerCard({ headliner, onPress, large }: Props) {
         <Text style={styles.description} numberOfLines={2}>
           {headliner.description}
         </Text>
-        <Text style={styles.year}>{headliner.year}</Text>
+        {headliner.years.length ? (
+          <View style={styles.yearTags}>
+            {headliner.years.map((year) => (
+              <View key={year} style={styles.yearTag}>
+                <Text style={styles.yearTagText}>{year}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -88,13 +96,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  year: {
+  yearTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  yearTag: {
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceCard,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  yearTagText: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: colors.primary,
     fontSize: 11,
     textTransform: 'none',
     letterSpacing: 0,
-    marginTop: 4,
   },
   heroWrap: {
     alignItems: 'center',

@@ -1,6 +1,7 @@
 import type { RowDataPacket } from 'mysql2';
 import type { AppData, MapPathsGeoJson, MapZonesGeoJson } from '@/types';
 import { getPool } from './db';
+import { syncAppHeadliners } from './headliners';
 
 const EMPTY_ZONES: MapZonesGeoJson = { type: 'FeatureCollection', features: [] };
 const EMPTY_PATHS: MapPathsGeoJson = { type: 'FeatureCollection', features: [] };
@@ -36,7 +37,7 @@ export async function getAppData(): Promise<AppData> {
     throw new Error('Invalid app content JSON');
   }
 
-  return {
+  return syncAppHeadliners({
     ...content,
     schedule: Array.isArray(content.schedule) ? content.schedule : [],
     autographs: Array.isArray(content.autographs) ? content.autographs : [],
@@ -46,12 +47,12 @@ export async function getAppData(): Promise<AppData> {
     stages: Array.isArray(content.stages) ? content.stages : [],
     mapZones: normalizeFeatureCollection(content.mapZones, EMPTY_ZONES),
     mapPaths: normalizeFeatureCollection(content.mapPaths, EMPTY_PATHS),
-  };
+  });
 }
 
 export async function saveAppData(content: AppData): Promise<void> {
   const pool = getPool();
-  const json = JSON.stringify(content);
+  const json = JSON.stringify(syncAppHeadliners(content));
   await pool.query(
     'UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1',
     [json],
@@ -62,6 +63,6 @@ export function validateAppData(data: unknown): data is AppData {
   if (!data || typeof data !== 'object') {
     return false;
   }
-  const keys = ['festival', 'stages', 'schedule', 'autographs', 'foodcourt'] as const;
+  const keys = ['festival', 'stages', 'schedule', 'autographs', 'foodcourt', 'headliners'] as const;
   return keys.every((key) => key in data);
 }

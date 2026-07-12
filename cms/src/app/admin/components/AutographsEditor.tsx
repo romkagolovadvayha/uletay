@@ -5,12 +5,13 @@ import {
 } from '../actions';
 import { DeleteButton } from './DeleteButton';
 import { AdminImagePreview, AdminImageThumb } from './AdminImageThumb';
-import type { AutographSession, Stage } from '@/types';
+import type { AutographSession, Headliner, Stage } from '@/types';
 import { presetHint } from '@/lib/image-presets';
 
 type Props = {
   items: AutographSession[];
   stages: Stage[];
+  headliners: Headliner[];
   editId?: string;
   stageFilter?: string;
   dateFilter?: string;
@@ -20,7 +21,7 @@ function stageLabel(stages: Stage[], stageId: string): string {
   return stages.find((s) => s.id === stageId)?.shortName ?? stageId;
 }
 
-export function AutographsEditor({ items, stages, editId, stageFilter, dateFilter }: Props) {
+export function AutographsEditor({ items, stages, headliners, editId, stageFilter, dateFilter }: Props) {
   const isNew = editId === 'new';
   const editing = isNew
     ? null
@@ -105,8 +106,21 @@ export function AutographsEditor({ items, stages, editId, stageFilter, dateFilte
               <input name="endTime" type="time" defaultValue={editing?.endTime ?? ''} required />
             </label>
             <label className="span-2">
-              Артист
-              <input name="artist" defaultValue={editing?.artist ?? ''} required />
+              Хэдлайнер
+              <select
+                name="headlinerId"
+                defaultValue={editing?.headlinerId ?? headliners[0]?.id ?? ''}
+                required
+              >
+                {headliners.map((headliner) => (
+                  <option key={headliner.id} value={headliner.id}>
+                    {headliner.name}
+                  </option>
+                ))}
+              </select>
+              <span className="hint">
+                <Link href="/admin?tab=headliners&edit=new">Добавить нового артиста</Link>
+              </span>
             </label>
             <label className="span-2">
               Место

@@ -9,6 +9,7 @@ import {
 } from '@/lib/admin-ids';
 import { getAppData, saveAppData } from '@/lib/app-data';
 import { verifyAdminCredentials } from '@/lib/auth';
+import { buildHeadlinerId, collectHeadlinerYears } from '@/lib/headliners';
 import type { ImagePreset } from '@/lib/image-presets';
 import { ImageUploadError, saveUploadedImage, saveUploadedMapScheme } from '@/lib/upload';
 import { getSession } from '@/lib/session';
@@ -19,6 +20,7 @@ import type {
   AutographSession,
   FoodCourtCategory,
   FoodCourtVendor,
+  Headliner,
   MapPathsGeoJson,
   MapZonesGeoJson,
   SchedulePerformance,
@@ -63,10 +65,30 @@ function presetForUploadTarget(target: string): ImagePreset {
   if (target === 'foodcourt') {
     return 'thumb';
   }
+  if (target === 'headliner') {
+    return 'artist';
+  }
   if (target === 'autograph') {
     return 'hero';
   }
   return 'artist';
+}
+
+function parseYearsInput(raw: string): number[] {
+  return [...new Set(
+    raw
+      .split(/[,;\s]+/)
+      .map((part) => Number(part.trim()))
+      .filter((year) => Number.isInteger(year) && year >= 2000 && year <= 2100),
+  )].sort((a, b) => b - a);
+}
+
+function resolveHeadlinerArtist(data: AppData, headlinerId: string): string {
+  const headliner = data.headliners.find((item) => item.id === headlinerId);
+  if (!headliner) {
+    throw new Error('Хэдлайнер не найден');
+  }
+  return headliner.name;
 }
 
 export async function loginAction(formData: FormData) {
@@ -141,11 +163,18 @@ export async function upsertScheduleAction(formData: FormData) {
   const date = String(formData.get('date') ?? '').trim();
   const startTime = String(formData.get('startTime') ?? '').trim();
   const rawEndTime = String(formData.get('endTime') ?? '').trim();
-  const artist = String(formData.get('artist') ?? '').trim();
+  const headlinerId = String(formData.get('headlinerId') ?? '').trim();
   const isCompetition = formData.get('isCompetition') === '1';
 
-  if (!stageId || !date || !startTime || !rawEndTime || !artist) {
+  if (!stageId || !date || !startTime || !rawEndTime || !headlinerId) {
     redirect('/admin?tab=schedule&error=' + encodeURIComponent('Заполните все обязательные поля'));
+  }
+
+  let artist: string;
+  try {
+    artist = resolveHeadlinerArtist(data, headlinerId);
+  } catch {
+    redirect('/admin?tab=schedule&error=' + encodeURIComponent('Выберите артиста из списка хэдлайнеров'));
   }
 
   const endTime = capPerformanceEndTime(startTime, rawEndTime);
@@ -168,6 +197,7 @@ export async function upsertScheduleAction(formData: FormData) {
     date,
     startTime,
     endTime,
+    headlinerId,
     artist,
     ...(isCompetition ? { isCompetition: true } : {}),
     ...(imageUrl ? { imageUrl } : {}),
@@ -207,11 +237,18 @@ export async function upsertAutographAction(formData: FormData) {
   const date = String(formData.get('date') ?? '').trim();
   const startTime = String(formData.get('startTime') ?? '').trim();
   const endTime = String(formData.get('endTime') ?? '').trim();
-  const artist = String(formData.get('artist') ?? '').trim();
+  const headlinerId = String(formData.get('headlinerId') ?? '').trim();
   const location = String(formData.get('location') ?? '').trim();
 
-  if (!stageId || !date || !startTime || !endTime || !artist) {
+  if (!stageId || !date || !startTime || !endTime || !headlinerId) {
     redirect('/admin?tab=autographs&error=' + encodeURIComponent('Заполните все обязательные поля'));
+  }
+
+  let artist: string;
+  try {
+    artist = resolveHeadlinerArtist(data, headlinerId);
+  } catch {
+    redirect('/admin?tab=autographs&error=' + encodeURIComponent('Выберите артиста из списка хэдлайнеров'));
   }
 
   const ids = new Set(data.autographs.map((item) => item.id));
@@ -232,6 +269,7 @@ export async function upsertAutographAction(formData: FormData) {
     date,
     startTime,
     endTime,
+    headlinerId,
     artist,
     ...(location ? { location } : {}),
     ...(imageUrl ? { imageUrl } : {}),
@@ -365,6 +403,116 @@ export async function reorderFoodcourtAction(
   }
 
   data.foodcourt = reordered;
+  await saveAppData(data);
+  return { ok: true };
+}
+
+export async function upsertHeadlinerAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  const isNew = formData.get('isNew') === '1';
+  const existingId = String(formData.get('id') ?? '').trim();
+  const existing = data.headliners.find((item) => item.id === existingId);
+
+  const name = String(formData.get('name') ?? '').trim();
+  const description = String(formData.get('description') ?? '').trim() || name;
+  const imageTint = String(formData.get('imageTint') ?? '#4A1C1C').trim();
+  const manualYears = parseYearsInput(String(formData.get('years') ?? ''));
+
+  if (!name) {
+    redirect('/admin?tab=headliners&error=' + encodeURIComponent('Укажите имя артиста'));
+  }
+
+  const ids = new Set(data.headliners.map((item) => item.id));
+  const id = isNew ? uniqueId(buildHeadlinerId(name), ids) : existingId;
+
+  let imageUrl: string | undefined;
+  try {
+    imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'artist');
+  } catch (error) {
+    redirect('/admin?tab=headliners&error=' + encodeURIComponent(uploadErrorMessage(error)));
+  }
+
+  const linkedYears = collectHeadlinerYears(id, data.schedule, data.autographs);
+  const years = manualYears.length
+    ? [...new Set([...manualYears, ...linkedYears])].sort((a, b) => b - a)
+    : linkedYears;
+
+  const item: Headliner = {
+    id,
+    name,
+    description,
+    imageTint,
+    years,
+    ...(imageUrl ? { imageUrl } : {}),
+  };
+
+  if (isNew) {
+    data.headliners.push(item);
+  } else {
+    const index = data.headliners.findIndex((row) => row.id === existingId);
+    if (index === -1) {
+      redirect('/admin?tab=headliners&error=' + encodeURIComponent('Запись не найдена'));
+    }
+    data.headliners[index] = item;
+  }
+
+  await saveAppData(data);
+  redirect('/admin?tab=headliners&ok=1');
+}
+
+export async function deleteHeadlinerAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  const id = String(formData.get('id') ?? '').trim();
+
+  const usedInSchedule = data.schedule.some((item) => item.headlinerId === id);
+  const usedInAutographs = data.autographs.some((item) => item.headlinerId === id);
+  if (usedInSchedule || usedInAutographs) {
+    redirect(
+      '/admin?tab=headliners&error=' +
+        encodeURIComponent('Артист используется в расписании или автографах'),
+    );
+  }
+
+  data.headliners = data.headliners.filter((item) => item.id !== id);
+  await saveAppData(data);
+  redirect('/admin?tab=headliners&ok=1');
+}
+
+export async function reorderHeadlinersAction(
+  ids: string[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireSession();
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return { ok: false, error: 'Пустой список' };
+  }
+
+  const data = await getAppData();
+  const byId = new Map(data.headliners.map((item) => [item.id, item]));
+  const seen = new Set<string>();
+  const reordered: Headliner[] = [];
+
+  for (const id of ids) {
+    if (typeof id !== 'string' || !id.trim() || seen.has(id)) {
+      continue;
+    }
+    const item = byId.get(id);
+    if (!item) {
+      return { ok: false, error: 'Неизвестная запись' };
+    }
+    seen.add(id);
+    reordered.push(item);
+  }
+
+  for (const item of data.headliners) {
+    if (!seen.has(item.id)) {
+      reordered.push(item);
+    }
+  }
+
+  data.headliners = reordered;
   await saveAppData(data);
   return { ok: true };
 }
@@ -549,7 +697,9 @@ export async function uploadImageAction(formData: FormData) {
         ? 'schedule'
         : target === 'autograph'
           ? 'autographs'
-          : 'foodcourt';
+          : target === 'headliner'
+            ? 'headliners'
+            : 'foodcourt';
 
   if (!(file instanceof File)) {
     redirect('/admin?tab=' + tab + '&error=' + encodeURIComponent('Файл не выбран'));
@@ -576,6 +726,10 @@ export async function uploadImageAction(formData: FormData) {
     );
   } else if (target === 'foodcourt' && id) {
     data.foodcourt = data.foodcourt.map((item) =>
+      item.id === id ? { ...item, imageUrl: url } : item,
+    );
+  } else if (target === 'headliner' && id) {
+    data.headliners = data.headliners.map((item) =>
       item.id === id ? { ...item, imageUrl: url } : item,
     );
   }
