@@ -14,7 +14,9 @@
     "autographs:patch-db": "node scripts/patch-autographs-db.mjs",
     "autographs:patch-db:dry": "node scripts/patch-autographs-db.mjs --dry-run",
     "schedule:patch-db": "node scripts/patch-schedule-db.mjs",
-    "schedule:patch-db:dry": "node scripts/patch-schedule-db.mjs --dry-run"
+    "schedule:patch-db:dry": "node scripts/patch-schedule-db.mjs --dry-run",
+    "headliners:patch-db": "node scripts/patch-headliners-db.mjs",
+    "headliners:patch-db:dry": "node scripts/patch-headliners-db.mjs --dry-run"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

@@ -204,7 +204,9 @@ export function syncAppHeadliners(data: AppData): AppData {
 
   headliners = headliners.map((headliner) => ({
     ...headliner,
-    years: collectHeadlinerYears(headliner.id, schedule, autographs),
+    years: [...new Set([...headliner.years, ...collectHeadlinerYears(headliner.id, schedule, autographs)])].sort(
+      (a, b) => b - a,
+    ),
   }));
 
   return {
