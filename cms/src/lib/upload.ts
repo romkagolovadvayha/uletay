@@ -60,16 +60,21 @@ export async function saveUploadedImage(
     throw new ImageUploadError('Не удалось создать папку для загрузок на сервере');
   }
 
-  const { width, height } = IMAGE_PRESETS[resolvePreset(preset)];
+  const presetKey = resolvePreset(preset);
+  const { width, height } = IMAGE_PRESETS[presetKey];
   const input = Buffer.from(await file.arrayBuffer());
 
   let output: Buffer;
   try {
-    output = await sharp(input, { animated: false })
-      .rotate()
-      .resize(width, height, { fit: 'cover', position: 'centre' })
-      .webp({ quality: 82, effort: 4 })
-      .toBuffer();
+    let pipeline = sharp(input, { animated: false }).rotate();
+    pipeline =
+      presetKey === 'logo'
+        ? pipeline.resize(width, height, {
+            fit: 'contain',
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+          })
+        : pipeline.resize(width, height, { fit: 'cover', position: 'centre' });
+    output = await pipeline.webp({ quality: 82, effort: 4 }).toBuffer();
   } catch {
     throw new ImageUploadError('Не удалось обработать изображение');
   }

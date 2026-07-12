@@ -40,6 +40,15 @@ export function resolveAdminFestivalHeroSrc(heroImageUrl?: string | null): strin
 
 export function resolveAdminFestivalLogoSrc(logoImageUrl?: string | null): string {
   const trimmed = logoImageUrl?.trim();
-  if (trimmed) return resolveUploadUrl(trimmed);
+  if (trimmed) {
+    const match = trimmed.match(/^\/api\/uploads\/images\/(.+)$/);
+    if (match?.[1]) {
+      const uploadPath = path.join(config.uploadDir, 'images', match[1]);
+      if (!existsSync(uploadPath)) {
+        return festAssetUrl('images', 'festival-logo.png');
+      }
+    }
+    return resolveUploadUrl(trimmed);
+  }
   return festAssetUrl('images', 'festival-logo.png');
 }

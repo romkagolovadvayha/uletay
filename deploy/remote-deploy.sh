@@ -54,6 +54,7 @@ SESSION_SECRET=${SESSION_SECRET}
 CORS_ORIGIN=https://${DOMAIN}
 BASE_PATH=
 UPLOAD_DIR=${DEPLOY_PATH}/uploads
+REPO_ASSETS_DIR=${DEPLOY_PATH}/assets
 PORT=${CMS_PORT}
 NODE_ENV=production
 NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:-}
@@ -156,6 +157,17 @@ if [ "$cms_ok" -ne 1 ]; then
   echo "CMS is not responding on port ${CMS_PORT}"
   "$PM2_BIN" logs uletay-cms --lines 40 --nostream 2>/dev/null || true
   exit 1
+fi
+
+SAMPLE_FOODCOURT="${DEPLOY_PATH}/assets/images/foodcourt/forrest-group-2.jpg"
+if [ ! -f "$SAMPLE_FOODCOURT" ]; then
+  echo "Warning: bundled foodcourt asset missing: $SAMPLE_FOODCOURT"
+else
+  FC_CODE=$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: ${DOMAIN}" \
+    "http://127.0.0.1:${CMS_PORT}/api/fest-assets/images/foodcourt/forrest-group-2.jpg" || echo "000")
+  if [ "$FC_CODE" != "200" ]; then
+    echo "Warning: fest-assets returned HTTP ${FC_CODE} (check REPO_ASSETS_DIR in cms/.env)"
+  fi
 fi
 
 verify_https

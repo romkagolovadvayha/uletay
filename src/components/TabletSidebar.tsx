@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useMoreMenu } from '../context/MoreMenuContext';
+import { useFestivalActive } from '../hooks/useFestivalActive';
 import {
   openAutographsMain,
   openScheduleTabMain,
@@ -23,12 +23,19 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 
-const MAIN_TAB_ROUTES: (keyof RootTabParamList)[] = [
+const MAIN_TAB_ROUTES_ACTIVE: (keyof RootTabParamList)[] = [
   'HomeTab',
   'MapTab',
   'ScheduleTab',
   'Autographs',
   'FavoritesTab',
+  'PlaylistTab',
+];
+
+const MAIN_TAB_ROUTES_FINISHED: (keyof RootTabParamList)[] = [
+  'HomeTab',
+  'MapTab',
+  'HeadlinersTab',
   'PlaylistTab',
 ];
 
@@ -77,9 +84,10 @@ function SidebarItem({ icon, label, active, onPress }: SidebarItemProps) {
 export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { showNotifications } = useMoreMenu();
+  const festivalActive = useFestivalActive();
   const tabNavigation = navigation as unknown as NavigationProp<RootTabParamList>;
 
+  const mainTabRoutes = festivalActive ? MAIN_TAB_ROUTES_ACTIVE : MAIN_TAB_ROUTES_FINISHED;
   const sidebarWidth = getDefaultSidebarWidth({ width });
   const currentRoute = state.routes[state.index];
   const currentTabName = currentRoute.name as keyof RootTabParamList;
@@ -91,9 +99,9 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   const mainItems = useMemo(
     () =>
       state.routes.filter((route) =>
-        MAIN_TAB_ROUTES.includes(route.name as keyof RootTabParamList),
+        mainTabRoutes.includes(route.name as keyof RootTabParamList),
       ),
-    [state.routes],
+    [mainTabRoutes, state.routes],
   );
 
   const handleMainTabPress = (routeName: keyof RootTabParamList) => {
@@ -105,6 +113,10 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       openAutographsMain(tabNavigation);
       return;
     }
+    if (routeName === 'HeadlinersTab') {
+      tabNavigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' });
+      return;
+    }
     if (routeName === 'MoreTab') {
       return;
     }
@@ -113,19 +125,23 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   };
 
   const extraItems: ExtraItem[] = [
+    ...(festivalActive
+      ? [
+          {
+            key: 'food-court',
+            icon: 'restaurant-outline' as const,
+            label: 'Фудкорт',
+            isActive: moreNestedRoute === 'FoodCourtMain' || moreNestedRoute === 'FoodCourtDetail',
+            onPress: () => tabNavigation.navigate('MoreTab', { screen: 'FoodCourtMain' }),
+          },
+        ]
+      : []),
     {
-      key: 'food-court',
-      icon: 'restaurant-outline',
-      label: 'Фудкорт',
-      isActive: moreNestedRoute === 'FoodCourtMain' || moreNestedRoute === 'FoodCourtDetail',
-      onPress: () => tabNavigation.navigate('MoreTab', { screen: 'FoodCourtMain' }),
-    },
-    {
-      key: 'notifications',
-      icon: 'notifications-outline',
-      label: 'Оповещения',
-      isActive: false,
-      onPress: showNotifications,
+      key: 'settings',
+      icon: 'settings-outline',
+      label: 'Настройки',
+      isActive: moreNestedRoute === 'Settings',
+      onPress: () => tabNavigation.navigate('MoreTab', { screen: 'Settings' }),
     },
     {
       key: 'rules',
@@ -177,6 +193,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
             Autographs: 'ticket-outline',
             FavoritesTab: 'star-outline',
             PlaylistTab: 'radio-outline',
+            HeadlinersTab: 'mic-outline',
             MoreTab: 'reorder-three-outline',
           };
           const resolvedIcon = tabIcons[routeName];

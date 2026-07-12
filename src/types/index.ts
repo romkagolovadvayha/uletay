@@ -62,6 +62,15 @@ export interface FoodCourtVendor {
   menuImageUrls?: string[];
 }
 
+export interface Headliner {
+  id: string;
+  year: number;
+  name: string;
+  description: string;
+  imageTint: string;
+  imageUrl?: string;
+}
+
 export interface FestivalInfo {
   name: string;
   year: number;
@@ -118,6 +127,7 @@ export interface AppData {
   schedule: SchedulePerformance[];
   autographs: AutographSession[];
   foodcourt: FoodCourtVendor[];
+  headliners: Headliner[];
   rules: FestivalRulesTab[];
   festivalMap?: import('./map').FestivalMapConfig;
   mapZones?: import('./map').MapZonesGeoJson;

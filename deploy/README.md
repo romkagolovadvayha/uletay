@@ -117,7 +117,7 @@ deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bi
 1. `npm run build` — Expo web → `dist/`
 2. `rsync` на VPS
 3. На сервере: `cms/.env`, `npm ci`, `npm run build` в `cms/`
-4. `npm run db:migrate` — только схема БД (контент и картинки не трогаются)
+4. `npm run db:migrate` — только схема БД (`CREATE TABLE IF NOT EXISTS`). **Контент, imageUrl и uploads не трогаются.**
 5. PM2 запускает Next.js standalone
 6. nginx: `/` → `dist/`, `/api`, `/admin`, `/_next` → CMS
 7. Let's Encrypt: `certbot certonly --webroot` для `DOMAIN` и `www.DOMAIN`, затем nginx SSL-шаблон + редирект HTTP→HTTPS и **www → без www (301)**
@@ -130,7 +130,11 @@ deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bi
 cd /var/www/uletay/cms && npm run db:install
 ```
 
-После этого обычные деплои не перезаписывают контент и `imageUrl`.
+После этого обычные деплои **не перезаписывают** контент в MySQL, загруженные картинки в `uploads/` и правки в админке.
+
+`REPO_ASSETS_DIR` и `UPLOAD_DIR` в `cms/.env` на сервере указывают абсолютные пути — картинки фудкорта из `/api/fest-assets/...` и `/api/uploads/...` не «теряются» после деплоя.
+
+**Повторный `db:install`** тоже не затирает контент: сид применяется только если таблица `app_content` пуста.
 
 **Добавить новые точки фудкорта из репозитория** (без затирания загруженных картинок и правок в админке) — вручную на VPS:
 

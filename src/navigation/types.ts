@@ -18,6 +18,14 @@ export type MoreStackParamList = {
   FoodCourtDetail: { vendorId: string };
   FestivalAbout: undefined;
   FestivalRules: undefined;
+  Settings: undefined;
+  HeadlinersMain: undefined;
+  HeadlinerDetail: { headlinerId: string };
+};
+
+export type HeadlinersStackParamList = {
+  HeadlinersMain: undefined;
+  HeadlinerDetail: { headlinerId: string };
 };
 
 export type RootTabParamList = {
@@ -27,6 +35,7 @@ export type RootTabParamList = {
   Autographs: NavigatorScreenParams<AutographStackParamList>;
   FavoritesTab: undefined;
   PlaylistTab: undefined;
+  HeadlinersTab: NavigatorScreenParams<HeadlinersStackParamList>;
   MoreTab: NavigatorScreenParams<MoreStackParamList>;
 };
 

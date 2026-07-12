@@ -36,6 +36,13 @@ export const linking: LinkingOptions<RootTabParamList> = {
       },
       FavoritesTab: 'favorites',
       PlaylistTab: 'playlist',
+      HeadlinersTab: {
+        path: 'headliners',
+        screens: {
+          HeadlinersMain: '',
+          HeadlinerDetail: ':headlinerId',
+        },
+      },
       MoreTab: {
         screens: {
           MoreHome: 'more',
@@ -43,6 +50,9 @@ export const linking: LinkingOptions<RootTabParamList> = {
           FoodCourtDetail: 'foodcourt/:vendorId',
           FestivalAbout: 'about',
           FestivalRules: 'rules',
+          Settings: 'settings',
+          HeadlinersMain: 'headliners',
+          HeadlinerDetail: 'headliners/:headlinerId',
         },
       },
     },

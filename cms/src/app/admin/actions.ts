@@ -103,8 +103,8 @@ export async function saveFestivalAction(formData: FormData) {
     location: String(formData.get('location') ?? '').trim(),
     locationShort: String(formData.get('locationShort') ?? '').trim(),
     ageRating: String(formData.get('ageRating') ?? '').trim(),
-    heroImageUrl: String(formData.get('heroImageUrl') ?? '').trim() || undefined,
-    logoImageUrl: String(formData.get('logoImageUrl') ?? '').trim() || undefined,
+    heroImageUrl: String(formData.get('heroImageUrl') ?? '').trim() || data.festival.heroImageUrl,
+    logoImageUrl: String(formData.get('logoImageUrl') ?? '').trim() || data.festival.logoImageUrl,
   };
 
   await saveAppData(data);

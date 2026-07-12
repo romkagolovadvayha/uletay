@@ -1,9 +1,9 @@
 import { NavigationProp, StackActions } from '@react-navigation/native';
 import { RootTabParamList, ScheduleStackParamList } from './types';
 
-type NestedTabName = 'ScheduleTab' | 'Autographs' | 'MoreTab';
+type NestedTabName = 'ScheduleTab' | 'Autographs' | 'HeadlinersTab' | 'MoreTab';
 
-const NESTED_TABS: NestedTabName[] = ['ScheduleTab', 'Autographs', 'MoreTab'];
+const NESTED_TABS: NestedTabName[] = ['ScheduleTab', 'Autographs', 'HeadlinersTab', 'MoreTab'];
 
 type RootTabNavigation = {
   getState(): {

@@ -41,6 +41,7 @@ export async function getAppData(): Promise<AppData> {
     schedule: Array.isArray(content.schedule) ? content.schedule : [],
     autographs: Array.isArray(content.autographs) ? content.autographs : [],
     foodcourt: Array.isArray(content.foodcourt) ? content.foodcourt : [],
+    headliners: Array.isArray(content.headliners) ? content.headliners : [],
     rules: Array.isArray(content.rules) ? content.rules : [],
     stages: Array.isArray(content.stages) ? content.stages : [],
     mapZones: normalizeFeatureCollection(content.mapZones, EMPTY_ZONES),

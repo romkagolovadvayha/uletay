@@ -1,0 +1,81 @@
+import { Headliner } from '../types';
+
+export const headliners: Headliner[] = [
+  {
+    id: 'hl-2027-aria',
+    year: 2027,
+    name: 'АРИЯ',
+    description: 'Легенды отечественного металла',
+    imageTint: '#4A1C1C',
+  },
+  {
+    id: 'hl-2027-melnitsa',
+    year: 2027,
+    name: 'МЕЛЬНИЦА',
+    description: 'Фолк-рок и средневековые мотивы',
+    imageTint: '#3D2E14',
+  },
+  {
+    id: 'hl-2027-bravo',
+    year: 2027,
+    name: 'БРАВО',
+    description: 'Поп-рок классика',
+    imageTint: '#1E3A4A',
+  },
+  {
+    id: 'hl-2027-slot',
+    year: 2027,
+    name: 'СЛОТ',
+    description: 'Современный альтернативный рок',
+    imageTint: '#2A1F3D',
+  },
+  {
+    id: 'hl-2027-amatory',
+    year: 2027,
+    name: 'AMATORY',
+    description: 'Metalcore и modern rock',
+    imageTint: '#1A1A1A',
+  },
+  {
+    id: 'hl-2027-stigmata',
+    year: 2027,
+    name: 'СТИГМАТА',
+    description: 'Мощный рок-сет',
+    imageTint: '#3A1414',
+  },
+  {
+    id: 'hl-2027-oberek',
+    year: 2027,
+    name: 'ОБЕ-РЕК',
+    description: 'Энергичный рок',
+    imageTint: '#243024',
+  },
+  {
+    id: 'hl-2027-kalina',
+    year: 2027,
+    name: 'КАЛИНОВ МОСТ',
+    description: 'Славянский фолк-рок',
+    imageTint: '#3A3018',
+  },
+  {
+    id: 'hl-2026-aria',
+    year: 2026,
+    name: 'АРИЯ',
+    description: 'Главная сцена РЕН ТВ',
+    imageTint: '#4A1C1C',
+  },
+  {
+    id: 'hl-2026-melnitsa',
+    year: 2026,
+    name: 'МЕЛЬНИЦА',
+    description: 'Главная сцена РЕН ТВ',
+    imageTint: '#3D2E14',
+  },
+  {
+    id: 'hl-2026-bravo',
+    year: 2026,
+    name: 'БРАВО',
+    description: 'Главная сцена РЕН ТВ',
+    imageTint: '#1E3A4A',
+  },
+];

@@ -30,14 +30,17 @@ async function main() {
     password: dbPass,
   });
 
-  const seedPath = path.join(__dirname, '..', 'seed', 'content.json');
-  const seed = await readFile(seedPath, 'utf8');
+  const [rows] = await pool.query('SELECT id FROM app_content WHERE id = 1 LIMIT 1');
+  const hasContent = Array.isArray(rows) && rows.length > 0;
 
-  await pool.query(
-    `INSERT INTO app_content (id, content) VALUES (1, ?)
-     ON DUPLICATE KEY UPDATE content = VALUES(content), updated_at = NOW()`,
-    [seed],
-  );
+  if (!hasContent) {
+    const seedPath = path.join(__dirname, '..', 'seed', 'content.json');
+    const seed = await readFile(seedPath, 'utf8');
+    await pool.query('INSERT INTO app_content (id, content) VALUES (1, ?)', [seed]);
+    console.log('Seeded app_content from cms/seed/content.json');
+  } else {
+    console.log('app_content already exists — skipped seed (admin data preserved)');
+  }
 
   const passwordHash = await hashPassword(adminPassword);
   await pool.query(

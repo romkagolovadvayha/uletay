@@ -16,10 +16,10 @@ export const config = {
   sessionSecret: env('SESSION_SECRET', 'dev-secret-change-me'),
   corsOrigin: env('CORS_ORIGIN', '*'),
   basePath,
-  uploadDir: path.resolve(
-    process.cwd(),
-    env('UPLOAD_DIR', path.join('..', 'uploads')),
-  ),
+  uploadDir: (() => {
+    const raw = env('UPLOAD_DIR', path.join('..', 'uploads'));
+    return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
+  })(),
   uploadUrl: `${basePath}/api/uploads`,
   port: Number(env('PORT', '3000')),
 };

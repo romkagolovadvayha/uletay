@@ -1,31 +1,51 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useNow } from '../hooks/useNow';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { getCountdown, isFestivalEnded, isFestivalOngoing } from '../utils/scheduleHelpers';
+import { SchedulePerformance } from '../types';
+import {
+  getCountdown,
+  isFestivalFinished,
+  isFestivalOngoing,
+} from '../utils/scheduleHelpers';
 
 type Props = {
   targetDate: Date;
   festivalStartDate: string;
   festivalEndDate: string;
+  performances: SchedulePerformance[];
 };
 
 function pad(value: number) {
   return String(value).padStart(2, '0');
 }
 
-export function CountdownTimer({ targetDate, festivalStartDate, festivalEndDate }: Props) {
-  const [now, setNow] = useState(new Date());
+export function CountdownTimer({
+  targetDate,
+  festivalStartDate,
+  festivalEndDate,
+  performances,
+}: Props) {
+  const now = useNow(1000);
 
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const showFestivalEnded = isFestivalFinished(
+    festivalStartDate,
+    festivalEndDate,
+    performances,
+    now,
+  );
 
-  if (isFestivalEnded(festivalEndDate, now)) {
-    return null;
+  if (showFestivalEnded) {
+    return (
+      <View style={styles.liveContainer}>
+        <View style={styles.endedBadge}>
+          <Text style={styles.endedText}>ФЕСТИВАЛЬ ОКОНЧЕН</Text>
+        </View>
+      </View>
+    );
   }
 
   if (isFestivalOngoing(festivalStartDate, festivalEndDate, now)) {
@@ -112,5 +132,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 18,
     letterSpacing: 1,
+  },
+  endedBadge: {
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  endedText: {
+    ...typography.countdownValue,
+    color: colors.textSecondary,
+    fontSize: 16,
+    letterSpacing: 0.6,
+    textAlign: 'center',
   },
 });

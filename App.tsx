@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DataProvider } from './src/context/DataContext';
+import { DemoModeProvider } from './src/context/DemoModeContext';
 import { RadioPlayerProvider } from './src/context/RadioPlayerContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
 import { NotificationSettingsProvider } from './src/context/NotificationSettingsContext';
@@ -67,13 +68,15 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <DataProvider>
-          <RadioPlayerProvider>
-            <FavoritesProvider>
-              <NotificationSettingsProvider>
-                <AppContent />
-              </NotificationSettingsProvider>
-            </FavoritesProvider>
-          </RadioPlayerProvider>
+          <DemoModeProvider>
+            <RadioPlayerProvider>
+              <FavoritesProvider>
+                <NotificationSettingsProvider>
+                  <AppContent />
+                </NotificationSettingsProvider>
+              </FavoritesProvider>
+            </RadioPlayerProvider>
+          </DemoModeProvider>
         </DataProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

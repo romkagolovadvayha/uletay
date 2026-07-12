@@ -398,12 +398,45 @@ export function isFestivalStarted(startDate: string, now = new Date()): boolean 
   return now >= parseDateTime(startDate, '12:00');
 }
 
+export function hasRemainingPerformances(
+  performances: SchedulePerformance[],
+  now = new Date(),
+): boolean {
+  return performances.some((performance) => {
+    const end = getEndDateTime(performance.date, performance.startTime, performance.endTime);
+    return now < end;
+  });
+}
+
+export function isFestivalScheduleEnded(
+  performances: SchedulePerformance[],
+  now = new Date(),
+): boolean {
+  if (performances.length === 0) {
+    return false;
+  }
+
+  return !hasRemainingPerformances(performances, now);
+}
+
 export function isFestivalEnded(endDate: string, now = new Date()): boolean {
   return now >= getFestivalDayWindow(endDate).end;
 }
 
 export function isFestivalOngoing(startDate: string, endDate: string, now = new Date()): boolean {
   return isFestivalStarted(startDate, now) && !isFestivalEnded(endDate, now);
+}
+
+export function isFestivalFinished(
+  startDate: string,
+  endDate: string,
+  performances: SchedulePerformance[],
+  now = new Date(),
+): boolean {
+  return (
+    isFestivalEnded(endDate, now) ||
+    (isFestivalStarted(startDate, now) && isFestivalScheduleEnded(performances, now))
+  );
 }
 
 // Backward-compatible alias

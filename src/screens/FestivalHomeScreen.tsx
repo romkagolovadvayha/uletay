@@ -7,10 +7,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Platform, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { FestivalLogoImage } from '../components/FestivalLogoImage';
+import { HomeHeadlinersWidget } from '../components/HomeHeadlinersWidget';
 import { LiveArtistCard } from '../components/LiveArtistCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionHeader } from '../components/SectionHeader';
 import { useAppData } from '../context/DataContext';
+import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useStagePrimaryPerformances } from '../hooks/useCurrentLivePerformance';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
@@ -19,8 +22,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { getStageName, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
-import { getRemoteImageSource } from '../utils/imageSource';
+import { getStageName, isFestivalStarted, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'HomeTab'>;
 
@@ -39,7 +41,8 @@ const HERO_VIDEO_SOURCE =
     : require('../../assets/videos/background.mp4');
 
 export function FestivalHomeScreen({ navigation }: Props) {
-  const { data } = useAppData();
+  const { data, refreshData } = useAppData();
+  const festivalActive = useFestivalActive();
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
   const scrollY = useMemo(() => new Animated.Value(0), []);
@@ -76,10 +79,11 @@ export function FestivalHomeScreen({ navigation }: Props) {
   useFocusEffect(
     useCallback(() => {
       heroPlayer.play();
+      void refreshData();
       return () => {
         heroPlayer.pause();
       };
-    }, [heroPlayer]),
+    }, [heroPlayer, refreshData]),
   );
 
   const backgroundTranslateY = useMemo(
@@ -105,6 +109,10 @@ export function FestivalHomeScreen({ navigation }: Props) {
     [data.festival.startDate],
   );
 
+  const festivalStarted = isFestivalStarted(data.festival.startDate, now);
+  const showPreFestivalHeadliners = festivalActive && !festivalStarted;
+  const showLiveSection = festivalActive && festivalStarted;
+
   const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');
   const hasAnySoon = stagePrimaries.some(
     (item) =>
@@ -116,6 +124,20 @@ export function FestivalHomeScreen({ navigation }: Props) {
     : hasAnySoon
       ? 'СКОРО НА СЦЕНАХ'
       : 'СЛЕДУЮЩИЕ ВЫСТУПЛЕНИЯ';
+
+  const openHeadlinersMain = useCallback(() => {
+    navigation.navigate('MoreTab', { screen: 'HeadlinersMain' });
+  }, [navigation]);
+
+  const openHeadlinerDetail = useCallback(
+    (headlinerId: string) => {
+      navigation.navigate('MoreTab', {
+        screen: 'HeadlinerDetail',
+        params: { headlinerId },
+      });
+    },
+    [navigation],
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -169,14 +191,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
       >
         <View style={styles.heroStack}>
           <View style={styles.heroContent}>
-            <Image
-              source={getRemoteImageSource(
-                data.festival.logoImageUrl,
-                require('../../assets/images/festival-logo.png'),
-              )}
-              style={styles.logoImage}
-              contentFit="contain"
-            />
+            <FestivalLogoImage logoImageUrl={data.festival.logoImageUrl} style={styles.logoImage} />
             <Text style={styles.tagline}>ФЕСТИВАЛЬ НАСТОЯЩЕЙ МУЗЫКИ</Text>
             <Text style={styles.location}>{data.festival.location}</Text>
           </View>
@@ -186,43 +201,63 @@ export function FestivalHomeScreen({ navigation }: Props) {
               targetDate={festivalStart}
               festivalStartDate={data.festival.startDate}
               festivalEndDate={data.festival.endDate}
+              performances={data.schedule}
             />
           </View>
 
           <View style={styles.overlaySection}>
-            <PrimaryButton
-              label="РАСПИСАНИЕ"
-              onPress={() => openScheduleTabMain(navigation)}
-            />
+            {festivalActive ? (
+              <PrimaryButton
+                label="РАСПИСАНИЕ"
+                onPress={() => openScheduleTabMain(navigation)}
+              />
+            ) : (
+              <PrimaryButton
+                label="ХЭДЛАЙНЕРЫ"
+                onPress={() => navigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' })}
+              />
+            )}
           </View>
         </View>
 
-        <View style={styles.section}>
-          <SectionHeader title={sectionTitle} />
-          {stagePrimaries.length > 0 ? (
-            stagePrimaries.map((item) => (
-              <View key={item.performance.id} style={styles.liveCardWrap}>
-                <LiveArtistCard
-                  performance={item.performance}
-                  stageName={getStageName(item.performance.stageId, data.stages)}
-                  status={item.status}
-                  now={now}
-                  style={styles.liveCard}
-                  onPress={() =>
-                    navigation.navigate('ScheduleTab', {
-                      screen: 'LiveDetail',
-                      params: { performanceId: item.performance.id },
-                    })
-                  }
-                />
+        {showPreFestivalHeadliners ? (
+          <View style={styles.section}>
+            <HomeHeadlinersWidget
+              year={data.festival.year}
+              onPressHeadliner={(headliner) => openHeadlinerDetail(headliner.id)}
+              onPressAll={openHeadlinersMain}
+            />
+          </View>
+        ) : null}
+
+        {showLiveSection ? (
+          <View style={styles.section}>
+            <SectionHeader title={sectionTitle} />
+            {stagePrimaries.length > 0 ? (
+              stagePrimaries.map((item) => (
+                <View key={item.performance.id} style={styles.liveCardWrap}>
+                  <LiveArtistCard
+                    performance={item.performance}
+                    stageName={getStageName(item.performance.stageId, data.stages)}
+                    status={item.status}
+                    now={now}
+                    style={styles.liveCard}
+                    onPress={() =>
+                      navigation.navigate('ScheduleTab', {
+                        screen: 'LiveDetail',
+                        params: { performanceId: item.performance.id },
+                      })
+                    }
+                  />
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>Нет предстоящих выступлений в расписании</Text>
               </View>
-            ))
-          ) : (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>Нет предстоящих выступлений в расписании</Text>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+        ) : null}
       </Animated.ScrollView>
     </SafeAreaView>
   );
@@ -285,9 +320,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   logoImage: {
-    width: '100%',
-    maxWidth: 360,
+    width: 360,
+    maxWidth: '100%',
     height: 156,
+    alignSelf: 'center',
     marginBottom: spacing.xs,
   },
   tagline: {

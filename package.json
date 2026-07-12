@@ -66,7 +66,15 @@
     "cms:dev": "npm --prefix cms run dev",
     "cms:build": "npm --prefix cms run build",
     "cms:install": "npm --prefix cms run db:install",
-    "build:all": "npm run build && npm run cms:build"
+    "build:all": "npm run build && npm run cms:build",
+    "build:ios": "eas build --platform ios --profile production",
+    "build:ios:preview": "eas build --platform ios --profile preview",
+    "submit:ios": "eas submit --platform ios --profile production",
+    "build:android": "eas build --platform android --profile production",
+    "build:android:preview": "eas build --platform android --profile preview",
+    "submit:android": "eas submit --platform android --profile production",
+    "build:stores": "eas build --platform all --profile production",
+    "submit:stores": "eas submit --platform all --profile production"
   },
   "private": true
 }

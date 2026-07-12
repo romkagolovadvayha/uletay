@@ -24,7 +24,7 @@ async function main() {
 
   console.log('OK');
   console.log(`Database schema: ${dbName}`);
-  console.log('Content and uploads were not modified');
+  console.log('app_content, foodcourt URLs and uploads were not modified');
 }
 
 main().catch((error) => {

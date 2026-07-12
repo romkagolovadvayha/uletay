@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { autographSessions } from '../data/autographs';
 import { foodCourtVendors } from '../data/foodcourt';
+import { headliners } from '../data/headliners';
 import { festivalRules } from '../data/festivalRules';
 import { getDefaultMapData } from '../data/festivalMap';
 import { festivalInfo, schedulePerformances, stages } from '../data/schedule';
@@ -15,6 +16,7 @@ export const defaultAppData: AppData = normalizeAppData({
   schedule: schedulePerformances,
   autographs: autographSessions,
   foodcourt: foodCourtVendors,
+  headliners,
   rules: festivalRules,
   ...getDefaultMapData(),
 });
@@ -31,6 +33,7 @@ export function mergeStoredAppData(parsed: Partial<AppData>): AppData {
       parsed.foodcourt?.length && parsed.foodcourt.every((item) => 'priceFrom' in item)
         ? parsed.foodcourt
         : defaultAppData.foodcourt,
+    headliners: parsed.headliners?.length ? parsed.headliners : defaultAppData.headliners,
     rules: parsed.rules?.length ? parsed.rules : defaultAppData.rules,
   });
 }

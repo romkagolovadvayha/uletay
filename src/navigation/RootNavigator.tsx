@@ -11,6 +11,7 @@ import { FoodCourtDetailScreen } from '../screens/FoodCourtDetailScreen';
 import { FoodCourtScreen } from '../screens/FoodCourtScreen';
 import { FestivalAboutScreen } from '../screens/FestivalAboutScreen';
 import { FestivalRulesScreen } from '../screens/FestivalRulesScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { FullScheduleScreen } from '../screens/FullScheduleScreen';
 import { LiveDetailScreen } from '../screens/LiveDetailScreen';
@@ -19,6 +20,9 @@ import { PlaylistScreen } from '../screens/PlaylistScreen';
 import { MyScheduleScreen } from '../screens/MyScheduleScreen';
 import { FestivalMapScreen } from '../screens/FestivalMapScreen';
 import { ScheduleMainScreen } from '../screens/ScheduleMainScreen';
+import { HeadlinerDetailScreen } from '../screens/HeadlinerDetailScreen';
+import { HeadlinersScreen } from '../screens/HeadlinersScreen';
+import { useFestivalActive } from '../hooks/useFestivalActive';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
 import { FavoriteNotificationHost } from '../components/FavoriteNotificationHost';
 import { MoreMenuSheet } from '../components/MoreMenuSheet';
@@ -27,6 +31,7 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import {
   AutographStackParamList,
+  HeadlinersStackParamList,
   MoreStackParamList,
   RootTabParamList,
   ScheduleStackParamList,
@@ -35,11 +40,13 @@ import {
   createFlatTabListeners,
   createNestedTabListeners,
 } from './scheduleNavigation';
+import { FestivalNavigationGuard } from './FestivalNavigationGuard';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const ScheduleStack = createNativeStackNavigator<ScheduleStackParamList>();
 const MoreStack = createNativeStackNavigator<MoreStackParamList>();
 const AutographStack = createNativeStackNavigator<AutographStackParamList>();
+const HeadlinersStack = createNativeStackNavigator<HeadlinersStackParamList>();
 
 const TAB_ICON_SIZE = 22;
 
@@ -116,6 +123,20 @@ function AutographNavigator() {
   );
 }
 
+function HeadlinersNavigator() {
+  return (
+    <HeadlinersStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <HeadlinersStack.Screen name="HeadlinersMain" component={HeadlinersScreen} />
+      <HeadlinersStack.Screen name="HeadlinerDetail" component={HeadlinerDetailScreen} />
+    </HeadlinersStack.Navigator>
+  );
+}
+
 function MoreNavigator() {
   return (
     <MoreStack.Navigator
@@ -130,6 +151,9 @@ function MoreNavigator() {
       <MoreStack.Screen name="FoodCourtDetail" component={FoodCourtDetailScreen} />
       <MoreStack.Screen name="FestivalAbout" component={FestivalAboutScreen} />
       <MoreStack.Screen name="FestivalRules" component={FestivalRulesScreen} />
+      <MoreStack.Screen name="Settings" component={SettingsScreen} />
+      <MoreStack.Screen name="HeadlinersMain" component={HeadlinersScreen} />
+      <MoreStack.Screen name="HeadlinerDetail" component={HeadlinerDetailScreen} />
     </MoreStack.Navigator>
   );
 }
@@ -137,6 +161,7 @@ function MoreNavigator() {
 function RootTabs() {
   const { open } = useMoreMenu();
   const isTablet = useIsTablet();
+  const festivalActive = useFestivalActive();
 
   return (
     <Tab.Navigator
@@ -173,35 +198,50 @@ function RootTabs() {
           tabBarIcon: ({ color }) => <TabIcon name="map-outline" color={color} />,
         }}
       />
-      <Tab.Screen
-        name="ScheduleTab"
-        component={ScheduleNavigator}
-        listeners={({ navigation }) => createNestedTabListeners(navigation, 'ScheduleTab')}
-        options={{
-          title: 'Расписание',
-          tabBarIcon: ({ color }) => <TabIcon name="calendar-outline" color={color} />,
-          popToTopOnBlur: true,
-        }}
-      />
-      <Tab.Screen
-        name="Autographs"
-        component={AutographNavigator}
-        listeners={({ navigation }) => createNestedTabListeners(navigation, 'Autographs')}
-        options={{
-          title: 'Автографы',
-          tabBarIcon: ({ color }) => <TabIcon name="ticket-outline" color={color} />,
-          popToTopOnBlur: true,
-        }}
-      />
-      <Tab.Screen
-        name="FavoritesTab"
-        component={MyScheduleScreen}
-        listeners={({ navigation }) => createFlatTabListeners(navigation)}
-        options={{
-          title: 'Избранное',
-          tabBarIcon: ({ color }) => <TabIcon name="star-outline" color={color} />,
-        }}
-      />
+      {festivalActive ? (
+        <>
+          <Tab.Screen
+            name="ScheduleTab"
+            component={ScheduleNavigator}
+            listeners={({ navigation }) => createNestedTabListeners(navigation, 'ScheduleTab')}
+            options={{
+              title: 'Расписание',
+              tabBarIcon: ({ color }) => <TabIcon name="calendar-outline" color={color} />,
+              popToTopOnBlur: true,
+            }}
+          />
+          <Tab.Screen
+            name="Autographs"
+            component={AutographNavigator}
+            listeners={({ navigation }) => createNestedTabListeners(navigation, 'Autographs')}
+            options={{
+              title: 'Автографы',
+              tabBarIcon: ({ color }) => <TabIcon name="ticket-outline" color={color} />,
+              popToTopOnBlur: true,
+            }}
+          />
+          <Tab.Screen
+            name="FavoritesTab"
+            component={MyScheduleScreen}
+            listeners={({ navigation }) => createFlatTabListeners(navigation)}
+            options={{
+              title: 'Избранное',
+              tabBarIcon: ({ color }) => <TabIcon name="star-outline" color={color} />,
+            }}
+          />
+        </>
+      ) : (
+        <Tab.Screen
+          name="HeadlinersTab"
+          component={HeadlinersNavigator}
+          listeners={({ navigation }) => createNestedTabListeners(navigation, 'HeadlinersTab')}
+          options={{
+            title: 'Хэдлайнеры',
+            tabBarIcon: ({ color }) => <TabIcon name="mic-outline" color={color} />,
+            popToTopOnBlur: true,
+          }}
+        />
+      )}
       <Tab.Screen
         name="PlaylistTab"
         component={PlaylistScreen}
@@ -238,6 +278,7 @@ export function RootNavigator() {
     <MoreMenuProvider>
       <View style={styles.root}>
         <RootTabs />
+        <FestivalNavigationGuard />
         <MoreMenuSheet />
         <FavoriteNotificationHost />
         <FavoriteAddedToast />
