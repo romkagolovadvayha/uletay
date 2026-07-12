@@ -51,8 +51,6 @@ export const linking: LinkingOptions<RootTabParamList> = {
           FestivalAbout: 'about',
           FestivalRules: 'rules',
           Settings: 'settings',
-          HeadlinersMain: 'headliners',
-          HeadlinerDetail: 'headliners/:headlinerId',
         },
       },
     },

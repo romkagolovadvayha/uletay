@@ -1,7 +1,7 @@
-import { useNavigation, useNavigationState } from '@react-navigation/native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useFestivalActive } from '../hooks/useFestivalActive';
-import { RootTabParamList } from '../navigation/types';
+import { navigationRef } from './navigationRef';
+import { RootTabParamList } from './types';
 
 const FESTIVAL_ONLY_TABS: (keyof RootTabParamList)[] = [
   'ScheduleTab',
@@ -13,40 +13,70 @@ const POST_FESTIVAL_ONLY_TABS: (keyof RootTabParamList)[] = ['HeadlinersTab'];
 
 const FESTIVAL_ONLY_MORE_ROUTES = new Set(['FoodCourtMain', 'FoodCourtDetail']);
 
+function readGuardState(): {
+  currentTab: keyof RootTabParamList | undefined;
+  moreNestedRoute: string | null;
+} {
+  if (!navigationRef.isReady()) {
+    return { currentTab: undefined, moreNestedRoute: null };
+  }
+
+  const state = navigationRef.getRootState();
+  const route = state.routes[state.index];
+  const currentTab = route?.name as keyof RootTabParamList | undefined;
+
+  if (route?.name !== 'MoreTab' || !route.state) {
+    return { currentTab, moreNestedRoute: null };
+  }
+
+  return {
+    currentTab,
+    moreNestedRoute: route.state.routes[route.state.index ?? 0]?.name ?? null,
+  };
+}
+
+function shouldRedirect(
+  festivalActive: boolean,
+  currentTab: keyof RootTabParamList | undefined,
+  moreNestedRoute: string | null,
+): boolean {
+  if (!currentTab) {
+    return false;
+  }
+
+  const shouldLeaveTab =
+    (!festivalActive && FESTIVAL_ONLY_TABS.includes(currentTab)) ||
+    (festivalActive && POST_FESTIVAL_ONLY_TABS.includes(currentTab));
+
+  const shouldLeaveMore =
+    !festivalActive &&
+    currentTab === 'MoreTab' &&
+    moreNestedRoute != null &&
+    FESTIVAL_ONLY_MORE_ROUTES.has(moreNestedRoute);
+
+  return shouldLeaveTab || shouldLeaveMore;
+}
+
 export function FestivalNavigationGuard() {
-  const navigation = useNavigation();
   const festivalActive = useFestivalActive();
-  const currentTab = useNavigationState((state) => {
-    const route = state?.routes[state.index];
-    return route?.name as keyof RootTabParamList | undefined;
-  });
-  const moreNestedRoute = useNavigationState((state) => {
-    const route = state?.routes[state.index];
-    if (route?.name !== 'MoreTab' || !route.state) {
-      return null;
-    }
-    return route.state.routes[route.state.index ?? 0]?.name ?? null;
-  });
+  const [navRevision, setNavRevision] = useState(0);
 
   useEffect(() => {
-    if (!currentTab) {
-      return;
+    if (!navigationRef.isReady()) {
+      return undefined;
     }
 
-    const shouldLeaveTab =
-      (!festivalActive && FESTIVAL_ONLY_TABS.includes(currentTab)) ||
-      (festivalActive && POST_FESTIVAL_ONLY_TABS.includes(currentTab));
+    const sync = () => setNavRevision((revision) => revision + 1);
+    sync();
+    return navigationRef.addListener('state', sync);
+  }, []);
 
-    const shouldLeaveMore =
-      !festivalActive &&
-      currentTab === 'MoreTab' &&
-      moreNestedRoute != null &&
-      FESTIVAL_ONLY_MORE_ROUTES.has(moreNestedRoute);
-
-    if (shouldLeaveTab || shouldLeaveMore) {
-      navigation.navigate('HomeTab');
+  useEffect(() => {
+    const { currentTab, moreNestedRoute } = readGuardState();
+    if (shouldRedirect(festivalActive, currentTab, moreNestedRoute) && navigationRef.isReady()) {
+      navigationRef.navigate('HomeTab');
     }
-  }, [currentTab, festivalActive, moreNestedRoute, navigation]);
+  }, [festivalActive, navRevision]);
 
   return null;
 }
