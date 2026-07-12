@@ -1,20 +1,18 @@
 import mysql from 'mysql2/promise';
 import { buildHistoricalHeadliners, mergeHistoricalHeadliners } from './headliners-patch-utils.mjs';
+import { getDbConfig } from './load-db-env.mjs';
 
-const dbHost = process.env.DB_HOST || '127.0.0.1';
-const dbName = process.env.DB_NAME || 'uletay';
-const dbUser = process.env.DB_USER || 'root';
-const dbPass = process.env.DB_PASS || '';
 const dryRun = process.argv.includes('--dry-run');
 
 async function main() {
   const historical = buildHistoricalHeadliners();
+  const db = getDbConfig();
 
   const pool = await mysql.createConnection({
-    host: dbHost,
-    database: dbName,
-    user: dbUser,
-    password: dbPass,
+    host: db.host,
+    database: db.database,
+    user: db.user,
+    password: db.password,
   });
 
   const [rows] = await pool.query('SELECT content FROM app_content WHERE id = 1 LIMIT 1');
