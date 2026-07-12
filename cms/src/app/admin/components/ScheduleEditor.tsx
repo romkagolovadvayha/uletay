@@ -4,9 +4,10 @@ import {
   upsertScheduleAction,
 } from '../actions';
 import { DeleteButton } from './DeleteButton';
-import { AdminImagePreview, AdminImageThumb } from './AdminImageThumb';
+import { AdminImageThumb } from './AdminImageThumb';
+import { HeadlinerSearchSelect } from './HeadlinerSearchSelect';
+import { resolveAdminImageSrc } from '@/lib/resolve-admin-image';
 import type { Headliner, SchedulePerformance, Stage } from '@/types';
-import { presetHint } from '@/lib/image-presets';
 
 type Props = {
   items: SchedulePerformance[];
@@ -29,6 +30,13 @@ export function ScheduleEditor({ items, stages, headliners, editId, stageFilter,
     : editId
       ? rows.find((item) => item.id === editId) ?? null
       : null;
+
+  const headlinerById = new Map(headliners.map((headliner) => [headliner.id, headliner]));
+  const headlinerOptions = headliners.map((headliner) => ({
+    id: headliner.id,
+    name: headliner.name,
+    previewSrc: resolveAdminImageSrc(headliner.imageUrl, headliner.name),
+  }));
 
   let filtered = [...rows];
   if (stageFilter) {
@@ -78,7 +86,7 @@ export function ScheduleEditor({ items, stages, headliners, editId, stageFilter,
       </div>
 
       {editId ? (
-        <form action={upsertScheduleAction} className="panel" encType="multipart/form-data">
+        <form action={upsertScheduleAction} className="panel">
           <h2>{isNew ? 'Новое выступление' : 'Редактирование'}</h2>
           <input type="hidden" name="isNew" value={isNew ? '1' : '0'} />
           {!isNew && editing ? <input type="hidden" name="id" value={editing.id} /> : null}
@@ -108,18 +116,14 @@ export function ScheduleEditor({ items, stages, headliners, editId, stageFilter,
             </label>
             <label className="span-2">
               Хэдлайнер
-              <select
+              <HeadlinerSearchSelect
                 name="headlinerId"
+                headliners={headlinerOptions}
                 defaultValue={editing?.headlinerId ?? headliners[0]?.id ?? ''}
                 required
-              >
-                {headliners.map((headliner) => (
-                  <option key={headliner.id} value={headliner.id}>
-                    {headliner.name}
-                  </option>
-                ))}
-              </select>
+              />
               <span className="hint">
+                Фото берётся из карточки хэдлайнера.{' '}
                 <Link href="/admin?tab=headliners&edit=new">Добавить нового артиста</Link>
               </span>
             </label>
@@ -132,23 +136,7 @@ export function ScheduleEditor({ items, stages, headliners, editId, stageFilter,
               />
               Конкурсное выступление
             </label>
-            <label className="span-2">
-              URL картинки (необязательно)
-              <input name="imageUrl" defaultValue={editing?.imageUrl ?? ''} placeholder="/api/uploads/..." />
-            </label>
-            <label className="span-2">
-              Загрузить картинку
-              <input type="file" name="file" accept="image/*" />
-              <span className="hint">{presetHint('artist')}</span>
-            </label>
           </div>
-
-          <AdminImagePreview
-            imageUrl={editing?.imageUrl}
-            artist={editing?.artist}
-            alt={editing?.artist ?? 'preview'}
-            className="preview thumb"
-          />
 
           <div className="form-actions">
             <button type="submit" className="btn-primary">
@@ -175,33 +163,36 @@ export function ScheduleEditor({ items, stages, headliners, editId, stageFilter,
             </tr>
           </thead>
           <tbody>
-            {filtered.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <AdminImageThumb
-                    imageUrl={item.imageUrl}
-                    artist={item.artist}
-                    alt={item.artist}
-                    className="list-thumb"
-                  />
-                </td>
-                <td>{item.date}</td>
-                <td>
-                  {item.startTime}–{item.endTime}
-                </td>
-                <td>{stageLabel(stages, item.stageId)}</td>
-                <td>
-                  {item.artist}
-                  {item.isCompetition ? <span className="badge">конкурс</span> : null}
-                </td>
-                <td className="row-actions">
-                  <Link className="btn-secondary btn-sm" href={`/admin?tab=schedule&edit=${encodeURIComponent(item.id)}`}>
-                    Изменить
-                  </Link>
-                  <DeleteButton action={deleteScheduleAction} id={item.id} />
-                </td>
-              </tr>
-            ))}
+            {filtered.map((item) => {
+              const headliner = headlinerById.get(item.headlinerId);
+              return (
+                <tr key={item.id}>
+                  <td>
+                    <AdminImageThumb
+                      imageUrl={headliner?.imageUrl}
+                      artist={item.artist}
+                      alt={item.artist}
+                      className="list-thumb"
+                    />
+                  </td>
+                  <td>{item.date}</td>
+                  <td>
+                    {item.startTime}–{item.endTime}
+                  </td>
+                  <td>{stageLabel(stages, item.stageId)}</td>
+                  <td>
+                    {item.artist}
+                    {item.isCompetition ? <span className="badge">конкурс</span> : null}
+                  </td>
+                  <td className="row-actions">
+                    <Link className="btn-secondary btn-sm" href={`/admin?tab=schedule&edit=${encodeURIComponent(item.id)}`}>
+                      Изменить
+                    </Link>
+                    <DeleteButton action={deleteScheduleAction} id={item.id} />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {filtered.length === 0 ? <p className="hint">Нет записей</p> : null}

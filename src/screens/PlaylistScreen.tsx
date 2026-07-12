@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PerformanceTimeDateRow } from '../components/PerformanceTimeDateRow';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
+import { useAppData } from '../context/DataContext';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -18,17 +19,20 @@ import { typography, appFont } from '../theme/typography';
 import { resolveArtistImageSource } from '../utils/festArtistImages';
 import { RADIO_STATION_NAME } from '../config/radio';
 import { formatDayMonthLabel, formatTimeRange, getStageName } from '../utils/scheduleHelpers';
-import { useAppData } from '../context/DataContext';
+import { formatHeadlinerYears } from '../utils/headlinerHelpers';
+import { useFestivalActive } from '../hooks/useFestivalActive';
 
 export function PlaylistScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
   const { data } = useAppData();
+  const festivalActive = useFestivalActive();
   const {
     isPlaying,
     isLoading,
     error,
     nowPlaying,
     matchedPerformance,
+    matchedHeadliner,
     togglePlayback,
     refreshNowPlaying,
     setPlaylistActive,
@@ -44,10 +48,27 @@ export function PlaylistScreen() {
   const displayArtist = nowPlaying?.artist || 'Улетайрадио';
   const displayTitle = nowPlaying?.title || 'В эфире';
   const artworkSource = resolveArtistImageSource(
-    matchedPerformance?.imageUrl,
-    nowPlaying?.artist ?? displayArtist,
+    matchedPerformance?.imageUrl ?? matchedHeadliner?.imageUrl,
+    matchedPerformance?.artist ?? matchedHeadliner?.name ?? nowPlaying?.artist ?? displayArtist,
   );
   const stageName = matchedPerformance ? getStageName(matchedPerformance.stageId, data.stages) : null;
+
+  const openMatchedHeadliner = () => {
+    if (!matchedHeadliner) {
+      return;
+    }
+    if (festivalActive) {
+      navigation.navigate('MoreTab', {
+        screen: 'HeadlinerDetail',
+        params: { headlinerId: matchedHeadliner.id },
+      });
+      return;
+    }
+    navigation.navigate('HeadlinersTab', {
+      screen: 'HeadlinerDetail',
+      params: { headlinerId: matchedHeadliner.id },
+    });
+  };
 
   const openMatchedPerformance = () => {
     if (!matchedPerformance) {
@@ -106,6 +127,23 @@ export function PlaylistScreen() {
                 time={formatTimeRange(matchedPerformance.startTime, matchedPerformance.endTime)}
                 date={formatDayMonthLabel(matchedPerformance.date)}
               />
+            </Pressable>
+          ) : matchedHeadliner ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={openMatchedHeadliner}
+              style={({ pressed }) => [styles.matchCard, pressed && styles.pressed]}
+            >
+              <View style={styles.matchHeader}>
+                <Text style={styles.matchLabel}>Хэдлайнер</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </View>
+              <Text style={styles.matchArtist}>{matchedHeadliner.name}</Text>
+              {matchedHeadliner.years.length ? (
+                <Text style={styles.matchStage}>
+                  Улетай {formatHeadlinerYears(matchedHeadliner.years)}
+                </Text>
+              ) : null}
             </Pressable>
           ) : null}
 

@@ -4,9 +4,10 @@ import {
   upsertAutographAction,
 } from '../actions';
 import { DeleteButton } from './DeleteButton';
-import { AdminImagePreview, AdminImageThumb } from './AdminImageThumb';
+import { AdminImageThumb } from './AdminImageThumb';
+import { HeadlinerSearchSelect } from './HeadlinerSearchSelect';
+import { resolveAdminImageSrc } from '@/lib/resolve-admin-image';
 import type { AutographSession, Headliner, Stage } from '@/types';
-import { presetHint } from '@/lib/image-presets';
 
 type Props = {
   items: AutographSession[];
@@ -28,6 +29,13 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
     : editId
       ? items.find((item) => item.id === editId) ?? null
       : null;
+
+  const headlinerById = new Map(headliners.map((headliner) => [headliner.id, headliner]));
+  const headlinerOptions = headliners.map((headliner) => ({
+    id: headliner.id,
+    name: headliner.name,
+    previewSrc: resolveAdminImageSrc(headliner.imageUrl, headliner.name),
+  }));
 
   let filtered = [...items];
   if (stageFilter) {
@@ -77,7 +85,7 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
       </div>
 
       {editId ? (
-        <form action={upsertAutographAction} className="panel" encType="multipart/form-data">
+        <form action={upsertAutographAction} className="panel">
           <h2>{isNew ? 'Новая сессия' : 'Редактирование'}</h2>
           <input type="hidden" name="isNew" value={isNew ? '1' : '0'} />
           {!isNew && editing ? <input type="hidden" name="id" value={editing.id} /> : null}
@@ -107,18 +115,14 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
             </label>
             <label className="span-2">
               Хэдлайнер
-              <select
+              <HeadlinerSearchSelect
                 name="headlinerId"
+                headliners={headlinerOptions}
                 defaultValue={editing?.headlinerId ?? headliners[0]?.id ?? ''}
                 required
-              >
-                {headliners.map((headliner) => (
-                  <option key={headliner.id} value={headliner.id}>
-                    {headliner.name}
-                  </option>
-                ))}
-              </select>
+              />
               <span className="hint">
+                Фото берётся из карточки хэдлайнера.{' '}
                 <Link href="/admin?tab=headliners&edit=new">Добавить нового артиста</Link>
               </span>
             </label>
@@ -126,23 +130,7 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
               Место
               <input name="location" defaultValue={editing?.location ?? ''} placeholder="ПАЛАТОЧНЫЙ ГОРОДОК" />
             </label>
-            <label className="span-2">
-              URL картинки
-              <input name="imageUrl" defaultValue={editing?.imageUrl ?? ''} />
-            </label>
-            <label className="span-2">
-              Загрузить картинку
-              <input type="file" name="file" accept="image/*" />
-              <span className="hint">{presetHint('hero')}</span>
-            </label>
           </div>
-
-          <AdminImagePreview
-            imageUrl={editing?.imageUrl}
-            artist={editing?.artist}
-            alt={editing?.artist ?? 'preview'}
-            className="preview thumb"
-          />
 
           <div className="form-actions">
             <button type="submit" className="btn-primary">
@@ -170,34 +158,37 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
             </tr>
           </thead>
           <tbody>
-            {filtered.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <AdminImageThumb
-                    imageUrl={item.imageUrl}
-                    artist={item.artist}
-                    alt={item.artist}
-                    className="list-thumb"
-                  />
-                </td>
-                <td>{item.date}</td>
-                <td>
-                  {item.startTime}–{item.endTime}
-                </td>
-                <td>{stageLabel(stages, item.stageId)}</td>
-                <td>{item.artist}</td>
-                <td>{item.location ?? '—'}</td>
-                <td className="row-actions">
-                  <Link
-                    className="btn-secondary btn-sm"
-                    href={`/admin?tab=autographs&edit=${encodeURIComponent(item.id)}`}
-                  >
-                    Изменить
-                  </Link>
-                  <DeleteButton action={deleteAutographAction} id={item.id} />
-                </td>
-              </tr>
-            ))}
+            {filtered.map((item) => {
+              const headliner = headlinerById.get(item.headlinerId);
+              return (
+                <tr key={item.id}>
+                  <td>
+                    <AdminImageThumb
+                      imageUrl={headliner?.imageUrl}
+                      artist={item.artist}
+                      alt={item.artist}
+                      className="list-thumb"
+                    />
+                  </td>
+                  <td>{item.date}</td>
+                  <td>
+                    {item.startTime}–{item.endTime}
+                  </td>
+                  <td>{stageLabel(stages, item.stageId)}</td>
+                  <td>{item.artist}</td>
+                  <td>{item.location ?? '—'}</td>
+                  <td className="row-actions">
+                    <Link
+                      className="btn-secondary btn-sm"
+                      href={`/admin?tab=autographs&edit=${encodeURIComponent(item.id)}`}
+                    >
+                      Изменить
+                    </Link>
+                    <DeleteButton action={deleteAutographAction} id={item.id} />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {filtered.length === 0 ? <p className="hint">Нет записей</p> : null}

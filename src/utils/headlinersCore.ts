@@ -164,11 +164,11 @@ export function syncAppHeadliners(data: AppData): AppData {
     const headliner = headliners.find((entry) => entry.id === headlinerId);
     const resolvedArtist = headliner?.name ?? artist ?? '';
 
+    const { imageUrl: _imageUrl, ...rest } = item;
     return {
-      ...item,
+      ...rest,
       headlinerId: headlinerId ?? '',
       artist: resolvedArtist,
-      imageUrl: item.imageUrl ?? undefined,
     };
   });
 
@@ -194,11 +194,11 @@ export function syncAppHeadliners(data: AppData): AppData {
     const headliner = headliners.find((entry) => entry.id === headlinerId);
     const resolvedArtist = headliner?.name ?? artist ?? '';
 
+    const { imageUrl: _imageUrl, ...rest } = item;
     return {
-      ...item,
+      ...rest,
       headlinerId: headlinerId ?? '',
       artist: resolvedArtist,
-      imageUrl: item.imageUrl ?? undefined,
     };
   });
 

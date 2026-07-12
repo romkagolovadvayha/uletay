@@ -12,8 +12,12 @@ import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-au
 import { fetchRadioNowPlaying, RadioNowPlaying } from '../api/radioNowPlayingApi';
 import { useAppData } from './DataContext';
 import { RADIO_NOW_PLAYING_POLL_MS, RADIO_STATION_NAME, RADIO_STREAM_URL } from '../config/radio';
-import { SchedulePerformance } from '../types';
-import { findSchedulePerformanceByRadioArtist } from '../utils/matchRadioArtist';
+import { SchedulePerformance, Headliner } from '../types';
+import {
+  findHeadlinerByRadioArtist,
+  findSchedulePerformanceByRadioArtist,
+} from '../utils/matchRadioArtist';
+import { useNow } from '../hooks/useNow';
 
 type RadioPlayerContextValue = {
   isPlaying: boolean;
@@ -21,6 +25,7 @@ type RadioPlayerContextValue = {
   error: string | null;
   nowPlaying: RadioNowPlaying | null;
   matchedPerformance: SchedulePerformance | null;
+  matchedHeadliner: Headliner | null;
   togglePlayback: () => void;
   play: () => void;
   pause: () => void;
@@ -34,6 +39,7 @@ type RadioAudioEngineProps = {
   onPlaybackChange: (state: { playing: boolean; isBuffering: boolean }) => void;
   nowPlaying: RadioNowPlaying | null;
   matchedPerformance: SchedulePerformance | null;
+  matchedHeadliner: Headliner | null;
 };
 
 const RadioPlayerContext = createContext<RadioPlayerContextValue | undefined>(undefined);
@@ -44,6 +50,7 @@ function RadioAudioEngine({
   onPlaybackChange,
   nowPlaying,
   matchedPerformance,
+  matchedHeadliner,
 }: RadioAudioEngineProps) {
   const player = useAudioPlayer({ uri: RADIO_STREAM_URL });
   const status = useAudioPlayerStatus(player);
@@ -93,10 +100,11 @@ function RadioAudioEngine({
       title: nowPlaying?.title || RADIO_STATION_NAME,
       artist: nowPlaying?.artist || RADIO_STATION_NAME,
       albumTitle: RADIO_STATION_NAME,
-      artworkUrl: matchedPerformance?.imageUrl,
+      artworkUrl: matchedPerformance?.imageUrl ?? matchedHeadliner?.imageUrl,
     });
     lockScreenActiveRef.current = true;
   }, [
+    matchedHeadliner?.imageUrl,
     matchedPerformance?.imageUrl,
     nowPlaying?.artist,
     nowPlaying?.title,
@@ -123,6 +131,7 @@ function RadioAudioEngine({
 
 export function RadioPlayerProvider({ children }: { children: React.ReactNode }) {
   const { data } = useAppData();
+  const now = useNow(30_000);
   const [nowPlaying, setNowPlaying] = useState<RadioNowPlaying | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMetadataLoading, setIsMetadataLoading] = useState(false);
@@ -136,9 +145,22 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
   const matchedPerformance = useMemo(
     () =>
       nowPlaying
-        ? findSchedulePerformanceByRadioArtist(data.schedule, nowPlaying.artist, nowPlaying.title)
+        ? findSchedulePerformanceByRadioArtist(
+            data.schedule,
+            nowPlaying.artist,
+            nowPlaying.title,
+            now,
+          )
         : null,
-    [data.schedule, nowPlaying],
+    [data.schedule, now, nowPlaying],
+  );
+
+  const matchedHeadliner = useMemo(
+    () =>
+      nowPlaying && !matchedPerformance
+        ? findHeadlinerByRadioArtist(data.headliners, nowPlaying.artist, nowPlaying.title)
+        : null,
+    [data.headliners, matchedPerformance, nowPlaying],
   );
 
   const refreshNowPlaying = useCallback(async () => {
@@ -210,6 +232,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       error,
       nowPlaying,
       matchedPerformance,
+      matchedHeadliner,
       togglePlayback,
       play,
       pause,
@@ -221,6 +244,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       isBuffering,
       isMetadataLoading,
       isPlaying,
+      matchedHeadliner,
       matchedPerformance,
       nowPlaying,
       pause,
@@ -239,6 +263,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
           onPlaybackChange={handlePlaybackChange}
           nowPlaying={nowPlaying}
           matchedPerformance={matchedPerformance}
+          matchedHeadliner={matchedHeadliner}
         />
       ) : null}
       {children}

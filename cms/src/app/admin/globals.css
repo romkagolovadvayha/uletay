@@ -701,3 +701,59 @@ details.panel summary {
   display: grid;
   gap: 12px;
 }
+
+.headliner-search {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+
+.headliner-search-input {
+  width: 100%;
+}
+
+.headliner-search-list {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #1c1c1e;
+  border: 1px solid #3a3a3c;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.headliner-search-list li {
+  margin: 0;
+}
+
+.headliner-search-list button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.headliner-search-list button:hover,
+.headliner-search-list button.is-selected {
+  background: #2c2c2e;
+}
+
+.headliner-search-empty {
+  margin: 0;
+}
+
+.headliner-search-preview {
+  margin-top: 4px;
+}

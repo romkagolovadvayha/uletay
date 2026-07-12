@@ -157,7 +157,6 @@ export async function upsertScheduleAction(formData: FormData) {
   const data = await getAppData();
   const isNew = formData.get('isNew') === '1';
   const existingId = String(formData.get('id') ?? '').trim();
-  const existing = data.schedule.find((item) => item.id === existingId);
 
   const stageId = String(formData.get('stageId') ?? '').trim() as StageId;
   const date = String(formData.get('date') ?? '').trim();
@@ -184,13 +183,6 @@ export async function upsertScheduleAction(formData: FormData) {
     ? uniqueId(buildScheduleId(stageId, date, startTime, artist), ids)
     : existingId;
 
-  let imageUrl: string | undefined;
-  try {
-    imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'artist');
-  } catch (error) {
-    redirect('/admin?tab=schedule&error=' + encodeURIComponent(uploadErrorMessage(error)));
-  }
-
   const item: SchedulePerformance = {
     id,
     stageId,
@@ -200,7 +192,6 @@ export async function upsertScheduleAction(formData: FormData) {
     headlinerId,
     artist,
     ...(isCompetition ? { isCompetition: true } : {}),
-    ...(imageUrl ? { imageUrl } : {}),
   };
 
   if (isNew) {
@@ -231,7 +222,6 @@ export async function upsertAutographAction(formData: FormData) {
   const data = await getAppData();
   const isNew = formData.get('isNew') === '1';
   const existingId = String(formData.get('id') ?? '').trim();
-  const existing = data.autographs.find((item) => item.id === existingId);
 
   const stageId = String(formData.get('stageId') ?? '').trim() as StageId;
   const date = String(formData.get('date') ?? '').trim();
@@ -256,13 +246,6 @@ export async function upsertAutographAction(formData: FormData) {
     ? uniqueId(buildAutographId(stageId, date, startTime, artist), ids)
     : existingId;
 
-  let imageUrl: string | undefined;
-  try {
-    imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'hero');
-  } catch (error) {
-    redirect('/admin?tab=autographs&error=' + encodeURIComponent(uploadErrorMessage(error)));
-  }
-
   const item: AutographSession = {
     id,
     stageId,
@@ -272,7 +255,6 @@ export async function upsertAutographAction(formData: FormData) {
     headlinerId,
     artist,
     ...(location ? { location } : {}),
-    ...(imageUrl ? { imageUrl } : {}),
   };
 
   if (isNew) {
