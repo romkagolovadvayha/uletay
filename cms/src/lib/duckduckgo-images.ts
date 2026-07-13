@@ -14,10 +14,10 @@ export function buildMusicCoverSearchQueries(artistName: string): string[] {
   }
 
   return [
-    `${primary} обложка альбом музыка`,
-    `${primary} музыка обложка`,
-    `${primary} музыкант обложка`,
-    `${primary} музыка`,
+    `группа музыкальная ${primary} лого`,
+    `музыкальная группа ${primary} лого`,
+    `${primary} группа музыкальная лого`,
+    `${primary} лого`,
   ];
 }
 

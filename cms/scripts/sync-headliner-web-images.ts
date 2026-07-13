@@ -7,6 +7,7 @@ import {
   propagateHeadlinerImageToGroup,
   resolveHeadlinerGroupImage,
 } from '../src/lib/headliner-web-images';
+import { invalidateAppDataCache } from '../src/lib/app-data';
 import { syncAppHeadliners } from '../src/lib/headliners';
 import type { AppData, Headliner } from '../src/types';
 import { getDbConfig, loadDbEnv } from './load-db-env.mjs';
@@ -158,7 +159,7 @@ async function main() {
         continue;
       }
 
-      const resolved = await resolveHeadlinerGroupImage(representative, synced.headliners);
+      const resolved = await resolveHeadlinerGroupImage(representative, synced.headliners, { force });
       if (!resolved) {
         failed += 1;
         console.log('no image');
@@ -175,6 +176,7 @@ async function main() {
         representative.id,
         resolved.imageUrl,
         group,
+        { force },
       );
       for (const [id, imageUrl] of Object.entries(propagated)) {
         updates.set(id, imageUrl);
@@ -230,6 +232,7 @@ async function main() {
   await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
     JSON.stringify(nextContent),
   ]);
+  invalidateAppDataCache();
   await pool.end();
   console.log('Saved headliner images to uploads and app_content');
 }

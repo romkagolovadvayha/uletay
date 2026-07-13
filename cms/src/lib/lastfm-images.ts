@@ -1,4 +1,6 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 import type { HeadlinerLastFmImage, HeadlinerLastFmProfile } from '@/lastfm-types';
@@ -53,6 +55,47 @@ export function headlinerImageFilename(headlinerId: string): string {
   return `${slug}.webp`;
 }
 
+export function buildRandomHeadlinerImageFilename(headlinerId: string): string {
+  const slug = headlinerId.replace(/^hl-/, '') || 'artist';
+  const token = randomBytes(6).toString('hex');
+  return `${slug}-${token}.webp`;
+}
+
+function imageUrlToLocalPath(imageUrl?: string | null): string | null {
+  const trimmed = imageUrl?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const match = trimmed.match(/\/images\/([^/?#]+)$/);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  return path.join(config.uploadDir, 'images', match[1]);
+}
+
+export async function deleteStoredHeadlinerImages(
+  headlinerId: string,
+  imageUrl?: string | null,
+): Promise<void> {
+  const candidates = new Set<string>();
+
+  const fromUrl = imageUrlToLocalPath(imageUrl);
+  if (fromUrl) {
+    candidates.add(fromUrl);
+  }
+
+  candidates.add(path.join(config.uploadDir, 'images', headlinerImageFilename(headlinerId)));
+
+  for (const filePath of candidates) {
+    if (!existsSync(filePath)) {
+      continue;
+    }
+    await unlink(filePath).catch(() => undefined);
+  }
+}
+
 async function downloadImageBuffer(imageUrl: string): Promise<Buffer> {
   const useLastFmFetch = /lastfm|audioscrobbler|fastly\.net\/i\/u\//i.test(imageUrl);
   const response = useLastFmFetch
@@ -79,6 +122,7 @@ async function downloadImageBuffer(imageUrl: string): Promise<Buffer> {
 export async function downloadAndOptimizeArtistImage(
   imageUrl: string,
   headlinerId: string,
+  options?: { filename?: string },
 ): Promise<string> {
   const input = await downloadImageBuffer(imageUrl);
   const { width, height } = IMAGE_PRESETS.artist;
@@ -90,7 +134,7 @@ export async function downloadAndOptimizeArtistImage(
 
   const targetDir = path.join(config.uploadDir, 'images');
   await mkdir(targetDir, { recursive: true });
-  const filename = headlinerImageFilename(headlinerId);
+  const filename = options?.filename ?? headlinerImageFilename(headlinerId);
   await writeFile(path.join(targetDir, filename), output);
 
   return `${config.uploadUrl}/images/${filename}`;
