@@ -14,6 +14,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: production
 
     env:
@@ -89,7 +90,7 @@ jobs:
 
       - name: Build web app
         run: |
-          npm run build
+          npm run build:web
           test -f dist/index.html
           test -f dist/404.html
           test -d dist/_expo/static/js/web

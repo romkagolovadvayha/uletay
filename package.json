@@ -60,6 +60,7 @@
     "lint": "eslint src cms/src",
     "typecheck": "tsc --noEmit",
     "build": "expo export && node scripts/copy-public-static.mjs",
+    "build:web": "expo export --platform web && node scripts/copy-public-static.mjs",
     "seed:api": "tsx scripts/export-seed.ts",
     "fest:sync-images": "node scripts/sync-fest-artist-images.mjs",
     "fest:fetch-web-images": "node scripts/fetch-artist-images-web.mjs",
