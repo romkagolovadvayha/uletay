@@ -1,6 +1,7 @@
 export const colors = {
   background: '#000000',
   surface: '#1C1C1E',
+  surfaceGlass: 'rgba(28, 28, 30, 0.8)',
   surfaceElevated: '#1C1C1E',
   surfaceCard: '#1C1C1E',
   surfaceMuted: '#2C2C2E',

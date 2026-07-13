@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   liveCard: {
-    backgroundColor: 'rgba(28, 28, 30, 0.8)',
+    backgroundColor: colors.surfaceGlass,
   },
   emptyCard: {
     backgroundColor: colors.surface,
