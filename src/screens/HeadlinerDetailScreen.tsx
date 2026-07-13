@@ -7,7 +7,9 @@ import { HeadlinerCard } from '../components/HeadlinerCard';
 import { YandexMusicLink } from '../components/YandexMusicLink';
 import { useAppData } from '../context/DataContext';
 import { HeadlinersStackParamList, MoreStackParamList } from '../navigation/types';
+import type { Headliner } from '../types';
 import type { HeadlinerLastFmTrack } from '../types/lastfm';
+import { resolveTrackYandexArtist } from '../utils/yandexMusic';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -23,12 +25,12 @@ type Props = NativeStackScreenProps<
 >;
 
 type HeadlinerTopTracksSectionProps = {
-  artistName: string;
+  headliner: Headliner;
   topTracks: HeadlinerLastFmTrack[];
   moreTracksCount: number;
 };
 
-function HeadlinerTopTracksSection({ artistName, topTracks, moreTracksCount }: HeadlinerTopTracksSectionProps) {
+function HeadlinerTopTracksSection({ headliner, topTracks, moreTracksCount }: HeadlinerTopTracksSectionProps) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Популярные треки</Text>
@@ -45,7 +47,11 @@ function HeadlinerTopTracksSection({ artistName, topTracks, moreTracksCount }: H
               </Text>
             </View>
             <View style={styles.trackAction}>
-              <YandexMusicLink artist={artistName} track={track.name} variant="icon" />
+              <YandexMusicLink
+                artist={resolveTrackYandexArtist(headliner, track)}
+                track={track.name}
+                variant="icon"
+              />
             </View>
           </View>
         );
@@ -144,7 +150,7 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
         {topTracks.length ? (
           <HeadlinerTopTracksSection
             key={route.params.headlinerId}
-            artistName={headliner.name}
+            headliner={headliner}
             topTracks={topTracks}
             moreTracksCount={moreTracksCount}
           />

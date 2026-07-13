@@ -241,7 +241,10 @@ export async function fetchLastFmArtistProfile(
     bioPublished: artist.bio?.published?.trim() || undefined,
     tags: mapTags(artist.tags?.tag),
     similarArtists: mapSimilarArtists(artist.similar?.artist),
-    topTracks: mappedTracks.slice(0, LASTFM_CLIENT_TOP_TRACKS_LIMIT),
+    topTracks: mappedTracks.slice(0, LASTFM_CLIENT_TOP_TRACKS_LIMIT).map((track) => ({
+      ...track,
+      artistName: artist.name.trim(),
+    })),
     topTracksTotal,
     images: mapImages(artist.image),
     updatedAt: new Date().toISOString(),

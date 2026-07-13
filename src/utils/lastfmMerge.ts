@@ -42,24 +42,34 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): {
   tracks: HeadlinerLastFmTrack[];
   total: number;
 } {
-  const tracks = new Map<string, HeadlinerLastFmTrack>();
+  type MergeTrackState = HeadlinerLastFmTrack & { sourcePlaycount: number };
+  const tracks = new Map<string, MergeTrackState>();
 
   for (const profile of profiles) {
     for (const track of profile.topTracks) {
       const key = normalizeTrackKey(track.name);
       const existing = tracks.get(key);
+      const incomingPlay = track.playcount ?? 0;
+
       if (!existing) {
-        tracks.set(key, { ...track });
+        tracks.set(key, {
+          ...track,
+          artistName: profile.name,
+          sourcePlaycount: incomingPlay,
+        });
         continue;
       }
 
+      const bestSourcePlay = existing.sourcePlaycount ?? 0;
       tracks.set(key, {
         ...existing,
-        playcount: (existing.playcount ?? 0) + (track.playcount ?? 0),
+        playcount: (existing.playcount ?? 0) + incomingPlay,
         listeners: Math.max(existing.listeners ?? 0, track.listeners ?? 0),
         durationSec: existing.durationSec ?? track.durationSec,
         url: existing.url ?? track.url,
         mbid: existing.mbid ?? track.mbid,
+        artistName: incomingPlay > bestSourcePlay ? profile.name : existing.artistName,
+        sourcePlaycount: Math.max(bestSourcePlay, incomingPlay),
       });
     }
   }
@@ -76,7 +86,10 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): {
       }
       return a.name.localeCompare(b.name, 'ru');
     })
-    .map((track, index) => ({ ...track, rank: index + 1 }));
+    .map(({ sourcePlaycount: _sourcePlaycount, ...track }, index) => ({
+      ...track,
+      rank: index + 1,
+    }));
 
   const total = Math.max(
     merged.length,

@@ -21,6 +21,7 @@ export interface HeadlinerLastFmTrack {
   url?: string;
   durationSec?: number;
   mbid?: string;
+  artistName?: string;
 }
 
 export interface HeadlinerLastFmProfile {
