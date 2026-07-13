@@ -10,6 +10,7 @@ import {
 import { getAppData, saveAppData } from '@/lib/app-data';
 import { verifyAdminCredentials } from '@/lib/auth';
 import { buildHeadlinerId, collectHeadlinerYears } from '@/lib/headliners';
+import { enrichHeadlinerFromLastFm } from '@/lib/headliner-lastfm-sync';
 import type { ImagePreset } from '@/lib/image-presets';
 import { ImageUploadError, saveUploadedImage, saveUploadedMapScheme } from '@/lib/upload';
 import { getSession } from '@/lib/session';
@@ -420,7 +421,7 @@ export async function upsertHeadlinerAction(formData: FormData) {
     ? [...new Set([...manualYears, ...linkedYears])].sort((a, b) => b - a)
     : linkedYears;
 
-  const item: Headliner = {
+  let item: Headliner = {
     id,
     name,
     description,
@@ -428,6 +429,15 @@ export async function upsertHeadlinerAction(formData: FormData) {
     years,
     ...(imageUrl ? { imageUrl } : {}),
   };
+
+  if (isNew || !existing?.lastfm) {
+    try {
+      item = await enrichHeadlinerFromLastFm(item);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Last.fm sync failed for ${name}: ${message}`);
+    }
+  }
 
   if (isNew) {
     data.headliners.push(item);
