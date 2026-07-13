@@ -58,8 +58,8 @@ export function HeadlinersEditor({ items, editId }: Props) {
                 placeholder={'КняZZ\nКороль и Шут'}
               />
               <span className="hint">
-                Бывшие или альтернативные имена для Last.fm — по одному в строке. Треки и
-                популярность объединятся с основным именем.
+                Бывшие или альтернативные имена — по одному в строке. Last.fm подтянется при
+                ночном синке в GitHub Actions, не при сохранении.
               </span>
             </label>
             {!isNew && editing ? (

@@ -10,10 +10,8 @@ import {
 import { getAppData, saveAppData } from '@/lib/app-data';
 import { verifyAdminCredentials } from '@/lib/auth';
 import { buildHeadlinerId, collectHeadlinerYears } from '@/lib/headliners';
-import { enrichHeadlinerFromLastFm } from '@/lib/headliner-lastfm-sync';
 import {
   applyBidirectionalHeadlinerLinks,
-  headlinerIdentityConfigChanged,
   parseAlternateNamesInput,
   parseLinkedHeadlinerIds,
 } from '@/lib/headliner-groups';
@@ -454,24 +452,6 @@ export async function upsertHeadlinerAction(formData: FormData) {
   }
 
   data.headliners = applyBidirectionalHeadlinerLinks(data.headliners, id, linkedHeadlinerIds);
-  const savedIndex = data.headliners.findIndex((row) => row.id === id);
-  const savedItem = savedIndex >= 0 ? data.headliners[savedIndex] : item;
-  const shouldRefreshLastFm =
-    isNew ||
-    !existing?.lastfm ||
-    (existing ? headlinerIdentityConfigChanged(existing, savedItem) : true);
-
-  if (shouldRefreshLastFm && savedIndex >= 0) {
-    try {
-      data.headliners[savedIndex] = await enrichHeadlinerFromLastFm(
-        data.headliners[savedIndex],
-        data.headliners,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`Last.fm sync failed for ${name}: ${message}`);
-    }
-  }
 
   await saveAppData(data);
   redirect('/admin?tab=headliners&ok=1');
