@@ -14,6 +14,12 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 SESSION_SECRET="${SESSION_SECRET:-}"
 CMS_PORT="${CMS_PORT:-3000}"
 LASTFM_API_KEY="${LASTFM_API_KEY:-}"
+if [[ -z "$LASTFM_API_KEY" && -f "$DEPLOY_PATH/cms/.env" ]]; then
+  EXISTING_LASTFM_API_KEY=$(grep -E '^LASTFM_API_KEY=' "$DEPLOY_PATH/cms/.env" 2>/dev/null | cut -d= -f2- || true)
+  if [[ -n "$EXISTING_LASTFM_API_KEY" ]]; then
+    LASTFM_API_KEY="$EXISTING_LASTFM_API_KEY"
+  fi
+fi
 NGINX_SITE="/etc/nginx/sites-available/uletay"
 NGINX_ENABLED="/etc/nginx/sites-enabled/uletay"
 
@@ -61,6 +67,10 @@ NODE_ENV=production
 NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:-}
 LASTFM_API_KEY=${LASTFM_API_KEY}
 ENV
+
+if [[ -z "$LASTFM_API_KEY" ]]; then
+  echo "Warning: LASTFM_API_KEY is empty — headliners:sync-lastfm will fail until you set it in GitHub production secrets or cms/.env"
+fi
 
 cd "$DEPLOY_PATH/cms"
 npm ci

@@ -71,6 +71,10 @@ jobs:
             echo "::warning::Remove SSH_PRIVATE_KEY from Variables — use Secrets or SSH_PRIVATE_KEY_B64 only"
           fi
 
+          if [ -z "$LASTFM_API_KEY" ]; then
+            echo "::warning::LASTFM_API_KEY is not set — add it to GitHub Environment production Secrets, then redeploy or set cms/.env on the server"
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
