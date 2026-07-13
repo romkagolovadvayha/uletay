@@ -3,7 +3,7 @@ import { pickLastFmImageUrl, syncHeadlinerImageFromLastFm } from '../src/lib/las
 import { resolveLastFmProfileForHeadliner, sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
 import { syncAppHeadliners } from '../src/lib/headliners';
 import type { AppData, Headliner } from '../src/types';
-import { getDbConfig } from './load-db-env.mjs';
+import { getDbConfig, loadDbEnv } from './load-db-env.mjs';
 
 const dryRun = process.argv.includes('--dry-run');
 const refreshProfile = process.argv.includes('--refresh-profile');
@@ -30,6 +30,7 @@ function mergeHeadlinerChanges(base: Headliner[], changed: Headliner[]): Headlin
 }
 
 async function main() {
+  loadDbEnv();
   await verifyLastFmApiKey();
   console.log('Last.fm API key OK');
 

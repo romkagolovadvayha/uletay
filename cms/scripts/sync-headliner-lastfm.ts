@@ -3,7 +3,7 @@ import { syncHeadlinerImageFromLastFm } from '../src/lib/lastfm-images';
 import { resolveLastFmProfileForHeadliner, sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
 import { syncAppHeadliners } from '../src/lib/headliners';
 import type { AppData, Headliner } from '../src/types';
-import { getDbConfig } from './load-db-env.mjs';
+import { getDbConfig, loadDbEnv } from './load-db-env.mjs';
 
 const dryRun = process.argv.includes('--dry-run');
 const force = process.argv.includes('--force');
@@ -42,6 +42,7 @@ function isStale(updatedAt?: string): boolean {
 }
 
 async function main() {
+  loadDbEnv();
   await verifyLastFmApiKey();
   console.log('Last.fm API key OK');
 
