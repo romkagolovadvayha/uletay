@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Headliner } from '../types';
 import { formatLastFmCount } from '../utils/lastfmFormat';
+import { getHeadlinerDisplayAlternateNames } from '../utils/headlinerGroups';
 import { ArtistImage } from './ArtistImage';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -60,6 +61,7 @@ export function HeadlinerCard({ headliner, allHeadliners, onPress, large }: Prop
   }
 
   const statsLine = formatHeadlinerStatsLine(headliner);
+  const alternateNames = getHeadlinerDisplayAlternateNames(headliner);
 
   return (
     <Pressable
@@ -69,9 +71,19 @@ export function HeadlinerCard({ headliner, allHeadliners, onPress, large }: Prop
     >
       <HeadlinerThumbnail headliner={headliner} />
       <View style={styles.content}>
-        <Text style={styles.name} numberOfLines={1}>
-          {headliner.name.toUpperCase()}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {headliner.name.toUpperCase()}
+          </Text>
+          {alternateNames.length ? (
+            <>
+              <Text style={styles.nameSeparator}>·</Text>
+              <Text style={styles.alternateNames} numberOfLines={1}>
+                {alternateNames.join(' · ')}
+              </Text>
+            </>
+          ) : null}
+        </View>
         {statsLine ? (
           <Text style={styles.stats} numberOfLines={1}>
             {statsLine}
@@ -102,11 +114,35 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 4,
+    justifyContent: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+    minWidth: 0,
   },
   name: {
     ...typography.artistName,
     color: colors.text,
     fontSize: 14,
+    flexShrink: 0,
+  },
+  nameSeparator: {
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 14,
+    marginLeft: spacing.sm,
+    marginRight: spacing.xs,
+  },
+  alternateNames: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 14,
+    textTransform: 'none',
+    letterSpacing: 0.2,
+    flexShrink: 1,
   },
   stats: {
     ...typography.caption,
