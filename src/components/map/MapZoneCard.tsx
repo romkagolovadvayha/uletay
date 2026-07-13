@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../PrimaryButton';
+import { ExternalLink } from '../ExternalLink';
 import { colors } from '../../theme/colors';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import type { LatLng, MapZoneProperties, UserLocationState } from '../../types/map';
-import { formatDistance, haversineMeters, openYandexNavigation } from '../../utils/map/geo';
+import { formatDistance, haversineMeters, buildYandexRouteUrl } from '../../utils/map/geo';
 import { getZoneIconName, ZONE_TYPE_LABELS } from '../../utils/map/layerStyles';
 import { zoneTargetPoint } from '../../utils/map/zoneGeo';
 
@@ -51,10 +52,10 @@ export function MapZoneCard({
     return haversineMeters(userLocation, festivalCenter);
   }, [userLocation, festivalCenter]);
 
-  const handleFestivalRoute = () => {
-    if (!festivalCenter) return;
-    openYandexNavigation(userLocation ?? null, festivalCenter);
-  };
+  const festivalNavUrl = useMemo(() => {
+    if (!festivalCenter) return null;
+    return buildYandexRouteUrl(userLocation ?? null, festivalCenter);
+  }, [festivalCenter, userLocation]);
 
   if (outsideTerritory) {
     return (
@@ -94,10 +95,10 @@ export function MapZoneCard({
         <Text style={styles.routeHint}>По дорогам Яндекса и тропинкам площадки</Text>
         {routeError ? <Text style={styles.routeError}>{routeError}</Text> : null}
 
-        {festivalCenter ? (
-          <Pressable accessibilityRole="button" onPress={handleFestivalRoute} style={styles.linkBtn}>
+        {festivalNavUrl ? (
+          <ExternalLink href={festivalNavUrl} style={styles.linkBtn}>
             <Text style={styles.linkText}>Только до фестиваля в Яндекс.Навигаторе</Text>
-          </Pressable>
+          </ExternalLink>
         ) : null}
       </View>
     );

@@ -49,7 +49,7 @@ function HeadlinerTopTracksSection({ artistName, topTracks }: HeadlinerTopTracks
                 {duration ? ` · ${duration}` : ''}
               </Text>
             </View>
-            <YandexMusicLink artist={artistName} track={track.name} />
+            <YandexMusicLink artist={artistName} track={track.name} variant="icon" />
           </View>
         );
       })}
@@ -116,6 +116,8 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
             ? headliner.years.map((year) => `УЛЕТАЙ ${year}`).join(' · ')
             : 'УЛЕТАЙ'}
         </Text>
+
+        <YandexMusicLink artist={headliner.name} variant="listen" />
 
         {lastfm ? (
           <View style={styles.metaSection}>

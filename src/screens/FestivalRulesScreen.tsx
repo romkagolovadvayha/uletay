@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import * as Linking from 'expo-linking';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ExternalLink } from '../components/ExternalLink';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RulesTabBar } from '../components/RulesTabBar';
 import { ScreenTitle } from '../components/ScreenTitle';
@@ -32,13 +32,12 @@ function RulesBlockView({ block }: { block: FestivalRulesBlock }) {
         </View>
       ))}
       {block.link ? (
-        <Pressable
-          accessibilityRole="link"
-          onPress={() => void Linking.openURL(block.link!.url)}
+        <ExternalLink
+          href={block.link.url}
           style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
         >
           <Text style={styles.linkLabel}>{block.link.label}</Text>
-        </Pressable>
+        </ExternalLink>
       ) : null}
     </View>
   );

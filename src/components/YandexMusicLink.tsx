@@ -1,57 +1,118 @@
+import { Image } from 'expo-image';
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { StyleSheet, Text } from 'react-native';
+import { ExternalLink } from './ExternalLink';
 import { colors } from '../theme/colors';
-import { openExternalUrl } from '../utils/openExternalUrl';
-import { buildYandexMusicSearchUrl } from '../utils/yandexMusic';
+import { radius } from '../theme/radius';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
+import {
+  buildYandexMusicArtistSearchUrl,
+  buildYandexMusicSearchUrl,
+} from '../utils/yandexMusic';
 
-const YANDEX_MUSIC_RED = '#F85234';
+const YANDEX_MUSIC_LOGO = require('../../assets/images/yandex-music-logo.webp');
 
 type Props = {
   artist: string;
-  track: string;
+  track?: string;
+  variant?: 'icon' | 'listen';
   size?: number;
 };
 
-function YandexMusicIcon({ size }: { size: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
-      <Rect width={24} height={24} rx={6} fill={YANDEX_MUSIC_RED} />
-      <Path
-        d="M9.2 7.4c0-.5.4-.9 1-.9h3.6c2.8 0 5 2.2 5 5s-2.2 5-5 5h-2.1v2.1c0 .5-.4.9-1 .9s-1-.4-1-.9V7.4zm2 1.8v6.6h2.6c1.7 0 3.1-1.4 3.1-3.1s-1.4-3.1-3.1-3.1H11.2z"
-        fill="#FFFFFF"
-      />
-    </Svg>
+export function YandexMusicLink({ artist, track, variant = 'icon', size = 32 }: Props) {
+  const url = useMemo(
+    () =>
+      track
+        ? buildYandexMusicSearchUrl(artist, track)
+        : buildYandexMusicArtistSearchUrl(artist),
+    [artist, track],
   );
-}
 
-export function YandexMusicLink({ artist, track, size = 34 }: Props) {
-  const url = useMemo(() => buildYandexMusicSearchUrl(artist, track), [artist, track]);
+  const accessibilityLabel = track
+    ? `Открыть «${track}» в Яндекс Музыке`
+    : `Слушать ${artist} в Яндекс Музыке`;
+
+  if (variant === 'listen') {
+    return (
+      <ExternalLink
+        href={url}
+        accessibilityLabel={accessibilityLabel}
+        style={({ pressed }) => [styles.listenButton, pressed && styles.pressed]}
+      >
+        <Text style={styles.listenLabel}>Слушать в</Text>
+        <Image
+          source={YANDEX_MUSIC_LOGO}
+          style={styles.listenLogo}
+          contentFit="contain"
+          accessibilityIgnoresInvertColors
+        />
+        <Text style={styles.listenBrand}>Яндекс Музыка</Text>
+      </ExternalLink>
+    );
+  }
 
   return (
-    <Pressable
-      accessibilityRole="link"
-      accessibilityLabel={`Открыть «${track}» в Яндекс Музыке`}
+    <ExternalLink
+      href={url}
+      accessibilityLabel={accessibilityLabel}
       hitSlop={6}
-      onPress={() => openExternalUrl(url)}
       style={({ pressed }) => [
-        styles.button,
-        { width: size, height: size, borderRadius: size / 2 },
+        styles.iconButton,
+        { width: size, height: size, borderRadius: radius.sm },
         pressed && styles.pressed,
       ]}
     >
-      <YandexMusicIcon size={Math.round(size * 0.62)} />
-    </Pressable>
+      <Image
+        source={YANDEX_MUSIC_LOGO}
+        style={{ width: size - 4, height: size - 4 }}
+        contentFit="contain"
+        accessibilityIgnoresInvertColors
+      />
+    </ExternalLink>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
+  iconButton: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     backgroundColor: colors.surfaceGlass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+  },
+  listenButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  listenLabel: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 14,
+    textTransform: 'none',
+    letterSpacing: 0,
+  },
+  listenLogo: {
+    width: 28,
+    height: 28,
+  },
+  listenBrand: {
+    ...typography.body,
+    color: colors.text,
+    fontSize: 14,
+    textTransform: 'none',
+    letterSpacing: 0,
   },
   pressed: {
     opacity: 0.72,

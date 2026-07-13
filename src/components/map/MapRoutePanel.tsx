@@ -1,10 +1,11 @@
 import React from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { CombinedRoute, LatLng } from '../../types/map';
+import { ExternalLink } from '../ExternalLink';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { formatDuration } from '../../utils/map/geo';
+import { formatDuration, buildYandexRouteUrl } from '../../utils/map/geo';
 
 type Props = {
   route: CombinedRoute;
@@ -14,13 +15,13 @@ type Props = {
 
 export function MapRoutePanel({ route, userLocation, onClear }: Props) {
   const external = route.segments.find((s) => s.kind === 'external');
-
-  const openNavigator = () => {
-    if (!userLocation || !external?.coordinates.length) return;
-    const last = external.coordinates[external.coordinates.length - 1];
-    const url = `https://yandex.ru/maps/?rtext=${userLocation.lat},${userLocation.lng}~${last[1]},${last[0]}&rtt=auto`;
-    void Linking.openURL(url);
-  };
+  const navigatorUrl =
+    userLocation && external?.coordinates.length
+      ? buildYandexRouteUrl(userLocation, {
+          lat: external.coordinates[external.coordinates.length - 1][1],
+          lng: external.coordinates[external.coordinates.length - 1][0],
+        })
+      : null;
 
   return (
     <View style={styles.panel}>
@@ -28,10 +29,10 @@ export function MapRoutePanel({ route, userLocation, onClear }: Props) {
       <Text style={styles.meta}>
         Всего: {formatDuration(route.totalDurationSeconds)}
       </Text>
-      {external ? (
-        <Pressable accessibilityRole="button" onPress={openNavigator} style={styles.navBtn}>
+      {navigatorUrl ? (
+        <ExternalLink href={navigatorUrl} style={styles.navBtn}>
           <Text style={styles.navText}>Открыть в навигаторе</Text>
-        </Pressable>
+        </ExternalLink>
       ) : null}
       <Pressable accessibilityRole="button" onPress={onClear} style={styles.clearBtn}>
         <Text style={styles.clearText}>Скрыть маршрут</Text>

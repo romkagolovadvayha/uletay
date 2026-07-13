@@ -1,5 +1,5 @@
-import { Linking, Platform } from 'react-native';
 import type { LatLng, FestivalMapConfig } from '../../types/map';
+import { openExternalUrl } from '../openExternalUrl';
 
 const EARTH_RADIUS_M = 6371000;
 
@@ -68,12 +68,7 @@ export function openYandexNavigation(
   from: LatLng | null | undefined,
   to: LatLng,
 ): void {
-  const url = buildYandexRouteUrl(from, to);
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.open(url, '_blank', 'noopener,noreferrer');
-    return;
-  }
-  void Linking.openURL(url);
+  openExternalUrl(buildYandexRouteUrl(from, to));
 }
 
 export function openExternalNavigation(
