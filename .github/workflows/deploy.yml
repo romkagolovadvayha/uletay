@@ -36,6 +36,7 @@ jobs:
       EXPO_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.EXPO_PUBLIC_YANDEX_MAPS_API_KEY || secrets.EXPO_PUBLIC_YANDEX_MAPS_API_KEY }}
       NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
       LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY || vars.LASTFM_API_KEY }}
+      LASTFM_PROXY_URL: ${{ secrets.LASTFM_PROXY_URL || vars.LASTFM_PROXY_URL }}
 
     steps:
       - name: Checkout
@@ -203,6 +204,7 @@ jobs:
       - name: Configure server (Node CMS + nginx + HTTPS)
         run: |
           LASTFM_API_KEY_B64=$(printf '%s' "$LASTFM_API_KEY" | base64 -w0)
+          LASTFM_PROXY_URL_B64=$(printf '%s' "$LASTFM_PROXY_URL" | base64 -w0)
 
           ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
             "${SSH_USER}@${SSH_HOST}" \
@@ -219,4 +221,5 @@ jobs:
              SESSION_SECRET='$SESSION_SECRET' \
              NEXT_PUBLIC_YANDEX_MAPS_API_KEY='${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:-}' \
              LASTFM_API_KEY=\$(printf '%s' '${LASTFM_API_KEY_B64}' | base64 -d) \
+             LASTFM_PROXY_URL=\$(printf '%s' '${LASTFM_PROXY_URL_B64}' | base64 -d) \
              bash '$DEPLOY_PATH/deploy/remote-deploy.sh'"

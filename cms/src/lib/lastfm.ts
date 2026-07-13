@@ -5,6 +5,7 @@ import type {
   HeadlinerLastFmTag,
   HeadlinerLastFmTrack,
 } from '@/lastfm-types';
+import { lastFmFetch, resolveLastFmProxyUrl } from './lastfm-fetch';
 
 const API_BASE = 'https://ws.audioscrobbler.com/2.0/';
 
@@ -151,9 +152,16 @@ async function callLastFm<T>(params: Record<string, string>): Promise<T> {
   url.searchParams.set('api_key', getApiKey());
   url.searchParams.set('format', 'json');
 
-  const response = await fetch(url);
+  const response = await lastFmFetch(url);
   if (!response.ok) {
-    throw new Error(`Last.fm HTTP ${response.status}`);
+    const body = await response.text().catch(() => '');
+    if (response.status === 403) {
+      const proxyHint = resolveLastFmProxyUrl()
+        ? ' (proxy is configured but request was still blocked)'
+        : ' — VPS IP may be blocked; set LASTFM_PROXY_URL in cms/.env';
+      throw new Error(`Last.fm HTTP 403${proxyHint}${body ? `: ${body.slice(0, 160)}` : ''}`);
+    }
+    throw new Error(`Last.fm HTTP ${response.status}${body ? `: ${body.slice(0, 160)}` : ''}`);
   }
 
   const payload = (await response.json()) as { error?: number; message?: string } & T;

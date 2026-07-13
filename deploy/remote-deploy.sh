@@ -20,6 +20,13 @@ if [[ -z "$LASTFM_API_KEY" && -f "$DEPLOY_PATH/cms/.env" ]]; then
     LASTFM_API_KEY="$EXISTING_LASTFM_API_KEY"
   fi
 fi
+LASTFM_PROXY_URL="${LASTFM_PROXY_URL:-}"
+if [[ -z "$LASTFM_PROXY_URL" && -f "$DEPLOY_PATH/cms/.env" ]]; then
+  EXISTING_LASTFM_PROXY_URL=$(grep -E '^LASTFM_PROXY_URL=' "$DEPLOY_PATH/cms/.env" 2>/dev/null | cut -d= -f2- || true)
+  if [[ -n "$EXISTING_LASTFM_PROXY_URL" ]]; then
+    LASTFM_PROXY_URL="$EXISTING_LASTFM_PROXY_URL"
+  fi
+fi
 NGINX_SITE="/etc/nginx/sites-available/uletay"
 NGINX_ENABLED="/etc/nginx/sites-enabled/uletay"
 
@@ -66,12 +73,17 @@ PORT=${CMS_PORT}
 NODE_ENV=production
 NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:-}
 LASTFM_API_KEY=${LASTFM_API_KEY}
+LASTFM_PROXY_URL=${LASTFM_PROXY_URL}
 ENV
 
 if [[ -z "$LASTFM_API_KEY" ]]; then
   echo "Warning: LASTFM_API_KEY is empty — headliners:sync-lastfm will fail until you set it in GitHub production secrets or cms/.env"
 else
   echo "LASTFM_API_KEY configured (${#LASTFM_API_KEY} characters)"
+fi
+
+if [[ -n "$LASTFM_PROXY_URL" ]]; then
+  echo "LASTFM_PROXY_URL configured"
 fi
 
 bash "$DEPLOY_PATH/deploy/setup-lastfm-cron.sh"

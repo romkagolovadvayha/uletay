@@ -13,6 +13,13 @@ fi
 
 cd "$DEPLOY_PATH/cms"
 
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 case "$JOB" in
   metadata)
     npm run headliners:sync-lastfm

@@ -3,6 +3,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import type { HeadlinerLastFmImage, HeadlinerLastFmProfile } from '@/lastfm-types';
 import { config } from './config';
+import { lastFmFetch } from './lastfm-fetch';
 import { IMAGE_PRESETS } from './image-presets';
 
 const IMAGE_SIZE_ORDER = ['mega', 'extralarge', 'large', 'medium', 'small'] as const;
@@ -43,10 +44,7 @@ export async function downloadAndOptimizeLastFmImage(
   imageUrl: string,
   headlinerId: string,
 ): Promise<string> {
-  const response = await fetch(imageUrl, {
-    headers: { 'User-Agent': 'UletayFest/1.0' },
-    redirect: 'follow',
-  });
+  const response = await lastFmFetch(imageUrl);
   if (!response.ok) {
     throw new Error(`Image download HTTP ${response.status}`);
   }
