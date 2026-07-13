@@ -14,7 +14,7 @@ import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 import { formatLastFmCount, formatTrackDuration, sortTracksByPopularity } from '../utils/lastfmFormat';
 import { resolveSimilarHeadliners } from '../utils/headlinerHelpers';
-import { resolveHeadlinerLastFm } from '../utils/headlinerGroups';
+import { resolveHeadlinerLastFm, getHeadlinerDisplayAlternateNames } from '../utils/headlinerGroups';
 
 type Props = NativeStackScreenProps<
   HeadlinersStackParamList | MoreStackParamList,
@@ -89,6 +89,10 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
     () => (lastfm?.topTracks.length ? sortTracksByPopularity(lastfm.topTracks) : []),
     [lastfm],
   );
+  const alternateNames = useMemo(
+    () => (headliner ? getHeadlinerDisplayAlternateNames(headliner) : []),
+    [headliner],
+  );
 
   if (!headliner) {
     return (
@@ -117,6 +121,9 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
 
         <HeadlinerCard headliner={headliner} large />
         <Text style={styles.name}>{headliner.name.toUpperCase()}</Text>
+        {alternateNames.length ? (
+          <Text style={styles.alternateNames}>{alternateNames.join(' · ')}</Text>
+        ) : null}
         <Text style={styles.year}>
           {headliner.years.length
             ? headliner.years.map((year) => `УЛЕТАЙ ${year}`).join(' · ')
@@ -209,6 +216,16 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.xs,
+  },
+  alternateNames: {
+    ...typography.body,
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+    textTransform: 'none',
+    letterSpacing: 0.2,
   },
   year: {
     ...typography.caption,

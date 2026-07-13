@@ -68,3 +68,24 @@ export function getHeadlinerGroupPopularity(
     playcount: lastfm?.playcount ?? 0,
   };
 }
+
+function normalizeDisplayNameKey(name: string): string {
+  return name.toLocaleLowerCase('ru').replace(/\s+/g, ' ').trim();
+}
+
+export function getHeadlinerDisplayAlternateNames(headliner: Headliner): string[] {
+  const mainKey = normalizeDisplayNameKey(headliner.name);
+  const names: string[] = [];
+
+  for (const alternateName of headliner.alternateNames ?? []) {
+    const trimmed = alternateName.trim();
+    if (!trimmed || normalizeDisplayNameKey(trimmed) === mainKey) {
+      continue;
+    }
+    if (!names.some((item) => normalizeDisplayNameKey(item) === normalizeDisplayNameKey(trimmed))) {
+      names.push(trimmed);
+    }
+  }
+
+  return names;
+}
