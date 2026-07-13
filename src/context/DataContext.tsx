@@ -5,7 +5,7 @@ import { AppData } from '../types';
 import { normalizeAppData } from '../utils/appDataNormalize';
 import { defaultAppData } from '../storage/dataStore';
 
-const CACHE_KEY = '@uletay_api_cache_v1';
+const CACHE_KEY = '@uletay_api_cache_v2';
 
 function readCachedAppDataSync(): AppData | null {
   if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {

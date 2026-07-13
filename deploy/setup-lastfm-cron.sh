@@ -22,6 +22,6 @@ if [ -z "$LASTFM_API_KEY" ]; then
   exit 0
 fi
 
-echo "Last.fm sync: GitHub Actions schedule (daily metadata, weekly images)"
+echo "Last.fm sync: GitHub Actions schedule (daily metadata only)"
 echo "  workflow: .github/workflows/sync-lastfm.yml"
 echo "  manual:   Actions → Sync Last.fm → Run workflow"

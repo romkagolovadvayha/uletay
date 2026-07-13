@@ -5,6 +5,7 @@ import type {
   HeadlinerLastFmTag,
   HeadlinerLastFmTrack,
 } from '@/lastfm-types';
+import { LASTFM_CLIENT_TOP_TRACKS_LIMIT } from './lastfm-tracks';
 
 function normalizeArtistKey(name: string): string {
   return name
@@ -37,7 +38,10 @@ function dedupeProfiles(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmProf
   return [...seen.values()];
 }
 
-function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmTrack[] {
+function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): {
+  tracks: HeadlinerLastFmTrack[];
+  total: number;
+} {
   const tracks = new Map<string, HeadlinerLastFmTrack>();
 
   for (const profile of profiles) {
@@ -60,7 +64,7 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmTrac
     }
   }
 
-  return [...tracks.values()]
+  const merged = [...tracks.values()]
     .sort((a, b) => {
       const playDiff = (b.playcount ?? 0) - (a.playcount ?? 0);
       if (playDiff !== 0) {
@@ -73,6 +77,16 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmTrac
       return a.name.localeCompare(b.name, 'ru');
     })
     .map((track, index) => ({ ...track, rank: index + 1 }));
+
+  const total = Math.max(
+    merged.length,
+    ...profiles.map((profile) => profile.topTracksTotal ?? profile.topTracks.length),
+  );
+
+  return {
+    tracks: merged.slice(0, LASTFM_CLIENT_TOP_TRACKS_LIMIT),
+    total,
+  };
 }
 
 function mergeTags(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmTag[] {
@@ -121,6 +135,7 @@ export function mergeLastFmProfiles(
   const primary =
     unique.find((profile) => normalizeArtistKey(profile.name) === normalizeArtistKey(primaryName ?? '')) ??
     unique[0];
+  const mergedTracks = mergeTopTracks(unique);
 
   return {
     mbid: primary.mbid,
@@ -133,7 +148,8 @@ export function mergeLastFmProfiles(
     bioPublished: primary.bioPublished,
     tags: mergeTags(unique),
     similarArtists: mergeSimilarArtists(unique),
-    topTracks: mergeTopTracks(unique),
+    topTracks: mergedTracks.tracks,
+    topTracksTotal: mergedTracks.total,
     images: pickBestImages(unique),
     updatedAt: new Date().toISOString(),
     searchQuery: primary.searchQuery,

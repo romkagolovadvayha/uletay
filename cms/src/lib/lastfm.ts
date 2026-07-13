@@ -5,11 +5,11 @@ import type {
   HeadlinerLastFmTag,
   HeadlinerLastFmTrack,
 } from '@/lastfm-types';
+import { LASTFM_CLIENT_TOP_TRACKS_LIMIT } from './lastfm-tracks';
 import { isUsableLastFmImageUrl } from './lastfm-images';
 import { lastFmFetch, resolveLastFmProxyUrl } from './lastfm-fetch';
 
 const API_BASE = 'https://ws.audioscrobbler.com/2.0/';
-const LASTFM_TOP_TRACKS_LIMIT = 1000;
 
 type LastFmImage = { '#text': string; size: string };
 type LastFmTag = { name: string; url: string };
@@ -208,10 +208,15 @@ export async function fetchLastFmArtistProfile(
       artist: artistName,
       autocorrect: '1',
     }),
-    callLastFm<{ toptracks?: { track?: LastFmTrack[] | LastFmTrack } }>({
+    callLastFm<{
+      toptracks?: {
+        track?: LastFmTrack[] | LastFmTrack;
+        '@attr'?: { total?: string };
+      };
+    }>({
       method: 'artist.gettoptracks',
       artist: artistName,
-      limit: String(LASTFM_TOP_TRACKS_LIMIT),
+      limit: String(LASTFM_CLIENT_TOP_TRACKS_LIMIT),
       autocorrect: '1',
     }),
   ]);
@@ -220,6 +225,10 @@ export async function fetchLastFmArtistProfile(
   if (!artist?.name) {
     return null;
   }
+
+  const mappedTracks = mapTopTracks(tracksPayload.toptracks?.track);
+  const topTracksTotal =
+    toNumber(tracksPayload.toptracks?.['@attr']?.total) ?? mappedTracks.length;
 
   return {
     mbid: artist.mbid?.trim() || undefined,
@@ -232,7 +241,8 @@ export async function fetchLastFmArtistProfile(
     bioPublished: artist.bio?.published?.trim() || undefined,
     tags: mapTags(artist.tags?.tag),
     similarArtists: mapSimilarArtists(artist.similar?.artist),
-    topTracks: mapTopTracks(tracksPayload.toptracks?.track),
+    topTracks: mappedTracks.slice(0, LASTFM_CLIENT_TOP_TRACKS_LIMIT),
+    topTracksTotal,
     images: mapImages(artist.image),
     updatedAt: new Date().toISOString(),
     searchQuery,

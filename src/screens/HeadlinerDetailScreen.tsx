@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeadlinerCard } from '../components/HeadlinerCard';
@@ -12,33 +12,27 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
-import { formatLastFmCount, formatTrackDuration, sortTracksByPopularity } from '../utils/lastfmFormat';
+import { formatLastFmCount, formatTrackDuration } from '../utils/lastfmFormat';
+import { getLastFmTopTracksMoreCount } from '../utils/lastfmTracks';
 import { resolveSimilarHeadliners } from '../utils/headlinerHelpers';
-import { resolveHeadlinerLastFm, getHeadlinerDisplayAlternateNames } from '../utils/headlinerGroups';
+import { getHeadlinerDisplayAlternateNames } from '../utils/headlinerGroups';
 
 type Props = NativeStackScreenProps<
   HeadlinersStackParamList | MoreStackParamList,
   'HeadlinerDetail'
 >;
 
-const TRACKS_PREVIEW_COUNT = 10;
-
 type HeadlinerTopTracksSectionProps = {
   artistName: string;
   topTracks: HeadlinerLastFmTrack[];
+  moreTracksCount: number;
 };
 
-function HeadlinerTopTracksSection({ artistName, topTracks }: HeadlinerTopTracksSectionProps) {
-  const [tracksExpanded, setTracksExpanded] = useState(false);
-  const visibleTracks = tracksExpanded
-    ? topTracks
-    : topTracks.slice(0, TRACKS_PREVIEW_COUNT);
-  const hasMoreTracks = topTracks.length > TRACKS_PREVIEW_COUNT;
-
+function HeadlinerTopTracksSection({ artistName, topTracks, moreTracksCount }: HeadlinerTopTracksSectionProps) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Популярные треки</Text>
-      {visibleTracks.map((track) => {
+      {topTracks.map((track) => {
         const duration = formatTrackDuration(track.durationSec);
         return (
           <View key={`${track.rank}-${track.name}`} style={styles.trackRow}>
@@ -56,16 +50,8 @@ function HeadlinerTopTracksSection({ artistName, topTracks }: HeadlinerTopTracks
           </View>
         );
       })}
-      {hasMoreTracks ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setTracksExpanded((value) => !value)}
-          style={({ pressed }) => [styles.tracksMoreButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.tracksMoreLabel}>
-            {tracksExpanded ? 'Свернуть' : `ЕЩЁ ${topTracks.length - TRACKS_PREVIEW_COUNT}`}
-          </Text>
-        </Pressable>
+      {moreTracksCount > 0 ? (
+        <Text style={styles.tracksMoreLabel}>и ещё {formatLastFmCount(moreTracksCount)}</Text>
       ) : null}
     </View>
   );
@@ -74,10 +60,7 @@ function HeadlinerTopTracksSection({ artistName, topTracks }: HeadlinerTopTracks
 export function HeadlinerDetailScreen({ navigation, route }: Props) {
   const { data } = useAppData();
   const headliner = data.headliners.find((item) => item.id === route.params.headlinerId);
-  const lastfm = useMemo(
-    () => (headliner ? resolveHeadlinerLastFm(headliner, data.headliners) : undefined),
-    [data.headliners, headliner],
-  );
+  const lastfm = headliner?.lastfm;
   const similarHeadliners = useMemo(
     () =>
       headliner && lastfm?.similarArtists.length
@@ -85,8 +68,9 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
         : [],
     [data.headliners, headliner, lastfm],
   );
-  const topTracks = useMemo(
-    () => (lastfm?.topTracks.length ? sortTracksByPopularity(lastfm.topTracks) : []),
+  const topTracks = lastfm?.topTracks ?? [];
+  const moreTracksCount = useMemo(
+    () => (lastfm ? getLastFmTopTracksMoreCount(lastfm) : 0),
     [lastfm],
   );
   const alternateNames = useMemo(
@@ -154,8 +138,6 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.statLabel}>прослушиваний</Text>
               </View>
             </View>
-
-            {lastfm.onTour ? <Text style={styles.tourBadge}>В туре</Text> : null}
           </View>
         ) : null}
 
@@ -164,6 +146,7 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
             key={route.params.headlinerId}
             artistName={headliner.name}
             topTracks={topTracks}
+            moreTracksCount={moreTracksCount}
           />
         ) : null}
 
@@ -223,7 +206,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
     textTransform: 'none',
     letterSpacing: 0.2,
   },
@@ -283,13 +266,6 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     letterSpacing: 0.2,
   },
-  tourBadge: {
-    ...typography.caption,
-    color: colors.primary,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
   section: {
     marginBottom: spacing.lg,
     gap: spacing.sm,
@@ -338,18 +314,13 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     letterSpacing: 0,
   },
-  tracksMoreButton: {
-    alignSelf: 'center',
-    marginTop: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
   tracksMoreLabel: {
-    ...appFont('semiBold'),
-    color: colors.primary,
-    fontSize: 13,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    textTransform: 'none',
+    letterSpacing: 0.2,
   },
   similarRow: {
     flexDirection: 'row',

@@ -1,5 +1,4 @@
 import mysql from 'mysql2/promise';
-import { syncHeadlinerImageFromLastFm } from '../src/lib/lastfm-images';
 import { sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
 import { resolveAndMergeLastFmForHeadliner } from '../src/lib/headliner-lastfm-sync';
 import { syncAppHeadliners } from '../src/lib/headliners';
@@ -27,7 +26,6 @@ function mergeHeadlinerChanges(base: Headliner[], changed: Headliner[]): Headlin
     return {
       ...item,
       ...(fresh.lastfm ? { lastfm: fresh.lastfm } : {}),
-      ...(fresh.imageUrl ? { imageUrl: fresh.imageUrl } : {}),
     };
   });
 }
@@ -90,7 +88,6 @@ async function main() {
   console.log(`Headliners to process: ${headliners.length}`);
 
   let updated = 0;
-  let imagesUpdated = 0;
   let skipped = 0;
   let failed = 0;
 
@@ -98,37 +95,6 @@ async function main() {
     const profileIsFresh = Boolean(
       !force && headliner.lastfm && !isStale(headliner.lastfm.updatedAt),
     );
-
-    if (profileIsFresh && headliner.imageUrl) {
-      skipped += 1;
-      continue;
-    }
-
-    if (profileIsFresh && headliner.lastfm && !headliner.imageUrl) {
-      process.stdout.write(`Last.fm image: ${headliner.name} ... `);
-      try {
-        if (dryRun) {
-          console.log('dry-run');
-        } else {
-          const imageUrl = await syncHeadlinerImageFromLastFm(headliner.id, headliner.lastfm);
-          if (imageUrl) {
-            headliner.imageUrl = imageUrl;
-            imagesUpdated += 1;
-            console.log(`ok -> ${imageUrl}`);
-          } else {
-            failed += 1;
-            console.log('no image');
-          }
-        }
-      } catch (error) {
-        failed += 1;
-        const message = error instanceof Error ? error.message : String(error);
-        console.log(`error: ${message}`);
-      }
-
-      await sleep(REQUEST_DELAY_MS);
-      continue;
-    }
 
     if (profileIsFresh) {
       skipped += 1;
@@ -145,29 +111,8 @@ async function main() {
       } else {
         headliner.lastfm = profile;
         updated += 1;
-
-        let imageSaved = false;
-        if (!headliner.imageUrl && !dryRun) {
-          try {
-            const imageUrl = await syncHeadlinerImageFromLastFm(headliner.id, profile);
-            if (imageUrl) {
-              headliner.imageUrl = imageUrl;
-              imageSaved = true;
-              imagesUpdated += 1;
-            }
-          } catch (imageError) {
-            const message = imageError instanceof Error ? imageError.message : String(imageError);
-            console.log(
-              `ok (${profile.listeners?.toLocaleString('ru-RU') ?? '?'} listeners, ${profile.topTracks.length} tracks, image error: ${message})`,
-            );
-            await sleep(REQUEST_DELAY_MS);
-            continue;
-          }
-        }
-
-        const imageLabel = imageSaved ? ', image saved' : '';
         console.log(
-          `ok (${profile.listeners?.toLocaleString('ru-RU') ?? '?'} listeners, ${profile.topTracks.length} tracks${imageLabel})`,
+          `ok (${profile.listeners?.toLocaleString('ru-RU') ?? '?'} listeners, ${profile.topTracks.length}/${profile.topTracksTotal ?? profile.topTracks.length} tracks)`,
         );
       }
     } catch (error) {
@@ -179,7 +124,7 @@ async function main() {
     await sleep(REQUEST_DELAY_MS);
   }
 
-  console.log(`Done: updated ${updated}, images ${imagesUpdated}, skipped ${skipped}, failed ${failed}`);
+  console.log(`Done: updated ${updated}, skipped ${skipped}, failed ${failed}`);
 
   if (dryRun) {
     await pool.end();

@@ -5,7 +5,7 @@ import { defaultAppData } from '../storage/dataStore';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { normalizeAppData } from '../utils/appDataNormalize';
 
-const CACHE_KEY = '@uletay_api_cache_v1';
+const CACHE_KEY = '@uletay_api_cache_v2';
 const FETCH_TIMEOUT_MS = 8_000;
 
 let memoryCache: CachedAppData | null = null;

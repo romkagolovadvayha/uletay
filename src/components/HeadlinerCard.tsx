@@ -2,7 +2,6 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Headliner } from '../types';
 import { formatLastFmCount } from '../utils/lastfmFormat';
-import { resolveHeadlinerLastFm } from '../utils/headlinerGroups';
 import { ArtistImage } from './ArtistImage';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -18,10 +17,8 @@ type Props = {
 
 const MINI_THUMB_SIZE = 52;
 
-function formatHeadlinerStatsLine(headliner: Headliner, allHeadliners?: Headliner[]): string | null {
-  const lastfm = allHeadliners
-    ? resolveHeadlinerLastFm(headliner, allHeadliners)
-    : headliner.lastfm;
+function formatHeadlinerStatsLine(headliner: Headliner): string | null {
+  const lastfm = headliner.lastfm;
   const listeners = lastfm?.listeners;
   const playcount = lastfm?.playcount;
 
@@ -62,7 +59,7 @@ export function HeadlinerCard({ headliner, allHeadliners, onPress, large }: Prop
     );
   }
 
-  const statsLine = formatHeadlinerStatsLine(headliner, allHeadliners);
+  const statsLine = formatHeadlinerStatsLine(headliner);
 
   return (
     <Pressable

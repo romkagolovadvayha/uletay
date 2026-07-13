@@ -2,7 +2,6 @@
 set -euo pipefail
 
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/uletay}"
-JOB="${1:-metadata}"
 
 export PATH="/usr/local/bin:/usr/local/node/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
@@ -20,15 +19,4 @@ if [ -f .env ]; then
   set +a
 fi
 
-case "$JOB" in
-  metadata)
-    npm run headliners:sync-lastfm
-    ;;
-  images)
-    npm run headliners:sync-lastfm-images
-    ;;
-  *)
-    echo "Unknown job: $JOB (expected metadata or images)" >&2
-    exit 1
-    ;;
-esac
+npm run headliners:sync-lastfm

@@ -1,4 +1,5 @@
 import type { AppData, AutographSession, Headliner, SchedulePerformance } from '@/types';
+import { trimLastFmTopTracks } from './lastfm-tracks';
 
 const IMAGE_TINTS = [
   '#4A1C1C',
@@ -55,7 +56,7 @@ function migrateHeadliner(raw: Headliner & { year?: number }): Headliner {
     years: years.sort((a, b) => b - a),
     alternateNames: raw.alternateNames?.map((name) => name.trim()).filter(Boolean),
     linkedHeadlinerIds: raw.linkedHeadlinerIds?.filter(Boolean),
-    lastfm: raw.lastfm,
+    lastfm: raw.lastfm ? trimLastFmTopTracks(raw.lastfm) : undefined,
   };
 }
 

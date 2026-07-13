@@ -60,12 +60,11 @@ export function withResolvedHeadlinerLastFm(headliner: Headliner, allHeadliners:
 
 export function getHeadlinerGroupPopularity(
   headliner: Headliner,
-  allHeadliners: Headliner[],
+  _allHeadliners: Headliner[],
 ): { listeners: number; playcount: number } {
-  const lastfm = resolveHeadlinerLastFm(headliner, allHeadliners);
   return {
-    listeners: lastfm?.listeners ?? 0,
-    playcount: lastfm?.playcount ?? 0,
+    listeners: headliner.lastfm?.listeners ?? 0,
+    playcount: headliner.lastfm?.playcount ?? 0,
   };
 }
 

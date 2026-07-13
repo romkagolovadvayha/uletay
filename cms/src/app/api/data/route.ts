@@ -1,7 +1,7 @@
-import { NextRequest } from 'next/server';
-import { getAppData, saveAppData, validateAppData } from '@/lib/app-data';
+import { NextRequest, NextResponse } from 'next/server';
+import { getClientAppData, saveAppData, validateAppData } from '@/lib/app-data';
 import { verifyBearerToken } from '@/lib/auth';
-import { jsonResponse, optionsResponse } from '@/lib/api-response';
+import { corsHeaders, jsonResponse, optionsResponse } from '@/lib/api-response';
 
 export async function OPTIONS() {
   return optionsResponse();
@@ -9,8 +9,14 @@ export async function OPTIONS() {
 
 export async function GET() {
   try {
-    const data = await getAppData();
-    return jsonResponse(data);
+    const data = await getClientAppData();
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        ...corsHeaders(),
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Server error';
     return jsonResponse({ error: message }, 500);

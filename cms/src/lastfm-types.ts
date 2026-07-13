@@ -35,6 +35,7 @@ export interface HeadlinerLastFmProfile {
   tags: HeadlinerLastFmTag[];
   similarArtists: HeadlinerLastFmSimilarArtist[];
   topTracks: HeadlinerLastFmTrack[];
+  topTracksTotal?: number;
   images?: HeadlinerLastFmImage[];
   updatedAt: string;
   searchQuery?: string;
