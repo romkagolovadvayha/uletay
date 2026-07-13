@@ -36,7 +36,9 @@
     "headliners:patch-2019-db": "node scripts/patch-headliners-2019-db.mjs",
     "headliners:patch-2019-db:dry": "node scripts/patch-headliners-2019-db.mjs --dry-run",
     "headliners:patch-2016-db": "node scripts/patch-headliners-2016-db.mjs",
-    "headliners:patch-2016-db:dry": "node scripts/patch-headliners-2016-db.mjs --dry-run"
+    "headliners:patch-2016-db:dry": "node scripts/patch-headliners-2016-db.mjs --dry-run",
+    "headliners:patch-2026-db": "node scripts/patch-headliners-2026-db.mjs",
+    "headliners:patch-2026-db:dry": "node scripts/patch-headliners-2026-db.mjs --dry-run"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
