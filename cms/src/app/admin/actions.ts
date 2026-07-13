@@ -11,6 +11,12 @@ import { getAppData, saveAppData } from '@/lib/app-data';
 import { verifyAdminCredentials } from '@/lib/auth';
 import { buildHeadlinerId, collectHeadlinerYears } from '@/lib/headliners';
 import { enrichHeadlinerFromLastFm } from '@/lib/headliner-lastfm-sync';
+import {
+  applyBidirectionalHeadlinerLinks,
+  headlinerIdentityConfigChanged,
+  parseAlternateNamesInput,
+  parseLinkedHeadlinerIds,
+} from '@/lib/headliner-groups';
 import type { ImagePreset } from '@/lib/image-presets';
 import { ImageUploadError, saveUploadedImage, saveUploadedMapScheme } from '@/lib/upload';
 import { getSession } from '@/lib/session';
@@ -401,6 +407,8 @@ export async function upsertHeadlinerAction(formData: FormData) {
   const description = String(formData.get('description') ?? '').trim() || name;
   const imageTint = String(formData.get('imageTint') ?? '#4A1C1C').trim();
   const manualYears = parseYearsInput(String(formData.get('years') ?? ''));
+  const alternateNames = parseAlternateNamesInput(String(formData.get('alternateNames') ?? ''));
+  const linkedHeadlinerIds = parseLinkedHeadlinerIds(formData);
 
   if (!name) {
     redirect('/admin?tab=headliners&error=' + encodeURIComponent('Укажите имя артиста'));
@@ -428,16 +436,9 @@ export async function upsertHeadlinerAction(formData: FormData) {
     imageTint,
     years,
     ...(imageUrl ? { imageUrl } : {}),
+    ...(alternateNames.length ? { alternateNames } : {}),
+    ...(linkedHeadlinerIds.length ? { linkedHeadlinerIds } : {}),
   };
-
-  if (isNew || !existing?.lastfm) {
-    try {
-      item = await enrichHeadlinerFromLastFm(item);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`Last.fm sync failed for ${name}: ${message}`);
-    }
-  }
 
   if (isNew) {
     data.headliners.push(item);
@@ -446,7 +447,30 @@ export async function upsertHeadlinerAction(formData: FormData) {
     if (index === -1) {
       redirect('/admin?tab=headliners&error=' + encodeURIComponent('Запись не найдена'));
     }
+    if (existing?.lastfm) {
+      item = { ...item, lastfm: existing.lastfm };
+    }
     data.headliners[index] = item;
+  }
+
+  data.headliners = applyBidirectionalHeadlinerLinks(data.headliners, id, linkedHeadlinerIds);
+  const savedIndex = data.headliners.findIndex((row) => row.id === id);
+  const savedItem = savedIndex >= 0 ? data.headliners[savedIndex] : item;
+  const shouldRefreshLastFm =
+    isNew ||
+    !existing?.lastfm ||
+    (existing ? headlinerIdentityConfigChanged(existing, savedItem) : true);
+
+  if (shouldRefreshLastFm && savedIndex >= 0) {
+    try {
+      data.headliners[savedIndex] = await enrichHeadlinerFromLastFm(
+        data.headliners[savedIndex],
+        data.headliners,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Last.fm sync failed for ${name}: ${message}`);
+    }
   }
 
   await saveAppData(data);

@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -10,6 +11,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -34,6 +36,7 @@ type FilterSelectProps = {
 
 function FilterSelect({ value, options, onChange, accessibilityLabel, style }: FilterSelectProps) {
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
   const selected = options.find((option) => option.id === value);
 
   return (
@@ -51,9 +54,23 @@ function FilterSelect({ value, options, onChange, accessibilityLabel, style }: F
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <View style={styles.backdrop}>
+        <View
+          style={[
+            styles.backdrop,
+            {
+              paddingTop: insets.top + spacing.md,
+              paddingBottom: insets.bottom + spacing.md,
+            },
+          ]}
+        >
           <Pressable style={styles.backdropPress} onPress={() => setOpen(false)} />
-          <View style={styles.menu}>
+          <ScrollView
+            style={styles.menuScroll}
+            contentContainerStyle={styles.menu}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={options.length > 6}
+          >
             {options.map((option) => {
               const isActive = option.id === value;
               return (
@@ -70,7 +87,10 @@ function FilterSelect({ value, options, onChange, accessibilityLabel, style }: F
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.menuItemLabel, isActive && styles.menuItemLabelActive]}>
+                  <Text
+                    style={[styles.menuItemLabel, isActive && styles.menuItemLabelActive]}
+                    numberOfLines={2}
+                  >
                     {option.label}
                   </Text>
                   {isActive ? (
@@ -79,7 +99,7 @@ function FilterSelect({ value, options, onChange, accessibilityLabel, style }: F
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </>
@@ -173,8 +193,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
     ...typography.body,
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
     paddingVertical: 0,
+    outlineWidth: 0,
   },
   select: {
     height: 40,
@@ -188,10 +209,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   yearSelect: {
-    maxWidth: 88,
+    flexShrink: 0,
+    minWidth: 72,
+    maxWidth: 96,
   },
   sortSelect: {
-    maxWidth: 132,
+    flexShrink: 1,
+    minWidth: 96,
+    maxWidth: 148,
   },
   selectLabel: {
     ...typography.caption,
@@ -210,12 +235,17 @@ const styles = StyleSheet.create({
   backdropPress: {
     ...StyleSheet.absoluteFill,
   },
-  menu: {
+  menuScroll: {
+    flexGrow: 0,
+    width: '100%',
+    maxHeight: '100%',
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
-    overflow: 'hidden',
+  },
+  menu: {
+    flexGrow: 0,
   },
   menuItem: {
     minHeight: 46,
@@ -233,6 +263,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     flex: 1,
+    flexShrink: 1,
   },
   menuItemLabelActive: {
     ...appFont('semiBold'),

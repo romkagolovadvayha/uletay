@@ -1,4 +1,5 @@
 import type { AppData } from '../types';
+import { resolveHeadlinerLastFm } from '../utils/headlinerGroups';
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from './site';
 
 export type SeoMeta = {
@@ -242,13 +243,14 @@ export function resolveSeoMeta(
   if (routeName === 'HeadlinerDetail' && params.headlinerId) {
     const headliner = data.headliners.find((item) => item.id === params.headlinerId);
     const name = headliner?.name ?? 'Хэдлайнер';
+    const lastfm = headliner ? resolveHeadlinerLastFm(headliner, data.headliners) : undefined;
     const yearsLabel = headliner?.years.length
       ? ` (${headliner.years.map((year) => `УЛЕТАЙ ${year}`).join(', ')})`
       : '';
     return {
       title: `${name} — хэдлайнер | ${SITE_NAME}`,
       description: headliner
-        ? headliner.lastfm?.bioSummary?.trim() ||
+        ? lastfm?.bioSummary?.trim() ||
           headliner.description.trim() ||
           `${name} — хэдлайнер фестиваля УЛЕТАЙ${yearsLabel}.`
         : DEFAULT_DESCRIPTION,

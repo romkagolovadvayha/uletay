@@ -73,6 +73,10 @@ export interface Headliner {
   imageTint: string;
   imageUrl?: string;
   years: number[];
+  /** Дополнительные названия для поиска в Last.fm */
+  alternateNames?: string[];
+  /** Связанные карточки хэдлайнеров (то же выступление под другим именем) */
+  linkedHeadlinerIds?: string[];
   lastfm?: import('./lastfm').HeadlinerLastFmProfile;
 }
 

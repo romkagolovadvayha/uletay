@@ -1,13 +1,16 @@
 import { Headliner } from '../types';
 import { findHeadlinerByRadioArtist } from './matchRadioArtist';
+import { getHeadlinerGroupPopularity } from './headlinerGroups';
 
-function compareHeadlinerPopularity(a: Headliner, b: Headliner): number {
-  const listenersDiff = (b.lastfm?.listeners ?? 0) - (a.lastfm?.listeners ?? 0);
+function compareHeadlinerPopularity(a: Headliner, b: Headliner, allHeadliners: Headliner[]): number {
+  const aStats = getHeadlinerGroupPopularity(a, allHeadliners);
+  const bStats = getHeadlinerGroupPopularity(b, allHeadliners);
+  const listenersDiff = bStats.listeners - aStats.listeners;
   if (listenersDiff !== 0) {
     return listenersDiff;
   }
 
-  const playcountDiff = (b.lastfm?.playcount ?? 0) - (a.lastfm?.playcount ?? 0);
+  const playcountDiff = bStats.playcount - aStats.playcount;
   if (playcountDiff !== 0) {
     return playcountDiff;
   }
@@ -16,21 +19,16 @@ function compareHeadlinerPopularity(a: Headliner, b: Headliner): number {
 }
 
 export function sortHeadlinersByPopularity(headliners: Headliner[]): Headliner[] {
-  return [...headliners].sort(compareHeadlinerPopularity);
+  return [...headliners].sort((a, b) => compareHeadlinerPopularity(a, b, headliners));
 }
 
-export type HeadlinerSortMode = 'popularity' | 'debut' | 'visits_desc' | 'visits_asc';
+export type HeadlinerSortMode = 'popularity' | 'visits_desc' | 'visits_asc';
 
 export const HEADLINER_SORT_OPTIONS: { id: HeadlinerSortMode; label: string }[] = [
   { id: 'popularity', label: 'Популярность' },
-  { id: 'debut', label: 'Впервые' },
   { id: 'visits_desc', label: 'Чаще на УЛЕТАЕ' },
   { id: 'visits_asc', label: 'Реже на УЛЕТАЕ' },
 ];
-
-export function isHeadlinerDebutAtYear(headliner: Headliner, year: number): boolean {
-  return headliner.years.includes(year) && !headliner.years.some((item) => item < year);
-}
 
 export function countHeadlinerVisitsUpToYear(headliner: Headliner, year: number): number {
   return headliner.years.filter((item) => item <= year).length;
@@ -44,22 +42,13 @@ export function sortHeadliners(
   const items = [...headliners];
 
   switch (mode) {
-    case 'debut':
-      return items.sort((a, b) => {
-        const aDebut = isHeadlinerDebutAtYear(a, year);
-        const bDebut = isHeadlinerDebutAtYear(b, year);
-        if (aDebut !== bDebut) {
-          return aDebut ? -1 : 1;
-        }
-        return compareHeadlinerPopularity(a, b);
-      });
     case 'visits_desc':
       return items.sort((a, b) => {
         const diff = countHeadlinerVisitsUpToYear(b, year) - countHeadlinerVisitsUpToYear(a, year);
         if (diff !== 0) {
           return diff;
         }
-        return compareHeadlinerPopularity(a, b);
+        return compareHeadlinerPopularity(a, b, headliners);
       });
     case 'visits_asc':
       return items.sort((a, b) => {
@@ -67,7 +56,7 @@ export function sortHeadliners(
         if (diff !== 0) {
           return diff;
         }
-        return compareHeadlinerPopularity(a, b);
+        return compareHeadlinerPopularity(a, b, headliners);
       });
     case 'popularity':
     default:
@@ -87,7 +76,12 @@ export function filterHeadlinersList(
     if (!normalizedQuery) {
       return true;
     }
-    return headliner.name.toLocaleLowerCase('ru').includes(normalizedQuery);
+    return (
+      headliner.name.toLocaleLowerCase('ru').includes(normalizedQuery) ||
+      headliner.alternateNames?.some((name) =>
+        name.toLocaleLowerCase('ru').includes(normalizedQuery),
+      )
+    );
   });
 
   return sortHeadliners(filtered, options.sort, options.year);

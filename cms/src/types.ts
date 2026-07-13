@@ -81,6 +81,8 @@ export interface Headliner {
   imageTint: string;
   imageUrl?: string;
   years: number[];
+  alternateNames?: string[];
+  linkedHeadlinerIds?: string[];
   lastfm?: HeadlinerLastFmProfile;
 }
 

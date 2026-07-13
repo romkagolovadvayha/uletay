@@ -6,6 +6,7 @@ import type { Headliner } from '@/types';
 import { presetHint } from '@/lib/image-presets';
 import { resolveAdminImageSrc } from '@/lib/resolve-admin-image';
 import { formatHeadlinerYears } from '@/lib/headliner-helpers';
+import { formatAlternateNamesInput } from '@/lib/headliner-groups';
 
 type Props = {
   items: Headliner[];
@@ -48,6 +49,43 @@ export function HeadlinersEditor({ items, editId }: Props) {
               Описание
               <textarea name="description" rows={3} defaultValue={editing?.description ?? ''} />
             </label>
+            <label className="span-2">
+              Дополнительные названия
+              <textarea
+                name="alternateNames"
+                rows={3}
+                defaultValue={formatAlternateNamesInput(editing?.alternateNames)}
+                placeholder={'КняZZ\nКороль и Шут'}
+              />
+              <span className="hint">
+                Бывшие или альтернативные имена для Last.fm — по одному в строке. Треки и
+                популярность объединятся с основным именем.
+              </span>
+            </label>
+            {!isNew && editing ? (
+              <div className="span-2 linked-headliners-field">
+                <span className="field-label">Связанные хэдлайнеры</span>
+                <div className="linked-headliners-list">
+                  {items
+                    .filter((item) => item.id !== editing.id)
+                    .map((item) => (
+                      <label key={item.id} className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          name="linkedHeadlinerIds"
+                          value={item.id}
+                          defaultChecked={editing.linkedHeadlinerIds?.includes(item.id)}
+                        />
+                        <span>{item.name}</span>
+                      </label>
+                    ))}
+                </div>
+                <span className="hint">
+                  Другие карточки того же артиста (например, «КняZZ» и «Король и Шут»). Статистика
+                  и треки суммируются.
+                </span>
+              </div>
+            ) : null}
             <label>
               Цвет карточки
               <input

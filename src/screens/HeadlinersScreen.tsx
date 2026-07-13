@@ -70,6 +70,7 @@ export function HeadlinersScreen({ navigation }: Props) {
             <HeadlinerCard
               key={headliner.id}
               headliner={headliner}
+              allHeadliners={data.headliners}
               onPress={() => navigation.navigate('HeadlinerDetail', { headlinerId: headliner.id })}
             />
           ))

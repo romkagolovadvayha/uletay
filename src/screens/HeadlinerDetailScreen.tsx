@@ -14,6 +14,7 @@ import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 import { formatLastFmCount, formatTrackDuration, sortTracksByPopularity } from '../utils/lastfmFormat';
 import { resolveSimilarHeadliners } from '../utils/headlinerHelpers';
+import { resolveHeadlinerLastFm } from '../utils/headlinerGroups';
 
 type Props = NativeStackScreenProps<
   HeadlinersStackParamList | MoreStackParamList,
@@ -49,7 +50,9 @@ function HeadlinerTopTracksSection({ artistName, topTracks }: HeadlinerTopTracks
                 {duration ? ` · ${duration}` : ''}
               </Text>
             </View>
-            <YandexMusicLink artist={artistName} track={track.name} variant="icon" />
+            <View style={styles.trackAction}>
+              <YandexMusicLink artist={artistName} track={track.name} variant="icon" />
+            </View>
           </View>
         );
       })}
@@ -71,7 +74,10 @@ function HeadlinerTopTracksSection({ artistName, topTracks }: HeadlinerTopTracks
 export function HeadlinerDetailScreen({ navigation, route }: Props) {
   const { data } = useAppData();
   const headliner = data.headliners.find((item) => item.id === route.params.headlinerId);
-  const lastfm = headliner?.lastfm;
+  const lastfm = useMemo(
+    () => (headliner ? resolveHeadlinerLastFm(headliner, data.headliners) : undefined),
+    [data.headliners, headliner],
+  );
   const similarHeadliners = useMemo(
     () =>
       headliner && lastfm?.similarArtists.length
@@ -297,6 +303,10 @@ const styles = StyleSheet.create({
   trackMain: {
     flex: 1,
     minWidth: 0,
+  },
+  trackAction: {
+    alignSelf: 'center',
+    justifyContent: 'center',
   },
   trackName: {
     ...typography.body,

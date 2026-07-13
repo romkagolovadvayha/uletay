@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import React, { useMemo } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { ExternalLink } from './ExternalLink';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -40,14 +40,20 @@ export function YandexMusicLink({ artist, track, variant = 'icon', size = 32 }: 
         accessibilityLabel={accessibilityLabel}
         style={({ pressed }) => [styles.listenButton, pressed && styles.pressed]}
       >
-        <Text style={styles.listenLabel}>Слушать в</Text>
-        <Image
-          source={YANDEX_MUSIC_LOGO}
-          style={styles.listenLogo}
-          contentFit="contain"
-          accessibilityIgnoresInvertColors
-        />
-        <Text style={styles.listenBrand}>Яндекс Музыка</Text>
+        <View style={styles.listenRow}>
+          <Text style={styles.listenLabel} numberOfLines={1}>
+            Слушать в
+          </Text>
+          <Image
+            source={YANDEX_MUSIC_LOGO}
+            style={styles.listenLogo}
+            contentFit="contain"
+            accessibilityIgnoresInvertColors
+          />
+          <Text style={styles.listenBrand} numberOfLines={1}>
+            Яндекс Музыка
+          </Text>
+        </View>
       </ExternalLink>
     );
   }
@@ -77,16 +83,13 @@ const styles = StyleSheet.create({
   iconButton: {
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     overflow: 'hidden',
     backgroundColor: colors.surfaceGlass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
   listenButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
     alignSelf: 'center',
     marginBottom: spacing.lg,
     paddingVertical: spacing.sm,
@@ -94,25 +97,37 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: 'transparent',
+    maxWidth: '100%',
+    ...(Platform.OS === 'web' ? { whiteSpace: 'nowrap' as never } : null),
+  },
+  listenRow: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
   },
   listenLabel: {
     ...typography.body,
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
     textTransform: 'none',
     letterSpacing: 0,
+    flexShrink: 0,
   },
   listenLogo: {
-    width: 28,
-    height: 28,
+    width: 22,
+    height: 22,
+    flexShrink: 0,
   },
   listenBrand: {
     ...typography.body,
     color: colors.text,
-    fontSize: 14,
+    fontSize: 13,
     textTransform: 'none',
     letterSpacing: 0,
+    flexShrink: 0,
   },
   pressed: {
     opacity: 0.72,

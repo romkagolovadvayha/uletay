@@ -42,6 +42,8 @@ export function ExternalLink({
         style={{
           textDecoration: 'none',
           color: 'inherit',
+          display: 'flex',
+          alignSelf: 'center',
           ...(StyleSheet.flatten(flatStyle) as React.CSSProperties),
         }}
       >

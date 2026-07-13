@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 import { syncHeadlinerImageFromLastFm } from '../src/lib/lastfm-images';
-import { resolveLastFmProfileForHeadliner, sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
+import { sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
+import { resolveAndMergeLastFmForHeadliner } from '../src/lib/headliner-lastfm-sync';
 import { syncAppHeadliners } from '../src/lib/headliners';
 import type { AppData, Headliner } from '../src/types';
 import { getDbConfig, loadDbEnv } from './load-db-env.mjs';
@@ -137,7 +138,7 @@ async function main() {
     process.stdout.write(`Last.fm: ${headliner.name} ... `);
 
     try {
-      const profile = await resolveLastFmProfileForHeadliner(headliner.name);
+      const profile = await resolveAndMergeLastFmForHeadliner(headliner, synced.headliners);
       if (!profile) {
         failed += 1;
         console.log('not found');

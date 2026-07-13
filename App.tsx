@@ -1,6 +1,6 @@
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { WebSeoManager } from './src/components/WebSeoManager';
 import { syncWebSeo } from './src/seo/syncWebSeo';
 import { colors } from './src/theme/colors';
+import { installWebPreventInputZoom } from './src/utils/webPreventInputZoom';
 
 const navigationTheme = {
   ...DarkTheme,
@@ -77,6 +78,8 @@ function AppContent() {
 }
 
 export default function App() {
+  useEffect(() => installWebPreventInputZoom(), []);
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>

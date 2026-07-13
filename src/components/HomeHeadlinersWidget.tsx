@@ -52,6 +52,7 @@ export function HomeHeadlinersWidget({
         <HeadlinerCard
           key={headliner.id}
           headliner={headliner}
+          allHeadliners={data.headliners}
           onPress={() => onPressHeadliner(headliner)}
         />
       ))}

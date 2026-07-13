@@ -75,6 +75,11 @@ function patchIndexHtml() {
     html = html.replace('<html>', '<html lang="ru">');
   }
 
+  html = html.replace(
+    /name="viewport" content="[^"]*"/,
+    'name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"',
+  );
+
   writeFileSync(indexPath, html, 'utf8');
 }
 

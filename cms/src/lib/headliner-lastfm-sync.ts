@@ -1,15 +1,42 @@
 import type { Headliner } from '@/types';
 import { syncHeadlinerImage } from './lastfm-images';
-import { assertLastFmConfigured, resolveLastFmProfileForHeadliner } from './lastfm';
+import { assertLastFmConfigured, resolveLastFmProfileForHeadliner, sleep } from './lastfm';
+import { collectGroupIdentityNames } from './headliner-groups';
+import { mergeLastFmProfiles } from './lastfm-merge';
 
-export async function enrichHeadlinerFromLastFm(headliner: Headliner): Promise<Headliner> {
+const REQUEST_DELAY_MS = 350;
+
+export async function resolveAndMergeLastFmForHeadliner(
+  headliner: Headliner,
+  allHeadliners: Headliner[],
+): Promise<Headliner['lastfm'] | null> {
+  const names = collectGroupIdentityNames(headliner, allHeadliners);
+  const profiles = [];
+
+  for (const name of names) {
+    const profile = await resolveLastFmProfileForHeadliner(name);
+    if (profile) {
+      profiles.push(profile);
+    }
+    if (names.length > 1) {
+      await sleep(REQUEST_DELAY_MS);
+    }
+  }
+
+  return mergeLastFmProfiles(profiles, headliner.name) ?? null;
+}
+
+export async function enrichHeadlinerFromLastFm(
+  headliner: Headliner,
+  allHeadliners: Headliner[],
+): Promise<Headliner> {
   try {
     assertLastFmConfigured();
   } catch {
     return headliner;
   }
 
-  const profile = await resolveLastFmProfileForHeadliner(headliner.name);
+  const profile = await resolveAndMergeLastFmForHeadliner(headliner, allHeadliners);
   if (!profile) {
     return headliner;
   }
