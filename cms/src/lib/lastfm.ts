@@ -41,7 +41,9 @@ type LastFmSearchArtist = {
 function getApiKey(): string {
   const apiKey = process.env.LASTFM_API_KEY?.trim();
   if (!apiKey) {
-    throw new Error('LASTFM_API_KEY is not set in cms/.env');
+    throw new Error(
+      'LASTFM_API_KEY is not set. Add it to cms/.env on the server or to GitHub Environment production Secrets and redeploy (deploy writes cms/.env).',
+    );
   }
   return apiKey;
 }

@@ -70,6 +70,8 @@ ENV
 
 if [[ -z "$LASTFM_API_KEY" ]]; then
   echo "Warning: LASTFM_API_KEY is empty — headliners:sync-lastfm will fail until you set it in GitHub production secrets or cms/.env"
+else
+  echo "LASTFM_API_KEY configured (${#LASTFM_API_KEY} characters)"
 fi
 
 cd "$DEPLOY_PATH/cms"
