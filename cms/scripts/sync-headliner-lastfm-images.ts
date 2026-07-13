@@ -51,6 +51,7 @@ async function main() {
   console.log(`Connecting to MySQL ${db.host}/${db.database}...`);
   const pool = await mysql.createConnection({
     host: db.host,
+    port: db.port,
     database: db.database,
     user: db.user,
     password: db.password,

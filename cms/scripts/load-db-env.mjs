@@ -42,8 +42,10 @@ export function loadDbEnv() {
 
 export function getDbConfig() {
   loadDbEnv();
+  const port = Number(process.env.DB_PORT);
   return {
     host: process.env.DB_HOST || '127.0.0.1',
+    port: Number.isFinite(port) && port > 0 ? port : 3306,
     database: process.env.DB_NAME || 'uletay',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASS || '',

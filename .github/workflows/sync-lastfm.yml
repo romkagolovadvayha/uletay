@@ -1,0 +1,154 @@
+name: Sync Last.fm
+
+on:
+  schedule:
+    # 04:00 MSK — metadata
+    - cron: '0 1 * * *'
+    # 05:00 MSK Sunday — images
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: metadata | images | both
+        required: false
+        default: both
+      force:
+        description: Force refresh stale profiles
+        type: boolean
+        default: false
+
+concurrency:
+  group: sync-lastfm
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment: production
+
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || secrets.DEPLOY_PATH || '/var/www/uletay' }}
+      SSH_HOST: ${{ vars.SSH_HOST || secrets.SSH_HOST }}
+      SSH_USER: ${{ vars.SSH_USER || secrets.SSH_USER }}
+      SSH_PORT: ${{ vars.SSH_PORT || secrets.SSH_PORT || '22' }}
+      DB_NAME: ${{ vars.DB_NAME || secrets.DB_NAME }}
+      DB_USER: ${{ vars.DB_USER || secrets.DB_USER }}
+      DB_PASS: ${{ vars.DB_PASS || secrets.DB_PASS }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY || vars.LASTFM_API_KEY }}
+      LASTFM_PROXY_URL: ${{ secrets.LASTFM_PROXY_URL || vars.LASTFM_PROXY_URL }}
+      LOCAL_UPLOAD_DIR: ${{ github.workspace }}/.lastfm-uploads
+      DB_TUNNEL_PORT: '3307'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve sync mode
+        run: |
+          INPUT_MODE='${{ github.event.inputs.mode }}'
+          if [ -n "$INPUT_MODE" ]; then
+            MODE="$INPUT_MODE"
+          elif [ "${{ github.event.schedule }}" = "0 2 * * 0" ]; then
+            MODE=images
+          else
+            MODE=metadata
+          fi
+          echo "MODE=$MODE" >> "$GITHUB_ENV"
+          echo "Sync mode: $MODE"
+
+      - name: Validate secrets
+        run: |
+          if [ -z "$LASTFM_API_KEY" ]; then
+            echo "Set LASTFM_API_KEY in GitHub Environment production Secrets"
+            exit 1
+          fi
+          for name in SSH_HOST SSH_USER DB_NAME DB_USER DB_PASS; do
+            if [ -z "${!name}" ]; then
+              echo "Missing $name in production Environment"
+              exit 1
+            fi
+          done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: cms/package-lock.json
+
+      - name: Install CMS dependencies
+        run: npm ci --prefix cms
+
+      - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY || vars.SSH_PRIVATE_KEY }}
+          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 }}
+        run: bash deploy/gha-setup-ssh.sh
+
+      - name: Open MySQL SSH tunnel
+        run: |
+          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
+            -f -N -L "${DB_TUNNEL_PORT}:127.0.0.1:3306" "${SSH_USER}@${SSH_HOST}"
+          sleep 2
+          echo "MySQL tunnel: 127.0.0.1:${DB_TUNNEL_PORT} -> ${SSH_HOST}:3306"
+
+      - name: Test Last.fm API
+        run: npm run headliners:test-lastfm --prefix cms
+        env:
+          LASTFM_API_KEY: ${{ env.LASTFM_API_KEY }}
+          LASTFM_PROXY_URL: ${{ env.LASTFM_PROXY_URL }}
+
+      - name: Sync Last.fm metadata
+        if: env.MODE == 'metadata' || env.MODE == 'both'
+        run: |
+          mkdir -p "$LOCAL_UPLOAD_DIR/images"
+          cd cms
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            npm run headliners:sync-lastfm -- --force
+          else
+            npm run headliners:sync-lastfm
+          fi
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ env.DB_TUNNEL_PORT }}
+          DB_NAME: ${{ env.DB_NAME }}
+          DB_USER: ${{ env.DB_USER }}
+          DB_PASS: ${{ env.DB_PASS }}
+          UPLOAD_DIR: ${{ env.LOCAL_UPLOAD_DIR }}
+          BASE_PATH: ''
+          LASTFM_API_KEY: ${{ env.LASTFM_API_KEY }}
+          LASTFM_PROXY_URL: ${{ env.LASTFM_PROXY_URL }}
+
+      - name: Sync Last.fm images
+        if: env.MODE == 'images' || env.MODE == 'both'
+        run: |
+          mkdir -p "$LOCAL_UPLOAD_DIR/images"
+          npm run headliners:sync-lastfm-images --prefix cms
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ env.DB_TUNNEL_PORT }}
+          DB_NAME: ${{ env.DB_NAME }}
+          DB_USER: ${{ env.DB_USER }}
+          DB_PASS: ${{ env.DB_PASS }}
+          UPLOAD_DIR: ${{ env.LOCAL_UPLOAD_DIR }}
+          BASE_PATH: ''
+          LASTFM_API_KEY: ${{ env.LASTFM_API_KEY }}
+          LASTFM_PROXY_URL: ${{ env.LASTFM_PROXY_URL }}
+
+      - name: Upload headliner images to server
+        run: |
+          if [ ! -d "$LOCAL_UPLOAD_DIR/images" ] || [ -z "$(ls -A "$LOCAL_UPLOAD_DIR/images" 2>/dev/null)" ]; then
+            echo "No new images to upload"
+            exit 0
+          fi
+          RSYNC_SSH="ssh -i $DEPLOY_KEY_FILE -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
+          rsync -az -e "$RSYNC_SSH" \
+            "$LOCAL_UPLOAD_DIR/images/" \
+            "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/uploads/images/"
+          echo "Uploaded images to ${DEPLOY_PATH}/uploads/images/"
+
+      - name: Close SSH tunnel
+        if: always()
+        run: |
+          pkill -f "ssh -i ${DEPLOY_KEY_FILE} -p ${SSH_PORT}.*${DB_TUNNEL_PORT}:127.0.0.1:3306" || true
