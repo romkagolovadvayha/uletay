@@ -124,7 +124,11 @@ jobs:
         if: env.MODE == 'images' || env.MODE == 'both'
         run: |
           mkdir -p "$LOCAL_UPLOAD_DIR/images"
-          npm run headliners:sync-lastfm-images --prefix cms
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            npm run headliners:sync-lastfm-images --prefix cms -- --force --refresh-profile
+          else
+            npm run headliners:sync-lastfm-images --prefix cms -- --refresh-profile
+          fi
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: ${{ env.DB_TUNNEL_PORT }}

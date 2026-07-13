@@ -1,5 +1,5 @@
 import type { Headliner } from '@/types';
-import { syncHeadlinerImageFromLastFm } from './lastfm-images';
+import { syncHeadlinerImage } from './lastfm-images';
 import { assertLastFmConfigured, resolveLastFmProfileForHeadliner } from './lastfm';
 
 export async function enrichHeadlinerFromLastFm(headliner: Headliner): Promise<Headliner> {
@@ -17,9 +17,9 @@ export async function enrichHeadlinerFromLastFm(headliner: Headliner): Promise<H
   let imageUrl = headliner.imageUrl;
   if (!imageUrl) {
     try {
-      const syncedImageUrl = await syncHeadlinerImageFromLastFm(headliner.id, profile);
-      if (syncedImageUrl) {
-        imageUrl = syncedImageUrl;
+      const synced = await syncHeadlinerImage(headliner.id, headliner.name, profile);
+      if (synced) {
+        imageUrl = synced.imageUrl;
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

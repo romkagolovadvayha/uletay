@@ -19,6 +19,80 @@ export function sortHeadlinersByPopularity(headliners: Headliner[]): Headliner[]
   return [...headliners].sort(compareHeadlinerPopularity);
 }
 
+export type HeadlinerSortMode = 'popularity' | 'debut' | 'visits_desc' | 'visits_asc';
+
+export const HEADLINER_SORT_OPTIONS: { id: HeadlinerSortMode; label: string }[] = [
+  { id: 'popularity', label: 'Популярность' },
+  { id: 'debut', label: 'Впервые' },
+  { id: 'visits_desc', label: 'Чаще на УЛЕТАЕ' },
+  { id: 'visits_asc', label: 'Реже на УЛЕТАЕ' },
+];
+
+export function isHeadlinerDebutAtYear(headliner: Headliner, year: number): boolean {
+  return headliner.years.includes(year) && !headliner.years.some((item) => item < year);
+}
+
+export function countHeadlinerVisitsUpToYear(headliner: Headliner, year: number): number {
+  return headliner.years.filter((item) => item <= year).length;
+}
+
+export function sortHeadliners(
+  headliners: Headliner[],
+  mode: HeadlinerSortMode,
+  year: number,
+): Headliner[] {
+  const items = [...headliners];
+
+  switch (mode) {
+    case 'debut':
+      return items.sort((a, b) => {
+        const aDebut = isHeadlinerDebutAtYear(a, year);
+        const bDebut = isHeadlinerDebutAtYear(b, year);
+        if (aDebut !== bDebut) {
+          return aDebut ? -1 : 1;
+        }
+        return compareHeadlinerPopularity(a, b);
+      });
+    case 'visits_desc':
+      return items.sort((a, b) => {
+        const diff = countHeadlinerVisitsUpToYear(b, year) - countHeadlinerVisitsUpToYear(a, year);
+        if (diff !== 0) {
+          return diff;
+        }
+        return compareHeadlinerPopularity(a, b);
+      });
+    case 'visits_asc':
+      return items.sort((a, b) => {
+        const diff = countHeadlinerVisitsUpToYear(a, year) - countHeadlinerVisitsUpToYear(b, year);
+        if (diff !== 0) {
+          return diff;
+        }
+        return compareHeadlinerPopularity(a, b);
+      });
+    case 'popularity':
+    default:
+      return sortHeadlinersByPopularity(items);
+  }
+}
+
+export function filterHeadlinersList(
+  headliners: Headliner[],
+  options: { year: number; query: string; sort: HeadlinerSortMode },
+): Headliner[] {
+  const normalizedQuery = options.query.trim().toLocaleLowerCase('ru');
+  const filtered = headliners.filter((headliner) => {
+    if (!headliner.years.includes(options.year)) {
+      return false;
+    }
+    if (!normalizedQuery) {
+      return true;
+    }
+    return headliner.name.toLocaleLowerCase('ru').includes(normalizedQuery);
+  });
+
+  return sortHeadliners(filtered, options.sort, options.year);
+}
+
 export function resolveSimilarHeadliners(
   headliners: Headliner[],
   currentHeadlinerId: string,

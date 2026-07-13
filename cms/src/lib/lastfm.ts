@@ -5,9 +5,11 @@ import type {
   HeadlinerLastFmTag,
   HeadlinerLastFmTrack,
 } from '@/lastfm-types';
+import { isUsableLastFmImageUrl } from './lastfm-images';
 import { lastFmFetch, resolveLastFmProxyUrl } from './lastfm-fetch';
 
 const API_BASE = 'https://ws.audioscrobbler.com/2.0/';
+const LASTFM_TOP_TRACKS_LIMIT = 1000;
 
 type LastFmImage = { '#text': string; size: string };
 type LastFmTag = { name: string; url: string };
@@ -94,7 +96,7 @@ function mapImages(images: LastFmImage[] | undefined): HeadlinerLastFmImage[] {
       url: image['#text']?.trim() ?? '',
       size: image.size,
     }))
-    .filter((image) => image.url.length > 0);
+    .filter((image) => image.url.length > 0 && isUsableLastFmImageUrl(image.url));
 }
 
 function mapTags(tags: LastFmTag[] | LastFmTag | undefined): HeadlinerLastFmTag[] {
@@ -209,7 +211,7 @@ export async function fetchLastFmArtistProfile(
     callLastFm<{ toptracks?: { track?: LastFmTrack[] | LastFmTrack } }>({
       method: 'artist.gettoptracks',
       artist: artistName,
-      limit: '10',
+      limit: String(LASTFM_TOP_TRACKS_LIMIT),
       autocorrect: '1',
     }),
   ]);

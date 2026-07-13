@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeadlinerCard } from '../components/HeadlinerCard';
+import { YandexMusicLink } from '../components/YandexMusicLink';
 import { useAppData } from '../context/DataContext';
 import { HeadlinersStackParamList, MoreStackParamList } from '../navigation/types';
+import type { HeadlinerLastFmTrack } from '../types/lastfm';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -17,6 +19,54 @@ type Props = NativeStackScreenProps<
   HeadlinersStackParamList | MoreStackParamList,
   'HeadlinerDetail'
 >;
+
+const TRACKS_PREVIEW_COUNT = 10;
+
+type HeadlinerTopTracksSectionProps = {
+  artistName: string;
+  topTracks: HeadlinerLastFmTrack[];
+};
+
+function HeadlinerTopTracksSection({ artistName, topTracks }: HeadlinerTopTracksSectionProps) {
+  const [tracksExpanded, setTracksExpanded] = useState(false);
+  const visibleTracks = tracksExpanded
+    ? topTracks
+    : topTracks.slice(0, TRACKS_PREVIEW_COUNT);
+  const hasMoreTracks = topTracks.length > TRACKS_PREVIEW_COUNT;
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Популярные треки</Text>
+      {visibleTracks.map((track) => {
+        const duration = formatTrackDuration(track.durationSec);
+        return (
+          <View key={`${track.rank}-${track.name}`} style={styles.trackRow}>
+            <Text style={styles.trackRank}>{track.rank}</Text>
+            <View style={styles.trackMain}>
+              <Text style={styles.trackName}>{track.name}</Text>
+              <Text style={styles.trackMeta}>
+                {formatLastFmCount(track.playcount)} прослушиваний
+                {duration ? ` · ${duration}` : ''}
+              </Text>
+            </View>
+            <YandexMusicLink artist={artistName} track={track.name} />
+          </View>
+        );
+      })}
+      {hasMoreTracks ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setTracksExpanded((value) => !value)}
+          style={({ pressed }) => [styles.tracksMoreButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.tracksMoreLabel}>
+            {tracksExpanded ? 'Свернуть' : `ЕЩЁ ${topTracks.length - TRACKS_PREVIEW_COUNT}`}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
 
 export function HeadlinerDetailScreen({ navigation, route }: Props) {
   const { data } = useAppData();
@@ -95,24 +145,11 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
         ) : null}
 
         {topTracks.length ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Популярные треки</Text>
-            {topTracks.map((track) => {
-              const duration = formatTrackDuration(track.durationSec);
-              return (
-                <View key={`${track.rank}-${track.name}`} style={styles.trackRow}>
-                  <Text style={styles.trackRank}>{track.rank}</Text>
-                  <View style={styles.trackMain}>
-                    <Text style={styles.trackName}>{track.name}</Text>
-                    <Text style={styles.trackMeta}>
-                      {formatLastFmCount(track.playcount)} прослушиваний
-                      {duration ? ` · ${duration}` : ''}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
+          <HeadlinerTopTracksSection
+            key={route.params.headlinerId}
+            artistName={headliner.name}
+            topTracks={topTracks}
+          />
         ) : null}
 
         {similarHeadliners.length ? (
@@ -271,6 +308,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: 'none',
     letterSpacing: 0,
+  },
+  tracksMoreButton: {
+    alignSelf: 'center',
+    marginTop: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  tracksMoreLabel: {
+    ...appFont('semiBold'),
+    color: colors.primary,
+    fontSize: 13,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   similarRow: {
     flexDirection: 'row',

@@ -1,4 +1,5 @@
-import type { LinkingOptions } from '@react-navigation/native';
+import { getStateFromPath as getDefaultStateFromPath } from '@react-navigation/native';
+import type { LinkingOptions, PartialState, NavigationState } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import type { RootTabParamList } from './types';
@@ -7,6 +8,55 @@ const prefixes = [
   Linking.createURL('/'),
   ...(Platform.OS === 'web' && typeof window !== 'undefined' ? [window.location.origin] : []),
 ];
+
+let headlinersInMoreTab = true;
+
+export function setHeadlinersInMoreTab(value: boolean) {
+  headlinersInMoreTab = value;
+}
+
+function getHeadlinersStateFromPath(path: string): PartialState<NavigationState> | undefined {
+  const normalized = path.replace(/\/+$/, '') || '/';
+  const detailMatch = normalized.match(/^\/headliners\/([^/]+)$/);
+  const tabName = headlinersInMoreTab ? 'MoreTab' : 'HeadlinersTab';
+
+  if (detailMatch) {
+    return {
+      routes: [
+        {
+          name: tabName,
+          state: {
+            routes: [
+              {
+                name: 'HeadlinerDetail',
+                params: { headlinerId: decodeURIComponent(detailMatch[1]) },
+              },
+            ],
+            index: 0,
+          },
+        },
+      ],
+      index: 0,
+    };
+  }
+
+  if (normalized === '/headliners') {
+    return {
+      routes: [
+        {
+          name: tabName,
+          state: {
+            routes: [{ name: 'HeadlinersMain' }],
+            index: 0,
+          },
+        },
+      ],
+      index: 0,
+    };
+  }
+
+  return undefined;
+}
 
 export const linking: LinkingOptions<RootTabParamList> = {
   prefixes,
@@ -54,5 +104,12 @@ export const linking: LinkingOptions<RootTabParamList> = {
         },
       },
     },
+  },
+  getStateFromPath(path, options) {
+    const headlinersState = getHeadlinersStateFromPath(path);
+    if (headlinersState) {
+      return headlinersState;
+    }
+    return getDefaultStateFromPath(path, options);
   },
 };

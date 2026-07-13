@@ -2,16 +2,17 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CategoryPillBar } from '../components/CategoryPillBar';
 import { HeadlinerCard } from '../components/HeadlinerCard';
+import { HeadlinerFilterBar } from '../components/HeadlinerFilterBar';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { HeadlinersStackParamList, MoreStackParamList } from '../navigation/types';
 import {
   buildHeadlinerYearCategories,
-  filterHeadlinersByYear,
+  filterHeadlinersList,
   getDefaultHeadlinerYear,
   getHeadlinerYears,
+  type HeadlinerSortMode,
 } from '../utils/headlinerHelpers';
 import { colors } from '../theme/colors';
 import { screenHeaderStyle } from '../theme/layout';
@@ -31,11 +32,18 @@ export function HeadlinersScreen({ navigation }: Props) {
     [data.festival.year, data.headliners],
   );
   const [selectedYear, setSelectedYear] = useState(String(defaultYear));
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortMode, setSortMode] = useState<HeadlinerSortMode>('popularity');
 
   const yearCategories = useMemo(() => buildHeadlinerYearCategories(years), [years]);
   const items = useMemo(
-    () => filterHeadlinersByYear(data.headliners, Number(selectedYear)),
-    [data.headliners, selectedYear],
+    () =>
+      filterHeadlinersList(data.headliners, {
+        year: Number(selectedYear),
+        query: searchQuery,
+        sort: sortMode,
+      }),
+    [data.headliners, searchQuery, selectedYear, sortMode],
   );
 
   return (
@@ -44,16 +52,17 @@ export function HeadlinersScreen({ navigation }: Props) {
         <ScreenTitle style={styles.title}>ХЭДЛАЙНЕРЫ</ScreenTitle>
       </View>
 
-      {yearCategories.length > 1 ? (
-        <View style={styles.tabsWrap}>
-          <CategoryPillBar
-            categories={yearCategories}
-            selectedId={selectedYear}
-            onSelect={setSelectedYear}
-            variant="food"
-          />
-        </View>
-      ) : null}
+      <View style={styles.filtersWrap}>
+        <HeadlinerFilterBar
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          selectedYear={selectedYear}
+          yearOptions={yearCategories}
+          onYearChange={setSelectedYear}
+          sortMode={sortMode}
+          onSortModeChange={setSortMode}
+        />
+      </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {items.length > 0 ? (
@@ -66,7 +75,11 @@ export function HeadlinersScreen({ navigation }: Props) {
           ))
         ) : (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>Список хэдлайнеров для этого года пока пуст</Text>
+            <Text style={styles.emptyText}>
+              {searchQuery.trim()
+                ? 'Ничего не найдено — попробуйте другой запрос'
+                : 'Список хэдлайнеров для этого года пока пуст'}
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -84,7 +97,7 @@ const styles = StyleSheet.create({
     ...typography.screenTitle,
     color: colors.text,
   },
-  tabsWrap: {
+  filtersWrap: {
     paddingHorizontal: spacing.screen,
   },
   content: {

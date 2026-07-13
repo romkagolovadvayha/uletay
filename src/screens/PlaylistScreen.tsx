@@ -10,6 +10,7 @@ import { PerformanceTimeDateRow } from '../components/PerformanceTimeDateRow';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { useAppData } from '../context/DataContext';
+import { openHeadlinerDetail } from '../navigation/scheduleNavigation';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -20,12 +21,10 @@ import { resolveArtistImageSource } from '../utils/festArtistImages';
 import { RADIO_STATION_NAME } from '../config/radio';
 import { formatDayMonthLabel, formatTimeRange, getStageName } from '../utils/scheduleHelpers';
 import { formatHeadlinerYears } from '../utils/headlinerHelpers';
-import { useFestivalActive } from '../hooks/useFestivalActive';
 
 export function PlaylistScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
   const { data } = useAppData();
-  const festivalActive = useFestivalActive();
   const {
     isPlaying,
     isLoading,
@@ -57,17 +56,7 @@ export function PlaylistScreen() {
     if (!matchedHeadliner) {
       return;
     }
-    if (festivalActive) {
-      navigation.navigate('MoreTab', {
-        screen: 'HeadlinerDetail',
-        params: { headlinerId: matchedHeadliner.id },
-      });
-      return;
-    }
-    navigation.navigate('HeadlinersTab', {
-      screen: 'HeadlinerDetail',
-      params: { headlinerId: matchedHeadliner.id },
-    });
+    openHeadlinerDetail(navigation, matchedHeadliner.id);
   };
 
   const openMatchedPerformance = () => {

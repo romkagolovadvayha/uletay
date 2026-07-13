@@ -1,5 +1,8 @@
 import { CommonActions, NavigationProp, StackActions } from '@react-navigation/native';
+import { setHeadlinersInMoreTab } from './linking';
 import { RootTabParamList, ScheduleStackParamList } from './types';
+
+let headlinersInMoreTab = true;
 
 type NestedTabName = 'ScheduleTab' | 'Autographs' | 'HeadlinersTab' | 'MoreTab';
 
@@ -123,8 +126,37 @@ export function popHeadlinersStackToMain(navigation: RootTabNavigation) {
 }
 
 export function openHeadlinersMain(navigation: NavigationProp<RootTabParamList>) {
+  if (headlinersInMoreTab) {
+    navigation.navigate('MoreTab', { screen: 'HeadlinersMain' });
+    return;
+  }
+
   navigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' });
   popHeadlinersStackToMain(navigation);
+}
+
+export function openHeadlinerDetail(
+  navigation: NavigationProp<RootTabParamList>,
+  headlinerId: string,
+) {
+  if (headlinersInMoreTab) {
+    navigation.navigate('MoreTab', {
+      screen: 'HeadlinerDetail',
+      params: { headlinerId },
+    });
+    return;
+  }
+
+  navigation.navigate('HeadlinersTab', {
+    screen: 'HeadlinerDetail',
+    params: { headlinerId },
+  });
+}
+
+export function syncHeadlinersNavigationTarget(festivalActive: boolean) {
+  const next = festivalActive;
+  headlinersInMoreTab = next;
+  setHeadlinersInMoreTab(next);
 }
 
 export function openScheduleMainFromStack(

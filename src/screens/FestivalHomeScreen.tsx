@@ -17,7 +17,7 @@ import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useStagePrimaryPerformances } from '../hooks/useCurrentLivePerformance';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
-import { openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
+import { openHeadlinerDetail, openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -134,28 +134,14 @@ export function FestivalHomeScreen({ navigation }: Props) {
       : 'СЛЕДУЮЩИЕ ВЫСТУПЛЕНИЯ';
 
   const openHeadlinersMainScreen = useCallback(() => {
-    if (festivalActive) {
-      navigation.navigate('MoreTab', { screen: 'HeadlinersMain' });
-      return;
-    }
     openHeadlinersMain(navigation);
-  }, [festivalActive, navigation]);
+  }, [navigation]);
 
-  const openHeadlinerDetail = useCallback(
+  const openHeadlinerDetailScreen = useCallback(
     (headlinerId: string) => {
-      if (festivalActive) {
-        navigation.navigate('MoreTab', {
-          screen: 'HeadlinerDetail',
-          params: { headlinerId },
-        });
-        return;
-      }
-      navigation.navigate('HeadlinersTab', {
-        screen: 'HeadlinerDetail',
-        params: { headlinerId },
-      });
+      openHeadlinerDetail(navigation, headlinerId);
     },
-    [festivalActive, navigation],
+    [navigation],
   );
 
   return (
@@ -241,7 +227,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
               limit={5}
               moreLabel="ЕЩЁ"
               hint=""
-              onPressHeadliner={(headliner) => openHeadlinerDetail(headliner.id)}
+              onPressHeadliner={(headliner) => openHeadlinerDetailScreen(headliner.id)}
               onPressAll={openHeadlinersMainScreen}
             />
           </View>
@@ -251,7 +237,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
           <View style={styles.section}>
             <HomeHeadlinersWidget
               year={latestHeadlinerYear}
-              onPressHeadliner={(headliner) => openHeadlinerDetail(headliner.id)}
+              onPressHeadliner={(headliner) => openHeadlinerDetailScreen(headliner.id)}
               onPressAll={openHeadlinersMainScreen}
             />
           </View>

@@ -1,5 +1,5 @@
 import mysql from 'mysql2/promise';
-import { pickLastFmImageUrl, syncHeadlinerImageFromLastFm } from '../src/lib/lastfm-images';
+import { pickLastFmImageUrl, syncHeadlinerImage } from '../src/lib/lastfm-images';
 import { resolveLastFmProfileForHeadliner, sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
 import { syncAppHeadliners } from '../src/lib/headliners';
 import type { AppData, Headliner } from '../src/types';
@@ -8,6 +8,7 @@ import { maskProxyUrl, resolveLastFmProxyUrl } from '../src/lib/lastfm-fetch';
 
 const dryRun = process.argv.includes('--dry-run');
 const refreshProfile = process.argv.includes('--refresh-profile');
+const force = process.argv.includes('--force');
 const limitArg = process.argv.find((arg) => arg.startsWith('--limit='));
 const limit = limitArg ? Number(limitArg.split('=')[1]) : undefined;
 const idArg = process.argv.find((arg) => arg.startsWith('--id='));
@@ -37,7 +38,7 @@ async function main() {
   console.log(
     `Last.fm image sync started${dryRun ? ' (dry-run)' : ''}${
       refreshProfile ? ' (refresh-profile)' : ''
-    }${onlyId ? ` (id=${onlyId})` : ''}`,
+    }${force ? ' (force)' : ''}${onlyId ? ` (id=${onlyId})` : ''}`,
   );
   if (proxyUrl) {
     console.log(`Proxy: ${maskProxyUrl(proxyUrl)}`);
@@ -81,6 +82,12 @@ async function main() {
     process.stdout.write(`Last.fm image: ${headliner.name} ... `);
 
     try {
+      if (headliner.imageUrl && !force) {
+        console.log('skip (has image, use --force to replace)');
+        await sleep(REQUEST_DELAY_MS);
+        continue;
+      }
+
       let profile = headliner.lastfm;
       if (refreshProfile || !pickLastFmImageUrl(profile?.images)) {
         profile = (await resolveLastFmProfileForHeadliner(headliner.name)) ?? profile ?? undefined;
@@ -98,25 +105,25 @@ async function main() {
 
       if (dryRun) {
         const sourceUrl = pickLastFmImageUrl(profile.images);
-        if (!sourceUrl) {
-          failed += 1;
-          console.log('no image');
+        if (sourceUrl) {
+          updated += 1;
+          console.log(`dry-run lastfm (${sourceUrl})`);
         } else {
           updated += 1;
-          console.log(`dry-run (${sourceUrl})`);
+          console.log('dry-run musicbrainz (fallback)');
         }
         await sleep(REQUEST_DELAY_MS);
         continue;
       }
 
-      const imageUrl = await syncHeadlinerImageFromLastFm(headliner.id, profile);
-      if (!imageUrl) {
+      const synced = await syncHeadlinerImage(headliner.id, headliner.name, profile);
+      if (!synced) {
         failed += 1;
         console.log('no image');
       } else {
-        headliner.imageUrl = imageUrl;
+        headliner.imageUrl = synced.imageUrl;
         updated += 1;
-        console.log(`ok -> ${imageUrl}`);
+        console.log(`ok [${synced.source}] -> ${synced.imageUrl}`);
       }
     } catch (error) {
       failed += 1;

@@ -2,12 +2,17 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 import type { HeadlinerLastFmImage, HeadlinerLastFmProfile } from '@/lastfm-types';
+import { resolveArtistImageFallbackUrl } from './artist-image-fallback';
 import { config } from './config';
 import { lastFmFetch } from './lastfm-fetch';
 import { IMAGE_PRESETS } from './image-presets';
 
 const IMAGE_SIZE_ORDER = ['mega', 'extralarge', 'large', 'medium', 'small'] as const;
-const LASTFM_PLACEHOLDER_FRAGMENTS = ['2a96cbd8b46e442fc41c2b86b2415f0'];
+const LASTFM_PLACEHOLDER_PREFIX = '2a96cbd8b46e442fc41c2b86b';
+const LASTFM_PLACEHOLDER_FRAGMENTS = [
+  `${LASTFM_PLACEHOLDER_PREFIX}821562f`,
+  `${LASTFM_PLACEHOLDER_PREFIX}2415f0`,
+];
 
 export function pickLastFmImageUrl(images?: HeadlinerLastFmImage[]): string | null {
   if (!images?.length) {
@@ -32,7 +37,15 @@ export function isUsableLastFmImageUrl(url: string): boolean {
     return false;
   }
 
-  return !LASTFM_PLACEHOLDER_FRAGMENTS.some((fragment) => trimmed.includes(fragment));
+  if (LASTFM_PLACEHOLDER_FRAGMENTS.some((fragment) => trimmed.includes(fragment))) {
+    return false;
+  }
+
+  if (trimmed.includes(LASTFM_PLACEHOLDER_PREFIX)) {
+    return false;
+  }
+
+  return true;
 }
 
 export function headlinerImageFilename(headlinerId: string): string {
@@ -40,20 +53,34 @@ export function headlinerImageFilename(headlinerId: string): string {
   return `${slug}.webp`;
 }
 
-export async function downloadAndOptimizeLastFmImage(
-  imageUrl: string,
-  headlinerId: string,
-): Promise<string> {
-  const response = await lastFmFetch(imageUrl);
+async function downloadImageBuffer(imageUrl: string): Promise<Buffer> {
+  const useLastFmFetch = /lastfm|audioscrobbler|fastly\.net\/i\/u\//i.test(imageUrl);
+  const response = useLastFmFetch
+    ? await lastFmFetch(imageUrl)
+    : await fetch(imageUrl, {
+        headers: {
+          'User-Agent': 'UletayFestApp/1.0 (+https://uletay.ru)',
+        },
+        redirect: 'follow',
+      });
+
   if (!response.ok) {
     throw new Error(`Image download HTTP ${response.status}`);
   }
 
   const input = Buffer.from(await response.arrayBuffer());
-  if (input.length < 500) {
+  if (input.length < 1500) {
     throw new Error('Image too small');
   }
 
+  return input;
+}
+
+export async function downloadAndOptimizeArtistImage(
+  imageUrl: string,
+  headlinerId: string,
+): Promise<string> {
+  const input = await downloadImageBuffer(imageUrl);
   const { width, height } = IMAGE_PRESETS.artist;
   const output = await sharp(input, { animated: false })
     .rotate()
@@ -69,14 +96,40 @@ export async function downloadAndOptimizeLastFmImage(
   return `${config.uploadUrl}/images/${filename}`;
 }
 
+/** @deprecated Use downloadAndOptimizeArtistImage */
+export const downloadAndOptimizeLastFmImage = downloadAndOptimizeArtistImage;
+
+export type HeadlinerImageSyncSource = 'lastfm' | 'musicbrainz';
+
+export async function syncHeadlinerImage(
+  headlinerId: string,
+  headlinerName: string,
+  profile?: HeadlinerLastFmProfile,
+): Promise<{ imageUrl: string; source: HeadlinerImageSyncSource } | null> {
+  const lastFmUrl = profile ? pickLastFmImageUrl(profile.images) : null;
+  if (lastFmUrl) {
+    return {
+      imageUrl: await downloadAndOptimizeArtistImage(lastFmUrl, headlinerId),
+      source: 'lastfm',
+    };
+  }
+
+  const fallbackUrl = await resolveArtistImageFallbackUrl(headlinerName, profile?.mbid);
+  if (!fallbackUrl) {
+    return null;
+  }
+
+  return {
+    imageUrl: await downloadAndOptimizeArtistImage(fallbackUrl, headlinerId),
+    source: 'musicbrainz',
+  };
+}
+
+/** @deprecated Use syncHeadlinerImage */
 export async function syncHeadlinerImageFromLastFm(
   headlinerId: string,
   profile: HeadlinerLastFmProfile,
 ): Promise<string | null> {
-  const sourceUrl = pickLastFmImageUrl(profile.images);
-  if (!sourceUrl) {
-    return null;
-  }
-
-  return downloadAndOptimizeLastFmImage(sourceUrl, headlinerId);
+  const result = await syncHeadlinerImage(headlinerId, profile.name, profile);
+  return result?.imageUrl ?? null;
 }

@@ -8,6 +8,7 @@ const distDir = join(root, process.env.DIST_DIR ?? 'dist');
 const indexPath = join(distDir, 'index.html');
 
 const SITE_NAME = 'УЛЕТАЙ 2026';
+const HOME_TITLE = `Официальное приложение фестиваля — ${SITE_NAME}`;
 const DESCRIPTION =
   'Официальное приложение фестиваля УЛЕТАЙ в Лагуново, Удмуртия: расписание концертов, карта площадки, автограф-сессии, фудкорт и радио в эфире.';
 const SITE_URL = (() => {
@@ -51,12 +52,12 @@ function patchIndexHtml() {
   <link rel="canonical" href="${SITE_URL}/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="${SITE_NAME}" />
-  <meta property="og:title" content="${SITE_NAME}" />
+  <meta property="og:title" content="${HOME_TITLE}" />
   <meta property="og:description" content="${DESCRIPTION}" />
   <meta property="og:url" content="${SITE_URL}/" />
   <meta property="og:locale" content="ru_RU" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="${SITE_NAME}" />
+  <meta name="twitter:title" content="${HOME_TITLE}" />
   <meta name="twitter:description" content="${DESCRIPTION}" />`;
 
   if (!html.includes('name="description"')) {
@@ -64,9 +65,9 @@ function patchIndexHtml() {
   }
 
   if (!html.includes('<title>')) {
-    html = html.replace('<head>', `<head>\n  <title>${SITE_NAME}</title>`);
+    html = html.replace('<head>', `<head>\n  <title>${HOME_TITLE}</title>`);
   } else {
-    html = html.replace(/<title>.*?<\/title>/, `<title>${SITE_NAME}</title>`);
+    html = html.replace(/<title>.*?<\/title>/, `<title>${HOME_TITLE}</title>`);
   }
 
   if (!html.includes('lang=')) {

@@ -1,7 +1,7 @@
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DataProvider } from './src/context/DataContext';
@@ -10,9 +10,10 @@ import { RadioPlayerProvider } from './src/context/RadioPlayerContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
 import { NotificationSettingsProvider } from './src/context/NotificationSettingsContext';
 import { useAppFonts } from './src/hooks/useAppFonts';
+import { useFestivalActive } from './src/hooks/useFestivalActive';
 import { linking } from './src/navigation/linking';
 import { navigationRef } from './src/navigation/navigationRef';
-import { syncNestedStacksWithActiveTab } from './src/navigation/scheduleNavigation';
+import { syncHeadlinersNavigationTarget, syncNestedStacksWithActiveTab } from './src/navigation/scheduleNavigation';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { WebSeoManager } from './src/components/WebSeoManager';
 import { syncWebSeo } from './src/seo/syncWebSeo';
@@ -32,6 +33,9 @@ const navigationTheme = {
 
 function AppContent() {
   const { loaded: fontsLoaded } = useAppFonts();
+  const festivalActive = useFestivalActive();
+
+  syncHeadlinersNavigationTarget(festivalActive);
 
   if (!fontsLoaded) {
     return (
@@ -46,6 +50,13 @@ function AppContent() {
       ref={navigationRef}
       theme={navigationTheme}
       linking={linking}
+      documentTitle={
+        Platform.OS === 'web'
+          ? {
+              enabled: false,
+            }
+          : undefined
+      }
       onReady={() => {
         syncWebSeo();
       }}

@@ -21,9 +21,8 @@ export type NavState = {
 
 const STATIC_SEO: Record<string, Omit<SeoMeta, 'path'> & { path: string }> = {
   HomeTab: {
-    title: `${SITE_NAME} — главная`,
-    description:
-      'Главная страница фестиваля УЛЕТАЙ: даты, площадка, расписание выступлений и всё необходимое для гостей фестиваля.',
+    title: `Официальное приложение фестиваля — ${SITE_NAME}`,
+    description: DEFAULT_DESCRIPTION,
     path: '/',
   },
   MapTab: {
