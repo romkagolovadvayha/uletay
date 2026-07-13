@@ -46,6 +46,21 @@ function getApiKey(): string {
   return apiKey;
 }
 
+export function assertLastFmConfigured(): void {
+  getApiKey();
+}
+
+function isFatalLastFmError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes('LASTFM_API_KEY') ||
+    message.includes('Invalid API key') ||
+    message.includes('You have been banned') ||
+    message.includes('HTTP 403') ||
+    message.includes('HTTP 429')
+  );
+}
+
 function toNumber(value: string | undefined): number | undefined {
   if (!value) {
     return undefined;
@@ -147,6 +162,15 @@ async function callLastFm<T>(params: Record<string, string>): Promise<T> {
   return payload;
 }
 
+export async function verifyLastFmApiKey(): Promise<void> {
+  assertLastFmConfigured();
+  await callLastFm<{ artist?: { name?: string } }>({
+    method: 'artist.getinfo',
+    artist: 'DDT',
+    autocorrect: '1',
+  });
+}
+
 export async function searchLastFmArtist(query: string): Promise<LastFmSearchArtist | null> {
   const payload = await callLastFm<{ results?: { artistmatches?: { artist?: LastFmSearchArtist[] | LastFmSearchArtist } } }>({
     method: 'artist.search',
@@ -243,8 +267,10 @@ export async function resolveLastFmProfileForHeadliner(
       if (direct) {
         return direct;
       }
-    } catch {
-      // try next query variant
+    } catch (error) {
+      if (isFatalLastFmError(error)) {
+        throw error;
+      }
     }
 
     try {
@@ -255,8 +281,10 @@ export async function resolveLastFmProfileForHeadliner(
           return profile;
         }
       }
-    } catch {
-      // try next query variant
+    } catch (error) {
+      if (isFatalLastFmError(error)) {
+        throw error;
+      }
     }
   }
 

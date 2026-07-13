@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 import { syncAppHeadliners } from '../src/lib/headliners';
-import { resolveLastFmProfileForHeadliner, sleep } from '../src/lib/lastfm';
+import { resolveLastFmProfileForHeadliner, sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
 import type { AppData } from '../src/types';
 import { getDbConfig } from './load-db-env.mjs';
 
@@ -26,6 +26,9 @@ function isStale(updatedAt?: string): boolean {
 }
 
 async function main() {
+  await verifyLastFmApiKey();
+  console.log('Last.fm API key OK');
+
   const db = getDbConfig();
   const pool = await mysql.createConnection({
     host: db.host,
