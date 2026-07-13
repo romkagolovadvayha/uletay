@@ -33,6 +33,7 @@
     "headliners:sync-lastfm-images": "tsx scripts/sync-headliner-lastfm-images.ts",
     "headliners:sync-lastfm-images:dry": "tsx scripts/sync-headliner-lastfm-images.ts --dry-run",
     "headliners:sync-lastfm-images:refresh": "tsx scripts/sync-headliner-lastfm-images.ts --refresh-profile",
+    "headliners:test-lastfm": "tsx scripts/test-lastfm-proxy.ts",
     "headliners:patch-2019-db": "node scripts/patch-headliners-2019-db.mjs",
     "headliners:patch-2019-db:dry": "node scripts/patch-headliners-2019-db.mjs --dry-run",
     "headliners:patch-2016-db": "node scripts/patch-headliners-2016-db.mjs",
