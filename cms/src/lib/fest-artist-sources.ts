@@ -92,3 +92,19 @@ export function lookupFestArtistAssetUrl(artist?: string | null): string | undef
   const sourceUrl = loadSources()[key];
   return sourceUrl ? uploadsPathToFestAsset(sourceUrl) : undefined;
 }
+
+export function lookupFestArtistUploadUrl(artist?: string | null): string | undefined {
+  if (!artist?.trim()) return undefined;
+
+  const key = resolveArtistKey(artist.trim());
+  if (!key) return undefined;
+
+  const sourceUrl = loadSources()[key]?.trim();
+  if (!sourceUrl) return undefined;
+
+  if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://') || sourceUrl.startsWith('/api/uploads/')) {
+    return sourceUrl;
+  }
+
+  return undefined;
+}

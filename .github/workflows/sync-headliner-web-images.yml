@@ -1,0 +1,115 @@
+name: Sync headliner web images
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Dry run (no DB or file writes)
+        type: boolean
+        default: false
+      force:
+        description: Replace existing images
+        type: boolean
+        default: false
+      limit:
+        description: Max groups to process (empty = all)
+        required: false
+        default: ''
+
+concurrency:
+  group: sync-headliner-web-images
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment: production
+
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || secrets.DEPLOY_PATH || '/var/www/uletay' }}
+      SSH_HOST: ${{ vars.SSH_HOST || secrets.SSH_HOST }}
+      SSH_USER: ${{ vars.SSH_USER || secrets.SSH_USER }}
+      SSH_PORT: ${{ vars.SSH_PORT || secrets.SSH_PORT || '22' }}
+      DB_NAME: ${{ vars.DB_NAME || secrets.DB_NAME }}
+      DB_USER: ${{ vars.DB_USER || secrets.DB_USER }}
+      DB_PASS: ${{ vars.DB_PASS || secrets.DB_PASS }}
+      LOCAL_UPLOAD_DIR: ${{ github.workspace }}/.web-image-uploads
+      DB_TUNNEL_PORT: '3308'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate secrets
+        run: |
+          for name in SSH_HOST SSH_USER DB_NAME DB_USER DB_PASS; do
+            if [ -z "${!name}" ]; then
+              echo "Missing $name in production Environment"
+              exit 1
+            fi
+          done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: cms/package-lock.json
+
+      - name: Install CMS dependencies
+        run: npm ci --prefix cms
+
+      - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY || vars.SSH_PRIVATE_KEY }}
+          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 }}
+        run: bash deploy/gha-setup-ssh.sh
+
+      - name: Open MySQL SSH tunnel
+        run: |
+          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
+            -f -N -L "${DB_TUNNEL_PORT}:127.0.0.1:3306" "${SSH_USER}@${SSH_HOST}"
+          sleep 2
+          echo "MySQL tunnel: 127.0.0.1:${DB_TUNNEL_PORT} -> ${SSH_HOST}:3306"
+
+      - name: Sync headliner images from web
+        run: |
+          mkdir -p "$LOCAL_UPLOAD_DIR/images"
+          ARGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            ARGS="$ARGS --force"
+          fi
+          if [ -n "${{ github.event.inputs.limit }}" ]; then
+            ARGS="$ARGS --limit=${{ github.event.inputs.limit }}"
+          fi
+          npm run headliners:sync-web-images --prefix cms -- $ARGS
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ env.DB_TUNNEL_PORT }}
+          DB_NAME: ${{ env.DB_NAME }}
+          DB_USER: ${{ env.DB_USER }}
+          DB_PASS: ${{ env.DB_PASS }}
+          UPLOAD_DIR: ${{ env.LOCAL_UPLOAD_DIR }}
+          BASE_PATH: ''
+
+      - name: Upload headliner images to server
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          if [ ! -d "$LOCAL_UPLOAD_DIR/images" ] || [ -z "$(ls -A "$LOCAL_UPLOAD_DIR/images" 2>/dev/null)" ]; then
+            echo "No new images to upload"
+            exit 0
+          fi
+          RSYNC_SSH="ssh -i $DEPLOY_KEY_FILE -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
+          rsync -az -e "$RSYNC_SSH" \
+            "$LOCAL_UPLOAD_DIR/images/" \
+            "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/uploads/images/"
+          echo "Uploaded images to ${DEPLOY_PATH}/uploads/images/"
+
+      - name: Close SSH tunnel
+        if: always()
+        run: |
+          pkill -f "ssh -i ${DEPLOY_KEY_FILE} -p ${SSH_PORT}.*${DB_TUNNEL_PORT}:127.0.0.1:3306" || true

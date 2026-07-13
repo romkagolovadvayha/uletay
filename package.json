@@ -72,6 +72,8 @@
     "fest:fetch-2019-images": "node scripts/fetch-headliners-2019-images.mjs",
     "fest:fetch-2016-images": "node scripts/fetch-headliners-2016-images.mjs",
     "fest:fetch-2026-images": "node scripts/fetch-headliners-2026-images.mjs",
+    "headliners:sync-web-images": "npm run headliners:sync-web-images --prefix cms",
+    "headliners:sync-web-images:dry": "npm run headliners:sync-web-images:dry --prefix cms",
     "cms:dev": "npm --prefix cms run dev",
     "cms:build": "npm --prefix cms run build",
     "cms:install": "npm --prefix cms run db:install",
