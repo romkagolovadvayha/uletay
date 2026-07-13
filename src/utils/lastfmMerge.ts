@@ -54,13 +54,14 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): {
       if (!existing) {
         tracks.set(key, {
           ...track,
-          artistName: profile.name,
+          artistName: track.artistName ?? profile.name,
           sourcePlaycount: incomingPlay,
         });
         continue;
       }
 
       const bestSourcePlay = existing.sourcePlaycount ?? 0;
+      const incomingArtist = track.artistName ?? profile.name;
       tracks.set(key, {
         ...existing,
         playcount: (existing.playcount ?? 0) + incomingPlay,
@@ -68,7 +69,7 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): {
         durationSec: existing.durationSec ?? track.durationSec,
         url: existing.url ?? track.url,
         mbid: existing.mbid ?? track.mbid,
-        artistName: incomingPlay > bestSourcePlay ? profile.name : existing.artistName,
+        artistName: incomingPlay > bestSourcePlay ? incomingArtist : existing.artistName,
         sourcePlaycount: Math.max(bestSourcePlay, incomingPlay),
       });
     }
@@ -136,6 +137,44 @@ function pickBestImages(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmImag
   return [];
 }
 
+function buildTrackSources(profiles: HeadlinerLastFmProfile[]) {
+  return profiles.map((profile) => ({
+    name: profile.name,
+    tracks: profile.topTracks.map((track) => ({
+      name: track.name,
+      playcount: track.playcount,
+    })),
+  }));
+}
+
+function mergeTrackSources(profiles: HeadlinerLastFmProfile[]) {
+  const sources = new Map<string, Map<string, number>>();
+
+  for (const profile of profiles) {
+    const lists = profile.trackSources?.length
+      ? profile.trackSources
+      : buildTrackSources([profile]);
+
+    for (const source of lists) {
+      const tracks = sources.get(source.name) ?? new Map<string, number>();
+      for (const track of source.tracks) {
+        const key = normalizeTrackKey(track.name);
+        const playcount = track.playcount ?? 0;
+        tracks.set(key, Math.max(tracks.get(key) ?? 0, playcount));
+      }
+      sources.set(source.name, tracks);
+    }
+  }
+
+  return [...sources.entries()].map(([name, tracks]) => ({
+    name,
+    tracks: [...tracks.entries()].map(([trackName, playcount]) => ({
+      name: trackName,
+      playcount,
+    })),
+  }));
+}
+
 export function mergeLastFmProfiles(
   profiles: HeadlinerLastFmProfile[],
   primaryName?: string,
@@ -163,6 +202,7 @@ export function mergeLastFmProfiles(
     similarArtists: mergeSimilarArtists(unique),
     topTracks: mergedTracks.tracks,
     topTracksTotal: mergedTracks.total,
+    trackSources: mergeTrackSources(unique),
     images: pickBestImages(unique),
     updatedAt: primary.updatedAt,
     searchQuery: primary.searchQuery,

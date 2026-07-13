@@ -24,6 +24,11 @@ export interface HeadlinerLastFmTrack {
   artistName?: string;
 }
 
+export interface HeadlinerLastFmTrackSource {
+  name: string;
+  tracks: Array<Pick<HeadlinerLastFmTrack, 'name' | 'playcount'>>;
+}
+
 export interface HeadlinerLastFmProfile {
   mbid?: string;
   name: string;
@@ -37,6 +42,7 @@ export interface HeadlinerLastFmProfile {
   similarArtists: HeadlinerLastFmSimilarArtist[];
   topTracks: HeadlinerLastFmTrack[];
   topTracksTotal?: number;
+  trackSources?: HeadlinerLastFmTrackSource[];
   images?: HeadlinerLastFmImage[];
   updatedAt: string;
   searchQuery?: string;

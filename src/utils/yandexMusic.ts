@@ -1,5 +1,5 @@
 import type { Headliner } from '../types';
-import type { HeadlinerLastFmTrack } from '../types/lastfm';
+import type { HeadlinerLastFmProfile, HeadlinerLastFmTrack } from '../types/lastfm';
 
 const YANDEX_MUSIC_SEARCH_URL = 'https://music.yandex.ru/search';
 
@@ -11,11 +11,14 @@ function normalizeNameKey(name: string): string {
     .trim();
 }
 
-export function resolveTrackYandexArtist(
+function normalizeTrackKey(name: string): string {
+  return name.toLocaleLowerCase('ru').replace(/\s+/g, ' ').trim();
+}
+
+function mapSourceNameToDisplay(
+  sourceName: string,
   headliner: Pick<Headliner, 'name' | 'alternateNames'>,
-  track: Pick<HeadlinerLastFmTrack, 'artistName'>,
 ): string {
-  const sourceName = track.artistName?.trim() || headliner.name;
   const sourceKey = normalizeNameKey(sourceName);
   const mainKey = normalizeNameKey(headliner.name);
 
@@ -31,6 +34,45 @@ export function resolveTrackYandexArtist(
   }
 
   return sourceName;
+}
+
+function resolveTrackSourceName(
+  headliner: Pick<Headliner, 'name' | 'alternateNames'>,
+  track: Pick<HeadlinerLastFmTrack, 'name' | 'artistName'>,
+  lastfm?: Pick<HeadlinerLastFmProfile, 'trackSources'>,
+): string {
+  const trackKey = normalizeTrackKey(track.name);
+
+  if (lastfm?.trackSources?.length) {
+    let best: { name: string; playcount: number } | null = null;
+
+    for (const source of lastfm.trackSources) {
+      const hit = source.tracks.find((item) => normalizeTrackKey(item.name) === trackKey);
+      if (!hit) {
+        continue;
+      }
+
+      const playcount = hit.playcount ?? 0;
+      if (!best || playcount > best.playcount) {
+        best = { name: source.name, playcount };
+      }
+    }
+
+    if (best) {
+      return best.name;
+    }
+  }
+
+  return track.artistName?.trim() || headliner.name;
+}
+
+export function resolveTrackYandexArtist(
+  headliner: Pick<Headliner, 'name' | 'alternateNames'>,
+  track: Pick<HeadlinerLastFmTrack, 'name' | 'artistName'>,
+  lastfm?: Pick<HeadlinerLastFmProfile, 'trackSources'>,
+): string {
+  const sourceName = resolveTrackSourceName(headliner, track, lastfm);
+  return mapSourceNameToDisplay(sourceName, headliner);
 }
 
 export function buildYandexMusicArtistSearchUrl(artist: string): string {
