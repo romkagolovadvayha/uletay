@@ -4,6 +4,7 @@ import { resolveLastFmProfileForHeadliner, sleep, verifyLastFmApiKey } from '../
 import { syncAppHeadliners } from '../src/lib/headliners';
 import type { AppData, Headliner } from '../src/types';
 import { getDbConfig, loadDbEnv } from './load-db-env.mjs';
+import { maskProxyUrl, resolveLastFmProxyUrl } from '../src/lib/lastfm-fetch';
 
 const dryRun = process.argv.includes('--dry-run');
 const refreshProfile = process.argv.includes('--refresh-profile');
@@ -31,10 +32,23 @@ function mergeHeadlinerChanges(base: Headliner[], changed: Headliner[]): Headlin
 
 async function main() {
   loadDbEnv();
+
+  const proxyUrl = resolveLastFmProxyUrl();
+  console.log(
+    `Last.fm image sync started${dryRun ? ' (dry-run)' : ''}${
+      refreshProfile ? ' (refresh-profile)' : ''
+    }${onlyId ? ` (id=${onlyId})` : ''}`,
+  );
+  if (proxyUrl) {
+    console.log(`Proxy: ${maskProxyUrl(proxyUrl)}`);
+  }
+
+  console.log('Verifying Last.fm API key...');
   await verifyLastFmApiKey();
   console.log('Last.fm API key OK');
 
   const db = getDbConfig();
+  console.log(`Connecting to MySQL ${db.host}/${db.database}...`);
   const pool = await mysql.createConnection({
     host: db.host,
     database: db.database,
