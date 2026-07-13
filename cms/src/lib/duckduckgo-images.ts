@@ -1,10 +1,20 @@
+import sharp from 'sharp';
+
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+const SQUARE_RATIO_MIN = 0.85;
+const SQUARE_RATIO_MAX = 1.15;
+const MIN_IMAGE_EDGE = 180;
+const MAX_TRANSPARENT_PIXEL_RATIO = 0.01;
+const ALPHA_OPAQUE_THRESHOLD = 245;
 
 export type DuckDuckGoImageResult = {
   image: string;
   title?: string;
   source?: string;
+  width?: number;
+  height?: number;
 };
 
 export function buildMusicCoverSearchQueries(artistName: string): string[] {
@@ -14,11 +24,53 @@ export function buildMusicCoverSearchQueries(artistName: string): string[] {
   }
 
   return [
-    `группа музыкальная ${primary} лого`,
-    `музыкальная группа ${primary} лого`,
+    `группа музыкальная ${primary} лого квадрат`,
+    `музыкальная группа ${primary} лого квадрат`,
     `${primary} группа музыкальная лого`,
+    `${primary} лого квадрат`,
     `${primary} лого`,
   ];
+}
+
+function isRoughlySquare(width?: number, height?: number): boolean {
+  if (!width || !height || width < MIN_IMAGE_EDGE || height < MIN_IMAGE_EDGE) {
+    return false;
+  }
+
+  const ratio = width / height;
+  return ratio >= SQUARE_RATIO_MIN && ratio <= SQUARE_RATIO_MAX;
+}
+
+async function isOpaqueSquareImage(buffer: Buffer): Promise<boolean> {
+  const metadata = await sharp(buffer, { animated: false }).metadata();
+  if (!isRoughlySquare(metadata.width, metadata.height)) {
+    return false;
+  }
+
+  if (!metadata.hasAlpha) {
+    return true;
+  }
+
+  const { data, info } = await sharp(buffer, { animated: false })
+    .resize(96, 96, { fit: 'inside', withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  if (info.channels < 4) {
+    return true;
+  }
+
+  const totalPixels = info.width * info.height;
+  let transparentPixels = 0;
+
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < ALPHA_OPAQUE_THRESHOLD) {
+      transparentPixels += 1;
+    }
+  }
+
+  return transparentPixels / totalPixels <= MAX_TRANSPARENT_PIXEL_RATIO;
 }
 
 export async function searchDuckDuckGoImages(query: string): Promise<DuckDuckGoImageResult[]> {
@@ -49,11 +101,23 @@ export async function searchDuckDuckGoImages(query: string): Promise<DuckDuckGoI
 export async function fetchFirstUsableImageUrl(
   results: DuckDuckGoImageResult[],
 ): Promise<{ imageUrl: string; title: string } | null> {
-  for (const result of results.slice(0, 10)) {
-    const imageUrl = result.image?.trim();
-    if (!imageUrl?.startsWith('http')) {
-      continue;
-    }
+  const candidates = results
+    .filter((result) => {
+      const imageUrl = result.image?.trim();
+      if (!imageUrl?.startsWith('http')) {
+        return false;
+      }
+
+      if (result.width && result.height) {
+        return isRoughlySquare(result.width, result.height);
+      }
+
+      return true;
+    })
+    .slice(0, 24);
+
+  for (const result of candidates) {
+    const imageUrl = result.image.trim();
 
     try {
       const response = await fetch(imageUrl, {
@@ -71,6 +135,10 @@ export async function fetchFirstUsableImageUrl(
 
       const buffer = Buffer.from(await response.arrayBuffer());
       if (buffer.length < 1500) {
+        continue;
+      }
+
+      if (!(await isOpaqueSquareImage(buffer))) {
         continue;
       }
 

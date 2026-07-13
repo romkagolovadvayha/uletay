@@ -199,6 +199,7 @@ async function tryWebCoverImage(
   return {
     imageUrl: await downloadAndOptimizeArtistImage(resolved.imageUrl, headlinerId, {
       filename: targetFilename,
+      flattenBackground: '#141414',
     }),
     source: 'web',
     query: resolved.query,

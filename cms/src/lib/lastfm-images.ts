@@ -122,12 +122,15 @@ async function downloadImageBuffer(imageUrl: string): Promise<Buffer> {
 export async function downloadAndOptimizeArtistImage(
   imageUrl: string,
   headlinerId: string,
-  options?: { filename?: string },
+  options?: { filename?: string; flattenBackground?: string },
 ): Promise<string> {
   const input = await downloadImageBuffer(imageUrl);
   const { width, height } = IMAGE_PRESETS.artist;
-  const output = await sharp(input, { animated: false })
-    .rotate()
+  let pipeline = sharp(input, { animated: false }).rotate();
+  if (options?.flattenBackground) {
+    pipeline = pipeline.flatten({ background: options.flattenBackground });
+  }
+  const output = await pipeline
     .resize(width, height, { fit: 'cover', position: 'centre' })
     .webp({ quality: 82, effort: 4 })
     .toBuffer();
