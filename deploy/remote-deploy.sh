@@ -74,6 +74,8 @@ else
   echo "LASTFM_API_KEY configured (${#LASTFM_API_KEY} characters)"
 fi
 
+bash "$DEPLOY_PATH/deploy/setup-lastfm-cron.sh"
+
 cd "$DEPLOY_PATH/cms"
 npm ci
 
