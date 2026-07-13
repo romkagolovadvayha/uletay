@@ -70,6 +70,7 @@
     "fest:fetch-2022-images": "node scripts/fetch-headliners-2022-images.mjs",
     "fest:fetch-2019-images": "node scripts/fetch-headliners-2019-images.mjs",
     "fest:fetch-2016-images": "node scripts/fetch-headliners-2016-images.mjs",
+    "fest:fetch-2026-images": "node scripts/fetch-headliners-2026-images.mjs",
     "cms:dev": "npm --prefix cms run dev",
     "cms:build": "npm --prefix cms run build",
     "cms:install": "npm --prefix cms run db:install",

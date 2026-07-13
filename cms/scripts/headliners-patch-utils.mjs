@@ -58,6 +58,8 @@ const artistAliases = {
   'ВИА ВОЛГА-ВОЛГА': 'ВИА «ВОЛГА-ВОЛГА»',
   INDULGENCIA: 'ИНДУЛЬГЕНЦИЯ',
   СКАНВОРД: "СКА'N'ВОРД",
+  ПОЛНАЛЮБВИ: 'ПОЛНАЛЮБВИ / POLNALYUBVI',
+  'ФАН МОД': 'ФАН МОД / FUN MODE',
 };
 
 export function normalizeArtistKey(name) {
