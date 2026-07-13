@@ -73,6 +73,7 @@ export interface Headliner {
   imageTint: string;
   imageUrl?: string;
   years: number[];
+  lastfm?: import('./lastfm').HeadlinerLastFmProfile;
 }
 
 export interface FestivalInfo {

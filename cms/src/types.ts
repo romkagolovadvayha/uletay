@@ -1,3 +1,5 @@
+import type { HeadlinerLastFmProfile } from '@/lastfm-types';
+
 export type StageId = 'ren-tv' | 'south' | 'west';
 
 export interface Stage {
@@ -64,6 +66,14 @@ export interface FoodCourtVendor {
   menuImageUrls?: string[];
 }
 
+export type {
+  HeadlinerLastFmImage,
+  HeadlinerLastFmProfile,
+  HeadlinerLastFmSimilarArtist,
+  HeadlinerLastFmTag,
+  HeadlinerLastFmTrack,
+} from '@/lastfm-types';
+
 export interface Headliner {
   id: string;
   name: string;
@@ -71,6 +81,7 @@ export interface Headliner {
   imageTint: string;
   imageUrl?: string;
   years: number[];
+  lastfm?: HeadlinerLastFmProfile;
 }
 
 export interface FestivalInfo {

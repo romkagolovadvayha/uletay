@@ -53,6 +53,7 @@ function migrateHeadliner(raw: Headliner & { year?: number }): Headliner {
     imageTint: raw.imageTint || IMAGE_TINTS[0],
     imageUrl: raw.imageUrl?.trim() || undefined,
     years: years.sort((a, b) => b - a),
+    lastfm: raw.lastfm,
   };
 }
 
@@ -75,6 +76,7 @@ function mergeHeadlinersByName(headliners: Headliner[]): Headliner[] {
       imageUrl: existing.imageUrl ?? item.imageUrl,
       imageTint: existing.imageTint || item.imageTint,
       years: [...new Set([...existing.years, ...item.years])].sort((a, b) => b - a),
+      lastfm: existing.lastfm ?? item.lastfm,
     });
   }
 

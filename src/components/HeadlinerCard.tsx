@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Headliner } from '../types';
+import { formatLastFmCount } from '../utils/lastfmFormat';
 import { ArtistImage } from './ArtistImage';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -13,8 +14,29 @@ type Props = {
   large?: boolean;
 };
 
+const MINI_THUMB_SIZE = 52;
+
+function formatHeadlinerStatsLine(headliner: Headliner): string | null {
+  const listeners = headliner.lastfm?.listeners;
+  const playcount = headliner.lastfm?.playcount;
+
+  if (!listeners && !playcount) {
+    return null;
+  }
+
+  const parts: string[] = [];
+  if (listeners) {
+    parts.push(`${formatLastFmCount(listeners)} слушателей`);
+  }
+  if (playcount) {
+    parts.push(`${formatLastFmCount(playcount)} прослушиваний`);
+  }
+
+  return parts.join(' · ');
+}
+
 function HeadlinerThumbnail({ headliner, large }: { headliner: Headliner; large?: boolean }) {
-  const size = large ? 220 : 72;
+  const size = large ? 220 : MINI_THUMB_SIZE;
 
   return (
     <ArtistImage
@@ -35,6 +57,8 @@ export function HeadlinerCard({ headliner, onPress, large }: Props) {
     );
   }
 
+  const statsLine = formatHeadlinerStatsLine(headliner);
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -46,17 +70,10 @@ export function HeadlinerCard({ headliner, onPress, large }: Props) {
         <Text style={styles.name} numberOfLines={1}>
           {headliner.name.toUpperCase()}
         </Text>
-        <Text style={styles.description} numberOfLines={2}>
-          {headliner.description}
-        </Text>
-        {headliner.years.length ? (
-          <View style={styles.yearTags}>
-            {headliner.years.map((year) => (
-              <View key={year} style={styles.yearTag}>
-                <Text style={styles.yearTagText}>{year}</Text>
-              </View>
-            ))}
-          </View>
+        {statsLine ? (
+          <Text style={styles.stats} numberOfLines={1}>
+            {statsLine}
+          </Text>
         ) : null}
       </View>
     </Pressable>
@@ -69,8 +86,9 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     marginBottom: spacing.sm,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -90,30 +108,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
   },
-  description: {
-    ...typography.body,
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  yearTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 4,
-  },
-  yearTag: {
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceCard,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  yearTagText: {
+  stats: {
     ...typography.caption,
-    color: colors.primary,
+    color: colors.textSecondary,
     fontSize: 11,
+    lineHeight: 14,
     textTransform: 'none',
     letterSpacing: 0,
   },

@@ -86,6 +86,12 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path'> & { path: string }> = {
       'Правила посещения фестиваля УЛЕТАЙ: безопасность, поведение на площадке и важные требования для гостей.',
     path: '/rules',
   },
+  HeadlinersMain: {
+    title: `Хэдлайнеры — ${SITE_NAME}`,
+    description:
+      'Хэдлайнеры фестиваля УЛЕТАЙ: артисты прошлых лет и главные звёзды площадки в Лагуново.',
+    path: '/headliners',
+  },
 };
 
 function getDeepestRoute(state: NavState | undefined): RouteNode | null {
@@ -138,6 +144,10 @@ function buildPath(chain: RouteNode[]): string {
       return '/about';
     case 'FestivalRules':
       return '/rules';
+    case 'HeadlinersMain':
+      return '/headliners';
+    case 'HeadlinerDetail':
+      return params.headlinerId ? `/headliners/${params.headlinerId}` : '/headliners';
     default:
       return '/';
   }
@@ -227,6 +237,23 @@ export function resolveSeoMeta(
       title: `${stageName} — расписание | ${SITE_NAME}`,
       description: `Расписание выступлений на сцене «${stageName}» на фестивале УЛЕТАЙ.`,
       path: `/schedule/full/${params.stageId}`,
+    };
+  }
+
+  if (routeName === 'HeadlinerDetail' && params.headlinerId) {
+    const headliner = data.headliners.find((item) => item.id === params.headlinerId);
+    const name = headliner?.name ?? 'Хэдлайнер';
+    const yearsLabel = headliner?.years.length
+      ? ` (${headliner.years.map((year) => `УЛЕТАЙ ${year}`).join(', ')})`
+      : '';
+    return {
+      title: `${name} — хэдлайнер | ${SITE_NAME}`,
+      description: headliner
+        ? headliner.lastfm?.bioSummary?.trim() ||
+          headliner.description.trim() ||
+          `${name} — хэдлайнер фестиваля УЛЕТАЙ${yearsLabel}.`
+        : DEFAULT_DESCRIPTION,
+      path: `/headliners/${params.headlinerId}`,
     };
   }
 

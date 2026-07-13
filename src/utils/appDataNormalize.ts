@@ -58,6 +58,7 @@ export function normalizeAppData(data: AppData): AppData {
       ...item,
       imageUrl: item.imageUrl ?? undefined,
       years: Array.isArray(item.years) ? item.years : [],
+      lastfm: item.lastfm,
     })),
   });
 }

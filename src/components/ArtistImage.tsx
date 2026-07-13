@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image, ImageStyle } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { colors } from '../theme/colors';
-import { resolveArtistImageSource } from '../utils/festArtistImages';
+import { buildArtistImageSourceChain } from '../utils/festArtistImages';
 
 type Props = {
   imageUrl?: string | null;
@@ -15,11 +15,41 @@ type Props = {
 };
 
 export function ArtistImage({ imageUrl, artist, style, contentFit = 'cover', variant = 'thumbnail' }: Props) {
-  const source = resolveArtistImageSource(imageUrl, artist);
+  const chainKey = `${imageUrl ?? ''}\0${artist ?? ''}`;
+
+  return (
+    <ArtistImageResolved
+      key={chainKey}
+      imageUrl={imageUrl}
+      artist={artist}
+      style={style}
+      contentFit={contentFit}
+      variant={variant}
+    />
+  );
+}
+
+function ArtistImageResolved({
+  imageUrl,
+  artist,
+  style,
+  contentFit = 'cover',
+  variant = 'thumbnail',
+}: Props) {
+  const chain = useMemo(() => buildArtistImageSourceChain(imageUrl, artist), [imageUrl, artist]);
+  const [index, setIndex] = useState(0);
   const iconSize = variant === 'hero' ? 72 : 32;
+  const source = index < chain.length ? chain[index] : undefined;
 
   if (source) {
-    return <Image source={source} style={style} contentFit={contentFit} />;
+    return (
+      <Image
+        source={source}
+        style={style}
+        contentFit={contentFit}
+        onError={() => setIndex((current) => current + 1)}
+      />
+    );
   }
 
   return (

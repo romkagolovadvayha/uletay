@@ -12,6 +12,16 @@ const artistAliases: Record<string, string> = {
   'КОСТЯ КУЛЯСОВ': 'КОСТЯ КУЛЯСОВ. АНИМАЦИЯ',
   POLNALYUBVI: 'ПОЛНАЛЮБВИ / POLNALYUBVI',
   'ВИА ВОЛГА-ВОЛГА': 'ВИА «ВОЛГА-ВОЛГА»',
+  'ВОЛГА-ВОЛГА': 'ВИА «ВОЛГА-ВОЛГА»',
+  'VERE DICTUM': 'ВЕРЕ ДИКТУМ / VERE DICTUM',
+  HELVEGEN: 'ХЕЛЬВЕГЕН / HELVEGEN',
+  LASCALA: 'ЛАСКАЛА / LASCALA',
+  БАГИРА: 'БАГИРА / BAGIRA',
+  KDRR: 'КДРР / KDRR',
+  STIGMATA: 'СТИГМАТА / STIGMATA',
+  'БЕZ Б': 'БЕЗ Б / BEZ B',
+  DISTEMPER: 'ДИСТЕМПЕР / DISTEMPER',
+  'ВКЛЮЧАЙ МИКРОФОН': 'ВКЛЮЧАЙ МИКРОФОН!',
 };
 
 function normalize(name: string): string {
@@ -61,9 +71,46 @@ export function resolveArtistImageSource(
   imageUrl?: string | null,
   artist?: string | null,
 ): ImageSource | number | undefined {
+  return buildArtistImageSourceChain(imageUrl, artist)[0];
+}
+
+function sameImageSource(a: ImageSource | number, b: ImageSource | number): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a === b;
+  }
+  if (
+    typeof a === 'object' &&
+    typeof b === 'object' &&
+    a &&
+    b &&
+    'uri' in a &&
+    'uri' in b &&
+    typeof a.uri === 'string' &&
+    typeof b.uri === 'string'
+  ) {
+    return a.uri === b.uri;
+  }
+  return false;
+}
+
+/** CMS URL (if any), then fest bundled asset / fest-assets URL — same order as schedule cards. */
+export function buildArtistImageSourceChain(
+  imageUrl?: string | null,
+  artist?: string | null,
+): (ImageSource | number)[] {
+  const chain: (ImageSource | number)[] = [];
   const cmsUrl = resolveMediaUrl(imageUrl);
   if (cmsUrl) {
-    return { uri: cmsUrl };
+    chain.push({ uri: cmsUrl });
   }
-  return getFestArtistImageSource(artist);
+
+  const fest = getFestArtistImageSource(artist);
+  if (fest && !chain.some((item) => sameImageSource(item, fest))) {
+    chain.push(fest);
+  }
+
+  return chain;
 }

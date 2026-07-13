@@ -8,7 +8,7 @@ import { Headliner } from '../types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { filterHeadlinersByYear } from '../utils/headlinerHelpers';
+import { filterHeadlinersByYear, sortHeadlinersByPopularity } from '../utils/headlinerHelpers';
 
 type Props = {
   year?: number;
@@ -32,7 +32,10 @@ export function HomeHeadlinersWidget({
   const { data } = useAppData();
 
   const headliners = useMemo(() => {
-    const list = year != null ? filterHeadlinersByYear(data.headliners, year) : data.headliners;
+    const list =
+      year != null
+        ? filterHeadlinersByYear(data.headliners, year)
+        : sortHeadlinersByPopularity(data.headliners);
     return list.slice(0, limit);
   }, [data.headliners, limit, year]);
 

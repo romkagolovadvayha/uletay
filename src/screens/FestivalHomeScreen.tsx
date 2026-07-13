@@ -17,13 +17,13 @@ import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useStagePrimaryPerformances } from '../hooks/useCurrentLivePerformance';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
-import { openScheduleTabMain } from '../navigation/scheduleNavigation';
+import { openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { getStageName, isFestivalStarted, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
-import { hasScheduleForYear } from '../utils/headlinerHelpers';
+import { getLatestHeadlinerYear, hasScheduleForYear } from '../utils/headlinerHelpers';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'HomeTab'>;
 
@@ -116,6 +116,10 @@ export function FestivalHomeScreen({ navigation }: Props) {
   const showPreFestivalHeadliners = festivalActive && !festivalStarted;
   const showPostFestivalHeadliners = !festivalActive && !hasNextYearSchedule;
   const showLiveSection = festivalActive && festivalStarted;
+  const latestHeadlinerYear = useMemo(
+    () => getLatestHeadlinerYear(data.headliners),
+    [data.headliners],
+  );
 
   const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');
   const hasAnySoon = stagePrimaries.some(
@@ -129,12 +133,12 @@ export function FestivalHomeScreen({ navigation }: Props) {
       ? 'СКОРО НА СЦЕНАХ'
       : 'СЛЕДУЮЩИЕ ВЫСТУПЛЕНИЯ';
 
-  const openHeadlinersMain = useCallback(() => {
+  const openHeadlinersMainScreen = useCallback(() => {
     if (festivalActive) {
       navigation.navigate('MoreTab', { screen: 'HeadlinersMain' });
       return;
     }
-    navigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' });
+    openHeadlinersMain(navigation);
   }, [festivalActive, navigation]);
 
   const openHeadlinerDetail = useCallback(
@@ -230,24 +234,25 @@ export function FestivalHomeScreen({ navigation }: Props) {
           ) : null}
         </View>
 
-        {showPostFestivalHeadliners ? (
+        {showPostFestivalHeadliners && latestHeadlinerYear != null ? (
           <View style={styles.section}>
             <HomeHeadlinersWidget
-              limit={3}
+              year={latestHeadlinerYear}
+              limit={5}
               moreLabel="ЕЩЁ"
               hint=""
               onPressHeadliner={(headliner) => openHeadlinerDetail(headliner.id)}
-              onPressAll={openHeadlinersMain}
+              onPressAll={openHeadlinersMainScreen}
             />
           </View>
         ) : null}
 
-        {showPreFestivalHeadliners ? (
+        {showPreFestivalHeadliners && latestHeadlinerYear != null ? (
           <View style={styles.section}>
             <HomeHeadlinersWidget
-              year={data.festival.year}
+              year={latestHeadlinerYear}
               onPressHeadliner={(headliner) => openHeadlinerDetail(headliner.id)}
-              onPressAll={openHeadlinersMain}
+              onPressAll={openHeadlinersMainScreen}
             />
           </View>
         ) : null}

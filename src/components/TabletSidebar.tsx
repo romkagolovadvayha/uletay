@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import {
   openAutographsMain,
+  openHeadlinersMain,
   openScheduleTabMain,
   resetAllNestedTabStacks,
 } from '../navigation/scheduleNavigation';
@@ -114,7 +115,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       return;
     }
     if (routeName === 'HeadlinersTab') {
-      tabNavigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' });
+      openHeadlinersMain(tabNavigation);
       return;
     }
     if (routeName === 'MoreTab') {

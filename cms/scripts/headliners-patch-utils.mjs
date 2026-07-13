@@ -24,18 +24,40 @@ const artistAliases = {
   'ПРОЕКТ ГОРШЕНЕВ': 'ГОРШЕНЕВ',
   'ПРОЕКТ ГОРШЕНЁВ': 'ГОРШЕНЕВ',
   АНИМАЦИЯ: 'КОСТЯ КУЛЯСОВ. АНИМАЦИЯ',
-  STIGMATA: 'STIGMATA',
-  'СТИГМАТА / STIGMATA': 'STIGMATA',
+  STIGMATA: 'СТИГМАТА / STIGMATA',
+  'СТИГМАТА / STIGMATA': 'СТИГМАТА / STIGMATA',
   'ЧИЖ & CO.': 'ЧИЖ & CO',
   'THE ЧИЖ & CO': 'ЧИЖ & CO',
-  'ЧИЖ & CO.': 'ЧИЖ & CO',
   'ЧЁРНЫЙ ОБЕЛИСК': 'ЧЕРНЫЙ ОБЕЛИСК',
   'ТРОЛЛЬ ГНЁТ ЕЛЬ': 'ТРОЛЛЬ ГНЕТ ЕЛЬ',
   'ТРОЛЛЬ ГНЕТ ЕЛЬ': 'ТРОЛЛЬ ГНЕТ ЕЛЬ',
   'F.P.G': 'F.P.G.',
   FPG: 'F.P.G.',
-  'БЕZ Б': 'БЕZ Б / BEZ B',
-  'БЕZБ': 'БЕZ Б / BEZ B',
+  'БЕZ Б': 'БЕЗ Б / BEZ B',
+  'БЕZБ': 'БЕЗ Б / BEZ B',
+  БАГИРА: 'БАГИРА / BAGIRA',
+  'VERE DICTUM': 'ВЕРЕ ДИКТУМ / VERE DICTUM',
+  HELVEGEN: 'ХЕЛЬВЕГЕН / HELVEGEN',
+  LASCALA: 'ЛАСКАЛА / LASCALA',
+  'ВОЛГА-ВОЛГА': 'ВИА «ВОЛГА-ВОЛГА»',
+  KDRR: 'КДРР / KDRR',
+  'ЕКАТЕРИНА ЯШНИКОВА': 'ЯШНИКОВА',
+  'МЁРТВЫЕ ОСЫ': 'МЁРТВЫЕ ОСЫ',
+  SELLOUT: 'СЕЛЛАУТ / SELLOUT',
+  DISTEMPER: 'ДИСТЕМПЕР / DISTEMPER',
+  'ВКЛЮЧАЙ МИКРОФОН': 'ВКЛЮЧАЙ МИКРОФОН!',
+  'СУРГАНОВА и оркестр': 'СУРГАНОВА И ОРКЕСТР',
+  'СУРГАНОВА И ОРКЕСТР': 'СУРГАНОВА И ОРКЕСТР',
+  'АГАТА КРИСТИ': 'АГАТА КРИСТИ',
+  SMEX: 'СМЕХ',
+  'БЕЗ Б': 'БЕЗ Б / BEZ B',
+  RAVANNA: 'РАВАННА / RAVANNA',
+  CASUAL: 'КЭЖУАЛ / CASUAL',
+  '7000$': 'СЕМЬ ШТУК БАКСОВ / 7000$',
+  'МЕРТВЫЕ ОСЫ': 'МЁРТВЫЕ ОСЫ',
+  'ВИА ВОЛГА-ВОЛГА': 'ВИА «ВОЛГА-ВОЛГА»',
+  INDULGENCIA: 'ИНДУЛЬГЕНЦИЯ',
+  СКАНВОРД: "СКА'N'ВОРД",
 };
 
 export function normalizeArtistKey(name) {
@@ -79,12 +101,25 @@ function loadArtistImageUrl(name) {
   try {
     const parsed = JSON.parse(readFileSync(sourcesPath, 'utf8'));
     const artists = parsed.artists ?? {};
-    const key = normalizeArtistKey(name);
-    return artists[key] ?? artists[name.toUpperCase()];
+    const canonical = canonicalHeadlinerName(name);
+    const candidates = [canonical, name, name.toUpperCase(), canonical.toUpperCase()];
+
+    for (const candidate of candidates) {
+      const key = normalizeArtistKey(candidate);
+      if (artists[candidate]) return artists[candidate];
+      if (artists[key]) return artists[key];
+      for (const [sourceKey, url] of Object.entries(artists)) {
+        if (normalizeArtistKey(sourceKey) === key) return url;
+      }
+    }
   } catch {
     return undefined;
   }
+
+  return undefined;
 }
+
+export { loadArtistImageUrl };
 
 export function buildHistoricalHeadliners() {
   const byKey = new Map();
@@ -143,7 +178,7 @@ export function mergeHistoricalHeadliners(existing, historical) {
       years: nextYears,
       description: current.description?.trim() || item.description,
       imageTint: current.imageTint || item.imageTint,
-      ...(current.imageUrl ? { imageUrl: current.imageUrl } : item.imageUrl ? { imageUrl: item.imageUrl } : {}),
+      imageUrl: current.imageUrl ?? item.imageUrl,
     };
 
     if (yearsChanged) {

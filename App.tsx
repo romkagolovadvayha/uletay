@@ -50,10 +50,12 @@ function AppContent() {
         syncWebSeo();
       }}
       onStateChange={() => {
-        if (navigationRef.isReady()) {
-          syncNestedStacksWithActiveTab(navigationRef);
-        }
-        requestAnimationFrame(() => syncWebSeo());
+        requestAnimationFrame(() => {
+          if (navigationRef.isReady()) {
+            syncNestedStacksWithActiveTab(navigationRef);
+          }
+          syncWebSeo();
+        });
       }}
     >
       <StatusBar style="light" />

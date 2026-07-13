@@ -1,17 +1,36 @@
-import { NavigationProp, StackActions } from '@react-navigation/native';
+import { CommonActions, NavigationProp, StackActions } from '@react-navigation/native';
 import { RootTabParamList, ScheduleStackParamList } from './types';
 
 type NestedTabName = 'ScheduleTab' | 'Autographs' | 'HeadlinersTab' | 'MoreTab';
 
 const NESTED_TABS: NestedTabName[] = ['ScheduleTab', 'Autographs', 'HeadlinersTab', 'MoreTab'];
 
+type NestedStackState = {
+  key?: string;
+  index?: number;
+  routes: { name: string }[];
+};
+
 type RootTabNavigation = {
   getState(): {
     index?: number;
-    routes: { name: string; state?: { key?: string; index?: number } }[];
+    routes: { name: string; state?: NestedStackState }[];
   };
   dispatch: NavigationProp<RootTabParamList>['dispatch'];
 };
+
+function getTabMainRoute(tabName: NestedTabName): string {
+  switch (tabName) {
+    case 'ScheduleTab':
+      return 'ScheduleMain';
+    case 'Autographs':
+      return 'AutographsMain';
+    case 'HeadlinersTab':
+      return 'HeadlinersMain';
+    case 'MoreTab':
+      return 'MoreHome';
+  }
+}
 
 export function popTabStackToMain(
   navigation: RootTabNavigation,
@@ -20,12 +39,31 @@ export function popTabStackToMain(
   const state = navigation.getState();
   const nestedState = state.routes.find((route) => route.name === tabName)?.state;
 
-  if (!nestedState?.key || (nestedState.index ?? 0) === 0) {
+  if (!nestedState?.key) {
+    return;
+  }
+
+  const nestedIndex = nestedState.index ?? 0;
+  const mainRoute = getTabMainRoute(tabName);
+  const currentRoute = nestedState.routes[nestedIndex]?.name;
+
+  if (!currentRoute || currentRoute === mainRoute) {
+    return;
+  }
+
+  if (nestedIndex > 0) {
+    navigation.dispatch({
+      ...StackActions.popToTop(),
+      target: nestedState.key,
+    });
     return;
   }
 
   navigation.dispatch({
-    ...StackActions.popToTop(),
+    ...CommonActions.reset({
+      index: 0,
+      routes: [{ name: mainRoute }],
+    }),
     target: nestedState.key,
   });
 }
@@ -80,6 +118,15 @@ export function openMoreHome(navigation: NavigationProp<RootTabParamList>) {
   popMoreStackToMain(navigation);
 }
 
+export function popHeadlinersStackToMain(navigation: RootTabNavigation) {
+  popTabStackToMain(navigation, 'HeadlinersTab');
+}
+
+export function openHeadlinersMain(navigation: NavigationProp<RootTabParamList>) {
+  navigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' });
+  popHeadlinersStackToMain(navigation);
+}
+
 export function openScheduleMainFromStack(
   navigation: Pick<NavigationProp<ScheduleStackParamList>, 'dispatch' | 'getState'>,
 ) {
@@ -112,6 +159,11 @@ export function createNestedTabListeners(
 
       if (tabName === 'Autographs') {
         openAutographsMain(navigation);
+        return;
+      }
+
+      if (tabName === 'HeadlinersTab') {
+        openHeadlinersMain(navigation);
         return;
       }
 

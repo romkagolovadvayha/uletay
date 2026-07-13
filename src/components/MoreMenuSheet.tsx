@@ -14,6 +14,7 @@ import { useMoreMenu } from '../context/MoreMenuContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useIsTablet } from '../hooks/useIsTablet';
 import { RootTabParamList } from '../navigation/types';
+import { openHeadlinersMain } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -57,7 +58,7 @@ export function MoreMenuSheet() {
             label: 'Хэдлайнеры',
             onPress: () => {
               close();
-              navigation.navigate('HeadlinersTab', { screen: 'HeadlinersMain' });
+              openHeadlinersMain(navigation);
             },
           },
         ]),
