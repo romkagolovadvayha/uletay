@@ -124,6 +124,15 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     mapApi.current = api;
   }, []);
 
+  useEffect(() => {
+    if (mapLoaded || mapLoadError || mapRenderError || !mapConfig?.enabled) {
+      return undefined;
+    }
+    // Don't keep the spinner forever if native load events are missed.
+    const timer = setTimeout(() => setMapLoaded(true), 8_000);
+    return () => clearTimeout(timer);
+  }, [mapLoaded, mapLoadError, mapRenderError, mapConfig?.enabled]);
+
   const handleLocate = useCallback(() => {
     setFollowUser(true);
     if (location) {

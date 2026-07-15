@@ -10,7 +10,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useLatestRef } from '../../hooks/useLatestRef';
 import { resolveMediaUrl } from '../../config/api';
-import { mapColors } from '../../theme/map';
+import { mapColors, NATIVE_MAP_STYLE_URL, NATIVE_MAP_TEXT_FONT } from '../../theme/map';
 import type { MapZoneProperties } from '../../types/map';
 import { filterZoneFeatures, MAP_CAMERA_2D } from '../../utils/map/layerStyles';
 import { overlayToImageCoordinates } from '../../utils/map/overlayGeoref';
@@ -142,13 +142,16 @@ export function FestivalMapView({
     }
   }, [followUser, userLocation, pitch]);
 
+  const markLoaded = () => onMapLoaded?.();
+
   return (
     <View style={styles.fill}>
       <Map
         style={styles.fill}
         androidView="texture"
-        mapStyle="https://demotiles.maplibre.org/style.json"
-        onDidFinishLoadingMap={() => onMapLoaded?.()}
+        mapStyle={NATIVE_MAP_STYLE_URL}
+        onDidFinishLoadingStyle={markLoaded}
+        onDidFinishLoadingMap={markLoaded}
         onDidFailLoadingMap={() => onMapLoadError?.()}
         onPress={(e) => {
           const features = 'features' in e.nativeEvent ? e.nativeEvent.features : undefined;
@@ -251,7 +254,7 @@ export function FestivalMapView({
               minzoom={ZONE_LABEL_MIN_ZOOM}
               layout={{
                 'text-field': ['get', 'label'],
-                'text-font': ['Open Sans Semibold', 'Arial Unicode MS Regular'],
+                'text-font': [...NATIVE_MAP_TEXT_FONT],
                 'text-size': [
                   'interpolate',
                   ['exponential', 2],

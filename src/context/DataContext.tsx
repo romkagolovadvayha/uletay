@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import {
   APP_DATA_CACHE_KEY,
   invalidateAppDataCache,
@@ -12,6 +12,8 @@ import { AppData } from '../types';
 import { normalizeAppData } from '../utils/appDataNormalize';
 import { defaultAppData } from '../storage/dataStore';
 import { colors } from '../theme/colors';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 
 function readCachedAppDataSync(): AppData | null {
   if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
@@ -47,15 +49,18 @@ const DataContext = createContext<DataContextValue | undefined>(undefined);
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppData>(getInitialAppData);
   const [isHydrated, setIsHydrated] = useState(Platform.OS === 'web');
+  const [isBootstrapping, setIsBootstrapping] = useState(Platform.OS !== 'web' || !readCachedAppDataSync());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
+  const lastFetchedAtRef = React.useRef<number | null>(null);
 
   const applyCachedSnapshot = useCallback(async () => {
     const cached = await readCachedAppData();
     if (cached) {
       setData(normalizeAppData(cached.data));
       setLastFetchedAt(cached.fetchedAt);
+      lastFetchedAtRef.current = cached.fetchedAt;
     }
     return cached;
   }, []);
@@ -63,7 +68,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const applyFreshData = useCallback(async (fresh: AppData) => {
     setData(normalizeAppData(fresh));
     const cached = await readCachedAppData();
-    setLastFetchedAt(cached?.fetchedAt ?? Date.now());
+    const fetchedAt = cached?.fetchedAt ?? Date.now();
+    setLastFetchedAt(fetchedAt);
+    lastFetchedAtRef.current = fetchedAt;
     setError(null);
   }, []);
 
@@ -78,7 +85,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const next = await loadAppDataFromApi(true);
         setData(next);
         const cached = await readCachedAppData();
-        setLastFetchedAt(cached?.fetchedAt ?? Date.now());
+        const fetchedAt = cached?.fetchedAt ?? Date.now();
+        setLastFetchedAt(fetchedAt);
+        lastFetchedAtRef.current = fetchedAt;
         setError(null);
         return;
       }
@@ -117,11 +126,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     void (async () => {
-      await applyCachedSnapshot();
-      if (!cancelled) {
-        setIsHydrated(true);
+      const cached = await applyCachedSnapshot();
+      if (cancelled) {
+        return;
       }
+      setIsHydrated(true);
+
+      if (cached) {
+        setIsBootstrapping(false);
+        void tryRefresh();
+        return;
+      }
+
+      // First launch: wait for the first API attempt before showing the UI.
       await tryRefresh();
+      if (!cancelled) {
+        setIsBootstrapping(false);
+      }
     })();
 
     const refreshInterval = setInterval(() => {
@@ -129,7 +150,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, APP_DATA_REFRESH_INTERVAL_MS);
 
     const retryInterval = setInterval(() => {
-      if (lastFetchedAt !== null) {
+      if (lastFetchedAtRef.current !== null) {
         return;
       }
       void tryRefresh();
@@ -140,17 +161,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       clearInterval(refreshInterval);
       clearInterval(retryInterval);
     };
-  }, [applyCachedSnapshot, applyFreshData, lastFetchedAt]);
+  }, [applyCachedSnapshot, applyFreshData]);
 
   const value = useMemo(
     () => ({ data, isLoading, error, refreshData, lastFetchedAt }),
     [data, isLoading, error, refreshData, lastFetchedAt],
   );
 
-  if (!isHydrated) {
+  if (!isHydrated || isBootstrapping) {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loaderText}>Загружаем данные фестиваля…</Text>
       </View>
     );
   }
@@ -172,5 +194,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  loaderText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });
