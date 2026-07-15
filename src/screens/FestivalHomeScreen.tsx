@@ -36,10 +36,7 @@ const PARALLAX_FACTOR = 0.42;
 const HERO_VIDEO_ASPECT_RATIO = 16 / 9;
 
 const HERO_VIDEO_POSTER = require('../../assets/images/hero-video-poster.webp');
-const HERO_VIDEO_SOURCE =
-  Platform.OS === 'android'
-    ? require('../../assets/videos/background.webm')
-    : require('../../assets/videos/background.mp4');
+const HERO_VIDEO_SOURCE = require('../../assets/videos/background.mp4');
 
 export function FestivalHomeScreen({ navigation }: Props) {
   const { data, refreshData } = useAppData();
