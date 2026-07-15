@@ -12,7 +12,7 @@ import { colors } from '../theme/colors';
 import { screenHeaderStyle } from '../theme/layout';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import { appFont, typography } from '../theme/typography';
 import { openExternalUrl } from '../utils/openExternalUrl';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'FestivalRules'>;
