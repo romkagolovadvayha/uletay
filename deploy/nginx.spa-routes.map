@@ -14,4 +14,5 @@ map $uri $is_spa_route {
     ~^/about/?$ 1;
     ~^/rules/?$ 1;
     ~^/settings/?$ 1;
+    ~^/legal/?$ 1;
 }
