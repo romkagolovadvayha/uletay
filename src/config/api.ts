@@ -28,7 +28,7 @@ export const API_BASE_URL =
     ? getWebApiBaseUrl()
     : 'http://localhost:3000/api');
 
-export const CACHE_TTL_MS = 60_000;
+export const APP_DATA_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
 function getSiteOrigin(): string {
   return API_BASE_URL.replace(/\/api\/?$/, '') || 'https://uletay.ru';

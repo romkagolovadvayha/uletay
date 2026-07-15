@@ -39,7 +39,7 @@ const HERO_VIDEO_POSTER = require('../../assets/images/hero-video-poster.webp');
 const HERO_VIDEO_SOURCE = require('../../assets/videos/background.mp4');
 
 export function FestivalHomeScreen({ navigation }: Props) {
-  const { data, refreshData } = useAppData();
+  const { data } = useAppData();
   const festivalActive = useFestivalActive();
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
@@ -81,7 +81,6 @@ export function FestivalHomeScreen({ navigation }: Props) {
       } catch {
         // Player may already be released during tab transitions.
       }
-      void refreshData();
       return () => {
         try {
           heroPlayer.pause();
@@ -89,7 +88,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
           // Player may already be released during tab transitions.
         }
       };
-    }, [heroPlayer, refreshData]),
+    }, [heroPlayer]),
   );
 
   const backgroundTranslateY = useMemo(
