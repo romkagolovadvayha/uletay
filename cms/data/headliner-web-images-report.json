@@ -1,0 +1,79 @@
+{
+  "dryRun": false,
+  "force": false,
+  "groups": 6,
+  "updated": 6,
+  "failed": 0,
+  "report": [
+    {
+      "groupIds": [
+        "hl-беz-б-bez-b"
+      ],
+      "names": [
+        "БЕZ Б / BEZ B"
+      ],
+      "status": "ok",
+      "source": "web",
+      "imageUrl": "/api/uploads/images/беz-б-bez-b.webp",
+      "query": "БЕZ Б обложка альбом музыка",
+      "title": "БеZ Б «Лысый, давай» | KM.RU"
+    },
+    {
+      "groupIds": [
+        "hl-свободный-режим-verrona-ex-great-revival-морроз"
+      ],
+      "names": [
+        "СВОБОДНЫЙ РЕЖИМ, VERRONA EX GREAT REVIVAL, МОРРОЗ"
+      ],
+      "status": "ok",
+      "source": "fest-artist",
+      "imageUrl": "/api/uploads/images/свободный-режим-verrona-ex-great-revival-морроз.webp"
+    },
+    {
+      "groupIds": [
+        "hl-севаиванов"
+      ],
+      "names": [
+        "#СЕВАИВАНОВ"
+      ],
+      "status": "ok",
+      "source": "fest-artist",
+      "imageUrl": "/api/uploads/images/севаиванов.webp"
+    },
+    {
+      "groupIds": [
+        "hl-николай-гринько"
+      ],
+      "names": [
+        "НИКОЛАЙ ГРИНЬКО"
+      ],
+      "status": "ok",
+      "source": "web",
+      "imageUrl": "/api/uploads/images/николай-гринько.webp",
+      "query": "НИКОЛАЙ ГРИНЬКО обложка альбом музыка",
+      "title": "Николай Гринько | Тверь | 22.04.2025 | Николай Гринько — талантливый ..."
+    },
+    {
+      "groupIds": [
+        "hl-сердце-тру-vermol-габарит"
+      ],
+      "names": [
+        "СЕРДЦЕ ТРУ, VERMOL, ГАБАРИТ"
+      ],
+      "status": "ok",
+      "source": "fest-artist",
+      "imageUrl": "/api/uploads/images/сердце-тру-vermol-габарит.webp"
+    },
+    {
+      "groupIds": [
+        "hl-китч"
+      ],
+      "names": [
+        "КИТЧ"
+      ],
+      "status": "ok",
+      "source": "fest-artist",
+      "imageUrl": "/api/uploads/images/китч.webp"
+    }
+  ]
+}

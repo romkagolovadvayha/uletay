@@ -101,6 +101,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
           FestivalAbout: 'about',
           FestivalRules: 'rules',
           Settings: 'settings',
+          Legal: 'legal',
         },
       },
     },

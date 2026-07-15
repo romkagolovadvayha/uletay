@@ -19,6 +19,7 @@ export type MoreStackParamList = {
   FestivalAbout: undefined;
   FestivalRules: undefined;
   Settings: undefined;
+  Legal: undefined;
   HeadlinersMain: undefined;
   HeadlinerDetail: { headlinerId: string };
 };

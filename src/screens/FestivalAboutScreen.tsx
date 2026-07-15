@@ -4,6 +4,8 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenTitle } from '../components/ScreenTitle';
+import { ExternalLink } from '../components/ExternalLink';
+import { FESTIVAL_CONTACTS_URL, FESTIVAL_WEBSITE, LEGAL_OPERATOR } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
 import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -43,6 +45,33 @@ export function FestivalAboutScreen({ navigation }: Props) {
             <Text style={styles.cardValue}>{item.value}</Text>
           </View>
         ))}
+
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Организатор</Text>
+          <Text style={styles.cardValue}>{LEGAL_OPERATOR.name}</Text>
+          <Text style={styles.cardMeta}>ОГРНИП {LEGAL_OPERATOR.ogrnip}</Text>
+          <Text style={styles.cardMeta}>ИНН {LEGAL_OPERATOR.inn}</Text>
+          <Text style={styles.cardMeta}>{LEGAL_OPERATOR.address}</Text>
+        </View>
+
+        <View style={styles.linksSection}>
+          <ExternalLink href={FESTIVAL_WEBSITE} style={styles.linkRow}>
+            <Text style={styles.linkText}>Официальный сайт фестиваля</Text>
+            <Ionicons name="open-outline" size={18} color={colors.primary} />
+          </ExternalLink>
+          <ExternalLink href={FESTIVAL_CONTACTS_URL} style={styles.linkRow}>
+            <Text style={styles.linkText}>Контакты и поддержка</Text>
+            <Ionicons name="open-outline" size={18} color={colors.primary} />
+          </ExternalLink>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('Legal')}
+            style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
+          >
+            <Text style={styles.linkText}>Политика конфиденциальности</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -93,6 +122,34 @@ const styles = StyleSheet.create({
     ...appFont('semiBold'),
     color: colors.text,
     fontSize: 15,
+  },
+  cardMeta: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  linksSection: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  linkText: {
+    ...appFont('semiBold'),
+    color: colors.text,
+    fontSize: 14,
+    flex: 1,
+    paddingRight: spacing.sm,
   },
   pressed: {
     opacity: 0.9,

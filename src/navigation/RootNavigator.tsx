@@ -11,6 +11,7 @@ import { FoodCourtDetailScreen } from '../screens/FoodCourtDetailScreen';
 import { FoodCourtScreen } from '../screens/FoodCourtScreen';
 import { FestivalAboutScreen } from '../screens/FestivalAboutScreen';
 import { FestivalRulesScreen } from '../screens/FestivalRulesScreen';
+import { LegalScreen } from '../screens/LegalScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { FullScheduleScreen } from '../screens/FullScheduleScreen';
@@ -152,6 +153,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="FestivalAbout" component={FestivalAboutScreen} />
       <MoreStack.Screen name="FestivalRules" component={FestivalRulesScreen} />
       <MoreStack.Screen name="Settings" component={SettingsScreen} />
+      <MoreStack.Screen name="Legal" component={LegalScreen} />
       <MoreStack.Screen name="HeadlinersMain" component={HeadlinersScreen} />
       <MoreStack.Screen name="HeadlinerDetail" component={HeadlinerDetailScreen} />
     </MoreStack.Navigator>

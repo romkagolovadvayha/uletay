@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { ScreenTitle } from '../components/ScreenTitle';
+import { PRIVACY_POLICY_URL } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
 import { AppTimeMode, useDemoMode } from '../context/DemoModeContext';
 import { MoreStackParamList } from '../navigation/types';
@@ -40,6 +41,30 @@ function ModeOption({ title, subtitle, selected, onPress }: ModeOptionProps) {
         size={22}
         color={selected ? colors.primary : colors.textMuted}
       />
+    </Pressable>
+  );
+}
+
+type SettingsLinkProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+};
+
+function SettingsLink({ icon, title, subtitle, onPress }: SettingsLinkProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.settingsLink, pressed && styles.pressed]}
+    >
+      <Ionicons name={icon} size={22} color={colors.primary} />
+      <View style={styles.modeTextWrap}>
+        <Text style={styles.modeTitle}>{title}</Text>
+        <Text style={styles.modeSubtitle}>{subtitle}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </Pressable>
   );
 }
@@ -88,6 +113,19 @@ export function SettingsScreen({ navigation }: Props) {
 
         <Text style={styles.sectionLabel}>Оповещения</Text>
         <FavoriteNotificationsCard />
+
+        <Text style={styles.sectionLabel}>Правовая информация</Text>
+        <View style={styles.section}>
+          <SettingsLink
+            icon="shield-checkmark-outline"
+            title="Конфиденциальность и поддержка"
+            subtitle="Политика, соглашение, контакты организатора"
+            onPress={() => navigation.navigate('Legal')}
+          />
+          <Text style={styles.legalNote}>
+            Политика конфиденциальности также доступна по адресу {PRIVACY_POLICY_URL}
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -163,6 +201,23 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
+  },
+  settingsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  legalNote: {
+    ...typography.body,
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    paddingHorizontal: spacing.xs,
   },
   pressed: {
     opacity: 0.9,

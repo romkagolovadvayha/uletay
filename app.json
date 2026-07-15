@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "УЛЕТАЙ 2026",
-    "slug": "uletay",
+    "name": "Улетай",
+    "slug": "romkadvayha",
+    "owner": "romkadvayhas-team",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -9,34 +10,29 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "ru.uletay.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Чтобы показать ваше местоположение на карте фестиваля"
+        "NSLocationWhenInUseUsageDescription": "Чтобы показать ваше местоположение на карте фестиваля",
+        "NSUserNotificationsUsageDescription": "Чтобы напоминать о начале избранных выступлений и автограф-сессий"
       }
     },
     "android": {
       "package": "ru.uletay.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#000000",
+        "backgroundColor": "#FFD100",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "name": "УЛЕТАЙ 2026",
-      "shortName": "УЛЕТАЙ",
+      "name": "Улетай",
+      "shortName": "Улетай",
       "display": "standalone",
       "themeColor": "#000000",
       "backgroundColor": "#000000",
@@ -44,9 +40,22 @@
       "scope": "/"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ],
       "expo-image",
       "expo-font",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "iosDisplayInForeground": true
+        }
+      ],
       [
         "expo-audio",
         {
@@ -61,7 +70,13 @@
         }
       ],
       "@maplibre/maplibre-react-native",
-      "expo-video"
-    ]
+      "expo-video",
+      "expo-asset"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "52b19e2d-0fdf-4c50-9e3d-4612e8c8539f"
+      }
+    }
   }
 }

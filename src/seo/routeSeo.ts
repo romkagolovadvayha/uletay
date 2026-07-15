@@ -85,6 +85,17 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path'> & { path: string }> = {
       'Правила посещения фестиваля УЛЕТАЙ: безопасность, поведение на площадке и важные требования для гостей.',
     path: '/rules',
   },
+  Legal: {
+    title: `Политика конфиденциальности — ${SITE_NAME}`,
+    description:
+      'Политика конфиденциальности, пользовательское соглашение и контакты организатора фестиваля УЛЕТАЙ.',
+    path: '/legal',
+  },
+  Settings: {
+    title: `Настройки — ${SITE_NAME}`,
+    description: 'Настройки приложения фестиваля УЛЕТАЙ: режим времени, уведомления и правовая информация.',
+    path: '/settings',
+  },
   HeadlinersMain: {
     title: `Хэдлайнеры — ${SITE_NAME}`,
     description:
@@ -143,6 +154,10 @@ function buildPath(chain: RouteNode[]): string {
       return '/about';
     case 'FestivalRules':
       return '/rules';
+    case 'Legal':
+      return '/legal';
+    case 'Settings':
+      return '/settings';
     case 'HeadlinersMain':
       return '/headliners';
     case 'HeadlinerDetail':

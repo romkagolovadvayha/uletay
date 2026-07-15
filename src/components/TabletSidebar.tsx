@@ -141,7 +141,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       key: 'settings',
       icon: 'settings-outline',
       label: 'Настройки',
-      isActive: moreNestedRoute === 'Settings',
+      isActive: moreNestedRoute === 'Settings' || moreNestedRoute === 'Legal',
       onPress: () => tabNavigation.navigate('MoreTab', { screen: 'Settings' }),
     },
     {

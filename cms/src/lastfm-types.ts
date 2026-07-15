@@ -26,7 +26,7 @@ export interface HeadlinerLastFmTrack {
 
 export interface HeadlinerLastFmTrackSource {
   name: string;
-  tracks: Array<Pick<HeadlinerLastFmTrack, 'name' | 'playcount'>>;
+  tracks: Pick<HeadlinerLastFmTrack, 'name' | 'playcount'>[];
 }
 
 export interface HeadlinerLastFmProfile {
