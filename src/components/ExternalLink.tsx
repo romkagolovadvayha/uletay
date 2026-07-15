@@ -9,6 +9,40 @@ import {
 } from 'react-native';
 import { EXTERNAL_LINK_REL, openExternalUrl } from '../utils/openExternalUrl';
 
+function toWebLinkStyle(style: StyleProp<ViewStyle>): React.CSSProperties {
+  const flat = StyleSheet.flatten(style) ?? {};
+  const {
+    paddingHorizontal,
+    paddingVertical,
+    marginHorizontal,
+    marginVertical,
+    ...rest
+  } = flat;
+
+  return {
+    textDecoration: 'none',
+    color: 'inherit',
+    display: 'inline-flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxSizing: 'border-box',
+    ...rest,
+    ...(paddingVertical != null
+      ? { paddingTop: paddingVertical, paddingBottom: paddingVertical }
+      : {}),
+    ...(paddingHorizontal != null
+      ? { paddingLeft: paddingHorizontal, paddingRight: paddingHorizontal }
+      : {}),
+    ...(marginVertical != null
+      ? { marginTop: marginVertical, marginBottom: marginVertical }
+      : {}),
+    ...(marginHorizontal != null
+      ? { marginLeft: marginHorizontal, marginRight: marginHorizontal }
+      : {}),
+  } as React.CSSProperties;
+}
+
 type Props = {
   href: string;
   children: React.ReactNode;
@@ -39,16 +73,7 @@ export function ExternalLink({
           event.stopPropagation();
           onPress?.();
         }}
-        style={{
-          textDecoration: 'none',
-          color: 'inherit',
-          display: 'inline-flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxSizing: 'border-box',
-          ...(StyleSheet.flatten(flatStyle) as React.CSSProperties),
-        }}
+        style={toWebLinkStyle(flatStyle)}
       >
         {children}
       </a>
