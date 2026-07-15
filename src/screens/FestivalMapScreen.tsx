@@ -2,7 +2,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FestivalMapView } from '../components/map/FestivalMapView';
 import type { FestivalMapApi } from '../components/map/types';
@@ -28,6 +28,34 @@ import { zoneTargetPoint } from '../utils/map/zoneGeo';
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'MapTab'>;
 type ZoneFeature = GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>;
 
+type MapErrorBoundaryProps = {
+  children: React.ReactNode;
+  onError: () => void;
+};
+
+type MapErrorBoundaryState = {
+  hasError: boolean;
+};
+
+class MapErrorBoundary extends React.Component<MapErrorBoundaryProps, MapErrorBoundaryState> {
+  state: MapErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): MapErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch() {
+    this.props.onError();
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+    return this.props.children;
+  }
+}
+
 type Props = {
   navigation: Navigation;
 };
@@ -45,6 +73,9 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
   const [activeRoute, setActiveRoute] = useState<CombinedRoute | null>(null);
   const [routing, setRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapLoadError, setMapLoadError] = useState(false);
+  const [mapRenderError, setMapRenderError] = useState(false);
 
   const selectedZoneId = pickedZoneId;
 
@@ -170,31 +201,54 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     );
   }
 
+  const mapUnavailable = mapLoadError || mapRenderError;
+
   return (
     <MapMotionConfig>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.mapWrap}>
           <View style={styles.mapLayer}>
-            <FestivalMapView
-              config={mapConfig}
-              zones={data.mapZones}
-              paths={data.mapPaths}
-              userLocation={location}
-              routeSegments={activeRoute?.segments}
-              selectedZoneId={mapSelectedZoneId}
-              filter={filter}
-              followUser={followUser}
-              onZonePress={(zone) => {
-                setRouteError(null);
-                setActiveRoute(null);
-                setHighlightZoneId(null);
-                setPickedZoneId(zone.properties.id);
-              }}
-              onZoneRoute={handleZoneRoute}
-              routing={routing}
-              onMapPress={dismissPopup}
-              onMapReady={handleMapReady}
-            />
+            <MapErrorBoundary onError={() => setMapRenderError(true)}>
+              <FestivalMapView
+                config={mapConfig}
+                zones={data.mapZones}
+                paths={data.mapPaths}
+                userLocation={location}
+                routeSegments={activeRoute?.segments}
+                selectedZoneId={mapSelectedZoneId}
+                filter={filter}
+                followUser={followUser}
+                onZonePress={(zone) => {
+                  setRouteError(null);
+                  setActiveRoute(null);
+                  setHighlightZoneId(null);
+                  setPickedZoneId(zone.properties.id);
+                }}
+                onZoneRoute={handleZoneRoute}
+                routing={routing}
+                onMapPress={dismissPopup}
+                onMapReady={handleMapReady}
+                onMapLoaded={() => {
+                  setMapLoaded(true);
+                  setMapLoadError(false);
+                }}
+                onMapLoadError={() => setMapLoadError(true)}
+              />
+            </MapErrorBoundary>
+            {!mapLoaded && !mapUnavailable ? (
+              <View style={styles.mapLoading} pointerEvents="none">
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.mapLoadingText}>Загружаем карту…</Text>
+              </View>
+            ) : null}
+            {mapUnavailable ? (
+              <View style={styles.mapError}>
+                <Text style={styles.mapErrorTitle}>Карта недоступна</Text>
+                <Text style={styles.mapErrorText}>
+                  Проверьте подключение к интернету и попробуйте снова.
+                </Text>
+              </View>
+            ) : null}
           </View>
           <View style={styles.mapOverlay} pointerEvents="box-none">
             <MapFilterChips zones={data.mapZones} value={filter} onChange={setFilterChoice} />
@@ -270,6 +324,35 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.xxxl,
+  },
+  mapLoading: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+    gap: spacing.md,
+  },
+  mapLoadingText: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+  mapError: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+  },
+  mapErrorTitle: {
+    ...typography.screenTitle,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  mapErrorText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   routingPanel: {
     paddingVertical: spacing.sm,

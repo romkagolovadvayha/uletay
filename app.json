@@ -71,7 +71,12 @@
         }
       ],
       "@maplibre/maplibre-react-native",
-      "expo-video",
+      [
+        "expo-video",
+        {
+          "supportsPictureInPicture": true
+        }
+      ],
       "expo-asset"
     ],
     "extra": {

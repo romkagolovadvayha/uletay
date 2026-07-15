@@ -180,6 +180,8 @@ export function FestivalHomeScreen({ navigation }: Props) {
               nativeControls={false}
               playsInline
               useExoShutter={false}
+              allowsPictureInPicture={false}
+              startsPictureInPictureAutomatically={false}
               surfaceType={Platform.OS === 'android' ? 'textureView' : undefined}
               onFirstFrameRender={() => setHeroVideoReady(true)}
             />

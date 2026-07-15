@@ -22,6 +22,8 @@ export type FestivalMapViewProps = {
   onZoneRoute?: () => void;
   routing?: boolean;
   onMapReady?: (api: FestivalMapApi) => void;
+  onMapLoaded?: () => void;
+  onMapLoadError?: () => void;
 };
 
 export type FestivalMapApi = {

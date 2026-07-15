@@ -31,6 +31,8 @@ export function FestivalMapView({
   onZonePress,
   onMapPress,
   onMapReady,
+  onMapLoaded,
+  onMapLoadError,
 }: FestivalMapViewProps) {
   const cameraRef = useRef<CameraRef>(null);
   const onMapPressRef = useLatestRef(onMapPress);
@@ -144,7 +146,10 @@ export function FestivalMapView({
     <View style={styles.fill}>
       <Map
         style={styles.fill}
+        androidView="texture"
         mapStyle="https://demotiles.maplibre.org/style.json"
+        onDidFinishLoadingMap={() => onMapLoaded?.()}
+        onDidFailLoadingMap={() => onMapLoadError?.()}
         onPress={(e) => {
           const features = 'features' in e.nativeEvent ? e.nativeEvent.features : undefined;
           if (features?.length) return;
