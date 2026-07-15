@@ -2,6 +2,7 @@
   "expo": {
     "name": "Улетай",
     "slug": "romkadvayha",
+    "scheme": "uletay",
     "owner": "romkadvayhas-team",
     "version": "1.0.0",
     "runtimeVersion": {
