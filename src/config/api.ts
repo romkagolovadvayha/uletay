@@ -29,9 +29,10 @@ export const API_BASE_URL =
     : 'http://localhost:3000/api');
 
 export const APP_DATA_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+export const APP_DATA_RETRY_INTERVAL_MS = 30_000;
 
 function getSiteOrigin(): string {
-  return API_BASE_URL.replace(/\/api\/?$/, '') || 'https://uletay.ru';
+  return API_BASE_URL.replace(/\/api\/?$/, '') || 'https://uletayapp.ru';
 }
 
 export function resolveMediaUrl(path?: string | null): string | undefined {

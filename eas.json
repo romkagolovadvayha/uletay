@@ -8,18 +8,18 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://uletay.ru/api"
+        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://uletay.ru/api"
+        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://uletay.ru/api"
+        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api"
       },
       "android": {
         "buildType": "app-bundle"

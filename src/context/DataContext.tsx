@@ -7,7 +7,7 @@ import {
   readCachedAppData,
   refreshAppDataInBackground,
 } from '../api/appDataApi';
-import { APP_DATA_REFRESH_INTERVAL_MS } from '../config/api';
+import { APP_DATA_REFRESH_INTERVAL_MS, APP_DATA_RETRY_INTERVAL_MS } from '../config/api';
 import { AppData } from '../types';
 import { normalizeAppData } from '../utils/appDataNormalize';
 import { defaultAppData } from '../storage/dataStore';
@@ -60,6 +60,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return cached;
   }, []);
 
+  const applyFreshData = useCallback(async (fresh: AppData) => {
+    setData(normalizeAppData(fresh));
+    const cached = await readCachedAppData();
+    setLastFetchedAt(cached?.fetchedAt ?? Date.now());
+    setError(null);
+  }, []);
+
   const refreshData = useCallback(async (force = false) => {
     if (force) {
       invalidateAppDataCache();
@@ -78,10 +85,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       const fresh = await refreshAppDataInBackground();
       if (fresh) {
-        setData(normalizeAppData(fresh));
-        const cached = await readCachedAppData();
-        setLastFetchedAt(cached?.fetchedAt ?? Date.now());
-        setError(null);
+        await applyFreshData(fresh);
       }
     } catch (err) {
       if (force) {
@@ -92,44 +96,51 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [applyFreshData]);
 
   useEffect(() => {
     let cancelled = false;
+
+    const tryRefresh = async () => {
+      const fresh = await refreshAppDataInBackground();
+      if (cancelled) {
+        return;
+      }
+      if (fresh) {
+        await applyFreshData(fresh);
+        return;
+      }
+      const cached = await readCachedAppData();
+      if (!cached) {
+        setError('Нет связи с сервером. Показаны данные по умолчанию.');
+      }
+    };
 
     void (async () => {
       await applyCachedSnapshot();
       if (!cancelled) {
         setIsHydrated(true);
       }
-
-      const fresh = await refreshAppDataInBackground();
-      if (!cancelled && fresh) {
-        setData(normalizeAppData(fresh));
-        const cached = await readCachedAppData();
-        setLastFetchedAt(cached?.fetchedAt ?? Date.now());
-        setError(null);
-      }
+      await tryRefresh();
     })();
 
-    const interval = setInterval(() => {
-      void refreshAppDataInBackground().then((fresh) => {
-        if (!fresh) {
-          return;
-        }
-        setData(normalizeAppData(fresh));
-        void readCachedAppData().then((cached) => {
-          setLastFetchedAt(cached?.fetchedAt ?? null);
-        });
-        setError(null);
-      });
+    const refreshInterval = setInterval(() => {
+      void tryRefresh();
     }, APP_DATA_REFRESH_INTERVAL_MS);
+
+    const retryInterval = setInterval(() => {
+      if (lastFetchedAt !== null) {
+        return;
+      }
+      void tryRefresh();
+    }, APP_DATA_RETRY_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      clearInterval(refreshInterval);
+      clearInterval(retryInterval);
     };
-  }, [applyCachedSnapshot]);
+  }, [applyCachedSnapshot, applyFreshData, lastFetchedAt]);
 
   const value = useMemo(
     () => ({ data, isLoading, error, refreshData, lastFetchedAt }),
