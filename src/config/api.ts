@@ -30,6 +30,10 @@ export const API_BASE_URL =
 
 export const CACHE_TTL_MS = 60_000;
 
+function getSiteOrigin(): string {
+  return API_BASE_URL.replace(/\/api\/?$/, '') || 'https://uletay.ru';
+}
+
 export function resolveMediaUrl(path?: string | null): string | undefined {
   if (!path) {
     return undefined;
@@ -38,17 +42,18 @@ export function resolveMediaUrl(path?: string | null): string | undefined {
     return path;
   }
   if (path.startsWith('/api/')) {
-    const apiOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
-    return `${apiOrigin}${path}`;
+    return `${getSiteOrigin()}${path}`;
   }
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin;
-    if (path.startsWith('/')) {
-      return `${origin}${path}`;
-    }
-    return `${origin}/${path}`;
+
+  const origin =
+    Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : getSiteOrigin();
+
+  if (path.startsWith('/')) {
+    return `${origin}${path}`;
   }
-  return `http://localhost${path.startsWith('/') ? path : `/${path}`}`;
+  return `${origin}/${path}`;
 }
 
 export function getStageColor(stageId: StageId, stages?: Stage[]): string {

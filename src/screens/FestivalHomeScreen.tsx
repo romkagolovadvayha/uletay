@@ -76,10 +76,18 @@ export function FestivalHomeScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      heroPlayer.play();
+      try {
+        heroPlayer.play();
+      } catch {
+        // Player may already be released during tab transitions.
+      }
       void refreshData();
       return () => {
-        heroPlayer.pause();
+        try {
+          heroPlayer.pause();
+        } catch {
+          // Player may already be released during tab transitions.
+        }
       };
     }, [heroPlayer, refreshData]),
   );
