@@ -115,6 +115,10 @@ set +a
 # Schema only — do not re-seed app_content (preserves uploaded images and admin edits)
 npm run db:migrate
 
+# Create 160×160 *-list.webp siblings only — never overwrites originals.
+echo "Generating list image variants (siblings only)..."
+UPLOAD_DIR="${UPLOAD_DIR:-$DEPLOY_PATH/uploads}" npm run images:generate-list
+
 export PATH="/usr/local/bin:/usr/local/node/bin:$(npm prefix -g 2>/dev/null)/bin:${PATH}"
 
 if ! command -v pm2 >/dev/null 2>&1; then

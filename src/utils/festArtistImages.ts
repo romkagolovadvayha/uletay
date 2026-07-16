@@ -2,6 +2,9 @@ import { ImageSource } from 'expo-image';
 import { resolveMediaUrl } from '../config/api';
 import { festArtistAssets } from '../data/festArtistAssets.generated';
 import festSources from '../../scripts/fest-artist-sources.json';
+import { toListImageUrl } from './imageSource';
+
+export { toListImageUrl };
 
 const festArtistUrls = festSources.artists as Record<string, string>;
 
@@ -96,20 +99,49 @@ function sameImageSource(a: ImageSource | number, b: ImageSource | number): bool
   return false;
 }
 
+type ArtistImageChainOptions = {
+  /** Prefer `*-list.webp` siblings for small UI (falls back to full on error). */
+  preferList?: boolean;
+};
+
 /** CMS URL (if any), then fest bundled asset / fest-assets URL — same order as schedule cards. */
 export function buildArtistImageSourceChain(
   imageUrl?: string | null,
   artist?: string | null,
+  options?: ArtistImageChainOptions,
 ): (ImageSource | number)[] {
   const chain: (ImageSource | number)[] = [];
   const cmsUrl = resolveMediaUrl(imageUrl);
   if (cmsUrl) {
+    if (options?.preferList) {
+      const listUrl = toListImageUrl(cmsUrl);
+      if (listUrl !== cmsUrl) {
+        chain.push({ uri: listUrl });
+      }
+    }
     chain.push({ uri: cmsUrl });
   }
 
   const fest = getFestArtistImageSource(artist);
-  if (fest && !chain.some((item) => sameImageSource(item, fest))) {
-    chain.push(fest);
+  if (fest) {
+    if (
+      options?.preferList &&
+      typeof fest === 'object' &&
+      fest &&
+      'uri' in fest &&
+      typeof fest.uri === 'string'
+    ) {
+      const listFest = { uri: toListImageUrl(fest.uri) };
+      if (
+        listFest.uri !== fest.uri &&
+        !chain.some((item) => sameImageSource(item, listFest))
+      ) {
+        chain.push(listFest);
+      }
+    }
+    if (!chain.some((item) => sameImageSource(item, fest))) {
+      chain.push(fest);
+    }
   }
 
   return chain;

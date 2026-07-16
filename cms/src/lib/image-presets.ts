@@ -1,4 +1,4 @@
-export type ImagePreset = 'artist' | 'hero' | 'thumb' | 'logo';
+export type ImagePreset = 'artist' | 'hero' | 'thumb' | 'logo' | 'list';
 
 export type ImagePresetConfig = {
   width: number;
@@ -12,6 +12,12 @@ export const IMAGE_PRESETS: Record<ImagePreset, ImagePresetConfig> = {
     height: 800,
     label: '800×800',
   },
+  /** List/card thumbs (52–76 CSS px @2x). */
+  list: {
+    width: 160,
+    height: 160,
+    label: '160×160',
+  },
   hero: {
     width: 1200,
     height: 675,
@@ -23,11 +29,23 @@ export const IMAGE_PRESETS: Record<ImagePreset, ImagePresetConfig> = {
     label: '440×440',
   },
   logo: {
-    width: 900,
-    height: 360,
-    label: '900×360',
+    width: 720,
+    height: 288,
+    label: '720×288',
   },
 };
+
+/** Presets that also write a sibling `*-list.webp` for small UI. */
+export const PRESETS_WITH_LIST_VARIANT: ReadonlySet<ImagePreset> = new Set(['artist', 'thumb']);
+
+/** Derive list sibling URL: `foo.webp` → `foo-list.webp`. */
+export function toListImageUrl(url: string): string {
+  return url.replace(/(\.webp)(\?[^#]*)?(#.*)?$/i, '-list$1$2$3');
+}
+
+export function listFilenameFromFull(filename: string): string {
+  return filename.replace(/(\.webp)$/i, '-list$1');
+}
 
 export function presetHint(preset: ImagePreset): string {
   const { label } = IMAGE_PRESETS[preset];

@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FoodCourtVendor } from '../types';
 import { getFoodCourtPriceLabel } from '../utils/foodCourtHelpers';
-import { getRemoteImageSource } from '../utils/imageSource';
+import { getRemoteImageSource, getRemoteListImageSource } from '../utils/imageSource';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -30,15 +30,29 @@ function getCategoryIcon(category: FoodCourtVendor['category']): keyof typeof Io
 
 function FoodCourtThumbnail({ vendor, large }: { vendor: FoodCourtVendor; large?: boolean }) {
   const size = large ? 220 : 72;
+  const [useFull, setUseFull] = useState(large);
+  const listSource = !large ? getRemoteListImageSource(vendor.imageUrl) : undefined;
+  const source = vendor.imageUrl
+    ? useFull || !listSource
+      ? getRemoteImageSource(vendor.imageUrl)
+      : listSource
+    : undefined;
 
-  if (vendor.imageUrl) {
+  if (source) {
     return (
       <Image
-        source={getRemoteImageSource(vendor.imageUrl)}
+        source={source}
         style={[styles.thumb, { width: size, height: size, borderRadius: large ? radius.xl : radius.md }]}
         contentFit="cover"
         accessibilityLabel={vendor.name}
         alt={vendor.name}
+        priority={large ? 'normal' : 'low'}
+        loading={!large && Platform.OS === 'web' ? 'lazy' : undefined}
+        onError={() => {
+          if (!useFull) {
+            setUseFull(true);
+          }
+        }}
       />
     );
   }

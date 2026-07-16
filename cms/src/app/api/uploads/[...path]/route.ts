@@ -41,7 +41,8 @@ export async function GET(
       headers: {
         ...corsHeaders(),
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400, immutable',
+        // Filenames are unique (timestamp/hash); safe for long immutable cache.
+        'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch {

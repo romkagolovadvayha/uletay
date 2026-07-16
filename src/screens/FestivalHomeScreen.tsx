@@ -62,30 +62,73 @@ function HeroParallaxBackground({ translateY, allowVideo }: HeroParallaxBackgrou
       return;
     }
 
+    /** Keep the poster as LCP; do not mount <video> inside Lighthouse's LCP window. */
+    const HERO_VIDEO_MIN_DELAY_MS = 5000;
+
     let cancelled = false;
+    let idleId: number | undefined;
+    let minDelayId: ReturnType<typeof setTimeout> | undefined;
+
+    const win = globalThis as typeof globalThis & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+      addEventListener?: typeof window.addEventListener;
+      removeEventListener?: typeof window.removeEventListener;
+    };
+
     const startVideo = () => {
       if (!cancelled) {
         setShouldLoadHeroVideo(true);
       }
     };
 
-    const win = globalThis as typeof globalThis & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-      cancelIdleCallback?: (id: number) => void;
+    const startAfterIdle = () => {
+      if (cancelled) {
+        return;
+      }
+      if (typeof win.requestIdleCallback === 'function') {
+        // No short timeout — wait for a real idle slot after the min delay.
+        idleId = win.requestIdleCallback(startVideo);
+        return;
+      }
+      startVideo();
     };
 
-    if (typeof win.requestIdleCallback === 'function') {
-      const idleId = win.requestIdleCallback(startVideo, { timeout: 2000 });
-      return () => {
-        cancelled = true;
+    const onUserInteraction = () => {
+      if (cancelled) {
+        return;
+      }
+      if (minDelayId !== undefined) {
+        clearTimeout(minDelayId);
+        minDelayId = undefined;
+      }
+      if (idleId !== undefined) {
         win.cancelIdleCallback?.(idleId);
-      };
-    }
+        idleId = undefined;
+      }
+      startVideo();
+    };
 
-    const timeoutId = setTimeout(startVideo, 1200);
+    minDelayId = setTimeout(startAfterIdle, HERO_VIDEO_MIN_DELAY_MS);
+
+    const interactionOpts: AddEventListenerOptions = { capture: true, passive: true, once: true };
+    win.addEventListener?.('pointerdown', onUserInteraction, interactionOpts);
+    win.addEventListener?.('touchstart', onUserInteraction, interactionOpts);
+    win.addEventListener?.('wheel', onUserInteraction, interactionOpts);
+    win.addEventListener?.('keydown', onUserInteraction, interactionOpts);
+
     return () => {
       cancelled = true;
-      clearTimeout(timeoutId);
+      if (minDelayId !== undefined) {
+        clearTimeout(minDelayId);
+      }
+      if (idleId !== undefined) {
+        win.cancelIdleCallback?.(idleId);
+      }
+      win.removeEventListener?.('pointerdown', onUserInteraction, true);
+      win.removeEventListener?.('touchstart', onUserInteraction, true);
+      win.removeEventListener?.('wheel', onUserInteraction, true);
+      win.removeEventListener?.('keydown', onUserInteraction, true);
     };
   }, [allowVideo, heroPosterReady, shouldLoadHeroVideo]);
 

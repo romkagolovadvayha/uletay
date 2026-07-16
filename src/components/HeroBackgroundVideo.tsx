@@ -4,7 +4,11 @@ import React, { useCallback, useEffect } from 'react';
 import { Platform, StyleSheet, type ViewStyle } from 'react-native';
 
 const HERO_VIDEO_ASPECT_RATIO = 16 / 9;
-const HERO_VIDEO_SOURCE = require('../../assets/videos/background.mp4');
+/** WebM is slightly smaller and typically decodes faster in Chromium. */
+const HERO_VIDEO_SOURCE =
+  Platform.OS === 'web'
+    ? require('../../assets/videos/background.webm')
+    : require('../../assets/videos/background.mp4');
 
 type HeroBackgroundVideoProps = {
   onReady: () => void;

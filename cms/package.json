@@ -42,7 +42,9 @@
     "headliners:patch-2016-db": "node scripts/patch-headliners-2016-db.mjs",
     "headliners:patch-2016-db:dry": "node scripts/patch-headliners-2016-db.mjs --dry-run",
     "headliners:patch-2026-db": "node scripts/patch-headliners-2026-db.mjs",
-    "headliners:patch-2026-db:dry": "node scripts/patch-headliners-2026-db.mjs --dry-run"
+    "headliners:patch-2026-db:dry": "node scripts/patch-headliners-2026-db.mjs --dry-run",
+    "images:generate-list": "node scripts/generate-list-images.mjs",
+    "images:generate-list:dry": "node scripts/generate-list-images.mjs --dry"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

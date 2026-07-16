@@ -10,9 +10,8 @@ import {
   FESTIVAL_VK_URL,
   FESTIVAL_WEBSITE,
   LEGAL_OPERATOR,
-  LEGAL_SECTIONS,
-  type LegalSection,
 } from '../constants/legal';
+import { LEGAL_SECTIONS, type LegalSection } from '../constants/legalContent';
 import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';

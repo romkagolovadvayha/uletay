@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image, ImageStyle } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
-import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { Platform, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { colors } from '../theme/colors';
 import { buildArtistImageSourceChain } from '../utils/festArtistImages';
 
@@ -24,7 +24,7 @@ export function ArtistImage({
   contentFit = 'cover',
   variant = 'thumbnail',
 }: Props) {
-  const chainKey = `${imageUrl ?? ''}\0${artist ?? ''}`;
+  const chainKey = `${imageUrl ?? ''}\0${artist ?? ''}\0${variant}`;
 
   return (
     <ArtistImageResolved
@@ -47,7 +47,11 @@ function ArtistImageResolved({
   contentFit = 'cover',
   variant = 'thumbnail',
 }: Props) {
-  const chain = useMemo(() => buildArtistImageSourceChain(imageUrl, artist), [imageUrl, artist]);
+  const preferList = variant === 'thumbnail';
+  const chain = useMemo(
+    () => buildArtistImageSourceChain(imageUrl, artist, { preferList }),
+    [imageUrl, artist, preferList],
+  );
   const [index, setIndex] = useState(0);
   const iconSize = variant === 'hero' ? 72 : 32;
   const source = index < chain.length ? chain[index] : undefined;
@@ -61,6 +65,8 @@ function ArtistImageResolved({
         contentFit={contentFit}
         accessibilityLabel={imageAlt}
         alt={imageAlt}
+        priority={preferList ? 'low' : 'normal'}
+        loading={preferList && Platform.OS === 'web' ? 'lazy' : undefined}
         onError={() => setIndex((current) => current + 1)}
       />
     );

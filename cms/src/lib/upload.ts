@@ -2,7 +2,12 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 import { config } from './config';
-import { IMAGE_PRESETS, type ImagePreset } from './image-presets';
+import {
+  IMAGE_PRESETS,
+  PRESETS_WITH_LIST_VARIANT,
+  listFilenameFromFull,
+  type ImagePreset,
+} from './image-presets';
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
@@ -38,6 +43,34 @@ function resolveMime(file: File): string | null {
   return fromExt && ALLOWED_MIME.has(fromExt) ? fromExt : null;
 }
 
+async function resizeToWebp(
+  input: Buffer,
+  presetKey: ImagePreset,
+  quality = 82,
+): Promise<Buffer> {
+  const { width, height } = IMAGE_PRESETS[presetKey];
+  let pipeline = sharp(input, { animated: false }).rotate();
+  pipeline =
+    presetKey === 'logo'
+      ? pipeline.resize(width, height, {
+          fit: 'contain',
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
+      : pipeline.resize(width, height, { fit: 'cover', position: 'centre' });
+  return pipeline.webp({ quality, effort: 4 }).toBuffer();
+}
+
+/** Write a 160×160 sibling `*-list.webp` next to an artist/thumb upload. */
+export async function writeListVariant(
+  input: Buffer,
+  targetDir: string,
+  fullFilename: string,
+): Promise<void> {
+  const listName = listFilenameFromFull(fullFilename);
+  const output = await resizeToWebp(input, 'list', 80);
+  await writeFile(path.join(targetDir, listName), output);
+}
+
 export async function saveUploadedImage(
   file: File,
   subdir = 'images',
@@ -61,20 +94,11 @@ export async function saveUploadedImage(
   }
 
   const presetKey = resolvePreset(preset);
-  const { width, height } = IMAGE_PRESETS[presetKey];
   const input = Buffer.from(await file.arrayBuffer());
 
   let output: Buffer;
   try {
-    let pipeline = sharp(input, { animated: false }).rotate();
-    pipeline =
-      presetKey === 'logo'
-        ? pipeline.resize(width, height, {
-            fit: 'contain',
-            background: { r: 0, g: 0, b: 0, alpha: 0 },
-          })
-        : pipeline.resize(width, height, { fit: 'cover', position: 'centre' });
-    output = await pipeline.webp({ quality: 82, effort: 4 }).toBuffer();
+    output = await resizeToWebp(input, presetKey);
   } catch {
     throw new ImageUploadError('Не удалось обработать изображение');
   }
@@ -84,7 +108,13 @@ export async function saveUploadedImage(
 
   try {
     await writeFile(targetPath, output);
-  } catch {
+    if (PRESETS_WITH_LIST_VARIANT.has(presetKey)) {
+      await writeListVariant(input, targetDir, filename);
+    }
+  } catch (error) {
+    if (error instanceof ImageUploadError) {
+      throw error;
+    }
     throw new ImageUploadError('Нет прав на запись в папку uploads');
   }
 

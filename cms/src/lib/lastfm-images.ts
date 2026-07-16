@@ -8,6 +8,7 @@ import { resolveArtistImageFallbackUrl } from './artist-image-fallback';
 import { config } from './config';
 import { lastFmFetch } from './lastfm-fetch';
 import { IMAGE_PRESETS } from './image-presets';
+import { writeListVariant } from './upload';
 
 const IMAGE_SIZE_ORDER = ['mega', 'extralarge', 'large', 'medium', 'small'] as const;
 const LASTFM_PLACEHOLDER_PREFIX = '2a96cbd8b46e442fc41c2b86b';
@@ -139,6 +140,7 @@ export async function downloadAndOptimizeArtistImage(
   await mkdir(targetDir, { recursive: true });
   const filename = options?.filename ?? headlinerImageFilename(headlinerId);
   await writeFile(path.join(targetDir, filename), output);
+  await writeListVariant(input, targetDir, filename);
 
   return `${config.uploadUrl}/images/${filename}`;
 }

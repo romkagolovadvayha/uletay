@@ -52,7 +52,13 @@ export function useAppFonts() {
     }
 
     const cancel = scheduleDeferred(() => {
-      void loadAsync(Ionicons.font).catch(() => {
+      const ioniconsWithSwap = Object.fromEntries(
+        Object.entries(Ionicons.font).map(([name, uri]) => [
+          name,
+          { uri, display: FontDisplay.SWAP },
+        ]),
+      );
+      void loadAsync(ioniconsWithSwap).catch(() => {
         // Icons may briefly fall back; app UI remains usable.
       });
     });

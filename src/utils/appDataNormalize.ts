@@ -2,7 +2,7 @@ import { AppData, FestivalInfo, Stage } from '../types';
 import { capPerformanceEndTime } from './performanceTime';
 import { festivalRules } from '../data/festivalRules';
 import { headliners as defaultHeadliners } from '../data/headliners';
-import { getDefaultMapData } from '../data/festivalMap';
+import { getDefaultMapData } from '../data/festivalMapSeed';
 import { syncAppHeadliners } from './headlinersCore';
 
 export const defaultStageColors: Record<Stage['id'], string> = {

@@ -3,7 +3,7 @@ import { autographSessions } from '../data/autographs';
 import { foodCourtVendors } from '../data/foodcourt';
 import { headliners } from '../data/headliners';
 import { festivalRules } from '../data/festivalRules';
-import { getDefaultMapData } from '../data/festivalMap';
+import { getDefaultMapData } from '../data/festivalMapSeed';
 import { festivalInfo, schedulePerformances, stages } from '../data/schedule';
 import { AppData } from '../types';
 import { normalizeAppData, withDefaultStages } from '../utils/appDataNormalize';
