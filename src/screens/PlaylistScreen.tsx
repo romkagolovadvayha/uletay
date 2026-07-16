@@ -39,8 +39,12 @@ export function PlaylistScreen() {
     }, [setPlaylistActive]),
   );
 
-  const displayArtist = matchedHeadliner?.name || nowPlaying?.artist || 'Улетайрадио';
-  const displayTitle = nowPlaying?.title || 'В эфире';
+  const trackTitle = nowPlaying?.title?.trim() || '';
+  const trackArtist = (matchedHeadliner?.name || nowPlaying?.artist || '').trim();
+  const hasNowPlayingMeta = Boolean(trackTitle && trackArtist);
+  const displayArtist = trackArtist || 'Улетайрадио';
+  const displayTitle = trackTitle || 'В эфире';
+  const pageTitle = hasNowPlayingMeta ? `${trackTitle} ${trackArtist}` : 'ПЛЕЙЛИСТ';
   const artworkSource = resolveArtistImageSource(
     matchedHeadliner?.imageUrl,
     matchedHeadliner?.name ?? nowPlaying?.artist ?? displayArtist,
@@ -56,7 +60,9 @@ export function PlaylistScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <ScreenTitle style={styles.title}>ПЛЕЙЛИСТ</ScreenTitle>
+        <ScreenTitle style={styles.title} numberOfLines={2}>
+          {pageTitle}
+        </ScreenTitle>
         <Text style={styles.subtitle}>{RADIO_STATION_NAME}</Text>
 
         <View style={styles.playerCard}>

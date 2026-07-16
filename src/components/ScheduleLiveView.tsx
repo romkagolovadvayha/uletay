@@ -75,7 +75,14 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
     );
   }
 
-  const headerTitle = status === 'live' ? 'СЕЙЧАС ВЫСТУПАЕТ' : isSoon ? 'СКОРО ВЫСТУПИТ' : 'СЛЕДУЮЩЕЕ ВЫСТУПЛЕНИЕ';
+  const headerTitle =
+    status === 'live'
+      ? 'СЕЙЧАС ВЫСТУПАЕТ'
+      : status === 'past'
+        ? 'ВЫСТУПЛЕНИЕ'
+        : isSoon
+          ? 'СКОРО ВЫСТУПИТ'
+          : 'СЛЕДУЮЩЕЕ ВЫСТУПЛЕНИЕ';
   const performanceIsFavorite = isFavorite(performance.id);
 
   const openHeadliner = () => {

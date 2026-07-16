@@ -276,7 +276,7 @@ export function getNextAutographSession(
 
 export type PrimaryPerformance = {
   performance: SchedulePerformance;
-  status: 'live' | 'upcoming';
+  status: TimedStatus;
 };
 
 export function getPrimaryPerformance(

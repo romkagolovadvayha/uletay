@@ -2,9 +2,10 @@ import { useMemo } from 'react';
 import { useAppData } from '../context/DataContext';
 import { SchedulePerformance, StageId } from '../types';
 import {
+  getEndDateTime,
   getLivePerformances,
   getPrimaryPerformance,
-  isPerformanceLive,
+  getTimedStatus,
   parseDateTime,
   PrimaryPerformance,
 } from '../utils/scheduleHelpers';
@@ -21,14 +22,9 @@ export function useCurrentLivePerformance(
     if (performanceId) {
       const found = data.schedule.find((item) => item.id === performanceId);
       if (found) {
-        if (isPerformanceLive(found, now)) {
-          return { performance: found, status: 'live' as const };
-        }
-
         const start = parseDateTime(found.date, found.startTime);
-        if (start > now) {
-          return { performance: found, status: 'upcoming' as const };
-        }
+        const end = getEndDateTime(found.date, found.startTime, found.endTime);
+        return { performance: found, status: getTimedStatus(start, end, now) };
       }
     }
 
