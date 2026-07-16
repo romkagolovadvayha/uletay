@@ -137,6 +137,8 @@ export function FestivalMapView({
   onZonePress,
   onMapPress,
   onMapReady,
+  onMapLoaded,
+  onMapLoadError,
 }: FestivalMapViewProps) {
   const containerRef = useRef<View>(null);
   const [initError, setInitError] = useState<string | null>(null);
@@ -266,6 +268,7 @@ export function FestivalMapView({
         mapRef.current = map;
         readyRef.current = true;
         setMapReady(true);
+        onMapLoaded?.();
 
         onMapReady?.({
           flyTo: (lat, lng, zoom = config.defaultZoom) => {
@@ -315,7 +318,10 @@ export function FestivalMapView({
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Не удалось инициализировать Yandex Maps';
         console.error('[FestivalMapView] Yandex Maps init failed:', error);
-        if (!cancelled) setInitError(message);
+        if (!cancelled) {
+          setInitError(message);
+          onMapLoadError?.();
+        }
       }
     })();
 
