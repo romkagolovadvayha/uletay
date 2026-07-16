@@ -1,9 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { Suspense } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
+import { DeferredIonicons } from '../components/DeferredIonicons';
 import { useIsTablet } from '../hooks/useIsTablet';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { useFestivalActive } from '../hooks/useFestivalActive';
@@ -125,7 +125,13 @@ const styles = StyleSheet.create({
 });
 
 function TabIcon({ name, color }: { name: string; color: string }) {
-  return <Ionicons name={name as keyof typeof Ionicons.glyphMap} size={TAB_ICON_SIZE} color={color} />;
+  return (
+    <DeferredIonicons
+      name={name as React.ComponentProps<typeof DeferredIonicons>['name']}
+      size={TAB_ICON_SIZE}
+      color={color}
+    />
+  );
 }
 
 function TabLabel({ color, children }: { color: string; children: string }) {

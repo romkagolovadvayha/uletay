@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { DeferredIonicons } from './DeferredIonicons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { NavigationProp } from '@react-navigation/native';
 import { getDefaultSidebarWidth } from '@react-navigation/elements';
@@ -67,7 +68,7 @@ function SidebarItem({ icon, label, active, onPress }: SidebarItemProps) {
         pressed && styles.itemPressed,
       ]}
     >
-      <Ionicons
+      <DeferredIonicons
         name={icon}
         size={22}
         color={active ? colors.tabActive : colors.tabInactive}

@@ -19,6 +19,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
+import { DeferredIonicons } from './DeferredIonicons';
 import { ScreenTitle } from './ScreenTitle';
 
 type MoreNavigation = BottomTabNavigationProp<RootTabParamList>;
@@ -88,37 +89,39 @@ export function MoreMenuSheet() {
     },
   ];
 
-  return (
+return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
       onRequestClose={close}
     >
-      <View style={styles.overlay}>
-        <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
-        <View
-          style={[
-            styles.sheet,
-            { paddingBottom: Math.max(insets.bottom, spacing.lg) },
-          ]}
-        >
-          <View style={styles.handle} />
-          <ScreenTitle style={styles.title}>Ещё</ScreenTitle>
-          {menuItems.map((item) => (
-            <Pressable
-              key={item.label}
-              accessibilityRole="button"
-              onPress={item.onPress}
-              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-            >
-              <Ionicons name={item.icon} size={22} color={colors.primary} />
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </Pressable>
-          ))}
+      {visible ? (
+        <View style={styles.overlay}>
+          <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
+          <View
+            style={[
+              styles.sheet,
+              { paddingBottom: Math.max(insets.bottom, spacing.lg) },
+            ]}
+          >
+            <View style={styles.handle} />
+            <ScreenTitle style={styles.title}>Ещё</ScreenTitle>
+            {menuItems.map((item) => (
+              <Pressable
+                key={item.label}
+                accessibilityRole="button"
+                onPress={item.onPress}
+                style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              >
+                <DeferredIonicons name={item.icon} size={22} color={colors.primary} />
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <DeferredIonicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            ))}
+          </View>
         </View>
-      </View>
+      ) : null}
     </Modal>
   );
 }

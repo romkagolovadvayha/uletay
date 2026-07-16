@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image, ImageStyle } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
 import { Platform, StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { DeferredIonicons } from './DeferredIonicons';
 import { colors } from '../theme/colors';
 import { buildArtistImageSourceChain } from '../utils/festArtistImages';
 
@@ -77,7 +77,7 @@ function ArtistImageResolved({
       colors={['#2A2A2C', '#141414']}
       style={[styles.placeholder, style as StyleProp<ViewStyle>]}
     >
-      <Ionicons
+      <DeferredIonicons
         name="musical-notes"
         size={iconSize}
         color={variant === 'hero' ? 'rgba(255, 193, 7, 0.45)' : colors.primary}

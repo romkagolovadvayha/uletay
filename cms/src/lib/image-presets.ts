@@ -35,6 +35,13 @@ export const IMAGE_PRESETS: Record<ImagePreset, ImagePresetConfig> = {
   },
 };
 
+/** Display size for festival logo in the hero (~360 CSS px wide @1.5–2x). */
+export const LOGO_SM = {
+  width: 540,
+  height: 216,
+  quality: 78,
+} as const;
+
 /** Presets that also write a sibling `*-list.webp` for small UI. */
 export const PRESETS_WITH_LIST_VARIANT: ReadonlySet<ImagePreset> = new Set(['artist', 'thumb']);
 
@@ -45,6 +52,18 @@ export function toListImageUrl(url: string): string {
 
 export function listFilenameFromFull(filename: string): string {
   return filename.replace(/(\.webp)$/i, '-list$1');
+}
+
+/** Derive logo display sibling: `foo.webp` → `foo-sm.webp`. */
+export function toLogoSmUrl(url: string): string {
+  if (/-sm\.webp(\?|#|$)/i.test(url)) {
+    return url;
+  }
+  return url.replace(/(\.webp)(\?[^#]*)?(#.*)?$/i, '-sm$1$2$3');
+}
+
+export function logoSmFilenameFromFull(filename: string): string {
+  return filename.replace(/(\.webp)$/i, '-sm$1');
 }
 
 export function presetHint(preset: ImagePreset): string {

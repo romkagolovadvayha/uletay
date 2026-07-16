@@ -4,8 +4,10 @@ import sharp from 'sharp';
 import { config } from './config';
 import {
   IMAGE_PRESETS,
+  LOGO_SM,
   PRESETS_WITH_LIST_VARIANT,
   listFilenameFromFull,
+  logoSmFilenameFromFull,
   type ImagePreset,
 } from './image-presets';
 
@@ -71,6 +73,24 @@ export async function writeListVariant(
   await writeFile(path.join(targetDir, listName), output);
 }
 
+/** Write a smaller logo sibling `*-sm.webp` for the home hero. */
+export async function writeLogoSmVariant(
+  input: Buffer,
+  targetDir: string,
+  fullFilename: string,
+): Promise<void> {
+  const smName = logoSmFilenameFromFull(fullFilename);
+  const output = await sharp(input, { animated: false })
+    .rotate()
+    .resize(LOGO_SM.width, LOGO_SM.height, {
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .webp({ quality: LOGO_SM.quality, effort: 4 })
+    .toBuffer();
+  await writeFile(path.join(targetDir, smName), output);
+}
+
 export async function saveUploadedImage(
   file: File,
   subdir = 'images',
@@ -110,6 +130,9 @@ export async function saveUploadedImage(
     await writeFile(targetPath, output);
     if (PRESETS_WITH_LIST_VARIANT.has(presetKey)) {
       await writeListVariant(input, targetDir, filename);
+    }
+    if (presetKey === 'logo') {
+      await writeLogoSmVariant(input, targetDir, filename);
     }
   } catch (error) {
     if (error instanceof ImageUploadError) {

@@ -12,6 +12,14 @@ export function toListImageUrl(url: string): string {
   return url.replace(/(\.webp)(\?[^#]*)?(#.*)?$/i, '-list$1$2$3');
 }
 
+/** CMS logo → display sibling: `foo.webp` → `foo-sm.webp`. */
+export function toLogoSmUrl(url: string): string {
+  if (/-sm\.webp(\?|#|$)/i.test(url)) {
+    return url;
+  }
+  return url.replace(/(\.webp)(\?[^#]*)?(#.*)?$/i, '-sm$1$2$3');
+}
+
 export function getRemoteImageSource(
   url?: string | null,
   fallback?: number,
@@ -48,4 +56,27 @@ export function resolveFestivalLogoSource(logoImageUrl?: string | null): ImageSo
   }
 
   return BUNDLED_FESTIVAL_LOGO;
+}
+
+/** Prefer `*-sm.webp` for the home hero logo; fall back to full URL. */
+export function resolveFestivalLogoSourceChain(
+  logoImageUrl?: string | null,
+): (ImageSource | number)[] {
+  const chain: (ImageSource | number)[] = [];
+  const cmsUrl = resolveMediaUrl(logoImageUrl?.trim());
+  if (cmsUrl) {
+    const sm = toLogoSmUrl(cmsUrl);
+    if (sm !== cmsUrl) {
+      chain.push({ uri: sm });
+    }
+    chain.push({ uri: cmsUrl });
+  }
+
+  const festUrl = resolveMediaUrl(FESTIVAL_LOGO_FEST_ASSET);
+  if (festUrl && !chain.some((item) => typeof item === 'object' && item && 'uri' in item && item.uri === festUrl)) {
+    chain.push({ uri: festUrl });
+  }
+
+  chain.push(BUNDLED_FESTIVAL_LOGO);
+  return chain;
 }

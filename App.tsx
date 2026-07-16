@@ -8,6 +8,7 @@ import { DataProvider } from './src/context/DataContext';
 import { DemoModeProvider } from './src/context/DemoModeContext';
 import { RadioPlayerProvider } from './src/context/RadioPlayerContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
+import { IconsReadyProvider } from './src/context/IconsReadyContext';
 import { NotificationSettingsProvider } from './src/context/NotificationSettingsContext';
 import { useAppFonts } from './src/hooks/useAppFonts';
 import { useFestivalActive } from './src/hooks/useFestivalActive';
@@ -34,7 +35,7 @@ const navigationTheme = {
 };
 
 function AppContent() {
-  const { loaded: fontsLoaded } = useAppFonts();
+  const { loaded: fontsLoaded, iconsReady } = useAppFonts();
   const festivalActive = useFestivalActive();
 
   syncHeadlinersNavigationTarget(festivalActive);
@@ -48,33 +49,35 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer
-      ref={navigationRef}
-      theme={navigationTheme}
-      linking={linking}
-      documentTitle={
-        Platform.OS === 'web'
-          ? {
-              enabled: false,
-            }
-          : undefined
-      }
-      onReady={() => {
-        syncWebSeo();
-      }}
-      onStateChange={() => {
-        requestAnimationFrame(() => {
-          if (navigationRef.isReady()) {
-            syncNestedStacksWithActiveTab(navigationRef);
-          }
+    <IconsReadyProvider ready={iconsReady}>
+      <NavigationContainer
+        ref={navigationRef}
+        theme={navigationTheme}
+        linking={linking}
+        documentTitle={
+          Platform.OS === 'web'
+            ? {
+                enabled: false,
+              }
+            : undefined
+        }
+        onReady={() => {
           syncWebSeo();
-        });
-      }}
-    >
-      <StatusBar style="light" />
-      <WebSeoManager />
-      <RootNavigator />
-    </NavigationContainer>
+        }}
+        onStateChange={() => {
+          requestAnimationFrame(() => {
+            if (navigationRef.isReady()) {
+              syncNestedStacksWithActiveTab(navigationRef);
+            }
+            syncWebSeo();
+          });
+        }}
+      >
+        <StatusBar style="light" />
+        <WebSeoManager />
+        <RootNavigator />
+      </NavigationContainer>
+    </IconsReadyProvider>
   );
 }
 
