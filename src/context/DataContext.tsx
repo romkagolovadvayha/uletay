@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import {
   APP_DATA_CACHE_KEY,
   invalidateAppDataCache,
@@ -12,8 +12,6 @@ import { AppData } from '../types';
 import { normalizeAppData } from '../utils/appDataNormalize';
 import { defaultAppData } from '../storage/dataStore';
 import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
 
 function readCachedAppDataSync(): AppData | null {
   if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
@@ -39,6 +37,8 @@ function getInitialAppData(): AppData {
 type DataContextValue = {
   data: AppData;
   isLoading: boolean;
+  /** True until the first cache/API result is ready on a cold start (no local data yet). */
+  isInitialLoading: boolean;
   error: string | null;
   refreshData: (force?: boolean) => Promise<void>;
   lastFetchedAt: number | null;
@@ -49,7 +49,9 @@ const DataContext = createContext<DataContextValue | undefined>(undefined);
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppData>(getInitialAppData);
   const [isHydrated, setIsHydrated] = useState(Platform.OS === 'web');
-  const [isBootstrapping, setIsBootstrapping] = useState(Platform.OS !== 'web' || !readCachedAppDataSync());
+  const [isInitialLoading, setIsInitialLoading] = useState(
+    Platform.OS !== 'web' || !readCachedAppDataSync(),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
@@ -61,6 +63,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setData(normalizeAppData(cached.data));
       setLastFetchedAt(cached.fetchedAt);
       lastFetchedAtRef.current = cached.fetchedAt;
+      setIsInitialLoading(false);
     }
     return cached;
   }, []);
@@ -71,6 +74,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const fetchedAt = cached?.fetchedAt ?? Date.now();
     setLastFetchedAt(fetchedAt);
     lastFetchedAtRef.current = fetchedAt;
+    setIsInitialLoading(false);
     setError(null);
   }, []);
 
@@ -88,6 +92,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const fetchedAt = cached?.fetchedAt ?? Date.now();
         setLastFetchedAt(fetchedAt);
         lastFetchedAtRef.current = fetchedAt;
+        setIsInitialLoading(false);
         setError(null);
         return;
       }
@@ -123,6 +128,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (!cached) {
         setError('Нет связи с сервером. Показаны данные по умолчанию.');
       }
+      setIsInitialLoading(false);
     };
 
     void (async () => {
@@ -133,16 +139,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setIsHydrated(true);
 
       if (cached) {
-        setIsBootstrapping(false);
         void tryRefresh();
         return;
       }
 
-      // First launch: wait for the first API attempt before showing the UI.
       await tryRefresh();
-      if (!cancelled) {
-        setIsBootstrapping(false);
-      }
     })();
 
     const refreshInterval = setInterval(() => {
@@ -164,15 +165,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [applyCachedSnapshot, applyFreshData]);
 
   const value = useMemo(
-    () => ({ data, isLoading, error, refreshData, lastFetchedAt }),
-    [data, isLoading, error, refreshData, lastFetchedAt],
+    () => ({ data, isLoading, isInitialLoading, error, refreshData, lastFetchedAt }),
+    [data, isLoading, isInitialLoading, error, refreshData, lastFetchedAt],
   );
 
-  if (!isHydrated || isBootstrapping) {
+  if (!isHydrated) {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loaderText}>Загружаем данные фестиваля…</Text>
       </View>
     );
   }
@@ -194,12 +194,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.xl,
-  },
-  loaderText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
 });

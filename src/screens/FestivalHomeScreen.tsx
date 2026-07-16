@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, Platform, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Animated, Platform, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { FestivalLogoImage } from '../components/FestivalLogoImage';
@@ -39,7 +39,7 @@ const HERO_VIDEO_POSTER = require('../../assets/images/hero-video-poster.webp');
 const HERO_VIDEO_SOURCE = require('../../assets/videos/background.mp4');
 
 export function FestivalHomeScreen({ navigation }: Props) {
-  const { data } = useAppData();
+  const { data, isInitialLoading } = useAppData();
   const festivalActive = useFestivalActive();
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
@@ -147,6 +147,17 @@ export function FestivalHomeScreen({ navigation }: Props) {
     },
     [navigation],
   );
+
+  if (isInitialLoading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.homeLoader}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.homeLoaderText}>Загружаем данные фестиваля…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -287,6 +298,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     overflow: 'hidden',
+  },
+  homeLoader: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  homeLoaderText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   content: {
     paddingBottom: spacing.xxl,
