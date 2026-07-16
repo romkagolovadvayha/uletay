@@ -6,10 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PerformanceTimeDateRow } from '../components/PerformanceTimeDateRow';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
-import { useAppData } from '../context/DataContext';
 import { openHeadlinerDetail } from '../navigation/scheduleNavigation';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -19,18 +17,15 @@ import { spacing } from '../theme/spacing';
 import { typography, appFont } from '../theme/typography';
 import { resolveArtistImageSource } from '../utils/festArtistImages';
 import { RADIO_STATION_NAME } from '../config/radio';
-import { formatDayMonthLabel, formatTimeRange, getStageName } from '../utils/scheduleHelpers';
 import { formatHeadlinerYears } from '../utils/headlinerHelpers';
 
 export function PlaylistScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
-  const { data } = useAppData();
   const {
     isPlaying,
     isLoading,
     error,
     nowPlaying,
-    matchedPerformance,
     matchedHeadliner,
     togglePlayback,
     refreshNowPlaying,
@@ -44,29 +39,18 @@ export function PlaylistScreen() {
     }, [setPlaylistActive]),
   );
 
-  const displayArtist = nowPlaying?.artist || 'Улетайрадио';
+  const displayArtist = matchedHeadliner?.name || nowPlaying?.artist || 'Улетайрадио';
   const displayTitle = nowPlaying?.title || 'В эфире';
   const artworkSource = resolveArtistImageSource(
-    matchedPerformance?.imageUrl ?? matchedHeadliner?.imageUrl,
-    matchedPerformance?.artist ?? matchedHeadliner?.name ?? nowPlaying?.artist ?? displayArtist,
+    matchedHeadliner?.imageUrl,
+    matchedHeadliner?.name ?? nowPlaying?.artist ?? displayArtist,
   );
-  const stageName = matchedPerformance ? getStageName(matchedPerformance.stageId, data.stages) : null;
 
   const openMatchedHeadliner = () => {
     if (!matchedHeadliner) {
       return;
     }
     openHeadlinerDetail(navigation, matchedHeadliner.id);
-  };
-
-  const openMatchedPerformance = () => {
-    if (!matchedPerformance) {
-      return;
-    }
-    navigation.navigate('ScheduleTab', {
-      screen: 'LiveDetail',
-      params: { performanceId: matchedPerformance.id },
-    });
   };
 
   return (
@@ -105,25 +89,7 @@ export function PlaylistScreen() {
             {displayArtist}
           </Text>
 
-          {matchedPerformance ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={openMatchedPerformance}
-              style={({ pressed }) => [styles.matchCard, pressed && styles.pressed]}
-            >
-              <View style={styles.matchHeader}>
-                <Text style={styles.matchLabel}>На фестивале</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              </View>
-              <Text style={styles.matchArtist}>{matchedPerformance.artist}</Text>
-              {stageName ? <Text style={styles.matchStage}>{stageName}</Text> : null}
-              <PerformanceTimeDateRow
-                style={styles.matchTimeRow}
-                time={formatTimeRange(matchedPerformance.startTime, matchedPerformance.endTime)}
-                date={formatDayMonthLabel(matchedPerformance.date)}
-              />
-            </Pressable>
-          ) : matchedHeadliner ? (
+          {matchedHeadliner ? (
             <Pressable
               accessibilityRole="button"
               onPress={openMatchedHeadliner}
@@ -293,9 +259,6 @@ const styles = StyleSheet.create({
     ...typography.artistStage,
     color: colors.textSecondary,
     marginTop: 2,
-  },
-  matchTimeRow: {
-    marginTop: spacing.sm,
   },
   errorText: {
     color: colors.live,

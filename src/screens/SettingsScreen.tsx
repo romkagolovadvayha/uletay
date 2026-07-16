@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.headerTop,
     paddingBottom: spacing.xxl,
   },
   backRow: {

@@ -2,7 +2,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { Suspense } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
 import { DeferredIonicons } from '../components/DeferredIonicons';
 import { useIsTablet } from '../hooks/useIsTablet';
@@ -98,29 +97,15 @@ const AutographStack = createNativeStackNavigator<AutographStackParamList>();
 const HeadlinersStack = createNativeStackNavigator<HeadlinersStackParamList>();
 
 const TAB_ICON_SIZE = 22;
-/** Tab content height (icons + labels); inner padding and safe-area are added separately. */
-const TAB_BAR_BASE_HEIGHT = 64;
-const TAB_BAR_INNER_PADDING = 8;
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  tabBar: {
-    backgroundColor: colors.background,
-    borderTopColor: colors.borderStrong,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: TAB_BAR_INNER_PADDING,
-    elevation: 0,
-    shadowOpacity: 0,
-  },
   tabLabel: {
     ...typography.tabLabel,
     marginTop: 4,
     fontSize: 9,
-  },
-  tabItem: {
-    paddingTop: 2,
   },
   tabletTabBar: {
     backgroundColor: colors.background,
@@ -219,8 +204,6 @@ function RootTabs() {
   const { open } = useMoreMenu();
   const isTablet = useIsTablet();
   const festivalActive = useFestivalActive();
-  const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(insets.bottom, 0);
 
   return (
     <Tab.Navigator
@@ -230,18 +213,9 @@ function RootTabs() {
         headerShown: false,
         tabBarPosition: isTablet ? 'left' : 'bottom',
         tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon',
-        tabBarStyle: isTablet
-          ? styles.tabletTabBar
-          : [
-              styles.tabBar,
-              {
-                height: TAB_BAR_BASE_HEIGHT + TAB_BAR_INNER_PADDING + bottomInset,
-                paddingBottom: TAB_BAR_INNER_PADDING + bottomInset,
-              },
-            ],
+        tabBarStyle: isTablet ? styles.tabletTabBar : undefined,
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,
-        tabBarItemStyle: isTablet ? undefined : styles.tabItem,
         tabBarLabel: ({ color, children }) => (
           <TabLabel color={color}>{children}</TabLabel>
         ),

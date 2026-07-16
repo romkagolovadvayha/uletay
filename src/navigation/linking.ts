@@ -95,7 +95,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
       },
       MoreTab: {
         screens: {
-          MoreHome: 'more',
+          // MoreHome is a phone sheet host — not a public URL (/more → black screen).
           FoodCourtMain: 'foodcourt',
           FoodCourtDetail: 'foodcourt/:vendorId',
           FestivalAbout: 'about',
@@ -107,6 +107,14 @@ export const linking: LinkingOptions<RootTabParamList> = {
     },
   },
   getStateFromPath(path, options) {
+    const normalized = path.replace(/\/+$/, '') || '/';
+    if (normalized === '/more') {
+      return {
+        routes: [{ name: 'HomeTab' }],
+        index: 0,
+      };
+    }
+
     const headlinersState = getHeadlinersStateFromPath(path);
     if (headlinersState) {
       return headlinersState;

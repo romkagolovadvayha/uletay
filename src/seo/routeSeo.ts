@@ -61,12 +61,6 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path'> & { path: string }> = {
       'Слушайте радио фестиваля УЛЕТАЙ в прямом эфире и смотрите, что сейчас играет на площадке.',
     path: '/playlist',
   },
-  MoreHome: {
-    title: `Ещё — ${SITE_NAME}`,
-    description:
-      'Дополнительные разделы приложения фестиваля УЛЕТАЙ: фудкорт, правила, информация о фестивале.',
-    path: '/more',
-  },
   FoodCourtMain: {
     title: `Фудкорт — ${SITE_NAME}`,
     description:
@@ -145,7 +139,7 @@ function buildPath(chain: RouteNode[]): string {
     case 'PlaylistTab':
       return '/playlist';
     case 'MoreHome':
-      return '/more';
+      return '/';
     case 'FoodCourtMain':
       return '/foodcourt';
     case 'FoodCourtDetail':
@@ -259,7 +253,7 @@ export function resolveSeoMeta(
     const name = headliner?.name ?? 'Хэдлайнер';
     const lastfm = headliner?.lastfm;
     const yearsLabel = headliner?.years.length
-      ? ` (${headliner.years.map((year) => `УЛЕТАЙ ${year}`).join(', ')})`
+      ? ` (${[...headliner.years].sort((a, b) => b - a).join(' ')})`
       : '';
     return {
       title: `${name} — хэдлайнер | ${SITE_NAME}`,

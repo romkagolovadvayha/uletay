@@ -174,11 +174,11 @@ export function syncAppHeadliners(data: AppData): AppData {
     const headliner = headliners.find((entry) => entry.id === headlinerId);
     const resolvedArtist = headliner?.name ?? artist ?? '';
 
-    const { imageUrl: _imageUrl, ...rest } = item;
     return {
-      ...rest,
+      ...item,
       headlinerId: headlinerId ?? '',
       artist: resolvedArtist,
+      imageUrl: headliner?.imageUrl ?? item.imageUrl,
     };
   });
 
@@ -204,11 +204,11 @@ export function syncAppHeadliners(data: AppData): AppData {
     const headliner = headliners.find((entry) => entry.id === headlinerId);
     const resolvedArtist = headliner?.name ?? artist ?? '';
 
-    const { imageUrl: _imageUrl, ...rest } = item;
     return {
-      ...rest,
+      ...item,
       headlinerId: headlinerId ?? '',
       artist: resolvedArtist,
+      imageUrl: headliner?.imageUrl ?? item.imageUrl,
     };
   });
 
@@ -245,5 +245,5 @@ export function resolveLinkedImageUrl(
   item: { headlinerId?: string; imageUrl?: string; artist?: string },
   headliners: Headliner[],
 ): string | undefined {
-  return item.imageUrl ?? getHeadlinerById(headliners, item.headlinerId)?.imageUrl;
+  return getHeadlinerById(headliners, item.headlinerId)?.imageUrl ?? item.imageUrl;
 }

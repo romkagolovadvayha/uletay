@@ -13,36 +13,11 @@ function normalizeArtistName(value: string): string {
 function tokenize(value: string): string[] {
   return normalizeArtistName(value)
     .split(' ')
-    .filter((token) => token.length > 1);
+    .filter(Boolean);
 }
 
-function scoreMatch(candidate: string, query: string): number {
-  const normalizedCandidate = normalizeArtistName(candidate);
-  const normalizedQuery = normalizeArtistName(query);
-
-  if (!normalizedCandidate || !normalizedQuery) {
-    return 0;
-  }
-
-  if (normalizedCandidate === normalizedQuery) {
-    return 100;
-  }
-
-  if (
-    normalizedCandidate.includes(normalizedQuery) ||
-    normalizedQuery.includes(normalizedCandidate)
-  ) {
-    return 80;
-  }
-
-  const candidateTokens = tokenize(candidate);
-  const queryTokens = tokenize(query);
-  if (!candidateTokens.length || !queryTokens.length) {
-    return 0;
-  }
-
-  const shared = queryTokens.filter((token) => candidateTokens.includes(token)).length;
-  return Math.round((shared / Math.max(candidateTokens.length, queryTokens.length)) * 70);
+function sortedTokenKey(tokens: string[]): string {
+  return [...tokens].sort().join(' ');
 }
 
 function buildRadioQueries(artist: string, title?: string): string[] {
@@ -51,11 +26,59 @@ function buildRadioQueries(artist: string, title?: string): string[] {
     .filter((value): value is string => Boolean(value));
 }
 
+/**
+ * Match by exact/substring text, or by the same words in any order
+ * ("Вячеслав Бутусов" ≈ "Бутусов Вячеслав"). Longer overlap wins.
+ */
+function containmentScore(candidate: string, query: string): number {
+  const normalizedCandidate = normalizeArtistName(candidate);
+  const normalizedQuery = normalizeArtistName(query);
+
+  if (!normalizedCandidate || !normalizedQuery) {
+    return 0;
+  }
+
+  if (normalizedCandidate === normalizedQuery) {
+    return 1000 + normalizedCandidate.length;
+  }
+
+  if (normalizedCandidate.includes(normalizedQuery)) {
+    return 500 + normalizedQuery.length;
+  }
+
+  if (normalizedQuery.includes(normalizedCandidate)) {
+    return 500 + normalizedCandidate.length;
+  }
+
+  const candidateTokens = tokenize(candidate);
+  const queryTokens = tokenize(query);
+  if (!candidateTokens.length || !queryTokens.length) {
+    return 0;
+  }
+
+  // Same words, different order.
+  if (sortedTokenKey(candidateTokens) === sortedTokenKey(queryTokens)) {
+    return 900 + candidateTokens.length;
+  }
+
+  // All words of the shorter name appear in the longer one (any order).
+  const [shorter, longer] =
+    candidateTokens.length <= queryTokens.length
+      ? [candidateTokens, queryTokens]
+      : [queryTokens, candidateTokens];
+  const longerSet = new Set(longer);
+  if (shorter.every((token) => longerSet.has(token))) {
+    return 400 + shorter.length * 20 + shorter.join('').length;
+  }
+
+  return 0;
+}
+
 function findBestNamedMatch<T>(
   items: T[],
   artist: string,
   title: string | undefined,
-  getLabel: (item: T) => string,
+  getLabels: (item: T) => string[],
 ): T | null {
   const queries = buildRadioQueries(artist, title);
   if (!queries.length) {
@@ -65,15 +88,17 @@ function findBestNamedMatch<T>(
   let best: { item: T; score: number } | null = null;
 
   for (const item of items) {
-    for (const query of queries) {
-      const score = scoreMatch(getLabel(item), query);
-      if (!best || score > best.score) {
-        best = { item, score };
+    for (const label of getLabels(item)) {
+      for (const query of queries) {
+        const score = containmentScore(label, query);
+        if (score > 0 && (!best || score > best.score)) {
+          best = { item, score };
+        }
       }
     }
   }
 
-  return best && best.score >= 45 ? best.item : null;
+  return best?.item ?? null;
 }
 
 function isFuturePerformance(performance: SchedulePerformance, now: Date): boolean {
@@ -87,13 +112,16 @@ export function findSchedulePerformanceByRadioArtist(
   now: Date = new Date(),
 ): SchedulePerformance | null {
   const futureSchedule = schedule.filter((item) => isFuturePerformance(item, now));
-  return findBestNamedMatch(futureSchedule, artist, title, (item) => item.artist);
+  return findBestNamedMatch(futureSchedule, artist, title, (item) => [item.artist]);
 }
 
 export function findHeadlinerByRadioArtist(
   headliners: Headliner[],
   artist: string,
-  title?: string,
+  _title?: string,
 ): Headliner | null {
-  return findBestNamedMatch(headliners, artist, title, (item) => item.name);
+  // Match only the on-air artist against headliner name / alternateNames (substring, not exact).
+  return findBestNamedMatch(headliners, artist, undefined, (item) =>
+    [item.name, ...(item.alternateNames ?? [])].filter(Boolean),
+  );
 }

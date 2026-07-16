@@ -1,25 +1,36 @@
+import { NavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LiveHeroCard } from './LiveArtistCard';
+import {
+  HEADLINER_TOP_TRACKS_PREVIEW,
+  HeadlinerTeaserCard,
+  HeadlinerTopTracksPreview,
+} from './HeadlinerTeaserCard';
 import { NextUpItem } from './ScheduleListItem';
 import { PrimaryButton } from './PrimaryButton';
 import { SectionHeader } from './SectionHeader';
 import { useAppData } from '../context/DataContext';
 import { useNow } from '../hooks/useNow';
-import { ScheduleStackParamList } from '../navigation/types';
-import { openScheduleMainFromStack } from '../navigation/scheduleNavigation';
+import { RootTabParamList, ScheduleStackParamList } from '../navigation/types';
+import { openHeadlinerDetail, openScheduleMainFromStack } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { getHeadlinerById } from '../utils/headlinersCore';
+import { resolveHeadlinerLastFm } from '../utils/headlinerGroups';
 import { PrimaryPerformance, getStageName, getUpcomingOnSameStage, isStartingSoon } from '../utils/scheduleHelpers';
 import { useFavorites } from '../hooks/useFavorites';
 
 type Props = {
   primary: PrimaryPerformance | null;
-  navigation: Pick<NativeStackNavigationProp<ScheduleStackParamList>, 'dispatch' | 'getState' | 'navigate' | 'replace'>;
+  navigation: Pick<
+    NativeStackNavigationProp<ScheduleStackParamList>,
+    'dispatch' | 'getState' | 'navigate' | 'replace' | 'getParent'
+  >;
 };
 
 export function ScheduleLiveView({ primary, navigation }: Props) {
@@ -33,6 +44,21 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
     performance != null &&
     status === 'upcoming' &&
     isStartingSoon(performance.date, performance.startTime, now);
+
+  const headliner = useMemo(
+    () => (performance ? getHeadlinerById(data.headliners, performance.headlinerId) : undefined),
+    [data.headliners, performance],
+  );
+
+  const lastfm = useMemo(
+    () => (headliner ? resolveHeadlinerLastFm(headliner, data.headliners) : undefined),
+    [data.headliners, headliner],
+  );
+
+  const topTracks = useMemo(
+    () => (lastfm?.topTracks ?? []).slice(0, HEADLINER_TOP_TRACKS_PREVIEW),
+    [lastfm],
+  );
 
   const upcoming = useMemo(
     () => (performance ? getUpcomingOnSameStage(performance, data.schedule) : []),
@@ -52,6 +78,17 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
   const headerTitle = status === 'live' ? 'СЕЙЧАС ВЫСТУПАЕТ' : isSoon ? 'СКОРО ВЫСТУПИТ' : 'СЛЕДУЮЩЕЕ ВЫСТУПЛЕНИЕ';
   const performanceIsFavorite = isFavorite(performance.id);
 
+  const openHeadliner = () => {
+    if (!headliner) {
+      return;
+    }
+    const rootNavigation = navigation.getParent() as NavigationProp<RootTabParamList> | undefined;
+    if (!rootNavigation) {
+      return;
+    }
+    openHeadlinerDetail(rootNavigation, headliner.id);
+  };
+
   return (
     <>
       <SectionHeader title={headerTitle} style={styles.header} />
@@ -63,6 +100,13 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
       />
 
       <View style={styles.buttonWrap}>
+        {headliner ? (
+          <HeadlinerTeaserCard
+            headliner={headliner}
+            allHeadliners={data.headliners}
+            onPress={openHeadliner}
+          />
+        ) : null}
         <Pressable
           accessibilityRole="button"
           onPress={() => toggleFavorite(performance.id)}
@@ -77,6 +121,15 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
           onPress={() => openScheduleMainFromStack(navigation)}
         />
       </View>
+
+      {headliner && topTracks.length ? (
+        <HeadlinerTopTracksPreview
+          headliner={headliner}
+          lastfm={lastfm}
+          tracks={topTracks}
+          onOpenHeadliner={openHeadliner}
+        />
+      ) : null}
 
       <SectionHeader title="ДАЛЕЕ НА ЭТОЙ СЦЕНЕ" variant="muted" style={styles.nextHeader} />
       {upcoming.length > 0 ? (

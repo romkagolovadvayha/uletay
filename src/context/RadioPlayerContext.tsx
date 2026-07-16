@@ -11,19 +11,14 @@ import React, {
 import { fetchRadioNowPlaying, RadioNowPlaying } from '../api/radioNowPlayingApi';
 import { useAppData } from './DataContext';
 import { RADIO_NOW_PLAYING_POLL_MS } from '../config/radio';
-import { SchedulePerformance, Headliner } from '../types';
-import {
-  findHeadlinerByRadioArtist,
-  findSchedulePerformanceByRadioArtist,
-} from '../utils/matchRadioArtist';
-import { useNow } from '../hooks/useNow';
+import { Headliner } from '../types';
+import { findHeadlinerByRadioArtist } from '../utils/matchRadioArtist';
 
 type RadioPlayerContextValue = {
   isPlaying: boolean;
   isLoading: boolean;
   error: string | null;
   nowPlaying: RadioNowPlaying | null;
-  matchedPerformance: SchedulePerformance | null;
   matchedHeadliner: Headliner | null;
   togglePlayback: () => void;
   play: () => void;
@@ -40,7 +35,6 @@ const LazyRadioAudioEngine = React.lazy(() =>
 
 export function RadioPlayerProvider({ children }: { children: React.ReactNode }) {
   const { data } = useAppData();
-  const now = useNow(30_000);
   const [nowPlaying, setNowPlaying] = useState<RadioNowPlaying | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMetadataLoading, setIsMetadataLoading] = useState(false);
@@ -51,25 +45,12 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
   const engineRef = useRef<{ play: () => void; pause: () => void } | null>(null);
   const pendingPlayRef = useRef(false);
 
-  const matchedPerformance = useMemo(
-    () =>
-      nowPlaying
-        ? findSchedulePerformanceByRadioArtist(
-            data.schedule,
-            nowPlaying.artist,
-            nowPlaying.title,
-            now,
-          )
-        : null,
-    [data.schedule, now, nowPlaying],
-  );
-
   const matchedHeadliner = useMemo(
     () =>
-      nowPlaying && !matchedPerformance
+      nowPlaying
         ? findHeadlinerByRadioArtist(data.headliners, nowPlaying.artist, nowPlaying.title)
         : null,
-    [data.headliners, matchedPerformance, nowPlaying],
+    [data.headliners, nowPlaying],
   );
 
   const refreshNowPlaying = useCallback(async () => {
@@ -86,7 +67,8 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    if (!playlistActive) {
+    // Poll while the playlist screen is open or radio is playing (for lock-screen metadata).
+    if (!playlistActive && !isPlaying) {
       return;
     }
 
@@ -101,7 +83,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       clearTimeout(timeoutId);
       clearInterval(intervalId);
     };
-  }, [playlistActive, refreshNowPlaying]);
+  }, [playlistActive, isPlaying, refreshNowPlaying]);
 
   const handlePlaybackChange = useCallback(
     (state: { playing: boolean; isBuffering: boolean }) => {
@@ -113,13 +95,14 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
 
   const play = useCallback(() => {
     setError(null);
+    void refreshNowPlaying();
     if (!audioMounted) {
       pendingPlayRef.current = true;
       setAudioMounted(true);
       return;
     }
     engineRef.current?.play();
-  }, [audioMounted]);
+  }, [audioMounted, refreshNowPlaying]);
 
   const pause = useCallback(() => {
     pendingPlayRef.current = false;
@@ -140,7 +123,6 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       isLoading: isBuffering || isMetadataLoading,
       error,
       nowPlaying,
-      matchedPerformance,
       matchedHeadliner,
       togglePlayback,
       play,
@@ -154,7 +136,6 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       isMetadataLoading,
       isPlaying,
       matchedHeadliner,
-      matchedPerformance,
       nowPlaying,
       pause,
       play,
@@ -172,7 +153,6 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
             pendingPlayRef={pendingPlayRef}
             onPlaybackChange={handlePlaybackChange}
             nowPlaying={nowPlaying}
-            matchedPerformance={matchedPerformance}
             matchedHeadliner={matchedHeadliner}
           />
         </Suspense>

@@ -16,7 +16,7 @@ import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 import { formatLastFmCount, formatTrackDuration } from '../utils/lastfmFormat';
 import { getLastFmTopTracksMoreCount } from '../utils/lastfmTracks';
-import { resolveSimilarHeadliners } from '../utils/headlinerHelpers';
+import { formatHeadlinerYears, resolveSimilarHeadliners } from '../utils/headlinerHelpers';
 import { getHeadlinerDisplayAlternateNames } from '../utils/headlinerGroups';
 
 type Props = NativeStackScreenProps<
@@ -122,7 +122,7 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
         ) : null}
         <Text style={styles.year}>
           {headliner.years.length
-            ? headliner.years.map((year) => `УЛЕТАЙ ${year}`).join(' · ')
+            ? `УЛЕТАЙ ${formatHeadlinerYears(headliner.years)}`
             : 'УЛЕТАЙ'}
         </Text>
 

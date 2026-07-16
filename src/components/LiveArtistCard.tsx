@@ -1,18 +1,23 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { SchedulePerformance } from '../types';
+import { useAppData } from '../context/DataContext';
+import { AutographSession, SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { resolveLinkedArtist, resolveLinkedImageUrl } from '../utils/headlinersCore';
 import {
   formatDayMonthLabel,
   formatSoonCountdown,
   formatTimeRange,
+  getStageName,
+  getTimedStatus,
   isStartingSoon,
   parseDateTime,
   TimedStatus,
+  getEndDateTime,
 } from '../utils/scheduleHelpers';
 import { ArtistImage } from './ArtistImage';
 import { ScreenTitle } from './ScreenTitle';
@@ -31,6 +36,9 @@ type CardProps = {
 };
 
 export function LiveArtistCard({ performance, stageName, status, onPress, now = new Date(), style }: CardProps) {
+  const { data } = useAppData();
+  const artist = resolveLinkedArtist(performance, data.headliners) || performance.artist;
+  const imageUrl = resolveLinkedImageUrl(performance, data.headliners);
   const isLive = status === 'live';
   const isSoon =
     status === 'upcoming' && isStartingSoon(performance.date, performance.startTime, now);
@@ -50,10 +58,10 @@ export function LiveArtistCard({ performance, stageName, status, onPress, now = 
         pressed && styles.pressed,
       ]}
     >
-      <ArtistImage imageUrl={performance.imageUrl} artist={performance.artist} style={styles.thumbnail} />
+      <ArtistImage imageUrl={imageUrl} artist={artist} style={styles.thumbnail} />
       <View style={styles.content}>
         <Text style={styles.artist} numberOfLines={1}>
-          {performance.artist}
+          {artist}
         </Text>
         {performance.isCompetition ? <CompetitionLabel /> : null}
         <Text style={styles.stage}>{stageName}</Text>
@@ -83,6 +91,9 @@ type HeroProps = {
 };
 
 export function LiveHeroCard({ performance, stageName, status, now = new Date() }: HeroProps) {
+  const { data } = useAppData();
+  const artist = resolveLinkedArtist(performance, data.headliners) || performance.artist;
+  const imageUrl = resolveLinkedImageUrl(performance, data.headliners);
   const isLive = status === 'live';
   const isSoon =
     status === 'upcoming' && isStartingSoon(performance.date, performance.startTime, now);
@@ -92,7 +103,7 @@ export function LiveHeroCard({ performance, stageName, status, now = new Date() 
 
   return (
     <View style={styles.heroCard}>
-      <ArtistImage imageUrl={performance.imageUrl} artist={performance.artist} style={styles.heroImage} variant="hero" />
+      <ArtistImage imageUrl={imageUrl} artist={artist} style={styles.heroImage} variant="hero" />
       <LinearGradient
         colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.35)', colors.overlayStrong]}
         locations={[0, 0.45, 1]}
@@ -102,7 +113,7 @@ export function LiveHeroCard({ performance, stageName, status, now = new Date() 
         {isLive ? <LiveBadge /> : isSoon ? <SoonBadge countdown={startsIn ?? undefined} /> : null}
       </View>
       <View style={styles.heroContent}>
-        <ScreenTitle style={styles.heroArtist}>{performance.artist}</ScreenTitle>
+        <ScreenTitle style={styles.heroArtist}>{artist}</ScreenTitle>
         {performance.isCompetition ? <CompetitionLabel style={styles.heroCompetition} /> : null}
         <Text style={styles.heroStage}>{stageName}</Text>
         <PerformanceTimeDateRow
@@ -113,6 +124,55 @@ export function LiveHeroCard({ performance, stageName, status, now = new Date() 
               : formatTimeRange(performance.startTime, performance.endTime)
           }
           date={formatDayMonthLabel(performance.date)}
+          timeStyle={styles.heroTime}
+          dateStyle={styles.heroDate}
+          dividerStyle={styles.heroDivider}
+        />
+      </View>
+    </View>
+  );
+}
+
+type AutographHeroProps = {
+  session: AutographSession;
+  now?: Date;
+};
+
+export function AutographHeroCard({ session, now = new Date() }: AutographHeroProps) {
+  const { data } = useAppData();
+  const artist = resolveLinkedArtist(session, data.headliners) || session.artist;
+  const imageUrl = resolveLinkedImageUrl(session, data.headliners);
+  const start = parseDateTime(session.date, session.startTime);
+  const end = getEndDateTime(session.date, session.startTime, session.endTime);
+  const status = getTimedStatus(start, end, now);
+  const isLive = status === 'live';
+  const isSoon = status === 'upcoming' && isStartingSoon(session.date, session.startTime, now);
+  const startsIn = isSoon ? formatSoonCountdown(start, now) : null;
+  const location =
+    session.location?.trim() || getStageName(session.stageId, data.stages) || 'Автограф-сессия';
+
+  return (
+    <View style={styles.heroCard}>
+      <ArtistImage imageUrl={imageUrl} artist={artist} style={styles.heroImage} variant="hero" />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.35)', colors.overlayStrong]}
+        locations={[0, 0.45, 1]}
+        style={styles.heroGradient}
+      />
+      <View style={styles.heroBadge}>
+        {isLive ? <LiveBadge /> : isSoon ? <SoonBadge countdown={startsIn ?? undefined} /> : null}
+      </View>
+      <View style={styles.heroContent}>
+        <ScreenTitle style={styles.heroArtist}>{artist}</ScreenTitle>
+        <Text style={styles.heroStage}>{location}</Text>
+        <PerformanceTimeDateRow
+          style={styles.heroTimeWrap}
+          time={
+            startsIn
+              ? `${formatTimeRange(session.startTime, session.endTime)} · ${startsIn}`
+              : formatTimeRange(session.startTime, session.endTime)
+          }
+          date={formatDayMonthLabel(session.date)}
           timeStyle={styles.heroTime}
           dateStyle={styles.heroDate}
           dividerStyle={styles.heroDivider}

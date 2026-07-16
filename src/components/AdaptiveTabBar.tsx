@@ -1,6 +1,7 @@
-import { BottomTabBar, BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { useIsTablet } from '../hooks/useIsTablet';
+import { MobileBottomTabBar } from './MobileBottomTabBar';
 import { TabletSidebar } from './TabletSidebar';
 
 export function AdaptiveTabBar(props: BottomTabBarProps) {
@@ -10,5 +11,5 @@ export function AdaptiveTabBar(props: BottomTabBarProps) {
     return <TabletSidebar {...props} />;
   }
 
-  return <BottomTabBar {...props} />;
+  return <MobileBottomTabBar {...props} />;
 }
