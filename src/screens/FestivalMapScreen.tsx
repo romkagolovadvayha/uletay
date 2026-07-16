@@ -30,7 +30,7 @@ type ZoneFeature = GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>;
 
 type MapErrorBoundaryProps = {
   children: React.ReactNode;
-  onError: () => void;
+  onError: (message?: string) => void;
 };
 
 type MapErrorBoundaryState = {
@@ -44,8 +44,8 @@ class MapErrorBoundary extends React.Component<MapErrorBoundaryProps, MapErrorBo
     return { hasError: true };
   }
 
-  componentDidCatch() {
-    this.props.onError();
+  componentDidCatch(error: Error) {
+    this.props.onError(error?.message);
   }
 
   render() {
@@ -76,6 +76,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapLoadError, setMapLoadError] = useState(false);
   const [mapRenderError, setMapRenderError] = useState(false);
+  const [mapErrorDetail, setMapErrorDetail] = useState<string | null>(null);
 
   const selectedZoneId = pickedZoneId;
 
@@ -217,7 +218,12 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.mapWrap}>
           <View style={styles.mapLayer}>
-            <MapErrorBoundary onError={() => setMapRenderError(true)}>
+            <MapErrorBoundary
+              onError={(message) => {
+                setMapRenderError(true);
+                setMapErrorDetail(message ?? null);
+              }}
+            >
               <FestivalMapView
                 config={mapConfig}
                 zones={data.mapZones}
@@ -240,8 +246,12 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
                 onMapLoaded={() => {
                   setMapLoaded(true);
                   setMapLoadError(false);
+                  setMapErrorDetail(null);
                 }}
-                onMapLoadError={() => setMapLoadError(true)}
+                onMapLoadError={() => {
+                  setMapLoadError(true);
+                  setMapErrorDetail(null);
+                }}
               />
             </MapErrorBoundary>
             {!mapLoaded && !mapUnavailable ? (
@@ -254,7 +264,8 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
               <View style={styles.mapError}>
                 <Text style={styles.mapErrorTitle}>Карта недоступна</Text>
                 <Text style={styles.mapErrorText}>
-                  Проверьте подключение к интернету и попробуйте снова.
+                  {mapErrorDetail ??
+                    'Проверьте подключение к интернету и попробуйте снова.'}
                 </Text>
               </View>
             ) : null}

@@ -181,7 +181,9 @@ export function FestivalMapView({
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
         mixedContentMode="always"
-        androidLayerType="hardware"
+        androidLayerType="software"
+        cacheEnabled
+        thirdPartyCookiesEnabled
       />
     </View>
   );

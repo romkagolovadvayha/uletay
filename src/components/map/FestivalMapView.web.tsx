@@ -58,7 +58,7 @@ function ensureMapStyles() {
 
 function getContainerElement(ref: React.RefObject<View | null>): HTMLElement | null {
   const node = ref.current as unknown as HTMLElement | null;
-  if (!node?.nodeType) return null;
+  if (!node?.nodeType || !node.classList) return null;
   node.classList.add('fest-yandex-map');
   return node;
 }
