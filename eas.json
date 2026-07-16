@@ -8,18 +8,21 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api"
+        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api",
+        "EXPO_PUBLIC_YANDEX_MAPS_API_KEY": "731031f2-dafb-4a0f-902a-770cd600bfb4"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api"
+        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api",
+        "EXPO_PUBLIC_YANDEX_MAPS_API_KEY": "731031f2-dafb-4a0f-902a-770cd600bfb4"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api"
+        "EXPO_PUBLIC_API_URL": "https://uletayapp.ru/api",
+        "EXPO_PUBLIC_YANDEX_MAPS_API_KEY": "731031f2-dafb-4a0f-902a-770cd600bfb4"
       },
       "android": {
         "buildType": "app-bundle"

@@ -14,9 +14,3 @@ export const mapColors = {
   chipTextInactive: '#FFFFFF',
   handle: 'rgba(255, 255, 255, 0.28)',
 } as const;
-
-/** Dark OSM basemap with working glyph fonts (incl. Cyrillic). */
-export const NATIVE_MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
-
-/** Fonts available from OpenFreeMap glyph endpoint. */
-export const NATIVE_MAP_TEXT_FONT = ['Noto Sans Bold'] as const;

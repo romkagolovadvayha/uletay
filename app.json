@@ -70,7 +70,6 @@
           "locationWhenInUsePermission": "Чтобы показать ваше местоположение на карте фестиваля"
         }
       ],
-      "@maplibre/maplibre-react-native",
       [
         "expo-video",
         {
