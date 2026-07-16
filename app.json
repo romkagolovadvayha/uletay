@@ -4,7 +4,7 @@
     "slug": "romkadvayha",
     "scheme": "uletay",
     "owner": "romkadvayhas-team",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -14,15 +14,18 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "ru.uletay.app",
-      "buildNumber": "1",
+      "buildNumber": "4",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Чтобы показать ваше местоположение на карте фестиваля",
-        "NSUserNotificationsUsageDescription": "Чтобы напоминать о начале избранных выступлений и автограф-сессий"
+        "NSLocationWhenInUseUsageDescription": "Приложению нужен доступ к геолокации, чтобы показать ваше положение на карте площадки фестиваля «Улетай». Координаты используются только на устройстве и не передаются на сервер.",
+        "NSUserNotificationsUsageDescription": "Приложению нужны уведомления, чтобы напоминать о начале избранных выступлений и автограф-сессий, которые вы добавили в расписание."
       }
     },
     "android": {
       "package": "ru.uletay.app",
-      "versionCode": 1,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#FFD100",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -67,13 +70,14 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Чтобы показать ваше местоположение на карте фестиваля"
+          "locationWhenInUsePermission": "Приложению нужен доступ к геолокации, чтобы показать ваше положение на карте площадки фестиваля «Улетай». Координаты используются только на устройстве и не передаются на сервер."
         }
       ],
       [
         "expo-video",
         {
-          "supportsPictureInPicture": true
+          "supportsPictureInPicture": false,
+          "supportsBackgroundPlayback": false
         }
       ],
       "expo-asset"

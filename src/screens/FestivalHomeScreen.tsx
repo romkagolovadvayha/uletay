@@ -1,7 +1,7 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
@@ -44,22 +44,13 @@ type HeroParallaxBackgroundProps = {
 
 function HeroParallaxBackground({ translateY, allowVideo }: HeroParallaxBackgroundProps) {
   const [heroPosterReady, setHeroPosterReady] = useState(Platform.OS !== 'web');
-  const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(Platform.OS !== 'web');
   const [heroVideoReady, setHeroVideoReady] = useState(false);
+  // Native: load as soon as allowed. Web: wait for poster so LCP stays on the image.
+  const shouldLoadHeroVideo = allowVideo && (Platform.OS !== 'web' || heroPosterReady);
 
   const onHeroVideoReady = useCallback(() => {
     setHeroVideoReady(true);
   }, []);
-
-  useEffect(() => {
-    if (!allowVideo || shouldLoadHeroVideo) {
-      return;
-    }
-    // Start video as soon as the poster is ready (web) or immediately (native).
-    if (Platform.OS !== 'web' || heroPosterReady) {
-      setShouldLoadHeroVideo(true);
-    }
-  }, [allowVideo, heroPosterReady, shouldLoadHeroVideo]);
 
   return (
     <Animated.View

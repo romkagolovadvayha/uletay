@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   endedBadge: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.surfaceGlass,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

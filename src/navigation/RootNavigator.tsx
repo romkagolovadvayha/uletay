@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { Suspense } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
 import { DeferredIonicons } from '../components/DeferredIonicons';
 import { useIsTablet } from '../hooks/useIsTablet';
@@ -106,9 +106,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopColor: colors.borderStrong,
     borderTopWidth: StyleSheet.hairlineWidth,
-    height: Platform.OS === 'ios' ? 88 : 76,
+    // Do not set fixed height/paddingBottom — BottomTabBar adds
+    // safe-area insets (Android nav/gesture bar, iOS home indicator).
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
     elevation: 0,
     shadowOpacity: 0,
   },
