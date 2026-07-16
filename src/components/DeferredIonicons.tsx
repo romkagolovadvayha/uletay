@@ -7,7 +7,6 @@ type Props = ComponentProps<typeof Ionicons>;
 
 /**
  * Renders Ionicons only after the font is loaded with font-display: swap.
- * Prevents vector-icons' componentDidMount loadAsync (no display) from racing LCP.
  */
 export function DeferredIonicons({ size = 24, style, ...rest }: Props) {
   const iconsReady = useIconsReady();

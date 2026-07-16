@@ -12,7 +12,7 @@ export function IconsReadyProvider({
   return <IconsReadyContext.Provider value={ready}>{children}</IconsReadyContext.Provider>;
 }
 
-/** On web, false until Ionicons is loaded with font-display: swap (after LCP). */
+/** False until Ionicons is loaded with font-display: swap. */
 export function useIconsReady(): boolean {
   return useContext(IconsReadyContext);
 }
