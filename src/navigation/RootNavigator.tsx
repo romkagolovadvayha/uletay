@@ -98,8 +98,9 @@ const AutographStack = createNativeStackNavigator<AutographStackParamList>();
 const HeadlinersStack = createNativeStackNavigator<HeadlinersStackParamList>();
 
 const TAB_ICON_SIZE = 22;
-/** Tab content height (icons + labels); safe-area inset is added separately. */
+/** Tab content height (icons + labels); inner padding and safe-area are added separately. */
 const TAB_BAR_BASE_HEIGHT = 64;
+const TAB_BAR_INNER_PADDING = 8;
 
 const styles = StyleSheet.create({
   root: {
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopColor: colors.borderStrong,
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
+    paddingTop: TAB_BAR_INNER_PADDING,
     elevation: 0,
     shadowOpacity: 0,
   },
@@ -234,8 +235,8 @@ function RootTabs() {
           : [
               styles.tabBar,
               {
-                height: TAB_BAR_BASE_HEIGHT + bottomInset,
-                paddingBottom: bottomInset,
+                height: TAB_BAR_BASE_HEIGHT + TAB_BAR_INNER_PADDING + bottomInset,
+                paddingBottom: TAB_BAR_INNER_PADDING + bottomInset,
               },
             ],
         tabBarActiveTintColor: colors.tabActive,
