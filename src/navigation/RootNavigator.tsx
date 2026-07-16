@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { Suspense } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
 import { DeferredIonicons } from '../components/DeferredIonicons';
 import { useIsTablet } from '../hooks/useIsTablet';
@@ -97,6 +98,8 @@ const AutographStack = createNativeStackNavigator<AutographStackParamList>();
 const HeadlinersStack = createNativeStackNavigator<HeadlinersStackParamList>();
 
 const TAB_ICON_SIZE = 22;
+/** Tab content height (icons + labels); safe-area inset is added separately. */
+const TAB_BAR_BASE_HEIGHT = 64;
 
 const styles = StyleSheet.create({
   root: {
@@ -106,8 +109,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopColor: colors.borderStrong,
     borderTopWidth: StyleSheet.hairlineWidth,
-    // Do not set fixed height/paddingBottom — BottomTabBar adds
-    // safe-area insets (Android nav/gesture bar, iOS home indicator).
     paddingTop: 8,
     elevation: 0,
     shadowOpacity: 0,
@@ -217,6 +218,8 @@ function RootTabs() {
   const { open } = useMoreMenu();
   const isTablet = useIsTablet();
   const festivalActive = useFestivalActive();
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 0);
 
   return (
     <Tab.Navigator
@@ -226,7 +229,15 @@ function RootTabs() {
         headerShown: false,
         tabBarPosition: isTablet ? 'left' : 'bottom',
         tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon',
-        tabBarStyle: isTablet ? styles.tabletTabBar : styles.tabBar,
+        tabBarStyle: isTablet
+          ? styles.tabletTabBar
+          : [
+              styles.tabBar,
+              {
+                height: TAB_BAR_BASE_HEIGHT + bottomInset,
+                paddingBottom: bottomInset,
+              },
+            ],
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,
         tabBarItemStyle: isTablet ? undefined : styles.tabItem,
