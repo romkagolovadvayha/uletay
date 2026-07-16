@@ -1,7 +1,5 @@
 import { AppData, FestivalInfo, Stage } from '../types';
 import { capPerformanceEndTime } from './performanceTime';
-import { festivalRules } from '../data/festivalRules';
-import { headliners as defaultHeadliners } from '../data/headliners';
 import { getDefaultMapData } from '../data/festivalMapSeed';
 import { syncAppHeadliners } from './headlinersCore';
 
@@ -43,9 +41,8 @@ export function normalizeAppData(data: AppData): AppData {
       menuImageUrls: item.menuImageUrls?.length ? item.menuImageUrls : undefined,
       menu: item.menu?.length ? item.menu : undefined,
     })),
-    headliners:
-      Array.isArray(data.headliners) && data.headliners.length ? data.headliners : defaultHeadliners,
-    rules: Array.isArray(data.rules) && data.rules.length ? data.rules : festivalRules,
+    headliners: Array.isArray(data.headliners) ? data.headliners : [],
+    rules: Array.isArray(data.rules) ? data.rules : [],
     festivalMap: data.festivalMap ?? mapDefaults.festivalMap,
     mapZones: data.mapZones ?? mapDefaults.mapZones,
     mapPaths: data.mapPaths ?? mapDefaults.mapPaths,

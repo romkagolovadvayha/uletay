@@ -22,6 +22,7 @@ import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { getStageName, isFestivalStarted, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
 import { getLatestHeadlinerYear, hasScheduleForYear } from '../utils/headlinerHelpers';
+import { HERO_POSTER_SOURCE } from '../utils/heroPosterSource';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'HomeTab'>;
 
@@ -31,13 +32,6 @@ type Props = {
 
 const HERO_BACKGROUND_HEIGHT = 580;
 const PARALLAX_FACTOR = 0.42;
-
-/** Stable public URL so HTML preload and the LCP <img> request the same asset. */
-const HERO_VIDEO_POSTER_WEB_URI = '/hero-video-poster.webp';
-const HERO_VIDEO_POSTER = require('../../assets/images/hero-video-poster.webp');
-
-const HERO_POSTER_SOURCE =
-  Platform.OS === 'web' ? { uri: HERO_VIDEO_POSTER_WEB_URI } : HERO_VIDEO_POSTER;
 
 const LazyHeroBackgroundVideo = React.lazy(() =>
   import('../components/HeroBackgroundVideo').then((m) => ({ default: m.HeroBackgroundVideo })),

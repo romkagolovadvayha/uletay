@@ -23,12 +23,16 @@ function run(command, args) {
 }
 
 const exportAll = process.argv.includes('--all');
+const withSourceMaps =
+  process.argv.includes('--source-maps') || process.env.EXPO_SOURCE_MAPS === '1';
 
-// Source maps let Lighthouse attribute unused JS and help production debugging.
-if (exportAll) {
-  run('npx', ['expo', 'export', '--source-maps']);
-} else {
-  run('npx', ['expo', 'export', '--platform', 'web', '--source-maps']);
+const exportArgs = exportAll
+  ? ['expo', 'export']
+  : ['expo', 'export', '--platform', 'web'];
+if (withSourceMaps) {
+  exportArgs.push('--source-maps');
 }
 
+run('npx', exportArgs);
 run(process.execPath, [path.join(root, 'copy-public-static.mjs')]);
+run(process.execPath, [path.join(root, 'prune-dist-assets.mjs')]);

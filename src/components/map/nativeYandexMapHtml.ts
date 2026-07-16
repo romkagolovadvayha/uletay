@@ -1,6 +1,13 @@
 /** Inline HTML for native WebView — same Yandex JS API 3.0 as web. */
-export function buildNativeYandexMapHtml(apiKey: string): string {
+export function buildNativeYandexMapHtml(
+  apiKey: string,
+  center: { lat: number; lng: number },
+  defaultZoom: number,
+): string {
   const key = apiKey.replace(/[^a-zA-Z0-9_-]/g, '');
+  const initLat = Number.isFinite(center.lat) ? center.lat : 56.606975;
+  const initLng = Number.isFinite(center.lng) ? center.lng : 53.622461;
+  const initZoom = Number.isFinite(defaultZoom) ? defaultZoom : 14;
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -103,7 +110,10 @@ export function buildNativeYandexMapHtml(apiKey: string): string {
   var schemeOverlay = null;
   var userMarker = null;
   var selectedZoneId = null;
-  var mapZoom = 15;
+  var mapZoom = ${initZoom};
+  var locationSynced = false;
+  var INIT_CENTER = { lat: ${initLat}, lng: ${initLng} };
+  var INIT_ZOOM = ${initZoom};
 
   function removeAll(items) {
     if (!map) return;
@@ -295,11 +305,23 @@ export function buildNativeYandexMapHtml(apiKey: string): string {
     }
 
     if (state.followUser && state.userLocation) {
+      locationSynced = true;
       map.update({
         location: {
           center: [state.userLocation.lng, state.userLocation.lat],
-          zoom: Math.max(state.defaultZoom || 15, 16),
+          zoom: Math.max(state.defaultZoom || INIT_ZOOM, 16),
           duration: 600
+        }
+      });
+    } else if (!locationSynced && state.center) {
+      // First bridge push: lock camera to festival (HTML may have raced before props arrived).
+      locationSynced = true;
+      mapZoom = state.defaultZoom || INIT_ZOOM;
+      map.update({
+        location: {
+          center: [state.center.lng, state.center.lat],
+          zoom: mapZoom,
+          duration: 0
         }
       });
     }
@@ -311,6 +333,7 @@ export function buildNativeYandexMapHtml(apiKey: string): string {
       return;
     }
     if (cmd.type === 'flyTo') {
+      locationSynced = true;
       map.update({
         location: {
           center: [cmd.lng, cmd.lat],
@@ -348,9 +371,10 @@ export function buildNativeYandexMapHtml(apiKey: string): string {
       var theme = await ymaps3.import('@yandex/ymaps3-default-ui-theme');
       YMapImageOverlay = theme.YMapImageOverlay;
 
-      var center = (pendingState && pendingState.center) || { lat: 55.75, lng: 37.62 };
-      var zoom = (pendingState && pendingState.defaultZoom) || 15;
+      var center = (pendingState && pendingState.center) || INIT_CENTER;
+      var zoom = (pendingState && pendingState.defaultZoom) || INIT_ZOOM;
       mapZoom = zoom;
+      if (pendingState && pendingState.center) locationSynced = true;
 
       map = new ymaps3.YMap(document.getElementById('map'), {
         location: { center: [center.lng, center.lat], zoom: zoom },

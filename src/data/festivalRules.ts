@@ -1,4 +1,4 @@
 import type { FestivalRulesTab } from '../types';
-import rules from './festivalRules.json';
 
-export const festivalRules = rules as FestivalRulesTab[];
+/** No offline rules seed — content comes from the API. */
+export const festivalRules: FestivalRulesTab[] = [];

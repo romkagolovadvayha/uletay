@@ -1,4 +1,4 @@
 import { FoodCourtVendor } from '../types';
-import vendors from './foodcourtVendors.json';
 
-export const foodCourtVendors = vendors as FoodCourtVendor[];
+/** No offline foodcourt seed — content comes from the API. */
+export const foodCourtVendors: FoodCourtVendor[] = [];

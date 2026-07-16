@@ -8,7 +8,6 @@ import { useIsTablet } from '../hooks/useIsTablet';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
-import { MoreMenuSheet } from '../components/MoreMenuSheet';
 import { MoreMenuProvider, useMoreMenu } from '../context/MoreMenuContext';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
@@ -29,6 +28,12 @@ import { lazyScreen } from './lazyScreen';
 const LazyFavoriteNotificationHost = React.lazy(() =>
   import('../components/FavoriteNotificationHost').then((m) => ({
     default: m.FavoriteNotificationHost,
+  })),
+);
+
+const LazyMoreMenuSheet = React.lazy(() =>
+  import('../components/MoreMenuSheet').then((m) => ({
+    default: m.MoreMenuSheet,
   })),
 );
 
@@ -329,7 +334,9 @@ export function RootNavigator() {
       <View style={styles.root}>
         <RootTabs />
         <FestivalNavigationGuard />
-        <MoreMenuSheet />
+        <Suspense fallback={null}>
+          <LazyMoreMenuSheet />
+        </Suspense>
         <Suspense fallback={null}>
           <LazyFavoriteNotificationHost />
         </Suspense>

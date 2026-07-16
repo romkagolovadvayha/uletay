@@ -46,8 +46,12 @@ export function FestivalMapView({
 
   const html = useMemo(() => {
     if (!YANDEX_MAPS_API_KEY) return '';
-    return buildNativeYandexMapHtml(YANDEX_MAPS_API_KEY);
-  }, []);
+    return buildNativeYandexMapHtml(
+      YANDEX_MAPS_API_KEY,
+      config.center,
+      config.defaultZoom,
+    );
+  }, [config.center, config.defaultZoom]);
 
   const bridgeState = useMemo(() => {
     const overlay = config.adminOverlay;
@@ -181,7 +185,8 @@ export function FestivalMapView({
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
         mixedContentMode="always"
-        androidLayerType="software"
+        // Hardware layer: software rendering skips Yandex raster tiles (tile_manager OOM on emulator).
+        androidLayerType="hardware"
         cacheEnabled
         thirdPartyCookiesEnabled
       />

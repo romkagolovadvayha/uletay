@@ -126,7 +126,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
       const cached = await readCachedAppData();
       if (!cached) {
-        setError('Нет связи с сервером. Показаны данные по умолчанию.');
+        setError('Нет связи с сервером. Не удалось загрузить данные.');
       }
       setIsInitialLoading(false);
     };
