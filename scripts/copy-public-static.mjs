@@ -46,6 +46,7 @@ function patchIndexHtml() {
 
   let html = readFileSync(indexPath, 'utf8');
   const seoBlock = `
+  <link rel="preload" as="image" href="/hero-video-poster.webp" fetchpriority="high" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -67,6 +68,11 @@ function patchIndexHtml() {
 
   if (!html.includes('name="description"')) {
     html = html.replace('</head>', `${seoBlock}\n</head>`);
+  } else if (!html.includes('hero-video-poster.webp')) {
+    html = html.replace(
+      '</head>',
+      '  <link rel="preload" as="image" href="/hero-video-poster.webp" fetchpriority="high" />\n</head>',
+    );
   }
 
   if (!html.includes('<title>')) {
@@ -82,7 +88,13 @@ function patchIndexHtml() {
 
   html = html.replace(
     /name="viewport" content="[^"]*"/,
-    'name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"',
+    'name="viewport" content="width=device-width, initial-scale=1"',
+  );
+
+  // Landmark for screen readers / a11y audits (Expo template uses <div id="root">).
+  html = html.replace(
+    /<div(\s+id="root"[^>]*)>([\s\S]*?)<\/div>(\s*<\/body>)/,
+    '<main$1>$2</main>$3',
   );
 
   writeFileSync(indexPath, html, 'utf8');
@@ -119,4 +131,4 @@ copyPublicFiles();
 patchIndexHtml();
 patchSitemap();
 patchRobots();
-console.log('copy-public-static: robots.txt, sitemap.xml and SEO head tags updated');
+console.log('copy-public-static: robots.txt, sitemap.xml, SEO head tags and LCP poster preload updated');

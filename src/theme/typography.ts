@@ -1,12 +1,13 @@
 import { TextStyle } from 'react-native';
 
+/** Three Montserrat files only; heavier keys alias to Regular/Bold for LCP. */
 export const fonts = {
   regular: 'Montserrat_400Regular',
-  medium: 'Montserrat_500Medium',
+  medium: 'Montserrat_400Regular',
   semiBold: 'Montserrat_600SemiBold',
   bold: 'Montserrat_700Bold',
-  extraBold: 'Montserrat_800ExtraBold',
-  black: 'Montserrat_900Black',
+  extraBold: 'Montserrat_700Bold',
+  black: 'Montserrat_700Bold',
 } as const;
 
 export type FontKey = keyof typeof fonts;

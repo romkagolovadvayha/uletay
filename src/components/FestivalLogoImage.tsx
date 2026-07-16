@@ -22,6 +22,8 @@ export function FestivalLogoImage({ logoImageUrl, style }: Props) {
       source={source}
       style={style}
       contentFit="contain"
+      accessibilityLabel="Улетай"
+      alt="Улетай"
       recyclingKey={logoImageUrl ?? 'default'}
       onError={() => setFailedUrl(logoImageUrl ?? null)}
     />

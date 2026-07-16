@@ -37,6 +37,8 @@ function FoodCourtThumbnail({ vendor, large }: { vendor: FoodCourtVendor; large?
         source={getRemoteImageSource(vendor.imageUrl)}
         style={[styles.thumb, { width: size, height: size, borderRadius: large ? radius.xl : radius.md }]}
         contentFit="cover"
+        accessibilityLabel={vendor.name}
+        alt={vendor.name}
       />
     );
   }

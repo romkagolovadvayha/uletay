@@ -78,7 +78,13 @@ export function PlaylistScreen() {
         <View style={styles.playerCard}>
           <View style={styles.artworkWrap}>
             {artworkSource ? (
-              <Image source={artworkSource} style={styles.artwork} contentFit="cover" />
+              <Image
+                source={artworkSource}
+                style={styles.artwork}
+                contentFit="cover"
+                accessibilityLabel={`${displayArtist} — ${displayTitle}`}
+                alt={`${displayArtist} — ${displayTitle}`}
+              />
             ) : (
               <LinearGradient colors={['#2C2C2E', '#111111']} style={styles.artworkFallback}>
                 <Ionicons name="radio-outline" size={48} color={colors.primary} />

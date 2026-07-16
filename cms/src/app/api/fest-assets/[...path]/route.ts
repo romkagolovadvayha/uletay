@@ -41,7 +41,7 @@ export async function GET(
       headers: {
         ...corsHeaders(),
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400, immutable',
+        'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch {

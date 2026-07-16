@@ -1,10 +1,8 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { FestivalLogoImage } from '../components/FestivalLogoImage';
@@ -33,10 +31,106 @@ type Props = {
 
 const HERO_BACKGROUND_HEIGHT = 580;
 const PARALLAX_FACTOR = 0.42;
-const HERO_VIDEO_ASPECT_RATIO = 16 / 9;
 
+/** Stable public URL so HTML preload and the LCP <img> request the same asset. */
+const HERO_VIDEO_POSTER_WEB_URI = '/hero-video-poster.webp';
 const HERO_VIDEO_POSTER = require('../../assets/images/hero-video-poster.webp');
-const HERO_VIDEO_SOURCE = require('../../assets/videos/background.mp4');
+
+const HERO_POSTER_SOURCE =
+  Platform.OS === 'web' ? { uri: HERO_VIDEO_POSTER_WEB_URI } : HERO_VIDEO_POSTER;
+
+const LazyHeroBackgroundVideo = React.lazy(() =>
+  import('../components/HeroBackgroundVideo').then((m) => ({ default: m.HeroBackgroundVideo })),
+);
+
+type HeroParallaxBackgroundProps = {
+  translateY: Animated.AnimatedInterpolation<number>;
+  allowVideo: boolean;
+};
+
+function HeroParallaxBackground({ translateY, allowVideo }: HeroParallaxBackgroundProps) {
+  const [heroPosterReady, setHeroPosterReady] = useState(Platform.OS !== 'web');
+  const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(Platform.OS !== 'web');
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
+
+  const onHeroVideoReady = useCallback(() => {
+    setHeroVideoReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !allowVideo || !heroPosterReady || shouldLoadHeroVideo) {
+      return;
+    }
+
+    let cancelled = false;
+    const startVideo = () => {
+      if (!cancelled) {
+        setShouldLoadHeroVideo(true);
+      }
+    };
+
+    const win = globalThis as typeof globalThis & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (typeof win.requestIdleCallback === 'function') {
+      const idleId = win.requestIdleCallback(startVideo, { timeout: 2000 });
+      return () => {
+        cancelled = true;
+        win.cancelIdleCallback?.(idleId);
+      };
+    }
+
+    const timeoutId = setTimeout(startVideo, 1200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [allowVideo, heroPosterReady, shouldLoadHeroVideo]);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.parallaxBackground,
+        {
+          transform: [{ translateY }],
+        },
+      ]}
+    >
+      <View style={styles.parallaxVideoCrop}>
+        <View style={styles.parallaxVideoLayer}>
+          <Image
+            source={HERO_POSTER_SOURCE}
+            style={styles.parallaxVideoMedia}
+            contentFit="cover"
+            contentPosition="center"
+            priority="high"
+            loading="eager"
+            accessibilityLabel=""
+            alt=""
+            onLoad={() => setHeroPosterReady(true)}
+          />
+        </View>
+        {shouldLoadHeroVideo ? (
+          <View
+            style={[styles.parallaxVideoLayer, !heroVideoReady && styles.parallaxVideoHidden]}
+          >
+            <Suspense fallback={null}>
+              <LazyHeroBackgroundVideo onReady={onHeroVideoReady} />
+            </Suspense>
+          </View>
+        ) : null}
+      </View>
+      <LinearGradient
+        colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.92)']}
+        locations={[0, 0.45, 1]}
+        style={styles.parallaxGradient}
+      />
+    </Animated.View>
+  );
+}
 
 export function FestivalHomeScreen({ navigation }: Props) {
   const { data, isInitialLoading } = useAppData();
@@ -44,52 +138,6 @@ export function FestivalHomeScreen({ navigation }: Props) {
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
   const scrollY = useMemo(() => new Animated.Value(0), []);
-  const [heroVideoReady, setHeroVideoReady] = useState(false);
-  const heroPlayer = useVideoPlayer(HERO_VIDEO_SOURCE, (player) => {
-    player.loop = true;
-    player.muted = true;
-    if (Platform.OS === 'ios') {
-      player.allowsExternalPlayback = false;
-    }
-    player.play();
-  });
-
-  useEffect(() => {
-    const playingListener = heroPlayer.addListener('playingChange', ({ isPlaying }) => {
-      if (isPlaying) {
-        setHeroVideoReady(true);
-      }
-    });
-    const statusListener = heroPlayer.addListener('statusChange', ({ status }) => {
-      if (status === 'readyToPlay') {
-        heroPlayer.play();
-      }
-    });
-
-    heroPlayer.play();
-
-    return () => {
-      playingListener.remove();
-      statusListener.remove();
-    };
-  }, [heroPlayer]);
-
-  useFocusEffect(
-    useCallback(() => {
-      try {
-        heroPlayer.play();
-      } catch {
-        // Player may already be released during tab transitions.
-      }
-      return () => {
-        try {
-          heroPlayer.pause();
-        } catch {
-          // Player may already be released during tab transitions.
-        }
-      };
-    }, [heroPlayer]),
-  );
 
   const backgroundTranslateY = useMemo(
     () =>
@@ -151,6 +199,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
   if (isInitialLoading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <HeroParallaxBackground translateY={backgroundTranslateY} allowVideo={false} />
         <View style={styles.homeLoader}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.homeLoaderText}>Загружаем данные фестиваля…</Text>
@@ -161,49 +210,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.parallaxBackground,
-          {
-            transform: [{ translateY: backgroundTranslateY }],
-          },
-        ]}
-      >
-        <View style={styles.parallaxVideoCrop}>
-          <View style={styles.parallaxVideoLayer}>
-            <Image
-              source={HERO_VIDEO_POSTER}
-              style={styles.parallaxVideoMedia}
-              contentFit="cover"
-              contentPosition="center"
-            />
-          </View>
-          <View style={styles.parallaxVideoLayer}>
-            <VideoView
-              style={[
-                styles.parallaxVideoMedia,
-                !heroVideoReady && styles.parallaxVideoHidden,
-                Platform.OS === 'web' ? styles.parallaxVideoMediaWeb : null,
-              ]}
-              player={heroPlayer}
-              contentFit="cover"
-              nativeControls={false}
-              playsInline
-              useExoShutter={false}
-              allowsPictureInPicture={false}
-              startsPictureInPictureAutomatically={false}
-              surfaceType={Platform.OS === 'android' ? 'textureView' : undefined}
-              onFirstFrameRender={() => setHeroVideoReady(true)}
-            />
-          </View>
-        </View>
-        <LinearGradient
-          colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.92)']}
-          locations={[0, 0.45, 1]}
-          style={styles.parallaxGradient}
-        />
-      </Animated.View>
+      <HeroParallaxBackground translateY={backgroundTranslateY} allowVideo />
 
       <Animated.ScrollView
         contentContainerStyle={styles.content}
@@ -305,6 +312,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.xl,
+    zIndex: 1,
   },
   homeLoaderText: {
     ...typography.body,
@@ -334,13 +342,9 @@ const styles = StyleSheet.create({
   },
   parallaxVideoMedia: {
     height: '100%',
-    aspectRatio: HERO_VIDEO_ASPECT_RATIO,
+    aspectRatio: 16 / 9,
     minWidth: '100%',
   },
-  parallaxVideoMediaWeb: {
-    // Web maps RN styles to CSS on the underlying <video> element.
-    objectPosition: 'center center',
-  } as ViewStyle,
   parallaxVideoHidden: {
     opacity: 0,
   },

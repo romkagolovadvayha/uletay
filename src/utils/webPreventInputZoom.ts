@@ -7,16 +7,7 @@ export function installWebPreventInputZoom(): () => void {
     return () => {};
   }
 
-  const viewportMeta = document.querySelector('meta[name="viewport"]');
-  const previousViewport = viewportMeta?.getAttribute('content') ?? null;
-
-  if (viewportMeta) {
-    const content = previousViewport ?? 'width=device-width, initial-scale=1';
-    if (!/maximum-scale\s*=/i.test(content)) {
-      viewportMeta.setAttribute('content', `${content}, maximum-scale=1`);
-    }
-  }
-
+  // Keep pinch-zoom enabled for a11y; prevent iOS focus-zoom via 16px inputs instead.
   let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
   if (!style) {
     style = document.createElement('style');
@@ -41,9 +32,6 @@ export function installWebPreventInputZoom(): () => void {
   }
 
   return () => {
-    if (viewportMeta && previousViewport !== null) {
-      viewportMeta.setAttribute('content', previousViewport);
-    }
     style?.remove();
   };
 }

@@ -4,6 +4,7 @@
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/montserrat": "^0.4.2",
+    "@expo/metro-runtime": "~57.0.5",
     "@expo/vector-icons": "^15.0.2",
     "@maplibre/maplibre-react-native": "^11.3.6",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -41,6 +42,7 @@
     "react-native-screens": "4.25.2",
     "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2",
+    "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.0"
   },
   "devDependencies": {
@@ -62,8 +64,8 @@
     "web": "expo start --web",
     "lint": "eslint src cms/src",
     "typecheck": "tsc --noEmit",
-    "build": "expo export && node scripts/copy-public-static.mjs",
-    "build:web": "expo export --platform web && node scripts/copy-public-static.mjs",
+    "build": "node scripts/export-with-tree-shaking.mjs --all",
+    "build:web": "node scripts/export-with-tree-shaking.mjs",
     "seed:api": "tsx scripts/export-seed.ts",
     "fest:sync-images": "node scripts/sync-fest-artist-images.mjs",
     "fest:fetch-web-images": "node scripts/fetch-artist-images-web.mjs",

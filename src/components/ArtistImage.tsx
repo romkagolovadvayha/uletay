@@ -9,12 +9,21 @@ import { buildArtistImageSourceChain } from '../utils/festArtistImages';
 type Props = {
   imageUrl?: string | null;
   artist?: string | null;
+  /** Web `alt` / screen-reader label. Defaults to artist name; pass `""` when decorative. */
+  alt?: string;
   style?: StyleProp<ImageStyle>;
   contentFit?: 'cover' | 'contain';
   variant?: 'thumbnail' | 'hero';
 };
 
-export function ArtistImage({ imageUrl, artist, style, contentFit = 'cover', variant = 'thumbnail' }: Props) {
+export function ArtistImage({
+  imageUrl,
+  artist,
+  alt,
+  style,
+  contentFit = 'cover',
+  variant = 'thumbnail',
+}: Props) {
   const chainKey = `${imageUrl ?? ''}\0${artist ?? ''}`;
 
   return (
@@ -22,6 +31,7 @@ export function ArtistImage({ imageUrl, artist, style, contentFit = 'cover', var
       key={chainKey}
       imageUrl={imageUrl}
       artist={artist}
+      alt={alt}
       style={style}
       contentFit={contentFit}
       variant={variant}
@@ -32,6 +42,7 @@ export function ArtistImage({ imageUrl, artist, style, contentFit = 'cover', var
 function ArtistImageResolved({
   imageUrl,
   artist,
+  alt,
   style,
   contentFit = 'cover',
   variant = 'thumbnail',
@@ -40,6 +51,7 @@ function ArtistImageResolved({
   const [index, setIndex] = useState(0);
   const iconSize = variant === 'hero' ? 72 : 32;
   const source = index < chain.length ? chain[index] : undefined;
+  const imageAlt = alt ?? artist?.trim() ?? '';
 
   if (source) {
     return (
@@ -47,6 +59,8 @@ function ArtistImageResolved({
         source={source}
         style={style}
         contentFit={contentFit}
+        accessibilityLabel={imageAlt}
+        alt={imageAlt}
         onError={() => setIndex((current) => current + 1)}
       />
     );

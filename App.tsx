@@ -18,6 +18,7 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { WebSeoManager } from './src/components/WebSeoManager';
 import { syncWebSeo } from './src/seo/syncWebSeo';
 import { colors } from './src/theme/colors';
+import { installWebMainLandmark } from './src/utils/webMainLandmark';
 import { installWebPreventInputZoom } from './src/utils/webPreventInputZoom';
 
 const navigationTheme = {
@@ -78,7 +79,10 @@ function AppContent() {
 }
 
 export default function App() {
-  useEffect(() => installWebPreventInputZoom(), []);
+  useEffect(() => {
+    installWebMainLandmark();
+    return installWebPreventInputZoom();
+  }, []);
 
   return (
     <GestureHandlerRootView style={styles.root}>

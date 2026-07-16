@@ -1,31 +1,13 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
 import { useIsTablet } from '../hooks/useIsTablet';
-import { AutographDetailScreen } from '../screens/AutographDetailScreen';
-import { AutographsScreen } from '../screens/AutographsScreen';
-import { FoodCourtDetailScreen } from '../screens/FoodCourtDetailScreen';
-import { FoodCourtScreen } from '../screens/FoodCourtScreen';
-import { FestivalAboutScreen } from '../screens/FestivalAboutScreen';
-import { FestivalRulesScreen } from '../screens/FestivalRulesScreen';
-import { LegalScreen } from '../screens/LegalScreen';
-import { SettingsScreen } from '../screens/SettingsScreen';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
-import { FullScheduleScreen } from '../screens/FullScheduleScreen';
-import { LiveDetailScreen } from '../screens/LiveDetailScreen';
-import { MorePlaceholderScreen } from '../screens/MorePlaceholderScreen';
-import { PlaylistScreen } from '../screens/PlaylistScreen';
-import { MyScheduleScreen } from '../screens/MyScheduleScreen';
-import { FestivalMapScreen } from '../screens/FestivalMapScreen';
-import { ScheduleMainScreen } from '../screens/ScheduleMainScreen';
-import { HeadlinerDetailScreen } from '../screens/HeadlinerDetailScreen';
-import { HeadlinersScreen } from '../screens/HeadlinersScreen';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
-import { FavoriteNotificationHost } from '../components/FavoriteNotificationHost';
 import { MoreMenuSheet } from '../components/MoreMenuSheet';
 import { MoreMenuProvider, useMoreMenu } from '../context/MoreMenuContext';
 import { colors } from '../theme/colors';
@@ -42,6 +24,66 @@ import {
   createNestedTabListeners,
 } from './scheduleNavigation';
 import { FestivalNavigationGuard } from './FestivalNavigationGuard';
+import { lazyScreen } from './lazyScreen';
+
+const LazyFavoriteNotificationHost = React.lazy(() =>
+  import('../components/FavoriteNotificationHost').then((m) => ({
+    default: m.FavoriteNotificationHost,
+  })),
+);
+
+// Non-home screens load as separate web chunks (Metro async import splitting).
+const FestivalMapScreen = lazyScreen(() =>
+  import('../screens/FestivalMapScreen').then((m) => m.FestivalMapScreen),
+);
+const ScheduleMainScreen = lazyScreen(() =>
+  import('../screens/ScheduleMainScreen').then((m) => m.ScheduleMainScreen),
+);
+const LiveDetailScreen = lazyScreen(() =>
+  import('../screens/LiveDetailScreen').then((m) => m.LiveDetailScreen),
+);
+const FullScheduleScreen = lazyScreen(() =>
+  import('../screens/FullScheduleScreen').then((m) => m.FullScheduleScreen),
+);
+const AutographsScreen = lazyScreen(() =>
+  import('../screens/AutographsScreen').then((m) => m.AutographsScreen),
+);
+const AutographDetailScreen = lazyScreen(() =>
+  import('../screens/AutographDetailScreen').then((m) => m.AutographDetailScreen),
+);
+const MyScheduleScreen = lazyScreen(() =>
+  import('../screens/MyScheduleScreen').then((m) => m.MyScheduleScreen),
+);
+const HeadlinersScreen = lazyScreen(() =>
+  import('../screens/HeadlinersScreen').then((m) => m.HeadlinersScreen),
+);
+const HeadlinerDetailScreen = lazyScreen(() =>
+  import('../screens/HeadlinerDetailScreen').then((m) => m.HeadlinerDetailScreen),
+);
+const PlaylistScreen = lazyScreen(() =>
+  import('../screens/PlaylistScreen').then((m) => m.PlaylistScreen),
+);
+const MorePlaceholderScreen = lazyScreen(() =>
+  import('../screens/MorePlaceholderScreen').then((m) => m.MorePlaceholderScreen),
+);
+const FoodCourtScreen = lazyScreen(() =>
+  import('../screens/FoodCourtScreen').then((m) => m.FoodCourtScreen),
+);
+const FoodCourtDetailScreen = lazyScreen(() =>
+  import('../screens/FoodCourtDetailScreen').then((m) => m.FoodCourtDetailScreen),
+);
+const FestivalAboutScreen = lazyScreen(() =>
+  import('../screens/FestivalAboutScreen').then((m) => m.FestivalAboutScreen),
+);
+const FestivalRulesScreen = lazyScreen(() =>
+  import('../screens/FestivalRulesScreen').then((m) => m.FestivalRulesScreen),
+);
+const SettingsScreen = lazyScreen(() =>
+  import('../screens/SettingsScreen').then((m) => m.SettingsScreen),
+);
+const LegalScreen = lazyScreen(() =>
+  import('../screens/LegalScreen').then((m) => m.LegalScreen),
+);
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const ScheduleStack = createNativeStackNavigator<ScheduleStackParamList>();
@@ -282,7 +324,9 @@ export function RootNavigator() {
         <RootTabs />
         <FestivalNavigationGuard />
         <MoreMenuSheet />
-        <FavoriteNotificationHost />
+        <Suspense fallback={null}>
+          <LazyFavoriteNotificationHost />
+        </Suspense>
         <FavoriteAddedToast />
       </View>
     </MoreMenuProvider>

@@ -48,6 +48,8 @@ export function YandexMusicLink({ artist, track, variant = 'icon', size = 32 }: 
             source={YANDEX_MUSIC_LOGO}
             style={styles.listenLogo}
             contentFit="contain"
+            accessibilityLabel=""
+            alt=""
             accessibilityIgnoresInvertColors
           />
           <Text style={styles.listenBrand} numberOfLines={1}>
@@ -73,6 +75,8 @@ export function YandexMusicLink({ artist, track, variant = 'icon', size = 32 }: 
         source={YANDEX_MUSIC_LOGO}
         style={{ width: size - 4, height: size - 4 }}
         contentFit="contain"
+        accessibilityLabel=""
+        alt=""
         accessibilityIgnoresInvertColors
       />
     </ExternalLink>
