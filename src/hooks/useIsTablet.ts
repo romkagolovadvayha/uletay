@@ -1,10 +1,13 @@
 import { useWindowDimensions } from 'react-native';
 
 /**
- * Matches Android large-screen threshold (sw600dp): foldables/tablets,
- * not landscape phones whose width alone can exceed 768.
+ * Shortest side >= 768: real tablets / unfolded foldables.
+ * Uses min(width, height) so landscape phones (wide but short) stay mobile —
+ * width alone often exceeds 768 in landscape.
+ * 600 (Android sw600dp) is too low: large phones with "Small" display size
+ * report a shortest side around 600+ and incorrectly get the sidebar layout.
  */
-export const TABLET_BREAKPOINT = 600;
+export const TABLET_BREAKPOINT = 768;
 
 export function useIsTablet(): boolean {
   const { width, height } = useWindowDimensions();

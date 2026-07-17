@@ -11,6 +11,8 @@ import { resolveAndroidBottomInset } from '../utils/safeArea';
 export const TAB_BAR_INNER_PADDING = 8;
 
 const ICON_SLOT = 24;
+/** Icon + gap + label — keeps native layout from collapsing under flex:1. */
+const ITEM_CONTENT_HEIGHT = ICON_SLOT + 2 + 11;
 
 /**
  * Phone bottom tab bar without React Navigation's empty absoluteFill
@@ -117,20 +119,26 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     elevation: 0,
     shadowOpacity: 0,
+    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
     width: '100%',
+    height: ITEM_CONTENT_HEIGHT,
   },
   itemSlot: {
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
     minWidth: 0,
+    height: '100%',
+    justifyContent: 'center',
   },
   item: {
-    flex: 1,
+    // Avoid flex:1 here: on Android an unbounded flex child collapses the bar
+    // height while icons/labels still paint, so the background looks too short
+    // and the top inner padding disappears.
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
@@ -139,6 +147,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     backgroundColor: 'transparent',
     width: '100%',
+    height: '100%',
     minWidth: 0,
     maxWidth: '100%',
     ...Platform.select({
@@ -157,6 +166,7 @@ const styles = StyleSheet.create({
     height: ICON_SLOT,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   pressed: {
     opacity: 0.85,
@@ -167,5 +177,6 @@ const styles = StyleSheet.create({
     lineHeight: 11,
     textAlign: 'center',
     maxWidth: '100%',
+    includeFontPadding: false,
   },
 });
