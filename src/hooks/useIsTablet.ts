@@ -1,8 +1,12 @@
 import { useWindowDimensions } from 'react-native';
 
-export const TABLET_BREAKPOINT = 768;
+/**
+ * Matches Android large-screen threshold (sw600dp): foldables/tablets,
+ * not landscape phones whose width alone can exceed 768.
+ */
+export const TABLET_BREAKPOINT = 600;
 
 export function useIsTablet(): boolean {
-  const { width } = useWindowDimensions();
-  return width >= TABLET_BREAKPOINT;
+  const { width, height } = useWindowDimensions();
+  return Math.min(width, height) >= TABLET_BREAKPOINT;
 }

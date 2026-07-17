@@ -2,8 +2,10 @@ import { BottomTabBarHeightCallbackContext, BottomTabBarProps } from '@react-nav
 import { CommonActions } from '@react-navigation/native';
 import React, { useContext } from 'react';
 import { LayoutChangeEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
+import { resolveAndroidBottomInset } from '../utils/safeArea';
 
 /** Equal inner padding above/below tab items (safe-area added separately below). */
 export const TAB_BAR_INNER_PADDING = 8;
@@ -21,7 +23,8 @@ export function MobileBottomTabBar({
   insets,
 }: BottomTabBarProps) {
   const onHeightChange = useContext(BottomTabBarHeightCallbackContext);
-  const bottomInset = Math.max(insets.bottom, 0);
+  const safeInsets = useSafeAreaInsets();
+  const bottomInset = resolveAndroidBottomInset(insets.bottom, safeInsets.bottom);
   const focusedOptions = descriptors[state.routes[state.index]?.key ?? '']?.options;
   const activeColor = focusedOptions?.tabBarActiveTintColor ?? colors.tabActive;
   const inactiveColor = focusedOptions?.tabBarInactiveTintColor ?? colors.tabInactive;

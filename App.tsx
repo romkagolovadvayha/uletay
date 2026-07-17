@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { DataProvider } from './src/context/DataContext';
 import { DemoModeProvider } from './src/context/DemoModeContext';
 import { RadioPlayerProvider } from './src/context/RadioPlayerContext';
@@ -89,7 +89,7 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <DataProvider>
           <DemoModeProvider>
             <RadioPlayerProvider>

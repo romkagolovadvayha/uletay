@@ -10,6 +10,7 @@ import { colors } from '../../theme/colors';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
+import { resolveAndroidBottomInset } from '../../utils/safeArea';
 import { useMapMotion } from './MapMotionConfig';
 
 type Props = {
@@ -43,7 +44,12 @@ export function MapPoiPopup({ visible, children }: Props) {
       pointerEvents="box-none"
       style={[styles.wrap, sheetStyle]}
     >
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
+      <View
+        style={[
+          styles.sheet,
+          { paddingBottom: resolveAndroidBottomInset(insets.bottom) + spacing.md },
+        ]}
+      >
         <View style={styles.handleWrap}>
           <View style={styles.handle} />
         </View>

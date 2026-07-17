@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
-  Modal,
+  BackHandler,
   Pressable,
   StyleSheet,
   Text,
@@ -19,6 +19,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
+import { resolveAndroidBottomInset } from '../utils/safeArea';
 import { DeferredIonicons } from './DeferredIonicons';
 import { ScreenTitle } from './ScreenTitle';
 
@@ -36,8 +37,22 @@ export function MoreMenuSheet() {
   const navigation = useNavigation<MoreNavigation>();
   const { visible, close } = useMoreMenu();
   const festivalActive = useFestivalActive();
+  const bottomInset = resolveAndroidBottomInset(insets.bottom);
 
-  if (isTablet) {
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      close();
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [visible, close]);
+
+  if (isTablet || !visible) {
     return null;
   }
 
@@ -89,47 +104,44 @@ export function MoreMenuSheet() {
     },
   ];
 
-return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={close}
+  return (
+    <View
+      style={styles.overlay}
+      accessibilityViewIsModal
+      importantForAccessibility="yes"
     >
-      {visible ? (
-        <View style={styles.overlay}>
-          <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
-          <View
-            style={[
-              styles.sheet,
-              { paddingBottom: Math.max(insets.bottom, spacing.lg) },
-            ]}
+      <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
+      <View
+        style={[
+          styles.sheet,
+          { paddingBottom: Math.max(bottomInset, spacing.lg) },
+        ]}
+      >
+        <View style={styles.handle} />
+        <ScreenTitle style={styles.title}>Ещё</ScreenTitle>
+        {menuItems.map((item) => (
+          <Pressable
+            key={item.label}
+            accessibilityRole="button"
+            onPress={item.onPress}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
           >
-            <View style={styles.handle} />
-            <ScreenTitle style={styles.title}>Ещё</ScreenTitle>
-            {menuItems.map((item) => (
-              <Pressable
-                key={item.label}
-                accessibilityRole="button"
-                onPress={item.onPress}
-                style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-              >
-                <DeferredIonicons name={item.icon} size={22} color={colors.primary} />
-                <Text style={styles.menuLabel}>{item.label}</Text>
-                <DeferredIonicons name="chevron-forward" size={18} color={colors.textMuted} />
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      ) : null}
-    </Modal>
+            <DeferredIonicons name={item.icon} size={22} color={colors.primary} />
+            <Text style={styles.menuLabel}>{item.label}</Text>
+            <DeferredIonicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
+        ))}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'flex-end',
+    zIndex: 200,
+    elevation: 200,
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
