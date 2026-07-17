@@ -1,26 +1,27 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { openHeadlinerDetail } from '../navigation/scheduleNavigation';
 import { RootTabParamList } from '../navigation/types';
+import { setPlaylistNowPlayingTitle } from '../seo/syncWebSeo';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { screenTitleSpacing } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography, appFont } from '../theme/typography';
 import { resolveArtistImageSource } from '../utils/festArtistImages';
-import { RADIO_STATION_NAME } from '../config/radio';
 import { formatHeadlinerYears } from '../utils/headlinerHelpers';
 
 export function PlaylistScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
+  const isFocused = useIsFocused();
   const {
     isPlaying,
     isLoading,
@@ -32,19 +33,29 @@ export function PlaylistScreen() {
     setPlaylistActive,
   } = useRadioPlayer();
 
+  const trackTitle = nowPlaying?.title?.trim() || '';
+  const trackArtist = (matchedHeadliner?.name || nowPlaying?.artist || '').trim();
+  const displayArtist = trackArtist || 'Улетайрадио';
+  const displayTitle = trackTitle || 'В эфире';
+  const documentTitle = trackTitle && trackArtist ? `${trackTitle} ${trackArtist}` : null;
+
   useFocusEffect(
     useCallback(() => {
       setPlaylistActive(true);
-      return () => setPlaylistActive(false);
+      return () => {
+        setPlaylistActive(false);
+        setPlaylistNowPlayingTitle(null);
+      };
     }, [setPlaylistActive]),
   );
 
-  const trackTitle = nowPlaying?.title?.trim() || '';
-  const trackArtist = (matchedHeadliner?.name || nowPlaying?.artist || '').trim();
-  const hasNowPlayingMeta = Boolean(trackTitle && trackArtist);
-  const displayArtist = trackArtist || 'Улетайрадио';
-  const displayTitle = trackTitle || 'В эфире';
-  const pageTitle = hasNowPlayingMeta ? `${trackTitle} ${trackArtist}` : 'ПЛЕЙЛИСТ';
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      return;
+    }
+    setPlaylistNowPlayingTitle(isFocused ? documentTitle : null);
+  }, [documentTitle, isFocused]);
+
   const artworkSource = resolveArtistImageSource(
     matchedHeadliner?.imageUrl,
     matchedHeadliner?.name ?? nowPlaying?.artist ?? displayArtist,
@@ -60,12 +71,9 @@ export function PlaylistScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <ScreenTitle style={styles.title} numberOfLines={2}>
-          {pageTitle}
-        </ScreenTitle>
-        <Text style={styles.subtitle}>{RADIO_STATION_NAME}</Text>
+        <ScreenTitle style={styles.title}>Улетай радио</ScreenTitle>
 
-        <View style={styles.playerCard}>
+        <View style={[styles.playerCard, styles.playerCardAfterTitle]}>
           <View style={styles.artworkWrap}>
             {artworkSource ? (
               <Image
@@ -168,11 +176,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...screenTitleSpacing,
   },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-  },
   playerCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.xxl,
@@ -180,6 +183,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.lg,
     alignItems: 'center',
+  },
+  playerCardAfterTitle: {
+    marginTop: spacing.lg,
   },
   artworkWrap: {
     width: 188,
