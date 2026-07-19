@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DeferredIonicons } from '../DeferredIonicons';
 import { colors } from '../../theme/colors';
@@ -37,19 +37,13 @@ function yandexWebRoute(center: LatLng, origin: LatLng | null) {
   return `https://yandex.ru/maps/?mode=routes&rtext=${from}~${destination(center)}&rtt=auto`;
 }
 
-async function openYandexWebRoute(center: LatLng) {
-  const origin = await getWebLocation();
-  const url = yandexWebRoute(center, origin);
-  if (typeof window !== 'undefined') {
-    // Same-tab navigation remains reliable after the async geolocation prompt.
-    // Opening a new tab before the prompt leaves an unusable about:blank tab.
-    window.location.assign(url);
-  }
+function openYandexWebRoute(center: LatLng, origin: LatLng | null) {
+  openExternalUrl(yandexWebRoute(center, origin));
 }
 
-async function openYandexNavigator(center: LatLng) {
+async function openYandexNavigator(center: LatLng, origin: LatLng | null) {
   if (Platform.OS === 'web') {
-    await openYandexWebRoute(center);
+    openYandexWebRoute(center, origin);
     return;
   }
   const appUrl = `yandexnavi://build_route_on_map?lat_to=${center.lat}&lon_to=${center.lng}`;
@@ -60,9 +54,9 @@ async function openYandexNavigator(center: LatLng) {
   openExternalUrl(yandexWebRoute(center, null));
 }
 
-async function openYandexMaps(center: LatLng) {
+function openYandexMaps(center: LatLng, origin: LatLng | null) {
   if (Platform.OS === 'web') {
-    await openYandexWebRoute(center);
+    openYandexWebRoute(center, origin);
     return;
   }
   openExternalUrl(yandexWebRoute(center, null));
@@ -81,17 +75,20 @@ function openSystemMaps(center: LatLng, label: string) {
   openExternalUrl(`https://www.google.com/maps/dir/?api=1&destination=${point}`);
 }
 
-function RouteButton({ icon, label, primary, onPress }: {
+function RouteButton({ icon, label, primary, disabled, onPress }: {
   icon: React.ComponentProps<typeof DeferredIonicons>['name'];
   label: string;
   primary?: boolean;
+  disabled?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.routeButton, primary && styles.routeButtonPrimary, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.routeButton, primary && styles.routeButtonPrimary, disabled && styles.disabled, pressed && styles.pressed]}
     >
       <DeferredIonicons name={icon} size={20} color={primary ? colors.background : colors.primary} />
       <Text style={[styles.routeButtonText, primary && styles.routeButtonTextPrimary]}>{label}</Text>
@@ -100,6 +97,23 @@ function RouteButton({ icon, label, primary, onPress }: {
 }
 
 export function MapDirectionsSheet({ center, location, onClose }: Props) {
+  const [routeOrigin, setRouteOrigin] = useState<LatLng | null | undefined>(
+    Platform.OS === 'web' ? undefined : null,
+  );
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    let active = true;
+    void getWebLocation().then((origin) => {
+      if (active) setRouteOrigin(origin);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const locating = routeOrigin === undefined;
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
@@ -112,11 +126,15 @@ export function MapDirectionsSheet({ center, location, onClose }: Props) {
         </Pressable>
       </View>
       <Text style={styles.description}>
-        Выберите приложение — оно построит маршрут от вашего текущего местоположения до фестиваля.
+        {locating
+          ? 'Определяем ваше местоположение…'
+          : routeOrigin === null && Platform.OS === 'web'
+            ? 'Не удалось определить местоположение. Разрешите доступ к геолокации в браузере.'
+            : 'Выберите приложение — оно построит маршрут от вашего текущего местоположения до фестиваля.'}
       </Text>
-      <RouteButton icon="navigate" label="Проложить в Яндекс Навигаторе" primary onPress={() => void openYandexNavigator(center)} />
+      <RouteButton icon="navigate" label="Проложить в Яндекс Навигаторе" primary disabled={locating} onPress={() => void openYandexNavigator(center, routeOrigin ?? null)} />
       <View style={styles.secondaryRow}>
-        <RouteButton icon="map-outline" label="Яндекс Карты" onPress={() => void openYandexMaps(center)} />
+        <RouteButton icon="map-outline" label="Яндекс Карты" disabled={locating} onPress={() => openYandexMaps(center, routeOrigin ?? null)} />
         <RouteButton icon="apps-outline" label="Другие карты" onPress={() => openSystemMaps(center, location)} />
       </View>
     </View>
@@ -148,4 +166,5 @@ const styles = StyleSheet.create({
   routeButtonTextPrimary: { color: colors.background },
   secondaryRow: { flexDirection: 'row', gap: spacing.sm },
   pressed: { opacity: 0.86 },
+  disabled: { opacity: 0.5 },
 });
