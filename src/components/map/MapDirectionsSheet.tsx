@@ -38,16 +38,11 @@ function yandexWebRoute(center: LatLng, origin: LatLng | null) {
 }
 
 async function openYandexWebRoute(center: LatLng) {
-  // Open synchronously so the browser does not treat navigation after geolocation as a popup.
-  const popup = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
-  if (popup) popup.opener = null;
   const origin = await getWebLocation();
   const url = yandexWebRoute(center, origin);
-  if (popup) {
-    popup.location.href = url;
-    return;
-  }
   if (typeof window !== 'undefined') {
+    // Same-tab navigation remains reliable after the async geolocation prompt.
+    // Opening a new tab before the prompt leaves an unusable about:blank tab.
     window.location.assign(url);
   }
 }
