@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeadlinerCard } from '../components/HeadlinerCard';
 import { HeadlinerFilterBar } from '../components/HeadlinerFilterBar';
@@ -45,6 +45,10 @@ export function HeadlinersScreen({ navigation }: Props) {
       }),
     [data.headliners, searchQuery, selectedYear, sortMode],
   );
+  const fallbackYear = useMemo(
+    () => years.find((year) => String(year) !== selectedYear),
+    [selectedYear, years],
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -64,26 +68,40 @@ export function HeadlinersScreen({ navigation }: Props) {
         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {items.length > 0 ? (
-          items.map((headliner) => (
-            <HeadlinerCard
-              key={headliner.id}
-              headliner={headliner}
-              allHeadliners={data.headliners}
-              onPress={() => navigation.navigate('HeadlinerDetail', { headlinerId: headliner.id })}
-            />
-          ))
-        ) : (
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        renderItem={({ item: headliner }) => (
+          <HeadlinerCard
+            headliner={headliner}
+            allHeadliners={data.headliners}
+            onPress={() => navigation.navigate('HeadlinerDetail', { headlinerId: headliner.id })}
+          />
+        )}
+        ListEmptyComponent={(
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
               {searchQuery.trim()
                 ? 'Ничего не найдено — попробуйте другой запрос'
-                : 'Список хэдлайнеров для этого года пока пуст'}
+                : `Состав ${selectedYear} года скоро появится`}
             </Text>
+            {!searchQuery.trim() && fallbackYear != null ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setSelectedYear(String(fallbackYear))}
+                style={styles.emptyButton}
+              >
+                <Text style={styles.emptyButtonText}>Посмотреть {fallbackYear} год</Text>
+              </Pressable>
+            ) : null}
           </View>
         )}
-      </ScrollView>
+      />
     </SafeAreaView>
   );
 }
@@ -112,7 +130,21 @@ const styles = StyleSheet.create({
   emptyText: {
     ...typography.body,
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 15,
     textAlign: 'center',
+  },
+  emptyButton: {
+    marginTop: spacing.lg,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  emptyButtonText: {
+    ...typography.body,
+    color: colors.primary,
+    fontSize: 14,
   },
 });

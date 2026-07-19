@@ -35,4 +35,5 @@ if (withSourceMaps) {
 
 run('npx', exportArgs);
 run(process.execPath, [path.join(root, 'copy-public-static.mjs')]);
+run(process.execPath, [path.join(root, 'flatten-web-font-assets.mjs')]);
 run(process.execPath, [path.join(root, 'prune-dist-assets.mjs')]);

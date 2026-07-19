@@ -18,10 +18,10 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
     return (
       <View style={styles.banner}>
         <Text style={styles.text}>
-          Доступ к геолокации запрещён. Разрешите его в настройках браузера или телефона.
+          Карта работает без геолокации. Чтобы показать вас на карте, разрешите доступ в настройках браузера или телефона.
         </Text>
         <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
-          <Text style={styles.btnText}>Повторить</Text>
+          <Text style={styles.btnText}>Проверить снова</Text>
         </Pressable>
       </View>
     );

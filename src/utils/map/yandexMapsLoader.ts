@@ -5,21 +5,6 @@ let loadPromise: Promise<YandexMapsModule> | null = null;
 const YANDEX_REFERER_HINT =
   'Добавьте localhost в поле «Ограничение по HTTP Referer» ключа в кабинете developer.tech.yandex.ru (JS API 3.0 требует это поле).';
 
-async function describeScriptLoadFailure(src: string): Promise<string> {
-  try {
-    const response = await fetch(src, { method: 'GET', credentials: 'omit' });
-    if (response.status === 403) {
-      return `Yandex Maps API отклонил ключ (403). ${YANDEX_REFERER_HINT}`;
-    }
-    if (!response.ok) {
-      return `Yandex Maps API вернул ${response.status}. ${YANDEX_REFERER_HINT}`;
-    }
-  } catch {
-    // ignore network diagnostics
-  }
-  return `Не удалось загрузить Yandex Maps API. ${YANDEX_REFERER_HINT}`;
-}
-
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
@@ -38,7 +23,11 @@ function loadScript(src: string): Promise<void> {
     script.onload = () => resolve();
     script.onerror = () => {
       script.remove();
-      void describeScriptLoadFailure(src).then((message) => reject(new Error(message)));
+      reject(
+        new Error(
+          `Не удалось загрузить Yandex Maps API. Проверьте подключение к api-maps.yandex.ru. Если сеть доступна, ${YANDEX_REFERER_HINT}`,
+        ),
+      );
     };
     document.head.appendChild(script);
   });

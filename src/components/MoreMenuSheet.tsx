@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BackHandler,
+  Animated,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -11,10 +13,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMoreMenu } from '../context/MoreMenuContext';
+import { useAppData } from '../context/DataContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useIsTablet } from '../hooks/useIsTablet';
 import { RootTabParamList } from '../navigation/types';
-import { openHeadlinersMain } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -22,6 +24,7 @@ import { appFont, typography } from '../theme/typography';
 import { resolveAndroidBottomInset } from '../utils/safeArea';
 import { DeferredIonicons } from './DeferredIonicons';
 import { ScreenTitle } from './ScreenTitle';
+import { MotionPressable } from './MotionPressable';
 
 type MoreNavigation = BottomTabNavigationProp<RootTabParamList>;
 
@@ -36,8 +39,10 @@ export function MoreMenuSheet() {
   const isTablet = useIsTablet();
   const navigation = useNavigation<MoreNavigation>();
   const { visible, close } = useMoreMenu();
+  const { data } = useAppData();
   const festivalActive = useFestivalActive();
   const bottomInset = resolveAndroidBottomInset(insets.bottom);
+  const [entrance] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!visible) {
@@ -52,32 +57,32 @@ export function MoreMenuSheet() {
     return () => subscription.remove();
   }, [visible, close]);
 
+  useEffect(() => {
+    if (!visible) return;
+    entrance.setValue(0);
+    Animated.spring(entrance, {
+      toValue: 1,
+      damping: 22,
+      stiffness: 220,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  }, [entrance, visible]);
+
   if (isTablet || !visible) {
     return null;
   }
 
   const menuItems: MenuItem[] = [
-    ...(festivalActive
-      ? [
-          {
-            icon: 'restaurant-outline' as const,
-            label: 'Фудкорт',
-            onPress: () => {
-              close();
-              navigation.navigate('MoreTab', { screen: 'FoodCourtMain' });
-            },
+    ...(festivalActive && data.festival.startDate && data.festival.endDate
+      ? [{
+          icon: 'restaurant-outline' as const,
+          label: 'Еда и напитки',
+          onPress: () => {
+            close();
+            navigation.navigate('MoreTab', { screen: 'FoodCourtMain' });
           },
-        ]
-      : [
-          {
-            icon: 'mic-outline' as const,
-            label: 'Хэдлайнеры',
-            onPress: () => {
-              close();
-              openHeadlinersMain(navigation);
-            },
-          },
-        ]),
+        }]
+      : []),
     {
       icon: 'settings-outline',
       label: 'Настройки',
@@ -102,37 +107,46 @@ export function MoreMenuSheet() {
         navigation.navigate('MoreTab', { screen: 'FestivalAbout' });
       },
     },
+    {
+      icon: 'help-circle-outline',
+      label: 'Контакты и помощь',
+      onPress: () => {
+        close();
+        navigation.navigate('MoreTab', { screen: 'Legal' });
+      },
+    },
   ];
 
   return (
-    <View
-      style={styles.overlay}
+    <Animated.View
+      style={[styles.overlay, { opacity: entrance }]}
       accessibilityViewIsModal
       importantForAccessibility="yes"
     >
       <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
-      <View
+      <Animated.View
         style={[
           styles.sheet,
           { paddingBottom: Math.max(bottomInset, spacing.lg) },
+          { transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }) }] },
         ]}
       >
         <View style={styles.handle} />
         <ScreenTitle style={styles.title}>Ещё</ScreenTitle>
         {menuItems.map((item) => (
-          <Pressable
+          <MotionPressable
             key={item.label}
             accessibilityRole="button"
             onPress={item.onPress}
-            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+            style={styles.menuRow}
           >
             <DeferredIonicons name={item.icon} size={22} color={colors.primary} />
             <Text style={styles.menuLabel}>{item.label}</Text>
             <DeferredIonicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </Pressable>
+          </MotionPressable>
         ))}
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 
@@ -185,8 +199,5 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     flex: 1,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

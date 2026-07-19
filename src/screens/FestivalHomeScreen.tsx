@@ -2,7 +2,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { Suspense, useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { FestivalLogoImage } from '../components/FestivalLogoImage';
@@ -11,7 +11,6 @@ import { LiveArtistCard } from '../components/LiveArtistCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionHeader } from '../components/SectionHeader';
 import { useAppData } from '../context/DataContext';
-import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useStagePrimaryPerformances } from '../hooks/useCurrentLivePerformance';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
@@ -20,7 +19,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { getStageName, isFestivalStarted, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
+import { getStageName, isFestivalFinished, isFestivalStarted, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
 import { getLatestHeadlinerYear, hasScheduleForYear } from '../utils/headlinerHelpers';
 import { HERO_POSTER_SOURCE } from '../utils/heroPosterSource';
 
@@ -96,8 +95,7 @@ function HeroParallaxBackground({ translateY, allowVideo }: HeroParallaxBackgrou
 }
 
 export function FestivalHomeScreen({ navigation }: Props) {
-  const { data, isInitialLoading } = useAppData();
-  const festivalActive = useFestivalActive();
+  const { data, error, isInitialLoading, lastFetchedAt, refreshData } = useAppData();
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
   const scrollY = useMemo(() => new Animated.Value(0), []);
@@ -115,7 +113,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
   const onScroll = useMemo(
     () =>
       Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
     [scrollY],
   );
@@ -126,15 +124,21 @@ export function FestivalHomeScreen({ navigation }: Props) {
   );
 
   const festivalStarted = isFestivalStarted(data.festival.startDate, now);
+  const festivalPhase = !festivalStarted
+    ? 'before'
+    : isFestivalFinished(data.festival.startDate, data.festival.endDate, data.schedule, now)
+      ? 'after'
+      : 'during';
   const nextFestivalYear = data.festival.year + 1;
   const hasNextYearSchedule = hasScheduleForYear(data.schedule, nextFestivalYear);
-  const showPreFestivalHeadliners = festivalActive && !festivalStarted;
-  const showPostFestivalHeadliners = !festivalActive && !hasNextYearSchedule;
-  const showLiveSection = festivalActive && festivalStarted;
+  const showPreFestivalHeadliners = festivalPhase === 'before';
+  const showPostFestivalHeadliners = festivalPhase === 'after' && !hasNextYearSchedule;
+  const showLiveSection = festivalPhase === 'during';
   const latestHeadlinerYear = useMemo(
     () => getLatestHeadlinerYear(data.headliners),
     [data.headliners],
   );
+  const allowHeroVideo = true;
 
   const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');
   const hasAnySoon = stagePrimaries.some(
@@ -173,7 +177,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <HeroParallaxBackground translateY={backgroundTranslateY} allowVideo />
+      <HeroParallaxBackground translateY={backgroundTranslateY} allowVideo={allowHeroVideo} />
 
       <Animated.ScrollView
         contentContainerStyle={styles.content}
@@ -181,8 +185,22 @@ export function FestivalHomeScreen({ navigation }: Props) {
         scrollEventThrottle={16}
         onScroll={onScroll}
       >
-        <View style={styles.heroStack}>
-          <View style={styles.heroContent}>
+        {error ? (
+          <View style={styles.offlineBanner}>
+            <View style={styles.offlineCopy}>
+              <Text style={styles.offlineTitle}>Офлайн-режим</Text>
+              <Text style={styles.offlineText}>
+                Показываем сохранённые данные
+                {lastFetchedAt ? ` от ${new Date(lastFetchedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''}.
+              </Text>
+            </View>
+            <Pressable accessibilityRole="button" onPress={() => void refreshData(true)}>
+              <Text style={styles.offlineRetry}>Обновить</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        <View style={[styles.heroStack, festivalPhase === 'after' && styles.heroStackCompact]}>
+          <View style={[styles.heroContent, festivalPhase === 'after' && styles.heroContentCompact]}>
             <FestivalLogoImage logoImageUrl={data.festival.logoImageUrl} style={styles.logoImage} />
             <Text style={styles.tagline}>ФЕСТИВАЛЬ НАСТОЯЩЕЙ МУЗЫКИ</Text>
             <Text style={styles.location}>{data.festival.location}</Text>
@@ -197,7 +215,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
             />
           </View>
 
-          {festivalActive ? (
+          {festivalPhase === 'during' ? (
             <View style={styles.overlaySection}>
               <PrimaryButton
                 label="РАСПИСАНИЕ"
@@ -319,6 +337,41 @@ const styles = StyleSheet.create({
     marginBottom: spacing.section,
     zIndex: 1,
   },
+  offlineBanner: {
+    zIndex: 2,
+    margin: spacing.screen,
+    marginBottom: 0,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(28,28,30,0.94)',
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  offlineCopy: {
+    flex: 1,
+  },
+  offlineTitle: {
+    ...typography.body,
+    color: colors.text,
+    fontSize: 14,
+  },
+  offlineText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+    textTransform: 'none',
+  },
+  offlineRetry: {
+    ...typography.body,
+    color: colors.primary,
+    fontSize: 14,
+  },
+  heroStackCompact: {
+    marginBottom: spacing.sm,
+  },
   heroContent: {
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -327,6 +380,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     minHeight: 340,
     gap: spacing.sm,
+  },
+  heroContentCompact: {
+    minHeight: 300,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   logoImage: {
     width: 360,

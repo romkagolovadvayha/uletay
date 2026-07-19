@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import { MotionPressable } from './MotionPressable';
 import { CenteredHorizontalScroll } from './CenteredHorizontalScroll';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -26,7 +27,7 @@ export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'd
         const isFood = variant === 'food';
 
         return (
-          <Pressable
+          <MotionPressable
             key={category.id}
             accessibilityRole="button"
             onPress={() => onSelect(category.id)}
@@ -45,7 +46,7 @@ export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'd
             >
               {category.label.toUpperCase()}
             </Text>
-          </Pressable>
+          </MotionPressable>
         );
       })}
     </CenteredHorizontalScroll>

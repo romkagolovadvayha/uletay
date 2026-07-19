@@ -1,11 +1,12 @@
 import { BottomTabBarHeightCallbackContext, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { CommonActions } from '@react-navigation/native';
 import React, { useContext } from 'react';
-import { LayoutChangeEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { resolveAndroidBottomInset } from '../utils/safeArea';
+import { MotionPressable } from './MotionPressable';
 
 /** Equal inner padding above/below tab items (safe-area added separately below). */
 export const TAB_BAR_INNER_PADDING = 8;
@@ -90,20 +91,24 @@ export function MobileBottomTabBar({
           return (
             // Flex lives on View so web <button> defaults cannot stretch columns unevenly.
             <View key={route.key} style={styles.itemSlot}>
-              <Pressable
+              <MotionPressable
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
                 accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
                 testID={options.tabBarButtonTestID}
                 onPress={onPress}
                 onLongPress={onLongPress}
-                style={({ pressed }) => [styles.item, pressed && styles.pressed]}
+                style={styles.item}
+                pressedScale={0.92}
               >
-                <View style={styles.iconSlot}>{icon}</View>
+                <View style={styles.iconSlot}>
+                  {focused ? <View style={styles.activeGlow} /> : null}
+                  {icon}
+                </View>
                 <Text style={[styles.label, { color }]} numberOfLines={1} ellipsizeMode="clip">
                   {label}
                 </Text>
-              </Pressable>
+              </MotionPressable>
             </View>
           );
         })}
@@ -167,9 +172,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderRadius: 12,
   },
-  pressed: {
-    opacity: 0.85,
+  activeGlow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(255, 207, 36, 0.14)',
   },
   label: {
     ...typography.tabLabel,

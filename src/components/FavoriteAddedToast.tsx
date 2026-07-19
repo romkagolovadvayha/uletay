@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFavorites } from '../context/FavoritesContext';
 import { navigateToMySchedule } from '../navigation/navigationRef';
 import { colors } from '../theme/colors';
@@ -12,18 +12,27 @@ const AUTO_HIDE_MS = 5000;
 
 export function FavoriteAddedToast() {
   const { addedToastVisible, hideAddedToast } = useFavorites();
+  const [entrance] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!addedToastVisible) {
       return;
     }
 
+    entrance.setValue(0);
+    Animated.spring(entrance, {
+      toValue: 1,
+      damping: 20,
+      stiffness: 210,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+
     const timer = setTimeout(() => {
       hideAddedToast();
     }, AUTO_HIDE_MS);
 
     return () => clearTimeout(timer);
-  }, [addedToastVisible, hideAddedToast]);
+  }, [addedToastVisible, entrance, hideAddedToast]);
 
   if (!addedToastVisible) {
     return null;
@@ -36,7 +45,15 @@ export function FavoriteAddedToast() {
 
   return (
     <View pointerEvents="box-none" style={styles.host}>
-      <View style={styles.toast}>
+      <Animated.View
+        style={[
+          styles.toast,
+          {
+            opacity: entrance,
+            transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+          },
+        ]}
+      >
         <Text style={styles.message}>Добавлено в избранное</Text>
         <Pressable
           accessibilityRole="button"
@@ -45,7 +62,7 @@ export function FavoriteAddedToast() {
         >
           <Text style={styles.buttonText}>МОЁ РАСПИСАНИЕ</Text>
         </Pressable>
-      </View>
+      </Animated.View>
     </View>
   );
 }

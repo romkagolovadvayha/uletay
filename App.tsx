@@ -21,6 +21,7 @@ import { syncWebSeo } from './src/seo/syncWebSeo';
 import { colors } from './src/theme/colors';
 import { installWebMainLandmark } from './src/utils/webMainLandmark';
 import { installWebPreventInputZoom } from './src/utils/webPreventInputZoom';
+import { installWebOffline } from './src/utils/installWebOffline';
 
 const navigationTheme = {
   ...DarkTheme,
@@ -65,6 +66,12 @@ function AppContent() {
           syncWebSeo();
         }}
         onStateChange={() => {
+          if (Platform.OS === 'web' && typeof document !== 'undefined') {
+            const focusedElement = document.activeElement;
+            if (focusedElement instanceof HTMLElement) {
+              focusedElement.blur();
+            }
+          }
           requestAnimationFrame(() => {
             if (navigationRef.isReady()) {
               syncNestedStacksWithActiveTab(navigationRef);
@@ -84,6 +91,7 @@ function AppContent() {
 export default function App() {
   useEffect(() => {
     installWebMainLandmark();
+    installWebOffline();
     return installWebPreventInputZoom();
   }, []);
 

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
+import { StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
+import { MotionPressable } from './MotionPressable';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -14,13 +15,13 @@ type Props = {
 
 export function PrimaryButton({ label, onPress, style, textStyle }: Props) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, style]}
+      style={[styles.button, style]}
     >
       <Text style={[styles.label, textStyle]}>{label}</Text>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -33,10 +34,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 54,
-  },
-  pressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.99 }],
   },
   label: {
     ...typography.button,

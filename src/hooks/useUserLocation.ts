@@ -96,7 +96,7 @@ async function requestForegroundPermission(): Promise<'granted' | 'denied' | 'pr
 
 export function useUserLocation(enabled = true) {
   const [location, setLocation] = useState<UserLocationState | null>(null);
-  const [status, setStatus] = useState<LocationStatus>('loading');
+  const [status, setStatus] = useState<LocationStatus>(enabled ? 'loading' : 'prompt');
   const [reduceMotion, setReduceMotion] = useState(false);
   const watchRef = useRef<Location.LocationSubscription | null>(null);
   const statusRef = useRef<LocationStatus>('loading');

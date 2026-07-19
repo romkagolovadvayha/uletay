@@ -168,6 +168,12 @@ export function FestivalMapView({
   const mapZoomRef = useRef(config.defaultZoom);
   const refreshZoneLabelSizesRef = useRef<() => void>(() => {});
 
+  useEffect(() => {
+    if (!YANDEX_MAPS_API_KEY) {
+      onMapLoadError?.();
+    }
+  }, [onMapLoadError]);
+
   const filteredZones = useMemo(() => filterZoneFeatures(zones?.features ?? [], filter), [zones, filter]);
   const zonesByIdRef = useRef(
     new Map<string, GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>>(),
@@ -554,7 +560,7 @@ export function FestivalMapView({
     return (
       <View style={styles.fill}>
         <Text style={styles.error}>
-          Задайте EXPO_PUBLIC_YANDEX_MAPS_API_KEY для отображения карты
+          Для интерактивной карты нужен локальный ключ Yandex Maps. Расписание и остальные разделы доступны офлайн.
         </Text>
       </View>
     );

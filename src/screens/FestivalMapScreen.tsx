@@ -7,6 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FestivalMapView } from '../components/map/FestivalMapView';
 import type { FestivalMapApi } from '../components/map/types';
 import { MapFabGroup } from '../components/map/MapFabGroup';
+import { MapDirectionsButton } from '../components/map/MapDirectionsButton';
+import { MapDirectionsSheet } from '../components/map/MapDirectionsSheet';
 import { MapFilterChips } from '../components/map/MapFilterChips';
 import { MapLocationBanner } from '../components/map/MapLocationBanner';
 import { MapMotionConfig } from '../components/map/MapMotionConfig';
@@ -63,7 +65,8 @@ type Props = {
 export function FestivalMapScreen({ navigation: _navigation }: Props) {
   const { data } = useAppData();
   const mapConfig = data.festivalMap;
-  const { location, status, requestPermission } = useUserLocation(Boolean(mapConfig?.enabled));
+  // The map is useful without precise location. Ask only after the user taps locate.
+  const { location, status, requestPermission } = useUserLocation(false);
   const mapApi = useRef<FestivalMapApi | null>(null);
 
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
@@ -77,6 +80,8 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
   const [mapLoadError, setMapLoadError] = useState(false);
   const [mapRenderError, setMapRenderError] = useState(false);
   const [mapErrorDetail, setMapErrorDetail] = useState<string | null>(null);
+  const [locationRequested, setLocationRequested] = useState(false);
+  const [directionsVisible, setDirectionsVisible] = useState(false);
 
   const selectedZoneId = pickedZoneId;
 
@@ -97,7 +102,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
 
   const mapSelectedZoneId = highlightZoneId ?? pickedZoneId;
 
-  const popupVisible = Boolean(pickedZoneId || activeRoute || routing);
+  const popupVisible = Boolean(directionsVisible || pickedZoneId || activeRoute || routing);
 
   const outsideTerritory = useMemo(() => {
     if (!location || !mapConfig) return false;
@@ -105,6 +110,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
   }, [location, mapConfig]);
 
   const dismissPopup = useCallback(() => {
+    setDirectionsVisible(false);
     setPickedZoneId(null);
     setHighlightZoneId(null);
     setActiveRoute(null);
@@ -134,12 +140,15 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     return () => clearTimeout(timer);
   }, [mapLoaded, mapLoadError, mapRenderError, mapConfig?.enabled]);
 
-  const handleLocate = useCallback(() => {
+  const handleLocate = useCallback(async () => {
     setFollowUser(true);
+    setLocationRequested(true);
     if (location) {
       mapApi.current?.flyTo(location.lat, location.lng, 17);
+      return;
     }
-  }, [location]);
+    await requestPermission();
+  }, [location, requestPermission]);
 
   const handleFestivalCenter = useCallback(() => {
     setFollowUser(false);
@@ -234,6 +243,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
                 filter={filter}
                 followUser={followUser}
                 onZonePress={(zone) => {
+                  setDirectionsVisible(false);
                   setRouteError(null);
                   setActiveRoute(null);
                   setHighlightZoneId(null);
@@ -272,21 +282,39 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
           </View>
           <View style={styles.mapOverlay} pointerEvents="box-none">
             <MapFilterChips zones={data.mapZones} value={filter} onChange={setFilterChoice} />
-            <MapLocationBanner
-              status={status}
-              outsideTerritory={outsideTerritory}
-              onRequestPermission={requestPermission}
-            />
+            {locationRequested || outsideTerritory ? (
+              <MapLocationBanner
+                status={status}
+                outsideTerritory={outsideTerritory}
+                onRequestPermission={requestPermission}
+              />
+            ) : null}
             <MapFabGroup
               onLocate={handleLocate}
               onFestival={handleFestivalCenter}
               followUser={followUser}
             />
+            {!popupVisible ? (
+              <MapDirectionsButton
+                onPress={() => {
+                  setPickedZoneId(null);
+                  setActiveRoute(null);
+                  setRouteError(null);
+                  setDirectionsVisible(true);
+                }}
+              />
+            ) : null}
           </View>
         </View>
 
         <MapPoiPopup visible={popupVisible}>
-          {activeRoute ? (
+          {directionsVisible ? (
+            <MapDirectionsSheet
+              center={mapConfig.center}
+              location={data.festival.locationShort || data.festival.location}
+              onClose={dismissPopup}
+            />
+          ) : activeRoute ? (
             <MapRoutePanel
               route={activeRoute}
               userLocation={location}

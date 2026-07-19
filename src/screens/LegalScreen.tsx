@@ -86,7 +86,20 @@ export function LegalScreen({ navigation }: Props) {
 
         <ScreenTitle style={styles.title}>ПРАВОВАЯ ИНФОРМАЦИЯ</ScreenTitle>
 
-        <Text style={styles.sectionLabel}>Связаться с организатором</Text>
+        <View style={styles.operatorCard}>
+          <Text style={styles.operatorTitle}>Организатор</Text>
+          <Text style={styles.operatorLine}>{LEGAL_OPERATOR.name}</Text>
+          <Text style={styles.operatorLine}>ОГРНИП {LEGAL_OPERATOR.ogrnip}</Text>
+          <Text style={styles.operatorLine}>ИНН {LEGAL_OPERATOR.inn}</Text>
+          <Text style={styles.operatorLine}>{LEGAL_OPERATOR.address}</Text>
+          <Text style={styles.operatorLine}>{LEGAL_OPERATOR.location}</Text>
+        </View>
+
+        {documentSections.map((section) => (
+          <LegalSectionView key={section.id} section={section} />
+        ))}
+
+        <Text style={styles.sectionLabel}>Контакты и ссылки</Text>
         <View style={styles.section}>
           <ContactRow
             icon="mail-outline"
@@ -105,48 +118,35 @@ export function LegalScreen({ navigation }: Props) {
           ))}
           <ExternalLink href={FESTIVAL_WEBSITE} style={styles.contactLinkWrap}>
             <View style={styles.contactRow}>
-              <Ionicons name="globe-outline" size={20} color={colors.primary} />
+              <Ionicons name="globe-outline" size={18} color={colors.primary} />
               <View style={styles.contactTextWrap}>
-                <Text style={styles.contactLabel}>Сайт фестиваля</Text>
+                <Text style={styles.contactLabel}>Сайт</Text>
                 <Text style={styles.contactValue}>uletayfest.ru</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </View>
           </ExternalLink>
           <ExternalLink href={FESTIVAL_CONTACTS_URL} style={styles.contactLinkWrap}>
             <View style={styles.contactRow}>
-              <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.primary} />
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />
               <View style={styles.contactTextWrap}>
-                <Text style={styles.contactLabel}>Страница контактов</Text>
+                <Text style={styles.contactLabel}>Контакты</Text>
                 <Text style={styles.contactValue}>uletayfest.ru/contacty</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </View>
           </ExternalLink>
           <ExternalLink href={FESTIVAL_VK_URL} style={styles.contactLinkWrap}>
             <View style={styles.contactRow}>
-              <Ionicons name="logo-vk" size={20} color={colors.primary} />
+              <Ionicons name="logo-vk" size={18} color={colors.primary} />
               <View style={styles.contactTextWrap}>
-                <Text style={styles.contactLabel}>Сообщество VK</Text>
+                <Text style={styles.contactLabel}>VK</Text>
                 <Text style={styles.contactValue}>Написать организатору</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </View>
           </ExternalLink>
         </View>
-
-        <View style={styles.operatorCard}>
-          <Text style={styles.operatorTitle}>Организатор</Text>
-          <Text style={styles.operatorLine}>{LEGAL_OPERATOR.name}</Text>
-          <Text style={styles.operatorLine}>ОГРНИП {LEGAL_OPERATOR.ogrnip}</Text>
-          <Text style={styles.operatorLine}>ИНН {LEGAL_OPERATOR.inn}</Text>
-          <Text style={styles.operatorLine}>{LEGAL_OPERATOR.address}</Text>
-          <Text style={styles.operatorLine}>{LEGAL_OPERATOR.location}</Text>
-        </View>
-
-        {documentSections.map((section) => (
-          <LegalSectionView key={section.id} section={section} />
-        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 12,
     letterSpacing: 0.8,
+    marginTop: spacing.md,
     marginBottom: spacing.sm,
   },
   section: {
@@ -196,26 +197,32 @@ const styles = StyleSheet.create({
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 44,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
   contactTextWrap: {
     flex: 1,
-    gap: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   contactLabel: {
     ...typography.body,
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 11,
+    minWidth: 66,
   },
   contactValue: {
     ...appFont('semiBold'),
     color: colors.text,
-    fontSize: 15,
+    fontSize: 13,
+    flex: 1,
   },
   operatorCard: {
     backgroundColor: colors.surface,

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, Platform, StyleSheet, View } from 'react-native';
 import {
   APP_DATA_CACHE_KEY,
   invalidateAppDataCache,
@@ -114,6 +114,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let appIsActive = AppState.currentState === 'active';
 
     const tryRefresh = async () => {
       const fresh = await refreshAppDataInBackground();
@@ -147,20 +148,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     })();
 
     const refreshInterval = setInterval(() => {
-      void tryRefresh();
+      if (appIsActive) void tryRefresh();
     }, APP_DATA_REFRESH_INTERVAL_MS);
 
     const retryInterval = setInterval(() => {
-      if (lastFetchedAtRef.current !== null) {
+      if (!appIsActive || lastFetchedAtRef.current !== null) {
         return;
       }
       void tryRefresh();
     }, APP_DATA_RETRY_INTERVAL_MS);
 
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      const becameActive = !appIsActive && nextState === 'active';
+      appIsActive = nextState === 'active';
+      if (becameActive) void tryRefresh();
+    });
+
     return () => {
       cancelled = true;
       clearInterval(refreshInterval);
       clearInterval(retryInterval);
+      appStateSubscription.remove();
     };
   }, [applyCachedSnapshot, applyFreshData]);
 

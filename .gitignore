@@ -12,6 +12,7 @@ dist-build/
 dist-export/
 dist-web/
 dist-web-check/
+dist-audit/
 web-build/
 expo-env.d.ts
 

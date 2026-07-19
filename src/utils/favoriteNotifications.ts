@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppData } from '../types';
@@ -15,6 +14,10 @@ const NOTIFIED_STORAGE_KEY = '@uletay_favorite_notified';
 export const NOTIFICATIONS_ENABLED_KEY = '@uletay_notifications_enabled';
 
 const webReminderTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+async function getNativeNotifications() {
+  return import('expo-notifications');
+}
 
 export type NotificationPermissionStatus =
   | 'granted'
@@ -118,6 +121,7 @@ export async function getNotificationPermissionStatus(): Promise<NotificationPer
     return 'undetermined';
   }
 
+  const Notifications = await getNativeNotifications();
   const settings = await Notifications.getPermissionsAsync();
   if (settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
     return 'granted';
@@ -166,6 +170,7 @@ export async function requestNotificationPermissions(
     return permission === 'granted';
   }
 
+  const Notifications = await getNativeNotifications();
   const settings = await Notifications.getPermissionsAsync();
   if (settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
     return true;
@@ -189,6 +194,7 @@ export async function cancelAllFavoriteNotifications(): Promise<void> {
     return;
   }
 
+  const Notifications = await getNativeNotifications();
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
     scheduled
@@ -259,6 +265,7 @@ export async function syncFavoriteNotifications(favorites: string[], data: AppDa
     return;
   }
 
+  const Notifications = await getNativeNotifications();
   const events = getFavoriteEventsForReminders(favorites, data);
   const activeIds = new Set(events.map((event) => event.notificationId));
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
@@ -331,6 +338,7 @@ export async function showReminderAlert(payload: FavoriteReminderPayload): Promi
     return;
   }
 
+  const Notifications = await getNativeNotifications();
   await Notifications.scheduleNotificationAsync({
     content: {
       title: payload.title,

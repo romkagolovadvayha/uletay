@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import { MotionPressable } from './MotionPressable';
 import { CenteredHorizontalScroll } from './CenteredHorizontalScroll';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -22,7 +23,7 @@ export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: P
         const { day, month, weekday } = formatDateTabParts(date);
 
         return (
-          <Pressable
+          <MotionPressable
             key={date}
             accessibilityRole="button"
             onPress={() => onSelect(date)}
@@ -34,7 +35,7 @@ export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: P
             <Text style={[styles.day, isActive && styles.textActive]}>{day}</Text>
             <Text style={[styles.month, isActive && styles.textActive]}>{month}</Text>
             <Text style={[styles.weekday, isActive && styles.weekdayActive]}>{weekday}</Text>
-          </Pressable>
+          </MotionPressable>
         );
       })}
     </CenteredHorizontalScroll>
