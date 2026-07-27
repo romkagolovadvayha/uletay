@@ -93,6 +93,14 @@ function patchIndexHtml() {
     'name="viewport" content="width=device-width, initial-scale=1"',
   );
 
+  // Match app shell so the first paint is black, not a white blank page.
+  if (!html.includes('id="app-boot-style"')) {
+    html = html.replace(
+      '</head>',
+      '  <style id="app-boot-style">html,body,#root{background:#000;margin:0;min-height:100%}</style>\n</head>',
+    );
+  }
+
   // Landmark for screen readers / a11y audits (Expo template uses <div id="root">).
   html = html.replace(
     /<div(\s+id="root"[^>]*)>([\s\S]*?)<\/div>(\s*<\/body>)/,

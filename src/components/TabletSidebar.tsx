@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import {
   openAutographsMain,
@@ -53,10 +54,11 @@ type SidebarItemProps = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   active: boolean;
+  iconColor?: string;
   onPress: () => void;
 };
 
-function SidebarItem({ icon, label, active, onPress }: SidebarItemProps) {
+function SidebarItem({ icon, label, active, iconColor, onPress }: SidebarItemProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -71,7 +73,7 @@ function SidebarItem({ icon, label, active, onPress }: SidebarItemProps) {
       <DeferredIonicons
         name={icon}
         size={22}
-        color={active ? colors.tabActive : colors.tabInactive}
+        color={iconColor ?? (active ? colors.tabActive : colors.tabInactive)}
       />
       <Text
         style={[styles.itemLabel, active && styles.itemLabelActive]}
@@ -87,6 +89,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const festivalActive = useFestivalActive();
+  const { isPlaying: isRadioPlaying } = useRadioPlayer();
   const tabNavigation = navigation as unknown as NavigationProp<RootTabParamList>;
 
   const mainTabRoutes = festivalActive ? MAIN_TAB_ROUTES_ACTIVE : MAIN_TAB_ROUTES_FINISHED;
@@ -194,11 +197,12 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
             ScheduleTab: 'calendar-outline',
             Autographs: 'ticket-outline',
             FavoritesTab: 'star-outline',
-            PlaylistTab: 'radio-outline',
+            PlaylistTab: isRadioPlaying ? 'radio' : 'radio-outline',
             HeadlinersTab: 'mic-outline',
             MoreTab: 'reorder-three-outline',
           };
           const resolvedIcon = tabIcons[routeName];
+          const radioLive = routeName === 'PlaylistTab' && isRadioPlaying;
 
           return (
             <SidebarItem
@@ -206,6 +210,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
               icon={resolvedIcon}
               label={label}
               active={currentTabName === routeName}
+              iconColor={radioLive ? colors.live : undefined}
               onPress={() => handleMainTabPress(routeName)}
             />
           );

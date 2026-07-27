@@ -47,13 +47,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md / 2,
   },
   row: {
-    gap: spacing.sm,
+    gap: 2,
   },
   tab: {
-    minWidth: 64,
+    minWidth: 60,
     borderRadius: radius.md,
     paddingVertical: 7,
-    paddingHorizontal: 10,
+    paddingLeft: 5,
+    paddingRight: 5,
     alignItems: 'center',
     backgroundColor: 'transparent',
     gap: 1,

@@ -490,9 +490,15 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
   html = setLink(html, 'alternate', route.canonical, 'x-default');
 
   const jsonLd = JSON.stringify(structuredData(route, data)).replaceAll('<', '\\u003c');
+  // Keep crawlable HTML in #root, but hide it visually so users don't see a text dump
+  // before the Expo app boots (black shell matches the app background).
+  const bootStyle = [
+    'html,body,#root{background:#000;margin:0;min-height:100%}',
+    '#seo-fallback{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}',
+  ].join('');
   html = html.replace(
     '</head>',
-    `  <script id="seo-jsonld" type="application/ld+json">${jsonLd}</script>\n  <style id="seo-fallback-style">#seo-fallback{width:100%;min-height:100%;padding:32px 20px;background:#000;color:#fff;font:16px/1.55 system-ui,sans-serif;overflow:auto}#seo-fallback article{max-width:920px;margin:0 auto}#seo-fallback h1,#seo-fallback h2{line-height:1.2}#seo-fallback a{color:#ffd100}#seo-fallback nav{margin-top:32px}</style>\n</head>`,
+    `  <script id="seo-jsonld" type="application/ld+json">${jsonLd}</script>\n  <style id="seo-fallback-style">${bootStyle}</style>\n</head>`,
   );
   html = html.replace(
     /<div\s+id=["']root["']\s*><\/div>/i,
