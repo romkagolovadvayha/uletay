@@ -1,18 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import { useFestivalActive } from '../hooks/useFestivalActive';
+import {
+  getVisibleMainTabRoutes,
+  useMainTabContentFlags,
+} from './mainTabRoutes';
 import { navigationRef } from './navigationRef';
 import { RootTabParamList } from './types';
 
-const FESTIVAL_ONLY_TABS: (keyof RootTabParamList)[] = [
-  'ScheduleTab',
-  'Autographs',
-  'FavoritesTab',
-];
+const FESTIVAL_ONLY_MORE_ROUTES = new Set(['FoodCourtMain', 'FoodCourtDetail']);
 
 const POST_FESTIVAL_ONLY_TABS: (keyof RootTabParamList)[] = ['HeadlinersTab'];
-
-const FESTIVAL_ONLY_MORE_ROUTES = new Set(['FoodCourtMain', 'FoodCourtDetail']);
 
 function readGuardState(): {
   currentTab: keyof RootTabParamList | undefined;
@@ -38,6 +36,7 @@ function readGuardState(): {
 
 function shouldRedirect(
   festivalActive: boolean,
+  visibleTabs: ReadonlySet<keyof RootTabParamList>,
   currentTab: keyof RootTabParamList | undefined,
   moreNestedRoute: string | null,
 ): boolean {
@@ -46,7 +45,7 @@ function shouldRedirect(
   }
 
   const shouldLeaveTab =
-    (!festivalActive && FESTIVAL_ONLY_TABS.includes(currentTab)) ||
+    (!visibleTabs.has(currentTab) && currentTab !== 'MoreTab') ||
     (festivalActive && POST_FESTIVAL_ONLY_TABS.includes(currentTab));
 
   const shouldLeaveMore =
@@ -60,7 +59,13 @@ function shouldRedirect(
 
 export function FestivalNavigationGuard() {
   const festivalActive = useFestivalActive();
+  const content = useMainTabContentFlags();
   const [navRevision, setNavRevision] = useState(0);
+
+  const visibleTabs = useMemo(
+    () => new Set(getVisibleMainTabRoutes(festivalActive, content)),
+    [content, festivalActive],
+  );
 
   useEffect(() => {
     if (!navigationRef.isReady()) {
@@ -78,10 +83,13 @@ export function FestivalNavigationGuard() {
     }
 
     const { currentTab, moreNestedRoute } = readGuardState();
-    if (shouldRedirect(festivalActive, currentTab, moreNestedRoute) && navigationRef.isReady()) {
+    if (
+      shouldRedirect(festivalActive, visibleTabs, currentTab, moreNestedRoute) &&
+      navigationRef.isReady()
+    ) {
       navigationRef.navigate('HomeTab');
     }
-  }, [festivalActive, navRevision]);
+  }, [festivalActive, navRevision, visibleTabs]);
 
   return null;
 }

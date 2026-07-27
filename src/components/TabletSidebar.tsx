@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
+import { useVisibleMainTabRoutes } from '../navigation/mainTabRoutes';
 import {
   openAutographsMain,
   openHeadlinersMain,
@@ -25,22 +26,6 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
-
-const MAIN_TAB_ROUTES_ACTIVE: (keyof RootTabParamList)[] = [
-  'HomeTab',
-  'MapTab',
-  'ScheduleTab',
-  'Autographs',
-  'FavoritesTab',
-  'PlaylistTab',
-];
-
-const MAIN_TAB_ROUTES_FINISHED: (keyof RootTabParamList)[] = [
-  'HomeTab',
-  'MapTab',
-  'HeadlinersTab',
-  'PlaylistTab',
-];
 
 type ExtraItem = {
   key: string;
@@ -89,10 +74,10 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const festivalActive = useFestivalActive();
+  const mainTabRoutes = useVisibleMainTabRoutes();
   const { isPlaying: isRadioPlaying } = useRadioPlayer();
   const tabNavigation = navigation as unknown as NavigationProp<RootTabParamList>;
 
-  const mainTabRoutes = festivalActive ? MAIN_TAB_ROUTES_ACTIVE : MAIN_TAB_ROUTES_FINISHED;
   const sidebarWidth = getDefaultSidebarWidth({ width });
   const currentRoute = state.routes[state.index];
   const currentTabName = currentRoute.name as keyof RootTabParamList;

@@ -6,14 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { PRIVACY_POLICY_URL } from '../constants/legal';
-import { useAppData } from '../context/DataContext';
 import { AppTimeMode, useDemoMode } from '../context/DemoModeContext';
 import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
-import { describeDemoFestivalMoment } from '../utils/demoTime';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'Settings'>;
 
@@ -70,16 +68,13 @@ function SettingsLink({ icon, title, subtitle, onPress }: SettingsLinkProps) {
 }
 
 export function SettingsScreen({ navigation }: Props) {
-  const { data } = useAppData();
-  const { mode, ready, setMode } = useDemoMode();
+  const { mode, ready, setMode, demoDescription } = useDemoMode();
 
   const handleModeChange = (nextMode: AppTimeMode) => {
     if (nextMode !== mode) {
       void setMode(nextMode);
     }
   };
-
-  const demoDescription = describeDemoFestivalMoment(data.festival.startDate);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

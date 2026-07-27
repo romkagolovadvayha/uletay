@@ -11,7 +11,8 @@ import {
   buildHeadlinerYearCategories,
   filterHeadlinersList,
   getDefaultHeadlinerYear,
-  getHeadlinerYears,
+  getPreviousHeadlinerYears,
+  getSelectableHeadlinerYears,
   type HeadlinerSortMode,
 } from '../utils/headlinerHelpers';
 import { colors } from '../theme/colors';
@@ -26,7 +27,10 @@ type Props = NativeStackScreenProps<
 
 export function HeadlinersScreen({ navigation }: Props) {
   const { data } = useAppData();
-  const years = useMemo(() => getHeadlinerYears(data.headliners), [data.headliners]);
+  const years = useMemo(
+    () => getSelectableHeadlinerYears(data.headliners, data.festival.year),
+    [data.festival.year, data.headliners],
+  );
   const defaultYear = useMemo(
     () => getDefaultHeadlinerYear(data.headliners, data.festival.year),
     [data.festival.year, data.headliners],
@@ -47,9 +51,9 @@ export function HeadlinersScreen({ navigation }: Props) {
       }),
     [activeYear, data.headliners, searchQuery, sortMode],
   );
-  const fallbackYear = useMemo(
-    () => years.find((year) => String(year) !== selectedYear),
-    [selectedYear, years],
+  const previousYears = useMemo(
+    () => getPreviousHeadlinerYears(data.headliners, Number(activeYear), 3),
+    [activeYear, data.headliners],
   );
 
   return (
@@ -90,16 +94,24 @@ export function HeadlinersScreen({ navigation }: Props) {
             <Text style={styles.emptyText}>
               {searchQuery.trim()
                 ? 'Ничего не найдено — попробуйте другой запрос'
-                : `Состав ${selectedYear} года скоро появится`}
+                : `Хэдлайнеры ${activeYear} года ещё не объявлены`}
             </Text>
-            {!searchQuery.trim() && fallbackYear != null ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setSelectedYear(String(fallbackYear))}
-                style={styles.emptyButton}
-              >
-                <Text style={styles.emptyButtonText}>Посмотреть {fallbackYear} год</Text>
-              </Pressable>
+            {!searchQuery.trim() && previousYears.length > 0 ? (
+              <View style={styles.emptyYears}>
+                <Text style={styles.emptyHint}>Посмотреть другие годы</Text>
+                <View style={styles.emptyButtons}>
+                  {previousYears.map((year) => (
+                    <Pressable
+                      key={year}
+                      accessibilityRole="button"
+                      onPress={() => setSelectedYear(String(year))}
+                      style={styles.emptyButton}
+                    >
+                      <Text style={styles.emptyButtonText}>{year}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
             ) : null}
           </View>
         )}
@@ -135,11 +147,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
   },
-  emptyButton: {
-    marginTop: spacing.lg,
-    minHeight: 44,
+  emptyYears: {
+    marginTop: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  emptyHint: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontSize: 13,
+  },
+  emptyButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+  },
+  emptyButton: {
+    minHeight: 44,
+    minWidth: 88,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.primary,

@@ -127,8 +127,36 @@ export function getDefaultHeadlinerYear(headliners: Headliner[], festivalYear: n
     return festivalYear;
   }
 
-  // Always prefer the freshest year that has headliners (e.g. 2027 over 2026).
+  // Upcoming festival year with no lineup yet — open that year so empty state is visible.
+  if (!years.includes(festivalYear)) {
+    return festivalYear;
+  }
+
+  // Prefer the freshest year that has headliners (e.g. 2027 over 2026).
   return years[0];
+}
+
+/** Years for the filter: all years with headliners, plus festival year even if empty. */
+export function getSelectableHeadlinerYears(
+  headliners: Headliner[],
+  festivalYear: number,
+): number[] {
+  const years = getHeadlinerYears(headliners);
+  if (years.includes(festivalYear)) {
+    return years;
+  }
+  return [festivalYear, ...years].sort((a, b) => b - a);
+}
+
+/** Up to `limit` prior years that already have headliners (newest first). */
+export function getPreviousHeadlinerYears(
+  headliners: Headliner[],
+  referenceYear: number,
+  limit = 3,
+): number[] {
+  return getHeadlinerYears(headliners)
+    .filter((year) => year < referenceYear)
+    .slice(0, limit);
 }
 
 export function filterHeadlinersByYear(headliners: Headliner[], year: number): Headliner[] {

@@ -46,6 +46,8 @@ type DataContextValue = {
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
 
+export { DataContext };
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppData>(getInitialAppData);
   const [isHydrated, setIsHydrated] = useState(Platform.OS === 'web');
@@ -188,12 +190,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
-export function useAppData() {
+export function useRawAppData() {
   const context = useContext(DataContext);
   if (!context) {
-    throw new Error('useAppData must be used within DataProvider');
+    throw new Error('useRawAppData must be used within DataProvider');
   }
   return context;
+}
+
+export function useAppData() {
+  return useRawAppData();
 }
 
 const styles = StyleSheet.create({

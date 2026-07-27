@@ -1,8 +1,10 @@
 import { BottomTabBarHeightCallbackContext, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { CommonActions } from '@react-navigation/native';
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useVisibleMainTabRoutes } from '../navigation/mainTabRoutes';
+import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { resolveAndroidBottomInset } from '../utils/safeArea';
@@ -28,9 +30,19 @@ export function MobileBottomTabBar({
   const onHeightChange = useContext(BottomTabBarHeightCallbackContext);
   const safeInsets = useSafeAreaInsets();
   const bottomInset = resolveAndroidBottomInset(insets.bottom, safeInsets.bottom);
+  const mainTabRoutes = useVisibleMainTabRoutes();
   const focusedOptions = descriptors[state.routes[state.index]?.key ?? '']?.options;
   const activeColor = focusedOptions?.tabBarActiveTintColor ?? colors.tabActive;
   const inactiveColor = focusedOptions?.tabBarInactiveTintColor ?? colors.tabInactive;
+
+  const visibleRoutes = useMemo(
+    () =>
+      state.routes.filter((route) => {
+        const name = route.name as keyof RootTabParamList;
+        return name === 'MoreTab' || mainTabRoutes.includes(name);
+      }),
+    [mainTabRoutes, state.routes],
+  );
 
   const handleLayout = (event: LayoutChangeEvent) => {
     onHeightChange?.(event.nativeEvent.layout.height);
@@ -48,7 +60,8 @@ export function MobileBottomTabBar({
       ]}
     >
       <View accessibilityRole="tablist" style={styles.row}>
-        {state.routes.map((route, index) => {
+        {visibleRoutes.map((route) => {
+          const index = state.routes.findIndex((item) => item.key === route.key);
           const focused = index === state.index;
           const { options } = descriptors[route.key];
           const color = focused ? activeColor : inactiveColor;
