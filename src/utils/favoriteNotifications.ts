@@ -30,6 +30,7 @@ export type FavoriteReminderPayload = {
   id: string;
   title: string;
   body: string;
+  url: string;
 };
 
 export function getFavoriteNotificationId(type: FavoriteType, id: string): string {
@@ -74,6 +75,7 @@ export function getFavoriteEventsForReminders(favorites: string[], data: AppData
           startTime: performance.startTime,
           title: 'Скоро выступление',
           body: `Через 10 минут: ${performance.artist} (${performance.startTime})`,
+          url: `/schedule/live/${encodeURIComponent(performance.id)}`,
         };
       }
 
@@ -87,6 +89,7 @@ export function getFavoriteEventsForReminders(favorites: string[], data: AppData
         startTime: session.startTime,
         title: 'Скоро автограф-сессия',
         body: `Через 10 минут: ${session.artist} (${session.startTime})`,
+        url: `/autographs/${encodeURIComponent(session.id)}`,
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -225,6 +228,7 @@ function syncWebFavoriteNotifications(favorites: string[], data: AppData): void 
         id: event.notificationId,
         title: event.title,
         body: event.body,
+        url: event.url,
       };
       void showReminderAlert(payload);
       if (typeof window !== 'undefined') {
@@ -292,6 +296,7 @@ export async function syncFavoriteNotifications(favorites: string[], data: AppDa
           title: event.title,
           body: event.body,
           sound: true,
+          data: { url: event.url },
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -344,6 +349,7 @@ export async function showReminderAlert(payload: FavoriteReminderPayload): Promi
       title: payload.title,
       body: payload.body,
       sound: true,
+      data: { url: payload.url },
     },
     trigger: null,
   });

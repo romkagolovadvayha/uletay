@@ -31,24 +31,36 @@ function MapFab({ icon, label, onPress, active }: FabProps) {
 
 type Props = {
   onLocate: () => void;
-  onDirections: () => void;
+  onFestival?: () => void;
+  onDirections?: () => void;
   followUser: boolean;
   bottomOffset?: number;
 };
 
-export function MapFabGroup({ onLocate, onDirections, followUser, bottomOffset = 160 }: Props) {
+export function MapFabGroup({
+  onLocate,
+  onFestival,
+  onDirections,
+  followUser,
+  bottomOffset = 160,
+}: Props) {
   return (
     <View style={[styles.col, { bottom: bottomOffset }]}>
       <MapFab icon="locate" label="Моё местоположение" onPress={onLocate} active={followUser} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Как добраться до фестиваля"
-        onPress={onDirections}
-        style={({ pressed }) => [styles.directions, pressed && styles.fabPressed]}
-      >
-        <Ionicons name="navigate-outline" size={20} color="#000" />
-        <Text style={styles.directionsLabel}>Как добраться</Text>
-      </Pressable>
+      {onFestival ? (
+        <MapFab icon="flag-outline" label="Центр фестиваля" onPress={onFestival} />
+      ) : null}
+      {onDirections ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Как добраться до фестиваля"
+          onPress={onDirections}
+          style={({ pressed }) => [styles.directions, pressed && styles.fabPressed]}
+        >
+          <Ionicons name="navigate-outline" size={20} color="#000" />
+          <Text style={styles.directionsLabel}>Как добраться</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

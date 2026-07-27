@@ -236,6 +236,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
               <FestivalMapView
                 config={mapConfig}
                 zones={data.mapZones}
+                pois={data.mapPois}
                 paths={data.mapPaths}
                 userLocation={location}
                 routeSegments={activeRoute?.segments}
@@ -249,6 +250,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
                   setHighlightZoneId(null);
                   setPickedZoneId(zone.properties.id);
                 }}
+                onPoiPress={() => undefined}
                 onZoneRoute={handleZoneRoute}
                 routing={routing}
                 onMapPress={dismissPopup}
