@@ -8,25 +8,53 @@ const DEFAULT_COLORS: Record<StageId, string> = {
 };
 
 const EXPO_DEV_PORTS = new Set(['8081', '8082', '19006', '19000']);
+const PRODUCTION_API_BASE_URL = 'https://uletayapp.ru/api';
+
+function isLoopbackUrl(value: string): boolean {
+  try {
+    const hostname = new URL(value).hostname;
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  } catch {
+    return false;
+  }
+}
+
+function isLocalWebHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
 
 function getWebApiBaseUrl(): string {
   if (typeof window === 'undefined') {
-    return 'http://localhost:3000/api';
+    return __DEV__ ? 'http://localhost:3000/api' : PRODUCTION_API_BASE_URL;
   }
 
-  const { origin, port } = window.location;
+  const { hostname, origin, port } = window.location;
+  const configured = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+  const localPage = isLocalWebHost(hostname);
+
+  // .env.local is intentionally used for local development, but Expo also reads
+  // it during a local production export. Never ship that loopback URL to visitors.
+  if (configured && (!isLoopbackUrl(configured) || localPage)) {
+    return configured;
+  }
+
   if (EXPO_DEV_PORTS.has(port)) {
     return 'http://localhost:3000/api';
   }
 
-  return `${origin}/api`;
+  return localPage ? `${origin}/api` : PRODUCTION_API_BASE_URL;
+}
+
+function getNativeApiBaseUrl(): string {
+  const configured = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+  if (configured && (__DEV__ || !isLoopbackUrl(configured))) {
+    return configured;
+  }
+  return __DEV__ ? 'http://localhost:3000/api' : PRODUCTION_API_BASE_URL;
 }
 
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ??
-  (Platform.OS === 'web' && typeof window !== 'undefined'
-    ? getWebApiBaseUrl()
-    : 'http://localhost:3000/api');
+  Platform.OS === 'web' ? getWebApiBaseUrl() : getNativeApiBaseUrl();
 
 export const APP_DATA_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 export const APP_DATA_RETRY_INTERVAL_MS = 30_000;
