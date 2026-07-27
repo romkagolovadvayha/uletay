@@ -139,7 +139,6 @@ export function AutographDetailScreen({ navigation, route }: Props) {
         {headliner && topTracks.length ? (
           <HeadlinerTopTracksPreview
             headliner={headliner}
-            lastfm={lastfm}
             tracks={topTracks}
             onOpenHeadliner={openHeadliner}
           />

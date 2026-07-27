@@ -103,7 +103,6 @@ function mapTags(tags: LastFmTag[] | LastFmTag | undefined): HeadlinerLastFmTag[
   return asArray(tags)
     .map((tag) => ({
       name: tag.name?.trim() ?? '',
-      url: tag.url?.trim() ?? '',
     }))
     .filter((tag) => tag.name.length > 0);
 }
@@ -114,7 +113,6 @@ function mapSimilarArtists(
   return asArray(artists)
     .map((artist) => ({
       name: artist.name?.trim() ?? '',
-      url: artist.url?.trim() ?? '',
     }))
     .filter((artist) => artist.name.length > 0)
     .slice(0, 8);
@@ -127,9 +125,7 @@ function mapTopTracks(tracks: LastFmTrack[] | LastFmTrack | undefined): Headline
       rank: toNumber(track['@attr']?.rank) ?? 0,
       playcount: toNumber(track.playcount),
       listeners: toNumber(track.listeners),
-      url: track.url?.trim() || undefined,
       durationSec: toNumber(track.duration),
-      mbid: track.mbid?.trim() || undefined,
     }))
     .filter((track) => track.name.length > 0)
     .sort((a, b) => {
@@ -233,7 +229,6 @@ export async function fetchLastFmArtistProfile(
   return {
     mbid: artist.mbid?.trim() || undefined,
     name: artist.name.trim(),
-    url: artist.url?.trim() || undefined,
     listeners: toNumber(artist.stats?.listeners),
     playcount: toNumber(artist.stats?.playcount),
     onTour: artist.ontour === '1',

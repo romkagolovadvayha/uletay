@@ -2,6 +2,7 @@ import type { RowDataPacket } from 'mysql2';
 import type { AppData, MapPathsGeoJson, MapPoisGeoJson, MapZonesGeoJson } from '@/types';
 import { getPool } from './db';
 import { resolveAllHeadlinerLastFm } from './headliner-lastfm-resolve';
+import { toClientLastFmProfile } from './lastfm-tracks';
 import { syncAppHeadliners } from './headliners';
 
 const EMPTY_ZONES: MapZonesGeoJson = { type: 'FeatureCollection', features: [] };
@@ -49,7 +50,10 @@ function normalizeStoredAppData(content: AppData): AppData {
 function prepareClientAppData(raw: AppData): AppData {
   return {
     ...raw,
-    headliners: resolveAllHeadlinerLastFm(raw.headliners),
+    headliners: resolveAllHeadlinerLastFm(raw.headliners).map((headliner) => ({
+      ...headliner,
+      lastfm: headliner.lastfm ? toClientLastFmProfile(headliner.lastfm) : undefined,
+    })),
   };
 }
 

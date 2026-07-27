@@ -1,6 +1,6 @@
 import type { HeadlinerLastFmProfile } from '../types/lastfm';
 
-export const LASTFM_CLIENT_TOP_TRACKS_LIMIT = 15;
+export const LASTFM_CLIENT_TOP_TRACKS_LIMIT = 6;
 
 export function getLastFmTopTracksMoreCount(profile: HeadlinerLastFmProfile): number {
   const shown = profile.topTracks?.length ?? 0;

@@ -1,5 +1,5 @@
 import type { Headliner } from '../types';
-import type { HeadlinerLastFmProfile, HeadlinerLastFmTrack } from '../types/lastfm';
+import type { HeadlinerLastFmTrack } from '../types/lastfm';
 
 const YANDEX_MUSIC_SEARCH_URL = 'https://music.yandex.ru/search';
 
@@ -9,10 +9,6 @@ function normalizeNameKey(name: string): string {
     .replace(/ё/g, 'е')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function normalizeTrackKey(name: string): string {
-  return name.toLocaleLowerCase('ru').replace(/\s+/g, ' ').trim();
 }
 
 function mapSourceNameToDisplay(
@@ -36,42 +32,12 @@ function mapSourceNameToDisplay(
   return sourceName;
 }
 
-function resolveTrackSourceName(
-  headliner: Pick<Headliner, 'name' | 'alternateNames'>,
-  track: Pick<HeadlinerLastFmTrack, 'name' | 'artistName'>,
-  lastfm?: Pick<HeadlinerLastFmProfile, 'trackSources'>,
-): string {
-  const trackKey = normalizeTrackKey(track.name);
-
-  if (lastfm?.trackSources?.length) {
-    let best: { name: string; playcount: number } | null = null;
-
-    for (const source of lastfm.trackSources) {
-      const hit = source.tracks.find((item) => normalizeTrackKey(item.name) === trackKey);
-      if (!hit) {
-        continue;
-      }
-
-      const playcount = hit.playcount ?? 0;
-      if (!best || playcount > best.playcount) {
-        best = { name: source.name, playcount };
-      }
-    }
-
-    if (best) {
-      return best.name;
-    }
-  }
-
-  return track.artistName?.trim() || headliner.name;
-}
-
+/** Artist name for Yandex search — prefers per-track Last.fm artist (group members). */
 export function resolveTrackYandexArtist(
   headliner: Pick<Headliner, 'name' | 'alternateNames'>,
   track: Pick<HeadlinerLastFmTrack, 'name' | 'artistName'>,
-  lastfm?: Pick<HeadlinerLastFmProfile, 'trackSources'>,
 ): string {
-  const sourceName = resolveTrackSourceName(headliner, track, lastfm);
+  const sourceName = track.artistName?.trim() || headliner.name;
   return mapSourceNameToDisplay(sourceName, headliner);
 }
 

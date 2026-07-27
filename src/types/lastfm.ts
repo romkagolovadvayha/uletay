@@ -1,16 +1,9 @@
-export interface HeadlinerLastFmImage {
-  url: string;
-  size: string;
-}
-
 export interface HeadlinerLastFmTag {
   name: string;
-  url: string;
 }
 
 export interface HeadlinerLastFmSimilarArtist {
   name: string;
-  url: string;
 }
 
 export interface HeadlinerLastFmTrack {
@@ -18,21 +11,12 @@ export interface HeadlinerLastFmTrack {
   rank: number;
   playcount?: number;
   listeners?: number;
-  url?: string;
   durationSec?: number;
-  mbid?: string;
   artistName?: string;
 }
 
-export interface HeadlinerLastFmTrackSource {
-  name: string;
-  tracks: Pick<HeadlinerLastFmTrack, 'name' | 'playcount'>[];
-}
-
 export interface HeadlinerLastFmProfile {
-  mbid?: string;
   name: string;
-  url?: string;
   listeners?: number;
   playcount?: number;
   onTour?: boolean;
@@ -42,8 +26,6 @@ export interface HeadlinerLastFmProfile {
   similarArtists: HeadlinerLastFmSimilarArtist[];
   topTracks: HeadlinerLastFmTrack[];
   topTracksTotal?: number;
-  trackSources?: HeadlinerLastFmTrackSource[];
-  images?: HeadlinerLastFmImage[];
   updatedAt: string;
   searchQuery?: string;
 }

@@ -118,6 +118,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (result.status === 'not-needed') {
         applyCachedData(result.cached);
+        // Cache is still within the refresh window — no need to keep a stale error banner.
+        setError(null);
         return;
       }
 

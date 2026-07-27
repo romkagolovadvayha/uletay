@@ -6,8 +6,9 @@ import { normalizeAppData } from '../utils/appDataNormalize';
 
 // v4 drops pre-migration snapshots that could remain fresh-looking after app_content is replaced.
 export const APP_DATA_CACHE_KEY = '@uletay_api_cache_v4';
-const FETCH_TIMEOUT_MS = 8_000;
-const FETCH_RETRY_DELAYS_MS = [0, 600, 1_800] as const;
+/** Payload is ~1MB+; cold mobile links often need well over 8s. */
+const FETCH_TIMEOUT_MS = 25_000;
+const FETCH_RETRY_DELAYS_MS = [0, 1_200] as const;
 
 let memoryCache: CachedAppData | null = null;
 let inFlight: Promise<CachedAppData | null> | null = null;
@@ -120,7 +121,11 @@ export async function fetchAndCacheAppData(): Promise<CachedAppData | null> {
     const data = normalizeAppData(await fetchRemoteAppData());
     const cache: CachedAppData = { data, fetchedAt: Date.now() };
     memoryCache = cache;
-    await writeStorageCache(cache);
+    try {
+      await writeStorageCache(cache);
+    } catch {
+      // Quota / private mode on mobile Safari: keep the in-memory snapshot for this session.
+    }
     return cache;
   } catch {
     return null;
@@ -141,12 +146,23 @@ export async function refreshAppDataInBackground(
     });
   }
 
-  const fresh = await inFlight;
+  let fresh = await inFlight;
   if (fresh) {
     return { status: 'fresh', cached: fresh };
   }
 
-  return { status: 'failed', cached };
+  // Explicit pull-to-refresh should not stick to a failed shared in-flight from startup.
+  if (force) {
+    inFlight = fetchAndCacheAppData().finally(() => {
+      inFlight = null;
+    });
+    fresh = await inFlight;
+    if (fresh) {
+      return { status: 'fresh', cached: fresh };
+    }
+  }
+
+  return { status: 'failed', cached: (await readCachedAppData()) ?? cached };
 }
 
 export function invalidateAppDataCache(): void {

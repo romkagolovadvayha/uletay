@@ -132,7 +132,6 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
       {headliner && topTracks.length ? (
         <HeadlinerTopTracksPreview
           headliner={headliner}
-          lastfm={lastfm}
           tracks={topTracks}
           onOpenHeadliner={openHeadliner}
         />

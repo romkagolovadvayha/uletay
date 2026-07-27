@@ -220,8 +220,8 @@ export function FestivalHomeScreen({ navigation }: Props) {
               </Text>
               <Text style={styles.offlineText}>
                 {dataSource === 'cache'
-                  ? `Показываем сохранённые данные${lastFetchedAt ? ` от ${new Date(lastFetchedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''}.`
-                  : 'Не удалось загрузить актуальные данные. Встроенный резерв может быть неактуален.'}
+                  ? `Не удалось обновить с сервера. Показаны данные${lastFetchedAt ? ` от ${new Date(lastFetchedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''} — расписание доступно.`
+                  : 'Не удалось загрузить данные с сервера. Проверьте сеть и нажмите «Обновить».'}
               </Text>
             </View>
             <Pressable accessibilityRole="button" onPress={() => void refreshData(true)}>

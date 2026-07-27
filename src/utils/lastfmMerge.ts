@@ -1,5 +1,4 @@
 import type {
-  HeadlinerLastFmImage,
   HeadlinerLastFmProfile,
   HeadlinerLastFmSimilarArtist,
   HeadlinerLastFmTag,
@@ -20,9 +19,6 @@ function normalizeTrackKey(name: string): string {
 }
 
 function profileKey(profile: HeadlinerLastFmProfile): string {
-  if (profile.mbid) {
-    return `mbid:${profile.mbid}`;
-  }
   return `name:${normalizeArtistKey(profile.name)}`;
 }
 
@@ -53,7 +49,11 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): {
 
       if (!existing) {
         tracks.set(key, {
-          ...track,
+          name: track.name,
+          rank: track.rank,
+          playcount: track.playcount,
+          listeners: track.listeners,
+          durationSec: track.durationSec,
           artistName: track.artistName ?? profile.name,
           sourcePlaycount: incomingPlay,
         });
@@ -67,8 +67,6 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): {
         playcount: (existing.playcount ?? 0) + incomingPlay,
         listeners: Math.max(existing.listeners ?? 0, track.listeners ?? 0),
         durationSec: existing.durationSec ?? track.durationSec,
-        url: existing.url ?? track.url,
-        mbid: existing.mbid ?? track.mbid,
         artistName: incomingPlay > bestSourcePlay ? incomingArtist : existing.artistName,
         sourcePlaycount: Math.max(bestSourcePlay, incomingPlay),
       });
@@ -108,7 +106,7 @@ function mergeTags(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmTag[] {
   for (const profile of profiles) {
     for (const tag of profile.tags) {
       if (!tags.has(tag.name)) {
-        tags.set(tag.name, tag);
+        tags.set(tag.name, { name: tag.name });
       }
     }
   }
@@ -120,59 +118,11 @@ function mergeSimilarArtists(profiles: HeadlinerLastFmProfile[]): HeadlinerLastF
   for (const profile of profiles) {
     for (const artist of profile.similarArtists) {
       if (!artists.has(artist.name)) {
-        artists.set(artist.name, artist);
+        artists.set(artist.name, { name: artist.name });
       }
     }
   }
   return [...artists.values()].slice(0, 8);
-}
-
-function pickBestImages(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmImage[] {
-  const sorted = [...profiles].sort((a, b) => (b.listeners ?? 0) - (a.listeners ?? 0));
-  for (const profile of sorted) {
-    if (profile.images?.length) {
-      return profile.images;
-    }
-  }
-  return [];
-}
-
-function buildTrackSources(profiles: HeadlinerLastFmProfile[]) {
-  return profiles.map((profile) => ({
-    name: profile.name,
-    tracks: profile.topTracks.map((track) => ({
-      name: track.name,
-      playcount: track.playcount,
-    })),
-  }));
-}
-
-function mergeTrackSources(profiles: HeadlinerLastFmProfile[]) {
-  const sources = new Map<string, Map<string, number>>();
-
-  for (const profile of profiles) {
-    const lists = profile.trackSources?.length
-      ? profile.trackSources
-      : buildTrackSources([profile]);
-
-    for (const source of lists) {
-      const tracks = sources.get(source.name) ?? new Map<string, number>();
-      for (const track of source.tracks) {
-        const key = normalizeTrackKey(track.name);
-        const playcount = track.playcount ?? 0;
-        tracks.set(key, Math.max(tracks.get(key) ?? 0, playcount));
-      }
-      sources.set(source.name, tracks);
-    }
-  }
-
-  return [...sources.entries()].map(([name, tracks]) => ({
-    name,
-    tracks: [...tracks.entries()].map(([trackName, playcount]) => ({
-      name: trackName,
-      playcount,
-    })),
-  }));
 }
 
 export function mergeLastFmProfiles(
@@ -190,9 +140,7 @@ export function mergeLastFmProfiles(
   const mergedTracks = mergeTopTracks(unique);
 
   return {
-    mbid: primary.mbid,
     name: primary.name,
-    url: primary.url,
     listeners: unique.reduce((sum, profile) => sum + (profile.listeners ?? 0), 0),
     playcount: unique.reduce((sum, profile) => sum + (profile.playcount ?? 0), 0),
     onTour: unique.some((profile) => profile.onTour),
@@ -202,8 +150,6 @@ export function mergeLastFmProfiles(
     similarArtists: mergeSimilarArtists(unique),
     topTracks: mergedTracks.tracks,
     topTracksTotal: mergedTracks.total,
-    trackSources: mergeTrackSources(unique),
-    images: pickBestImages(unique),
     updatedAt: primary.updatedAt,
     searchQuery: primary.searchQuery,
   };

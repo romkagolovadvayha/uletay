@@ -56,7 +56,7 @@ function getNativeApiBaseUrl(): string {
 export const API_BASE_URL =
   Platform.OS === 'web' ? getWebApiBaseUrl() : getNativeApiBaseUrl();
 
-export const APP_DATA_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+export const APP_DATA_REFRESH_INTERVAL_MS = 3 * 60 * 1000;
 export const APP_DATA_RETRY_INTERVAL_MS = 30_000;
 
 function getSiteOrigin(): string {

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Headliner } from '../types';
-import type { HeadlinerLastFmProfile, HeadlinerLastFmTrack } from '../types/lastfm';
+import type { HeadlinerLastFmTrack } from '../types/lastfm';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -74,14 +74,12 @@ export function HeadlinerTeaserCard({ headliner, allHeadliners, onPress }: Tease
 
 type TracksProps = {
   headliner: Headliner;
-  lastfm?: HeadlinerLastFmProfile;
   tracks: HeadlinerLastFmTrack[];
   onOpenHeadliner?: () => void;
 };
 
 export function HeadlinerTopTracksPreview({
   headliner,
-  lastfm,
   tracks,
   onOpenHeadliner,
 }: TracksProps) {
@@ -109,7 +107,7 @@ export function HeadlinerTopTracksPreview({
             </View>
             <View style={styles.trackAction}>
               <YandexMusicLink
-                artist={resolveTrackYandexArtist(headliner, track, lastfm)}
+                artist={resolveTrackYandexArtist(headliner, track)}
                 track={track.name}
                 variant="icon"
               />

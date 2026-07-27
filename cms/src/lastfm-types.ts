@@ -5,12 +5,10 @@ export interface HeadlinerLastFmImage {
 
 export interface HeadlinerLastFmTag {
   name: string;
-  url: string;
 }
 
 export interface HeadlinerLastFmSimilarArtist {
   name: string;
-  url: string;
 }
 
 export interface HeadlinerLastFmTrack {
@@ -18,21 +16,14 @@ export interface HeadlinerLastFmTrack {
   rank: number;
   playcount?: number;
   listeners?: number;
-  url?: string;
   durationSec?: number;
-  mbid?: string;
   artistName?: string;
 }
 
-export interface HeadlinerLastFmTrackSource {
-  name: string;
-  tracks: Pick<HeadlinerLastFmTrack, 'name' | 'playcount'>[];
-}
-
 export interface HeadlinerLastFmProfile {
+  /** Used by CMS image sync (MusicBrainz); stripped from public /api/data. */
   mbid?: string;
   name: string;
-  url?: string;
   listeners?: number;
   playcount?: number;
   onTour?: boolean;
@@ -42,7 +33,7 @@ export interface HeadlinerLastFmProfile {
   similarArtists: HeadlinerLastFmSimilarArtist[];
   topTracks: HeadlinerLastFmTrack[];
   topTracksTotal?: number;
-  trackSources?: HeadlinerLastFmTrackSource[];
+  /** CMS-only Last.fm CDN thumbs; stripped from the public /api/data payload. */
   images?: HeadlinerLastFmImage[];
   updatedAt: string;
   searchQuery?: string;
