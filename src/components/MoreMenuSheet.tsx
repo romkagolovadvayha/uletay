@@ -108,18 +108,6 @@ export function MoreMenuSheet() {
           },
         ]
       : []),
-    ...(festivalActive
-      ? [
-          {
-            icon: 'radio-outline' as const,
-            label: 'Радио',
-            onPress: () => {
-              close();
-              navigation.navigate('PlaylistTab');
-            },
-          },
-        ]
-      : []),
     ...(festivalActive && data.festival.startDate && data.festival.endDate
       ? [{
           icon: 'restaurant-outline' as const,

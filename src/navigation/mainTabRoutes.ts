@@ -19,9 +19,8 @@ function isInFestivalWindow(
   return festivalDay >= startDate && festivalDay <= endDate;
 }
 
-/** Во время фестиваля хэдлайнеры доступны через «Ещё», освобождая место в нижнем меню. */
-export function shouldPutHeadlinersInMoreTab(festivalActive: boolean): boolean {
-  return festivalActive;
+export function shouldPutHeadlinersInMoreTab(_festivalActive: boolean): boolean {
+  return false;
 }
 
 export function getVisibleMainTabRoutes(
@@ -33,7 +32,7 @@ export function getVisibleMainTabRoutes(
     if (content.hasSchedule) {
       festivalRoutes.push('ScheduleTab');
     }
-    festivalRoutes.push('MapTab', 'FavoritesTab');
+    festivalRoutes.push('MapTab', 'FavoritesTab', 'HeadlinersTab', 'PlaylistTab');
     return festivalRoutes;
   }
 

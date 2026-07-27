@@ -150,17 +150,6 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
     ...(festivalActive
       ? [
           {
-            key: 'radio',
-            icon: 'radio-outline' as const,
-            label: 'Радио',
-            isActive: currentTabName === 'PlaylistTab',
-            onPress: () => tabNavigation.navigate('PlaylistTab'),
-          },
-        ]
-      : []),
-    ...(festivalActive
-      ? [
-          {
             key: 'food-court',
             icon: 'restaurant-outline' as const,
             label: 'Фудкорт',
