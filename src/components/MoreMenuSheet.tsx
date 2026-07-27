@@ -7,6 +7,7 @@ import {
   Animated,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -16,8 +17,14 @@ import { useMoreMenu } from '../context/MoreMenuContext';
 import { useAppData } from '../context/DataContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useIsTablet } from '../hooks/useIsTablet';
-import { useHeadlinersInMoreTab } from '../navigation/mainTabRoutes';
-import { openHeadlinersMain } from '../navigation/scheduleNavigation';
+import {
+  useHeadlinersInMoreTab,
+  useMainTabContentFlags,
+} from '../navigation/mainTabRoutes';
+import {
+  openAutographsMain,
+  openHeadlinersMain,
+} from '../navigation/scheduleNavigation';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -44,6 +51,7 @@ export function MoreMenuSheet() {
   const { data } = useAppData();
   const festivalActive = useFestivalActive();
   const headlinersInMore = useHeadlinersInMoreTab();
+  const content = useMainTabContentFlags();
   const bottomInset = resolveAndroidBottomInset(insets.bottom);
   const [entrance] = useState(() => new Animated.Value(0));
 
@@ -84,6 +92,30 @@ export function MoreMenuSheet() {
             onPress: () => {
               close();
               openHeadlinersMain(navigation);
+            },
+          },
+        ]
+      : []),
+    ...(festivalActive && content.hasAutographs
+      ? [
+          {
+            icon: 'ticket-outline' as const,
+            label: 'Автографы',
+            onPress: () => {
+              close();
+              openAutographsMain(navigation);
+            },
+          },
+        ]
+      : []),
+    ...(festivalActive
+      ? [
+          {
+            icon: 'radio-outline' as const,
+            label: 'Радио',
+            onPress: () => {
+              close();
+              navigation.navigate('PlaylistTab');
             },
           },
         ]
@@ -148,18 +180,20 @@ export function MoreMenuSheet() {
       >
         <View style={styles.handle} />
         <ScreenTitle style={styles.title}>Ещё</ScreenTitle>
-        {menuItems.map((item) => (
-          <MotionPressable
-            key={item.label}
-            accessibilityRole="button"
-            onPress={item.onPress}
-            style={styles.menuRow}
-          >
-            <DeferredIonicons name={item.icon} size={22} color={colors.primary} />
-            <Text style={styles.menuLabel}>{item.label}</Text>
-            <DeferredIonicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </MotionPressable>
-        ))}
+        <ScrollView style={styles.menu} showsVerticalScrollIndicator={false}>
+          {menuItems.map((item) => (
+            <MotionPressable
+              key={item.label}
+              accessibilityRole="button"
+              onPress={item.onPress}
+              style={styles.menuRow}
+            >
+              <DeferredIonicons name={item.icon} size={22} color={colors.primary} />
+              <Text style={styles.menuLabel}>{item.label}</Text>
+              <DeferredIonicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </MotionPressable>
+          ))}
+        </ScrollView>
       </Animated.View>
     </Animated.View>
   );
@@ -184,6 +218,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
+    maxHeight: '92%',
   },
   handle: {
     alignSelf: 'center',
@@ -192,6 +227,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.borderStrong,
     marginBottom: spacing.md,
+  },
+  menu: {
+    flexShrink: 1,
   },
   title: {
     ...typography.screenTitle,

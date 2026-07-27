@@ -82,12 +82,20 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
         setPermission(status);
 
         if (granted) {
+          let remotePushWarning: string | null = null;
           if (status === 'granted') {
-            await syncRemotePushSubscription();
+            try {
+              await syncRemotePushSubscription();
+            } catch (error) {
+              remotePushWarning =
+                error instanceof Error
+                  ? error.message
+                  : 'Не удалось зарегистрировать удалённые push.';
+            }
           }
           await saveNotificationsEnabled(true);
           setEnabled(true);
-          setFeedback(null);
+          setFeedback(remotePushWarning);
           return true;
         }
 

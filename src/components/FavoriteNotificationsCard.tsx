@@ -125,6 +125,7 @@ export function FavoriteNotificationsCard() {
           {busy ? <ActivityIndicator size="small" color={colors.textSecondary} /> : null}
           <Text style={styles.linkText}>Отключить</Text>
         </Pressable>
+        {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
       </View>
     );
   }

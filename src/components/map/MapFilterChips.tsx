@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { ViewStyle } from 'react-native';
 import type { MapFilterId, MapZonesGeoJson } from '../../types/map';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
@@ -14,7 +15,32 @@ type Props = {
   embedded?: boolean;
 };
 
+type ScrollMetrics = {
+  viewportWidth: number;
+  contentWidth: number;
+  offsetX: number;
+};
+
+const SCROLL_END_THRESHOLD = 4;
+const END_FADE_GRADIENT =
+  'linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.72) 72%, rgba(0, 0, 0, 0.9) 100%)';
+const endFadeGradientStyle = Platform.select<ViewStyle & { backgroundImage?: string }>({
+  web: {
+    backgroundImage: END_FADE_GRADIENT,
+  },
+  default: {
+    experimental_backgroundImage: END_FADE_GRADIENT,
+  },
+});
+
 export function MapFilterChips({ zones, value, onChange, embedded = false }: Props) {
+  const scrollMetrics = useRef<ScrollMetrics>({
+    viewportWidth: 0,
+    contentWidth: 0,
+    offsetX: 0,
+  });
+  const [showEndFade, setShowEndFade] = useState(false);
+
   const filters = useMemo(() => {
     const zoneTypes = getActiveZoneTypes(zones?.features ?? []);
     return [
@@ -26,13 +52,37 @@ export function MapFilterChips({ zones, value, onChange, embedded = false }: Pro
     ];
   }, [zones?.features]);
 
+  const updateScrollMetrics = useCallback((next: Partial<ScrollMetrics>) => {
+    const metrics = { ...scrollMetrics.current, ...next };
+    scrollMetrics.current = metrics;
+    const remaining = metrics.contentWidth - metrics.viewportWidth - metrics.offsetX;
+    const shouldShow = metrics.contentWidth > metrics.viewportWidth && remaining > SCROLL_END_THRESHOLD;
+    setShowEndFade((current) => (current === shouldShow ? current : shouldShow));
+  }, []);
+
   if (filters.length <= 1) {
     return null;
   }
 
   return (
     <View style={[styles.wrap, embedded && styles.wrapEmbedded]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <ScrollView
+        horizontal
+        accessibilityLabel="Категории карты"
+        accessibilityHint="Прокрутите по горизонтали, чтобы увидеть остальные категории"
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={32}
+        contentContainerStyle={styles.row}
+        onLayout={(event) => {
+          updateScrollMetrics({ viewportWidth: event.nativeEvent.layout.width });
+        }}
+        onContentSizeChange={(contentWidth) => {
+          updateScrollMetrics({ contentWidth });
+        }}
+        onScroll={(event) => {
+          updateScrollMetrics({ offsetX: Math.max(0, event.nativeEvent.contentOffset.x) });
+        }}
+      >
         {filters.map((filter) => {
           const active = filter.id === value;
           return (
@@ -48,6 +98,14 @@ export function MapFilterChips({ zones, value, onChange, embedded = false }: Pro
           );
         })}
       </ScrollView>
+      {showEndFade ? (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          pointerEvents="none"
+          style={[styles.endFade, endFadeGradientStyle]}
+        />
+      ) : null}
     </View>
   );
 }
@@ -68,6 +126,13 @@ const styles = StyleSheet.create({
   row: {
     paddingHorizontal: spacing.screen,
     gap: spacing.sm,
+  },
+  endFade: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 64,
   },
   chip: {
     minHeight: 44,

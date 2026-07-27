@@ -2,18 +2,29 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { ActivityIndicator, AppState, Platform, StyleSheet, View } from 'react-native';
 import {
   APP_DATA_CACHE_KEY,
-  invalidateAppDataCache,
-  loadAppDataFromApi,
+  AppDataRefreshResult,
   readCachedAppData,
   refreshAppDataInBackground,
 } from '../api/appDataApi';
-import { APP_DATA_REFRESH_INTERVAL_MS, APP_DATA_RETRY_INTERVAL_MS } from '../config/api';
+import {
+  APP_DATA_REFRESH_INTERVAL_MS,
+  APP_DATA_RETRY_INTERVAL_MS,
+  CachedAppData,
+} from '../config/api';
 import { AppData } from '../types';
 import { normalizeAppData } from '../utils/appDataNormalize';
 import { defaultAppData } from '../storage/dataStore';
 import { colors } from '../theme/colors';
 
-function readCachedAppDataSync(): AppData | null {
+export type AppDataSource = 'remote' | 'cache' | 'fallback' | 'demo';
+
+type InitialAppData = {
+  data: AppData;
+  dataSource: AppDataSource;
+  fetchedAt: number | null;
+};
+
+function readCachedAppDataSync(): CachedAppData | null {
   if (Platform.OS !== 'web' || typeof localStorage === 'undefined') {
     return null;
   }
@@ -24,18 +35,33 @@ function readCachedAppDataSync(): AppData | null {
       return null;
     }
     const parsed = JSON.parse(raw) as { data?: AppData; fetchedAt?: number };
-    return parsed?.data ? normalizeAppData(parsed.data) : null;
+    return parsed?.data && typeof parsed.fetchedAt === 'number'
+      ? { data: normalizeAppData(parsed.data), fetchedAt: parsed.fetchedAt }
+      : null;
   } catch {
     return null;
   }
 }
 
-function getInitialAppData(): AppData {
-  return readCachedAppDataSync() ?? defaultAppData;
+function getInitialAppData(): InitialAppData {
+  const cached = readCachedAppDataSync();
+  if (cached) {
+    return {
+      data: cached.data,
+      dataSource: 'cache',
+      fetchedAt: cached.fetchedAt,
+    };
+  }
+  return {
+    data: defaultAppData,
+    dataSource: 'fallback',
+    fetchedAt: null,
+  };
 }
 
 type DataContextValue = {
   data: AppData;
+  dataSource: AppDataSource;
   isLoading: boolean;
   /** True until the first cache/API result is ready on a cold start (no local data yet). */
   isInitialLoading: boolean;
@@ -49,89 +75,92 @@ const DataContext = createContext<DataContextValue | undefined>(undefined);
 export { DataContext };
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<AppData>(getInitialAppData);
+  const [initialData] = useState(getInitialAppData);
+  const [data, setData] = useState<AppData>(initialData.data);
+  const [dataSource, setDataSource] = useState<AppDataSource>(initialData.dataSource);
   const [isHydrated, setIsHydrated] = useState(Platform.OS === 'web');
   const [isInitialLoading, setIsInitialLoading] = useState(
-    Platform.OS !== 'web' || !readCachedAppDataSync(),
+    Platform.OS !== 'web' || initialData.dataSource === 'fallback',
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
-  const lastFetchedAtRef = React.useRef<number | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(initialData.fetchedAt);
+
+  const applyCachedData = useCallback((cached: CachedAppData) => {
+    setData(normalizeAppData(cached.data));
+    setDataSource('cache');
+    setLastFetchedAt(cached.fetchedAt);
+    setIsInitialLoading(false);
+  }, []);
 
   const applyCachedSnapshot = useCallback(async () => {
     const cached = await readCachedAppData();
     if (cached) {
-      setData(normalizeAppData(cached.data));
-      setLastFetchedAt(cached.fetchedAt);
-      lastFetchedAtRef.current = cached.fetchedAt;
-      setIsInitialLoading(false);
+      applyCachedData(cached);
     }
     return cached;
-  }, []);
+  }, [applyCachedData]);
 
-  const applyFreshData = useCallback(async (fresh: AppData) => {
-    setData(normalizeAppData(fresh));
-    const cached = await readCachedAppData();
-    const fetchedAt = cached?.fetchedAt ?? Date.now();
-    setLastFetchedAt(fetchedAt);
-    lastFetchedAtRef.current = fetchedAt;
+  const applyFreshData = useCallback((fresh: CachedAppData) => {
+    setData(normalizeAppData(fresh.data));
+    setDataSource('remote');
+    setLastFetchedAt(fresh.fetchedAt);
     setIsInitialLoading(false);
     setError(null);
   }, []);
 
+  const applyRefreshResult = useCallback(
+    (result: AppDataRefreshResult) => {
+      if (result.status === 'fresh') {
+        applyFreshData(result.cached);
+        return;
+      }
+
+      if (result.status === 'not-needed') {
+        applyCachedData(result.cached);
+        return;
+      }
+
+      if (result.cached) {
+        applyCachedData(result.cached);
+      } else {
+        setData(defaultAppData);
+        setDataSource('fallback');
+        setLastFetchedAt(null);
+        setIsInitialLoading(false);
+      }
+      setError('Нет связи с сервером. Не удалось загрузить актуальные данные.');
+    },
+    [applyCachedData, applyFreshData],
+  );
+
   const refreshData = useCallback(async (force = false) => {
     if (force) {
-      invalidateAppDataCache();
       setIsLoading(true);
     }
 
     try {
-      if (force) {
-        const next = await loadAppDataFromApi(true);
-        setData(next);
-        const cached = await readCachedAppData();
-        const fetchedAt = cached?.fetchedAt ?? Date.now();
-        setLastFetchedAt(fetchedAt);
-        lastFetchedAtRef.current = fetchedAt;
-        setIsInitialLoading(false);
-        setError(null);
-        return;
-      }
-
-      const fresh = await refreshAppDataInBackground();
-      if (fresh) {
-        await applyFreshData(fresh);
-      }
+      const result = await refreshAppDataInBackground(force);
+      applyRefreshResult(result);
     } catch (err) {
-      if (force) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      }
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить данные');
     } finally {
       if (force) {
         setIsLoading(false);
       }
     }
-  }, [applyFreshData]);
+  }, [applyRefreshResult]);
 
   useEffect(() => {
     let cancelled = false;
     let appIsActive = AppState.currentState === 'active';
 
     const tryRefresh = async () => {
-      const fresh = await refreshAppDataInBackground();
+      const result = await refreshAppDataInBackground();
       if (cancelled) {
         return;
       }
-      if (fresh) {
-        await applyFreshData(fresh);
-        return;
-      }
-      const cached = await readCachedAppData();
-      if (!cached) {
-        setError('Нет связи с сервером. Не удалось загрузить данные.');
-      }
-      setIsInitialLoading(false);
+      applyRefreshResult(result);
     };
 
     void (async () => {
@@ -154,7 +183,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, APP_DATA_REFRESH_INTERVAL_MS);
 
     const retryInterval = setInterval(() => {
-      if (!appIsActive || lastFetchedAtRef.current !== null) {
+      if (!appIsActive) {
         return;
       }
       void tryRefresh();
@@ -172,11 +201,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       clearInterval(retryInterval);
       appStateSubscription.remove();
     };
-  }, [applyCachedSnapshot, applyFreshData]);
+  }, [applyCachedSnapshot, applyRefreshResult]);
 
   const value = useMemo(
-    () => ({ data, isLoading, isInitialLoading, error, refreshData, lastFetchedAt }),
-    [data, isLoading, isInitialLoading, error, refreshData, lastFetchedAt],
+    () => ({
+      data,
+      dataSource,
+      isLoading,
+      isInitialLoading,
+      error,
+      refreshData,
+      lastFetchedAt,
+    }),
+    [data, dataSource, isLoading, isInitialLoading, error, refreshData, lastFetchedAt],
   );
 
   if (!isHydrated) {

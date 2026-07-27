@@ -134,7 +134,7 @@ function generateDemoAutographs(
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
 
-    const count = Math.min(5 + Math.floor(rng() * 4), Math.max(candidates.length, 8));
+    const count = Math.min(6 + Math.floor(rng() * 3), Math.max(candidates.length, 8));
     let minute = 16 * 60 + Math.floor(rng() * 40);
 
     for (let i = 0; i < count; i += 1) {

@@ -229,15 +229,6 @@ function RootTabs() {
         }}
       />
       <Tab.Screen
-        name="MapTab"
-        component={FestivalMapScreen}
-        listeners={({ navigation }) => createFlatTabListeners(navigation)}
-        options={{
-          title: 'Карта',
-          tabBarIcon: ({ color }) => <TabIcon name="map-outline" color={color} />,
-        }}
-      />
-      <Tab.Screen
         name="ScheduleTab"
         component={ScheduleNavigator}
         listeners={({ navigation }) => createNestedTabListeners(navigation, 'ScheduleTab')}
@@ -245,6 +236,15 @@ function RootTabs() {
           title: 'Расписание',
           tabBarIcon: ({ color }) => <TabIcon name="calendar-outline" color={color} />,
           popToTopOnBlur: true,
+        }}
+      />
+      <Tab.Screen
+        name="MapTab"
+        component={FestivalMapScreen}
+        listeners={({ navigation }) => createFlatTabListeners(navigation)}
+        options={{
+          title: 'Карта',
+          tabBarIcon: ({ color }) => <TabIcon name="map-outline" color={color} />,
         }}
       />
       <Tab.Screen

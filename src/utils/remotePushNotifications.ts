@@ -12,6 +12,13 @@ type WebPushServerConfig = {
   vapidPublicKey: string | null;
 };
 
+function hasAndroidFirebaseConfig(): boolean {
+  const androidConfig = Constants.expoConfig?.android as
+    | { googleServicesFile?: string }
+    | undefined;
+  return Boolean(androidConfig?.googleServicesFile);
+}
+
 function base64UrlToUint8Array(value: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (value.length % 4)) % 4);
   const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -87,13 +94,40 @@ async function registerNativePush(): Promise<void> {
       sound: 'default',
       vibrationPattern: [0, 250, 200, 250],
     });
+    if (Constants.appOwnership === 'expo') {
+      throw new Error(
+        'В Expo Go удалённые push на Android недоступны. ' +
+          'Локальные напоминания продолжат работать; для push установите development или production сборку.',
+      );
+    }
+    if (!hasAndroidFirebaseConfig()) {
+      throw new Error(
+        'Удалённые push на Android пока не настроены: в сборке отсутствует google-services.json. ' +
+          'Локальные напоминания продолжат работать; после добавления файла нужна новая сборка приложения.',
+      );
+    }
   }
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   if (!projectId) {
     throw new Error('В конфигурации приложения отсутствует EAS projectId');
   }
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  let token: string;
+  try {
+    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      Platform.OS === 'android' &&
+      /Firebase|FirebaseApp|Messaging instance|google-services/i.test(message)
+    ) {
+      throw new Error(
+        'Удалённые push на Android не инициализированы. Проверьте google-services.json, ' +
+          'expo.android.googleServicesFile и пересоберите приложение.',
+      );
+    }
+    throw error;
+  }
   await postJson('POST', {
     platform: Platform.OS,
     token,

@@ -3,11 +3,14 @@ import { useAppData } from '../context/DataContext';
 import { SchedulePerformance, StageId } from '../types';
 import {
   getEndDateTime,
+  getLiveAutographSessions,
   getLivePerformances,
   getPrimaryPerformance,
   getTimedStatus,
   parseDateTime,
+  PrimaryAutograph,
   PrimaryPerformance,
+  sortByStartTime,
 } from '../utils/scheduleHelpers';
 import { useNow } from './useNow';
 
@@ -62,6 +65,24 @@ export function useStagePrimaryPerformances(): PrimaryPerformance[] {
       );
     });
   }, [data.stages, data.schedule, now]);
+}
+
+export function usePrimaryAutographSessions(limit = 3): PrimaryAutograph[] {
+  const { data } = useAppData();
+  const now = useNow(1000);
+
+  return useMemo(() => {
+    const live = getLiveAutographSessions(data.autographs, now);
+    const liveIds = new Set(live.map((session) => session.id));
+    const upcoming = sortByStartTime(data.autographs)
+      .filter((session) => !liveIds.has(session.id))
+      .filter((session) => parseDateTime(session.date, session.startTime) > now);
+
+    return [
+      ...live.map((session) => ({ session, status: 'live' as const })),
+      ...upcoming.map((session) => ({ session, status: 'upcoming' as const })),
+    ].slice(0, limit);
+  }, [data.autographs, limit, now]);
 }
 
 export function useUpcomingPerformances(limit = 3): SchedulePerformance[] {

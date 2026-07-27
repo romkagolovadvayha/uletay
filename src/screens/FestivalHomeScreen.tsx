@@ -5,13 +5,18 @@ import React, { Suspense, useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { AutographSessionRow } from '../components/AutographSessionRow';
 import { FestivalLogoImage } from '../components/FestivalLogoImage';
 import { HomeHeadlinersWidget } from '../components/HomeHeadlinersWidget';
 import { LiveArtistCard } from '../components/LiveArtistCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionHeader } from '../components/SectionHeader';
 import { useAppData } from '../context/DataContext';
-import { useStagePrimaryPerformances } from '../hooks/useCurrentLivePerformance';
+import {
+  usePrimaryAutographSessions,
+  useStagePrimaryPerformances,
+} from '../hooks/useCurrentLivePerformance';
+import { useFavorites } from '../hooks/useFavorites';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
 import { openHeadlinerDetail, openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
@@ -19,7 +24,14 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { getStageName, isFestivalFinished, isFestivalStarted, isStartingSoon, parseDateTime } from '../utils/scheduleHelpers';
+import {
+  formatSoonCountdown,
+  getStageName,
+  isFestivalFinished,
+  isFestivalStarted,
+  isStartingSoon,
+  parseDateTime,
+} from '../utils/scheduleHelpers';
 import { getLatestHeadlinerYear, hasScheduleForYear } from '../utils/headlinerHelpers';
 import { HERO_POSTER_SOURCE } from '../utils/heroPosterSource';
 
@@ -95,9 +107,11 @@ function HeroParallaxBackground({ translateY, allowVideo }: HeroParallaxBackgrou
 }
 
 export function FestivalHomeScreen({ navigation }: Props) {
-  const { data, error, isInitialLoading, lastFetchedAt, refreshData } = useAppData();
+  const { data, dataSource, error, isInitialLoading, lastFetchedAt, refreshData } = useAppData();
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
+  const autographPrimaries = usePrimaryAutographSessions(3);
+  const { isAutographFavorite, toggleAutographFavorite } = useFavorites();
   const scrollY = useMemo(() => new Animated.Value(0), []);
 
   const backgroundTranslateY = useMemo(
@@ -129,11 +143,13 @@ export function FestivalHomeScreen({ navigation }: Props) {
     : isFestivalFinished(data.festival.startDate, data.festival.endDate, data.schedule, now)
       ? 'after'
       : 'during';
+  const hasReliableFestivalData = dataSource !== 'fallback' || !error;
   const nextFestivalYear = data.festival.year + 1;
   const hasNextYearSchedule = hasScheduleForYear(data.schedule, nextFestivalYear);
-  const showPreFestivalHeadliners = festivalPhase === 'before';
-  const showPostFestivalHeadliners = festivalPhase === 'after' && !hasNextYearSchedule;
-  const showLiveSection = festivalPhase === 'during';
+  const showPreFestivalHeadliners = hasReliableFestivalData && festivalPhase === 'before';
+  const showPostFestivalHeadliners =
+    hasReliableFestivalData && festivalPhase === 'after' && !hasNextYearSchedule;
+  const showLiveSection = hasReliableFestivalData && festivalPhase === 'during';
   const latestHeadlinerYear = useMemo(
     () => getLatestHeadlinerYear(data.headliners),
     [data.headliners],
@@ -151,6 +167,17 @@ export function FestivalHomeScreen({ navigation }: Props) {
     : hasAnySoon
       ? 'СКОРО НА СЦЕНАХ'
       : 'СЛЕДУЮЩИЕ ВЫСТУПЛЕНИЯ';
+  const hasLiveAutographs = autographPrimaries.some((item) => item.status === 'live');
+  const hasSoonAutographs = autographPrimaries.some(
+    (item) =>
+      item.status === 'upcoming' &&
+      isStartingSoon(item.session.date, item.session.startTime, now),
+  );
+  const autographSectionTitle = hasLiveAutographs
+    ? 'АВТОГРАФ-СЕССИИ СЕЙЧАС'
+    : hasSoonAutographs
+      ? 'СКОРО: АВТОГРАФ-СЕССИИ'
+      : 'БЛИЖАЙШИЕ АВТОГРАФ-СЕССИИ';
 
   const openHeadlinersMainScreen = useCallback(() => {
     openHeadlinersMain(navigation);
@@ -188,10 +215,13 @@ export function FestivalHomeScreen({ navigation }: Props) {
         {error ? (
           <View style={styles.offlineBanner}>
             <View style={styles.offlineCopy}>
-              <Text style={styles.offlineTitle}>Офлайн-режим</Text>
+              <Text style={styles.offlineTitle}>
+                {dataSource === 'cache' ? 'Офлайн-режим' : 'Данные недоступны'}
+              </Text>
               <Text style={styles.offlineText}>
-                Показываем сохранённые данные
-                {lastFetchedAt ? ` от ${new Date(lastFetchedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''}.
+                {dataSource === 'cache'
+                  ? `Показываем сохранённые данные${lastFetchedAt ? ` от ${new Date(lastFetchedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''}.`
+                  : 'Не удалось загрузить актуальные данные. Встроенный резерв может быть неактуален.'}
               </Text>
             </View>
             <Pressable accessibilityRole="button" onPress={() => void refreshData(true)}>
@@ -206,16 +236,18 @@ export function FestivalHomeScreen({ navigation }: Props) {
             <Text style={styles.location}>{data.festival.location}</Text>
           </View>
 
-          <View style={styles.overlaySection}>
-            <CountdownTimer
-              targetDate={festivalStart}
-              festivalStartDate={data.festival.startDate}
-              festivalEndDate={data.festival.endDate}
-              performances={data.schedule}
-            />
-          </View>
+          {hasReliableFestivalData ? (
+            <View style={styles.overlaySection}>
+              <CountdownTimer
+                targetDate={festivalStart}
+                festivalStartDate={data.festival.startDate}
+                festivalEndDate={data.festival.endDate}
+                performances={data.schedule}
+              />
+            </View>
+          ) : null}
 
-          {festivalPhase === 'during' ? (
+          {hasReliableFestivalData && festivalPhase === 'during' ? (
             <View style={styles.overlaySection}>
               <PrimaryButton
                 label="РАСПИСАНИЕ"
@@ -272,6 +304,50 @@ export function FestivalHomeScreen({ navigation }: Props) {
             ) : (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyText}>Нет предстоящих выступлений в расписании</Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {showLiveSection ? (
+          <View style={styles.section}>
+            <SectionHeader title={autographSectionTitle} />
+            {autographPrimaries.length > 0 ? (
+              <View style={styles.autographList}>
+                {autographPrimaries.map((item) => {
+                  const isSoon =
+                    item.status === 'upcoming' &&
+                    isStartingSoon(item.session.date, item.session.startTime, now);
+
+                  return (
+                    <AutographSessionRow
+                      key={item.session.id}
+                      session={item.session}
+                      isLive={item.status === 'live'}
+                      isUpcoming={isSoon}
+                      soonCountdown={
+                        isSoon
+                          ? formatSoonCountdown(
+                              parseDateTime(item.session.date, item.session.startTime),
+                              now,
+                            )
+                          : undefined
+                      }
+                      isFavorite={isAutographFavorite(item.session.id)}
+                      onToggleFavorite={() => toggleAutographFavorite(item.session.id)}
+                      onPress={() =>
+                        navigation.navigate('Autographs', {
+                          screen: 'AutographDetail',
+                          params: { sessionId: item.session.id },
+                        })
+                      }
+                    />
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>Нет предстоящих автограф-сессий</Text>
               </View>
             )}
           </View>
@@ -419,6 +495,13 @@ const styles = StyleSheet.create({
   },
   liveCard: {
     backgroundColor: colors.surfaceGlass,
+  },
+  autographList: {
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surfaceGlass,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   emptyCard: {
     backgroundColor: colors.surface,

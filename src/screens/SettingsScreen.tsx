@@ -1,17 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { PRIVACY_POLICY_URL } from '../constants/legal';
 import { AppTimeMode, useDemoMode } from '../context/DemoModeContext';
+import { useAppData } from '../context/DataContext';
 import { MoreStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
+import { clearOfflineAppCache } from '../utils/clearOfflineAppCache';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'Settings'>;
 
@@ -69,11 +71,52 @@ function SettingsLink({ icon, title, subtitle, onPress }: SettingsLinkProps) {
 
 export function SettingsScreen({ navigation }: Props) {
   const { mode, ready, setMode, demoDescription } = useDemoMode();
+  const { refreshData } = useAppData();
+  const [clearingCache, setClearingCache] = useState(false);
 
   const handleModeChange = (nextMode: AppTimeMode) => {
     if (nextMode !== mode) {
       void setMode(nextMode);
     }
+  };
+
+  const runClearCache = async () => {
+    if (clearingCache) {
+      return;
+    }
+    setClearingCache(true);
+    try {
+      await clearOfflineAppCache({ reload: Platform.OS === 'web' });
+      if (Platform.OS !== 'web') {
+        await refreshData(true);
+        Alert.alert('Готово', 'Кэш расписания очищен, данные загружены заново.');
+      }
+    } catch {
+      Alert.alert('Не удалось очистить кэш', 'Попробуйте ещё раз или очистите данные сайта в настройках браузера.');
+    } finally {
+      if (Platform.OS !== 'web') {
+        setClearingCache(false);
+      }
+    }
+  };
+
+  const handleClearCachePress = () => {
+    Alert.alert(
+      'Сбросить кэш?',
+      Platform.OS === 'web'
+        ? 'Будет очищен офлайн-кэш и service worker. Страница перезагрузится. Избранное и настройки уведомлений сохранятся.'
+        : 'Будет очищен офлайн-кэш расписания и данные загрузятся с сервера заново. Избранное и настройки уведомлений сохранятся.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Сбросить кэш',
+          style: 'destructive',
+          onPress: () => {
+            void runClearCache();
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -108,6 +151,16 @@ export function SettingsScreen({ navigation }: Props) {
 
         <Text style={styles.sectionLabel}>Оповещения</Text>
         <FavoriteNotificationsCard />
+
+        <Text style={styles.sectionLabel}>Данные</Text>
+        <View style={styles.section}>
+          <SettingsLink
+            icon="refresh-outline"
+            title={clearingCache ? 'Сброс…' : 'Сбросить кэш'}
+            subtitle="Если расписание или артисты не подгружаются — сбросит офлайн-кэш"
+            onPress={clearingCache ? () => undefined : handleClearCachePress}
+          />
+        </View>
 
         <Text style={styles.sectionLabel}>Правовая информация</Text>
         <View style={styles.section}>

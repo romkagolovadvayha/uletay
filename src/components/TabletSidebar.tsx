@@ -13,7 +13,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFestivalActive } from '../hooks/useFestivalActive';
-import { useHeadlinersInMoreTab, useVisibleMainTabRoutes } from '../navigation/mainTabRoutes';
+import {
+  useHeadlinersInMoreTab,
+  useMainTabContentFlags,
+  useVisibleMainTabRoutes,
+} from '../navigation/mainTabRoutes';
 import {
   openAutographsMain,
   openHeadlinersMain,
@@ -80,6 +84,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   const festivalActive = useFestivalActive();
   const mainTabRoutes = useVisibleMainTabRoutes();
   const headlinersInMore = useHeadlinersInMoreTab();
+  const content = useMainTabContentFlags();
   const tabNavigation = navigation as unknown as NavigationProp<RootTabParamList>;
 
   const sidebarWidth = getDefaultSidebarWidth({ width });
@@ -128,6 +133,28 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
             isActive:
               moreNestedRoute === 'HeadlinersMain' || moreNestedRoute === 'HeadlinerDetail',
             onPress: () => openHeadlinersMain(tabNavigation),
+          },
+        ]
+      : []),
+    ...(festivalActive && content.hasAutographs
+      ? [
+          {
+            key: 'autographs',
+            icon: 'ticket-outline' as const,
+            label: 'Автографы',
+            isActive: currentTabName === 'Autographs',
+            onPress: () => openAutographsMain(tabNavigation),
+          },
+        ]
+      : []),
+    ...(festivalActive
+      ? [
+          {
+            key: 'radio',
+            icon: 'radio-outline' as const,
+            label: 'Радио',
+            isActive: currentTabName === 'PlaylistTab',
+            onPress: () => tabNavigation.navigate('PlaylistTab'),
           },
         ]
       : []),

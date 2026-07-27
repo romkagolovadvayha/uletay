@@ -1,15 +1,12 @@
 import { useMemo } from 'react';
 import { useAppData } from '../context/DataContext';
-import { useFavorites } from '../hooks/useFavorites';
 import { useFestivalActive } from '../hooks/useFestivalActive';
-import { favoriteKey } from '../utils/favoriteKeys';
 import { getFestivalDayDate } from '../utils/festivalTime';
 import { RootTabParamList } from './types';
 
 export type MainTabContentFlags = {
   hasSchedule: boolean;
   hasAutographs: boolean;
-  hasFavorites: boolean;
 };
 
 function isInFestivalWindow(
@@ -22,18 +19,24 @@ function isInFestivalWindow(
   return festivalDay >= startDate && festivalDay <= endDate;
 }
 
-/** Хэдлайнеры в «Ещё», только пока внизу уже есть живое расписание/автографы. */
-export function shouldPutHeadlinersInMoreTab(
-  festivalActive: boolean,
-  content: MainTabContentFlags,
-): boolean {
-  return festivalActive && (content.hasSchedule || content.hasAutographs);
+/** Во время фестиваля хэдлайнеры доступны через «Ещё», освобождая место в нижнем меню. */
+export function shouldPutHeadlinersInMoreTab(festivalActive: boolean): boolean {
+  return festivalActive;
 }
 
 export function getVisibleMainTabRoutes(
   festivalActive: boolean,
   content: MainTabContentFlags,
 ): (keyof RootTabParamList)[] {
+  if (festivalActive) {
+    const festivalRoutes: (keyof RootTabParamList)[] = ['HomeTab'];
+    if (content.hasSchedule) {
+      festivalRoutes.push('ScheduleTab');
+    }
+    festivalRoutes.push('MapTab', 'FavoritesTab');
+    return festivalRoutes;
+  }
+
   const routes: (keyof RootTabParamList)[] = ['HomeTab', 'MapTab'];
 
   if (content.hasSchedule) {
@@ -42,12 +45,8 @@ export function getVisibleMainTabRoutes(
   if (content.hasAutographs) {
     routes.push('Autographs');
   }
-  if (festivalActive && content.hasFavorites) {
-    routes.push('FavoritesTab');
-  }
-
-  // Пока нет расписания/автографов (или фестиваль уже закончился) — хэдлайнеры в нижнем меню.
-  if (!shouldPutHeadlinersInMoreTab(festivalActive, content)) {
+  // Вне фестиваля хэдлайнеры остаются отдельным основным разделом.
+  if (!shouldPutHeadlinersInMoreTab(festivalActive)) {
     routes.push('HeadlinersTab');
   }
 
@@ -57,7 +56,6 @@ export function getVisibleMainTabRoutes(
 
 export function useMainTabContentFlags(): MainTabContentFlags {
   const { data } = useAppData();
-  const { favorites, isReady } = useFavorites();
 
   return useMemo(() => {
     const { startDate, endDate } = data.festival;
@@ -71,13 +69,9 @@ export function useMainTabContentFlags(): MainTabContentFlags {
 
     const hasSchedule = scheduleInWindow.length > 0;
     const hasAutographs = autographsInWindow.length > 0;
-    const hasFavorites =
-      isReady &&
-      (scheduleInWindow.some((item) => favorites.includes(favoriteKey('performance', item.id))) ||
-        autographsInWindow.some((item) => favorites.includes(favoriteKey('autograph', item.id))));
 
-    return { hasSchedule, hasAutographs, hasFavorites };
-  }, [data.autographs, data.festival, data.schedule, favorites, isReady]);
+    return { hasSchedule, hasAutographs };
+  }, [data.autographs, data.festival, data.schedule]);
 }
 
 export function useVisibleMainTabRoutes(): (keyof RootTabParamList)[] {
@@ -92,10 +86,9 @@ export function useVisibleMainTabRoutes(): (keyof RootTabParamList)[] {
 
 export function useHeadlinersInMoreTab(): boolean {
   const festivalActive = useFestivalActive();
-  const content = useMainTabContentFlags();
 
   return useMemo(
-    () => shouldPutHeadlinersInMoreTab(festivalActive, content),
-    [content, festivalActive],
+    () => shouldPutHeadlinersInMoreTab(festivalActive),
+    [festivalActive],
   );
 }

@@ -4,8 +4,12 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  DEMO_MODE_BANNER_HEIGHT,
+  DemoModeBanner,
+} from './src/components/demo-mode-banner';
 import { DataProvider } from './src/context/DataContext';
-import { DemoModeProvider } from './src/context/DemoModeContext';
+import { DemoModeProvider, useDemoMode } from './src/context/DemoModeContext';
 import { RadioPlayerProvider } from './src/context/RadioPlayerContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
 import { IconsReadyProvider } from './src/context/IconsReadyContext';
@@ -39,6 +43,8 @@ const navigationTheme = {
 function AppContent() {
   const { loaded: fontsLoaded, iconsReady } = useAppFonts();
   const headlinersInMore = useHeadlinersInMoreTab();
+  const { mode, ready: demoModeReady } = useDemoMode();
+  const demoModeActive = demoModeReady && mode === 'demo';
 
   syncHeadlinersNavigationTarget(headlinersInMore);
 
@@ -52,39 +58,44 @@ function AppContent() {
 
   return (
     <IconsReadyProvider ready={iconsReady}>
-      <NavigationContainer
-        ref={navigationRef}
-        theme={navigationTheme}
-        linking={linking}
-        documentTitle={
-          Platform.OS === 'web'
-            ? {
-                enabled: false,
+      <View style={styles.appContent}>
+        <View style={[styles.navigation, demoModeActive && styles.navigationWithDemoBanner]}>
+          <NavigationContainer
+            ref={navigationRef}
+            theme={navigationTheme}
+            linking={linking}
+            documentTitle={
+              Platform.OS === 'web'
+                ? {
+                    enabled: false,
+                  }
+                : undefined
+            }
+            onReady={() => {
+              syncWebSeo();
+            }}
+            onStateChange={() => {
+              if (Platform.OS === 'web' && typeof document !== 'undefined') {
+                const focusedElement = document.activeElement;
+                if (focusedElement instanceof HTMLElement) {
+                  focusedElement.blur();
+                }
               }
-            : undefined
-        }
-        onReady={() => {
-          syncWebSeo();
-        }}
-        onStateChange={() => {
-          if (Platform.OS === 'web' && typeof document !== 'undefined') {
-            const focusedElement = document.activeElement;
-            if (focusedElement instanceof HTMLElement) {
-              focusedElement.blur();
-            }
-          }
-          requestAnimationFrame(() => {
-            if (navigationRef.isReady()) {
-              syncNestedStacksWithActiveTab(navigationRef);
-            }
-            syncWebSeo();
-          });
-        }}
-      >
-        <StatusBar style="light" />
-        <WebSeoManager />
-        <RootNavigator />
-      </NavigationContainer>
+              requestAnimationFrame(() => {
+                if (navigationRef.isReady()) {
+                  syncNestedStacksWithActiveTab(navigationRef);
+                }
+                syncWebSeo();
+              });
+            }}
+          >
+            <StatusBar style={demoModeActive ? 'dark' : 'light'} />
+            <WebSeoManager />
+            <RootNavigator />
+          </NavigationContainer>
+        </View>
+        {demoModeActive ? <DemoModeBanner /> : null}
+      </View>
     </IconsReadyProvider>
   );
 }
@@ -123,6 +134,16 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  appContent: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  navigation: {
+    flex: 1,
+  },
+  navigationWithDemoBanner: {
+    paddingTop: DEMO_MODE_BANNER_HEIGHT,
   },
   loader: {
     flex: 1,

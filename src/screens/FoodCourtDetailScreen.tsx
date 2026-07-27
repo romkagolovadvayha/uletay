@@ -36,13 +36,25 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
-        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} hitSlop={12}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          accessibilityHint="Вернуться к списку фудкорта"
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={
+            isFavorite ? 'Убрать точку из избранного' : 'Добавить точку в избранное'
+          }
+          accessibilityState={{ selected: isFavorite }}
           onPress={() => toggleFoodFavorite(vendor.id)}
           hitSlop={12}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
         >
           <Ionicons
             name={isFavorite ? 'star' : 'star-outline'}
@@ -110,6 +122,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xs,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     paddingHorizontal: spacing.screen,
@@ -214,5 +232,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.xxxl,
+  },
+  pressed: {
+    opacity: 0.9,
   },
 });

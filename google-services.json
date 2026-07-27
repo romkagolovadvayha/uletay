@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "556736654030",
+    "project_id": "uletay-9335f",
+    "storage_bucket": "uletay-9335f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:556736654030:android:d33328a00a67a2a2093e9f",
+        "android_client_info": {
+          "package_name": "ru.uletay.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfx9EfjQJNfXTEmSe1aJF2O-mvDGSwPyM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

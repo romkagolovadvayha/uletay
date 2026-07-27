@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppData } from '../types';
 import { API_BASE_URL, APP_DATA_REFRESH_INTERVAL_MS, CachedAppData } from '../config/api';
-import { defaultAppData } from '../storage/dataStore';
+import { AppData } from '../types';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { normalizeAppData } from '../utils/appDataNormalize';
 
@@ -10,7 +9,12 @@ export const APP_DATA_CACHE_KEY = '@uletay_api_cache_v4';
 const FETCH_TIMEOUT_MS = 8_000;
 
 let memoryCache: CachedAppData | null = null;
-let inFlight: Promise<AppData | null> | null = null;
+let inFlight: Promise<CachedAppData | null> | null = null;
+
+export type AppDataRefreshResult =
+  | { status: 'fresh'; cached: CachedAppData }
+  | { status: 'not-needed'; cached: CachedAppData }
+  | { status: 'failed'; cached: CachedAppData | null };
 
 async function readStorageCache(): Promise<CachedAppData | null> {
   try {
@@ -67,52 +71,38 @@ async function fetchRemoteAppData(): Promise<AppData> {
   return (await response.json()) as AppData;
 }
 
-export async function fetchAndCacheAppData(): Promise<AppData | null> {
+export async function fetchAndCacheAppData(): Promise<CachedAppData | null> {
   try {
     const data = normalizeAppData(await fetchRemoteAppData());
     const cache: CachedAppData = { data, fetchedAt: Date.now() };
     memoryCache = cache;
     await writeStorageCache(cache);
-    return data;
+    return cache;
   } catch {
     return null;
   }
 }
 
-export async function refreshAppDataInBackground(): Promise<AppData | null> {
+export async function refreshAppDataInBackground(
+  force = false,
+): Promise<AppDataRefreshResult> {
   const cached = await readCachedAppData();
-  if (!needsRefresh(cached, false)) {
-    return null;
-  }
-
-  if (inFlight) {
-    return inFlight;
-  }
-
-  inFlight = fetchAndCacheAppData().finally(() => {
-    inFlight = null;
-  });
-
-  return inFlight;
-}
-
-export async function loadAppDataFromApi(force = false): Promise<AppData> {
-  const cached = await readCachedAppData();
-
   if (!needsRefresh(cached, force)) {
-    return cached!.data;
+    return { status: 'not-needed', cached: cached! };
   }
 
-  const fresh = await fetchAndCacheAppData();
+  if (!inFlight) {
+    inFlight = fetchAndCacheAppData().finally(() => {
+      inFlight = null;
+    });
+  }
+
+  const fresh = await inFlight;
   if (fresh) {
-    return fresh;
+    return { status: 'fresh', cached: fresh };
   }
 
-  if (cached) {
-    return cached.data;
-  }
-
-  return defaultAppData;
+  return { status: 'failed', cached };
 }
 
 export function invalidateAppDataCache(): void {

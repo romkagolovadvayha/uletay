@@ -15,7 +15,7 @@ export const TAB_BAR_INNER_PADDING = 8;
 
 const ICON_SLOT = 24;
 /** Icon + gap + label — keeps native layout from collapsing under flex:1. */
-const ITEM_CONTENT_HEIGHT = ICON_SLOT + 2 + 11;
+const ITEM_CONTENT_HEIGHT = ICON_SLOT + 2 + 12;
 
 /**
  * Phone bottom tab bar without React Navigation's empty absoluteFill
@@ -43,6 +43,9 @@ export function MobileBottomTabBar({
       }),
     [mainTabRoutes, state.routes],
   );
+  const activeRouteIsVisible = visibleRoutes.some(
+    (route) => route.key === state.routes[state.index]?.key,
+  );
 
   const handleLayout = (event: LayoutChangeEvent) => {
     onHeightChange?.(event.nativeEvent.layout.height);
@@ -62,7 +65,8 @@ export function MobileBottomTabBar({
       <View accessibilityRole="tablist" style={styles.row}>
         {visibleRoutes.map((route) => {
           const index = state.routes.findIndex((item) => item.key === route.key);
-          const focused = index === state.index;
+          const focused =
+            index === state.index || (route.name === 'MoreTab' && !activeRouteIsVisible);
           const { options } = descriptors[route.key];
           const color = focused ? activeColor : inactiveColor;
           const label =
@@ -197,8 +201,8 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.tabLabel,
-    fontSize: 9,
-    lineHeight: 11,
+    fontSize: 10,
+    lineHeight: 12,
     textAlign: 'center',
     maxWidth: '100%',
     includeFontPadding: false,

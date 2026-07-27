@@ -86,13 +86,27 @@ export function AutographDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
-        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} hitSlop={12}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          accessibilityHint="Вернуться к списку автограф-сессий"
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={
+            isFavorite
+              ? 'Убрать автограф-сессию из избранного'
+              : 'Добавить автограф-сессию в избранное'
+          }
+          accessibilityState={{ selected: isFavorite }}
           onPress={() => toggleAutographFavorite(session.id)}
           hitSlop={12}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
         >
           <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={22} color={colors.star} />
         </Pressable>
@@ -112,6 +126,7 @@ export function AutographDetailScreen({ navigation, route }: Props) {
           ) : null}
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ selected: isFavorite }}
             onPress={() => toggleAutographFavorite(session.id)}
             style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
           >
@@ -145,6 +160,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.sm,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     paddingHorizontal: spacing.screen,

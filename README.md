@@ -29,6 +29,9 @@ npm run web           # приложение → http://localhost:8081
 
 - iOS/Android используют Expo Push Service. Для Android нужен development/production
   build — удалённые push не работают в Expo Go.
+- Android также требует `google-services.json` для приложения
+  `ru.uletay.app`. Положите файл в корень проекта: `app.config.js` подключит его
+  автоматически. Проверка перед сборкой: `npm run push:check-android`.
 - Web использует стандартные Service Worker + Push API. Нужен HTTPS; на iPhone
   сайт должен быть добавлен на экран «Домой».
 - Для событий из избранного напоминание отправляется за 10 минут до начала:
