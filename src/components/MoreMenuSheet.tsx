@@ -111,14 +111,6 @@ export function MoreMenuSheet() {
     ...(festivalActive
       ? [
           {
-            icon: 'star-outline' as const,
-            label: 'Моё расписание',
-            onPress: () => {
-              close();
-              navigation.navigate('FavoritesTab');
-            },
-          },
-          {
             icon: 'radio-outline' as const,
             label: 'Радио',
             onPress: () => {

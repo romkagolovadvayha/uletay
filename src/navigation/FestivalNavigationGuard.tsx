@@ -10,6 +10,7 @@ import { RootTabParamList } from './types';
 
 const FESTIVAL_ONLY_MORE_ROUTES = new Set(['FoodCourtMain', 'FoodCourtDetail']);
 const FESTIVAL_MORE_TABS = new Set<keyof RootTabParamList>(['Autographs', 'PlaylistTab']);
+const ALWAYS_AVAILABLE_HIDDEN_TABS = new Set<keyof RootTabParamList>(['HelpTab']);
 
 function readGuardState(): {
   currentTab: keyof RootTabParamList | undefined;
@@ -44,8 +45,12 @@ function shouldRedirect(
   }
 
   const isFestivalMoreTab = festivalActive && FESTIVAL_MORE_TABS.has(currentTab);
+  const isAlwaysAvailableHiddenTab = ALWAYS_AVAILABLE_HIDDEN_TABS.has(currentTab);
   const shouldLeaveTab =
-    currentTab !== 'MoreTab' && !visibleTabs.has(currentTab) && !isFestivalMoreTab;
+    currentTab !== 'MoreTab' &&
+    !visibleTabs.has(currentTab) &&
+    !isFestivalMoreTab &&
+    !isAlwaysAvailableHiddenTab;
 
   const shouldLeaveMore =
     !festivalActive &&

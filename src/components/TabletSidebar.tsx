@@ -170,6 +170,13 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
         ]
       : []),
     {
+      key: 'help',
+      icon: 'medical-outline',
+      label: 'Экстренная помощь',
+      isActive: currentTabName === 'HelpTab',
+      onPress: () => tabNavigation.navigate('HelpTab'),
+    },
+    {
       key: 'settings',
       icon: 'settings-outline',
       label: 'Настройки',

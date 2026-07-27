@@ -33,11 +33,11 @@ export function getVisibleMainTabRoutes(
     if (content.hasSchedule) {
       festivalRoutes.push('ScheduleTab');
     }
-    festivalRoutes.push('MapTab', 'HelpTab');
+    festivalRoutes.push('MapTab', 'FavoritesTab');
     return festivalRoutes;
   }
 
-  const routes: (keyof RootTabParamList)[] = ['HomeTab', 'MapTab', 'HelpTab'];
+  const routes: (keyof RootTabParamList)[] = ['HomeTab', 'MapTab'];
 
   if (content.hasSchedule) {
     routes.push('ScheduleTab');
