@@ -3,6 +3,7 @@ import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { favoriteKey } from '../utils/favoriteKeys';
+import { getFestivalDayDate } from '../utils/festivalTime';
 import { RootTabParamList } from './types';
 
 export type MainTabContentFlags = {
@@ -10,6 +11,16 @@ export type MainTabContentFlags = {
   hasAutographs: boolean;
   hasFavorites: boolean;
 };
+
+function isInFestivalWindow(
+  date: string,
+  startTime: string,
+  startDate: string,
+  endDate: string,
+): boolean {
+  const festivalDay = getFestivalDayDate(date, startTime);
+  return festivalDay >= startDate && festivalDay <= endDate;
+}
 
 /** Хэдлайнеры в «Ещё», только пока внизу уже есть живое расписание/автографы. */
 export function shouldPutHeadlinersInMoreTab(
@@ -49,15 +60,24 @@ export function useMainTabContentFlags(): MainTabContentFlags {
   const { favorites, isReady } = useFavorites();
 
   return useMemo(() => {
-    const hasSchedule = data.schedule.length > 0;
-    const hasAutographs = data.autographs.length > 0;
+    const { startDate, endDate } = data.festival;
+
+    const scheduleInWindow = data.schedule.filter((item) =>
+      isInFestivalWindow(item.date, item.startTime, startDate, endDate),
+    );
+    const autographsInWindow = data.autographs.filter((item) =>
+      isInFestivalWindow(item.date, item.startTime, startDate, endDate),
+    );
+
+    const hasSchedule = scheduleInWindow.length > 0;
+    const hasAutographs = autographsInWindow.length > 0;
     const hasFavorites =
       isReady &&
-      (data.schedule.some((item) => favorites.includes(favoriteKey('performance', item.id))) ||
-        data.autographs.some((item) => favorites.includes(favoriteKey('autograph', item.id))));
+      (scheduleInWindow.some((item) => favorites.includes(favoriteKey('performance', item.id))) ||
+        autographsInWindow.some((item) => favorites.includes(favoriteKey('autograph', item.id))));
 
     return { hasSchedule, hasAutographs, hasFavorites };
-  }, [data.autographs, data.schedule, favorites, isReady]);
+  }, [data.autographs, data.festival, data.schedule, favorites, isReady]);
 }
 
 export function useVisibleMainTabRoutes(): (keyof RootTabParamList)[] {

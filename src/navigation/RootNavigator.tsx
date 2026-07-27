@@ -4,11 +4,11 @@ import React, { Suspense } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
 import { DeferredIonicons } from '../components/DeferredIonicons';
+import { RadioTabIcon } from '../components/RadioTabIcon';
 import { useIsTablet } from '../hooks/useIsTablet';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
 import { MoreMenuProvider, useMoreMenu } from '../context/MoreMenuContext';
-import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import {
@@ -121,18 +121,6 @@ function TabIcon({ name, color }: { name: string; color: string }) {
       name={name as React.ComponentProps<typeof DeferredIonicons>['name']}
       size={TAB_ICON_SIZE}
       color={color}
-    />
-  );
-}
-
-function RadioTabIcon({ color }: { color: string }) {
-  const { isPlaying } = useRadioPlayer();
-
-  return (
-    <DeferredIonicons
-      name={isPlaying ? 'radio' : 'radio-outline'}
-      size={TAB_ICON_SIZE}
-      color={isPlaying ? colors.live : color}
     />
   );
 }

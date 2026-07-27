@@ -190,16 +190,6 @@ export function PlaylistScreen() {
                     />
                   )}
                 </Pressable>
-                <View style={styles.controlCopy}>
-                  <Text style={styles.controlTitle}>
-                    {isPlaying ? 'Радио играет' : isBuffering ? 'Подключаемся…' : 'Слушать эфир'}
-                  </Text>
-                  <Text style={styles.controlHint}>
-                    {isPlaying
-                      ? 'Продолжит играть при блокировке экрана'
-                      : 'Нажмите, чтобы включить прямой эфир'}
-                  </Text>
-                </View>
               </View>
 
               {matchedHeadliner ? (
@@ -403,7 +393,7 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    justifyContent: 'center',
     paddingVertical: spacing.sm,
   },
   playButton: {
@@ -419,21 +409,6 @@ const styles = StyleSheet.create({
   },
   playIconOffset: {
     marginLeft: 4,
-  },
-  controlCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  controlTitle: {
-    ...appFont('semiBold'),
-    color: colors.text,
-    fontSize: 15,
-  },
-  controlHint: {
-    ...typography.body,
-    color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
   },
   artistLink: {
     width: '100%',

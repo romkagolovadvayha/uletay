@@ -12,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useHeadlinersInMoreTab, useVisibleMainTabRoutes } from '../navigation/mainTabRoutes';
 import {
@@ -26,6 +25,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
+import { RadioTabIcon } from './RadioTabIcon';
 
 type ExtraItem = {
   key: string;
@@ -36,14 +36,16 @@ type ExtraItem = {
 };
 
 type SidebarItemProps = {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconNode?: React.ReactNode;
   label: string;
   active: boolean;
-  iconColor?: string;
   onPress: () => void;
 };
 
-function SidebarItem({ icon, label, active, iconColor, onPress }: SidebarItemProps) {
+function SidebarItem({ icon, iconNode, label, active, onPress }: SidebarItemProps) {
+  const color = active ? colors.tabActive : colors.tabInactive;
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -55,11 +57,13 @@ function SidebarItem({ icon, label, active, iconColor, onPress }: SidebarItemPro
         pressed && styles.itemPressed,
       ]}
     >
-      <DeferredIonicons
-        name={icon}
-        size={22}
-        color={iconColor ?? (active ? colors.tabActive : colors.tabInactive)}
-      />
+      {iconNode ?? (
+        <DeferredIonicons
+          name={icon ?? 'ellipse-outline'}
+          size={22}
+          color={color}
+        />
+      )}
       <Text
         style={[styles.itemLabel, active && styles.itemLabelActive]}
         numberOfLines={1}
@@ -76,7 +80,6 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   const festivalActive = useFestivalActive();
   const mainTabRoutes = useVisibleMainTabRoutes();
   const headlinersInMore = useHeadlinersInMoreTab();
-  const { isPlaying: isRadioPlaying } = useRadioPlayer();
   const tabNavigation = navigation as unknown as NavigationProp<RootTabParamList>;
 
   const sidebarWidth = getDefaultSidebarWidth({ width });
@@ -195,20 +198,25 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
             ScheduleTab: 'calendar-outline',
             Autographs: 'ticket-outline',
             FavoritesTab: 'star-outline',
-            PlaylistTab: isRadioPlaying ? 'radio' : 'radio-outline',
+            PlaylistTab: 'radio-outline',
             HeadlinersTab: 'mic-outline',
             MoreTab: 'reorder-three-outline',
           };
           const resolvedIcon = tabIcons[routeName];
-          const radioLive = routeName === 'PlaylistTab' && isRadioPlaying;
+          const active = currentTabName === routeName;
+          const iconColor = active ? colors.tabActive : colors.tabInactive;
 
           return (
             <SidebarItem
               key={route.key}
               icon={resolvedIcon}
+              iconNode={
+                routeName === 'PlaylistTab' ? (
+                  <RadioTabIcon color={iconColor} size={22} />
+                ) : undefined
+              }
               label={label}
-              active={currentTabName === routeName}
-              iconColor={radioLive ? colors.live : undefined}
+              active={active}
               onPress={() => handleMainTabPress(routeName)}
             />
           );

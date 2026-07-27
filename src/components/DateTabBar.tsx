@@ -1,7 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { MotionPressable } from './MotionPressable';
-import { CenteredHorizontalScroll } from './CenteredHorizontalScroll';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -17,28 +16,30 @@ type Props = {
 
 export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: Props) {
   return (
-    <CenteredHorizontalScroll contentContainerStyle={styles.container} rowStyle={styles.row}>
-      {dates.map((date) => {
-        const isActive = date === selectedDate;
-        const { day, month, weekday } = formatDateTabParts(date);
+    <View style={styles.container}>
+      <View style={styles.row}>
+        {dates.map((date) => {
+          const isActive = date === selectedDate;
+          const { day, month, weekday } = formatDateTabParts(date);
 
-        return (
-          <MotionPressable
-            key={date}
-            accessibilityRole="button"
-            onPress={() => onSelect(date)}
-            style={[
-              styles.tab,
-              isActive && (variant === 'red' ? styles.tabRedActive : styles.tabYellowActive),
-            ]}
-          >
-            <Text style={[styles.day, isActive && styles.textActive]}>{day}</Text>
-            <Text style={[styles.month, isActive && styles.textActive]}>{month}</Text>
-            <Text style={[styles.weekday, isActive && styles.weekdayActive]}>{weekday}</Text>
-          </MotionPressable>
-        );
-      })}
-    </CenteredHorizontalScroll>
+          return (
+            <MotionPressable
+              key={date}
+              accessibilityRole="button"
+              onPress={() => onSelect(date)}
+              style={[
+                styles.tab,
+                isActive && (variant === 'red' ? styles.tabRedActive : styles.tabYellowActive),
+              ]}
+            >
+              <Text style={[styles.day, isActive && styles.textActive]}>{day}</Text>
+              <Text style={[styles.month, isActive && styles.textActive]}>{month}</Text>
+              <Text style={[styles.weekday, isActive && styles.weekdayActive]}>{weekday}</Text>
+            </MotionPressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -47,14 +48,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md / 2,
   },
   row: {
-    gap: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    width: '100%',
   },
   tab: {
     minWidth: 60,
     borderRadius: radius.md,
     paddingVertical: 7,
-    paddingLeft: 5,
-    paddingRight: 5,
+    paddingHorizontal: 4,
     alignItems: 'center',
     backgroundColor: 'transparent',
     gap: 1,
