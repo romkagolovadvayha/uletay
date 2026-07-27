@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenTitle } from '../components/ScreenTitle';
-import { SurfaceCard } from '../components/surface-card';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { openHeadlinerDetail } from '../navigation/scheduleNavigation';
 import { RootTabParamList } from '../navigation/types';
@@ -116,7 +115,7 @@ export function PlaylistScreen() {
             </View>
           </View>
 
-          <SurfaceCard style={[styles.playerCard, isWide && styles.playerCardWide]}>
+          <View style={[styles.playerCard, isWide && styles.playerCardWide]}>
             <View
               style={[
                 styles.artworkWrap,
@@ -245,7 +244,7 @@ export function PlaylistScreen() {
                 <Text style={styles.refreshText}>Обновить информацию</Text>
               </Pressable>
             </View>
-          </SurfaceCard>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -318,7 +317,6 @@ const styles = StyleSheet.create({
   playerCardWide: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    padding: spacing.xl,
   },
   artworkWrap: {
     alignSelf: 'center',
