@@ -335,7 +335,9 @@ export function FestivalMapScreen({ route }: Props) {
               <FestivalMapView
                 config={mapConfig}
                 zones={data.mapZones}
-                pois={data.mapPois}
+                // Operational POIs stay available for search and routing, but
+                // the visitor map uses the existing polygons as its visual language.
+                pois={undefined}
                 paths={data.mapPaths}
                 userLocation={location}
                 userMarkers={markers}
