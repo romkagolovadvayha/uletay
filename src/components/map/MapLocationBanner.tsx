@@ -11,12 +11,20 @@ type Props = {
   status: LocationStatus;
   outsideTerritory?: boolean;
   onRequestPermission: () => void;
+  embedded?: boolean;
 };
 
-export function MapLocationBanner({ status, outsideTerritory, onRequestPermission }: Props) {
+export function MapLocationBanner({
+  status,
+  outsideTerritory,
+  onRequestPermission,
+  embedded = false,
+}: Props) {
+  const bannerStyle = [styles.banner, embedded && styles.bannerEmbedded];
+
   if (status === 'denied') {
     return (
-      <View style={styles.banner}>
+      <View style={bannerStyle}>
         <Text style={styles.text}>
           Карта работает без геолокации. Чтобы показать вас на карте, разрешите доступ в настройках браузера или телефона.
         </Text>
@@ -29,10 +37,10 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
 
   if (status === 'prompt') {
     return (
-      <View style={styles.banner}>
-        <Text style={styles.text}>Нажмите, чтобы показать ваше местоположение на карте</Text>
+      <View style={bannerStyle}>
+        <Text style={styles.text}>Покажем, где вы находитесь, и проложим путь до нужного места.</Text>
         <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
-          <Text style={styles.btnText}>Разрешить геолокацию</Text>
+          <Text style={styles.btnText}>Показать моё место</Text>
         </Pressable>
       </View>
     );
@@ -40,7 +48,7 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
 
   if (outsideTerritory) {
     return (
-      <View style={[styles.banner, styles.info]}>
+      <View style={[...bannerStyle, styles.info]}>
         <Text style={styles.text}>Вы находитесь не на фестивале</Text>
       </View>
     );
@@ -48,7 +56,7 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
 
   if (status === 'loading') {
     return (
-      <View style={[styles.banner, styles.info]}>
+      <View style={[...bannerStyle, styles.info]}>
         <Text style={styles.text}>Проверяем доступ к геолокации…</Text>
       </View>
     );
@@ -56,7 +64,7 @@ export function MapLocationBanner({ status, outsideTerritory, onRequestPermissio
 
   if (status === 'unavailable') {
     return (
-      <View style={[styles.banner, styles.info]}>
+      <View style={[...bannerStyle, styles.info]}>
         <Text style={styles.text}>Геолокация недоступна — включите GPS в настройках телефона</Text>
         <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
           <Text style={styles.btnText}>Повторить</Text>
@@ -82,6 +90,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     gap: spacing.sm,
   },
+  bannerEmbedded: {
+    position: 'relative',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   info: {
     backgroundColor: 'rgba(28,28,30,0.92)',
   },
@@ -90,7 +104,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   btn: {
-    minHeight: 36,
+    minHeight: 44,
     justifyContent: 'center',
   },
   btnText: {

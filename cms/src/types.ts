@@ -253,4 +253,5 @@ export type AdminTab =
   | 'autographs'
   | 'headliners'
   | 'foodcourt'
-  | 'map';
+  | 'map'
+  | 'push';

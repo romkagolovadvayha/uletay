@@ -1,8 +1,13 @@
-import { getStateFromPath as getDefaultStateFromPath } from '@react-navigation/native';
+import {
+  getPathFromState as getDefaultPathFromState,
+  getStateFromPath as getDefaultStateFromPath,
+} from '@react-navigation/native';
 import type { LinkingOptions, PartialState, NavigationState } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
+import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { RootTabParamList } from './types';
+import { getSafePushPath } from '../utils/pushNavigation';
 
 const prefixes = [
   Linking.createURL('/'),
@@ -58,8 +63,50 @@ function getHeadlinersStateFromPath(path: string): PartialState<NavigationState>
   return undefined;
 }
 
+function getActiveRoute(state: NavigationState | PartialState<NavigationState>) {
+  let currentState: NavigationState | PartialState<NavigationState> = state;
+  let active = currentState.routes[currentState.index ?? 0];
+
+  while (active?.state) {
+    currentState = active.state;
+    active = currentState.routes[currentState.index ?? 0];
+  }
+
+  return active;
+}
+
 export const linking: LinkingOptions<RootTabParamList> = {
   prefixes,
+  async getInitialURL() {
+    const initialUrl = await Linking.getInitialURL();
+    if (initialUrl || Platform.OS === 'web') {
+      return initialUrl;
+    }
+    const response = Notifications.getLastNotificationResponse();
+    const path = getSafePushPath(response?.notification.request.content.data?.url);
+    if (!path) {
+      return null;
+    }
+    Notifications.clearLastNotificationResponse();
+    return Linking.createURL(path);
+  },
+  subscribe(listener) {
+    const linkingSubscription = Linking.addEventListener('url', ({ url }) => listener(url));
+    const notificationSubscription =
+      Platform.OS === 'web'
+        ? null
+        : Notifications.addNotificationResponseReceivedListener((response) => {
+            const path = getSafePushPath(response.notification.request.content.data?.url);
+            if (path) {
+              listener(Linking.createURL(path));
+            }
+          });
+
+    return () => {
+      linkingSubscription.remove();
+      notificationSubscription?.remove();
+    };
+  },
   config: {
     screens: {
       HomeTab: '',
@@ -95,7 +142,8 @@ export const linking: LinkingOptions<RootTabParamList> = {
       },
       MoreTab: {
         screens: {
-          // MoreHome is a phone sheet host — not a public URL (/more → black screen).
+          // MoreHome and headliners use custom path serialization below. Declaring
+          // their paths here would conflict with HomeTab and HeadlinersTab.
           FoodCourtMain: 'foodcourt',
           FoodCourtDetail: 'foodcourt/:vendorId',
           FestivalAbout: 'about',
@@ -120,5 +168,21 @@ export const linking: LinkingOptions<RootTabParamList> = {
       return headlinersState;
     }
     return getDefaultStateFromPath(path, options);
+  },
+  getPathFromState(state, options) {
+    const active = getActiveRoute(state);
+
+    if (active?.name === 'MoreHome') {
+      return '/';
+    }
+    if (active?.name === 'HeadlinersMain') {
+      return '/headliners';
+    }
+    if (active?.name === 'HeadlinerDetail') {
+      const headlinerId = (active.params as { headlinerId?: string } | undefined)?.headlinerId;
+      return headlinerId ? `/headliners/${encodeURIComponent(headlinerId)}` : '/headliners';
+    }
+
+    return getDefaultPathFromState(state, options);
   },
 };

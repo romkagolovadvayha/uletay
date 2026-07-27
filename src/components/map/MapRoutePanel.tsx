@@ -5,7 +5,7 @@ import { ExternalLink } from '../ExternalLink';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { formatDuration, buildYandexRouteUrl } from '../../utils/map/geo';
+import { formatDistance, formatDuration, buildYandexRouteUrl } from '../../utils/map/geo';
 
 type Props = {
   route: CombinedRoute;
@@ -27,7 +27,7 @@ export function MapRoutePanel({ route, userLocation, onClear }: Props) {
     <View style={styles.panel}>
       <Text style={styles.summary}>{route.summary}</Text>
       <Text style={styles.meta}>
-        Всего: {formatDuration(route.totalDurationSeconds)}
+        {formatDistance(route.totalDistanceMeters)} · {formatDuration(route.totalDurationSeconds)}
       </Text>
       {navigatorUrl ? (
         <ExternalLink href={navigatorUrl} style={styles.navBtn}>

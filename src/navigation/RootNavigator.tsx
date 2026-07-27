@@ -6,7 +6,6 @@ import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
 import { DeferredIonicons } from '../components/DeferredIonicons';
 import { useIsTablet } from '../hooks/useIsTablet';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
-import { useFestivalActive } from '../hooks/useFestivalActive';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
 import { MoreMenuProvider, useMoreMenu } from '../context/MoreMenuContext';
 import { colors } from '../theme/colors';
@@ -111,8 +110,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRightColor: colors.borderStrong,
     borderTopWidth: 0,
-    elevation: 0,
-    shadowOpacity: 0,
+    boxShadow: 'none',
   },
 });
 
@@ -203,7 +201,6 @@ function MoreNavigator() {
 function RootTabs() {
   const { open } = useMoreMenu();
   const isTablet = useIsTablet();
-  const festivalActive = useFestivalActive();
 
   return (
     <Tab.Navigator
@@ -239,56 +236,51 @@ function RootTabs() {
           tabBarIcon: ({ color }) => <TabIcon name="map-outline" color={color} />,
         }}
       />
-      {festivalActive ? (
-        <>
-          <Tab.Screen
-            name="ScheduleTab"
-            component={ScheduleNavigator}
-            listeners={({ navigation }) => createNestedTabListeners(navigation, 'ScheduleTab')}
-            options={{
-              title: 'Расписание',
-              tabBarIcon: ({ color }) => <TabIcon name="calendar-outline" color={color} />,
-              popToTopOnBlur: true,
-            }}
-          />
-          <Tab.Screen
-            name="Autographs"
-            component={AutographNavigator}
-            listeners={({ navigation }) => createNestedTabListeners(navigation, 'Autographs')}
-            options={{
-              title: 'Автографы',
-              tabBarIcon: ({ color }) => <TabIcon name="ticket-outline" color={color} />,
-              popToTopOnBlur: true,
-            }}
-          />
-          <Tab.Screen
-            name="FavoritesTab"
-            component={MyScheduleScreen}
-            listeners={({ navigation }) => createFlatTabListeners(navigation)}
-            options={{
-              title: 'Избранное',
-              tabBarIcon: ({ color }) => <TabIcon name="star-outline" color={color} />,
-            }}
-          />
-        </>
-      ) : (
-        <Tab.Screen
-          name="HeadlinersTab"
-          component={HeadlinersNavigator}
-          listeners={({ navigation }) => createNestedTabListeners(navigation, 'HeadlinersTab')}
-          options={{
-            title: 'Хэдлайнеры',
-            tabBarIcon: ({ color }) => <TabIcon name="mic-outline" color={color} />,
-            popToTopOnBlur: true,
-          }}
-        />
-      )}
+      <Tab.Screen
+        name="ScheduleTab"
+        component={ScheduleNavigator}
+        listeners={({ navigation }) => createNestedTabListeners(navigation, 'ScheduleTab')}
+        options={{
+          title: 'Расписание',
+          tabBarIcon: ({ color }) => <TabIcon name="calendar-outline" color={color} />,
+          popToTopOnBlur: true,
+        }}
+      />
+      <Tab.Screen
+        name="Autographs"
+        component={AutographNavigator}
+        listeners={({ navigation }) => createNestedTabListeners(navigation, 'Autographs')}
+        options={{
+          title: 'Автографы',
+          tabBarIcon: ({ color }) => <TabIcon name="ticket-outline" color={color} />,
+          popToTopOnBlur: true,
+        }}
+      />
+      <Tab.Screen
+        name="FavoritesTab"
+        component={MyScheduleScreen}
+        listeners={({ navigation }) => createFlatTabListeners(navigation)}
+        options={{
+          title: 'Избранное',
+          tabBarIcon: ({ color }) => <TabIcon name="star-outline" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="HeadlinersTab"
+        component={HeadlinersNavigator}
+        listeners={({ navigation }) => createNestedTabListeners(navigation, 'HeadlinersTab')}
+        options={{
+          title: 'Хэдлайнеры',
+          tabBarIcon: ({ color }) => <TabIcon name="mic-outline" color={color} />,
+          popToTopOnBlur: true,
+        }}
+      />
       <Tab.Screen
         name="PlaylistTab"
         component={PlaylistScreen}
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
-          title: 'Плейлист',
+          title: 'Радио',
           tabBarIcon: ({ color }) => <TabIcon name="radio-outline" color={color} />,
         }}
       />

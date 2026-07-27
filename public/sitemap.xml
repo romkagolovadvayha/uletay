@@ -1,62 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://uletay.ru/</loc>
+    <loc>https://uletayapp.ru/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/map</loc>
+    <loc>https://uletayapp.ru/map</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/schedule</loc>
+    <loc>https://uletayapp.ru/schedule</loc>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/schedule/full</loc>
+    <loc>https://uletayapp.ru/schedule/full</loc>
     <changefreq>hourly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/autographs</loc>
+    <loc>https://uletayapp.ru/autographs</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/favorites</loc>
+    <loc>https://uletayapp.ru/favorites</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/playlist</loc>
+    <loc>https://uletayapp.ru/playlist</loc>
     <changefreq>hourly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/foodcourt</loc>
+    <loc>https://uletayapp.ru/headliners</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://uletayapp.ru/foodcourt</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/about</loc>
+    <loc>https://uletayapp.ru/about</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/rules</loc>
+    <loc>https://uletayapp.ru/rules</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/legal</loc>
+    <loc>https://uletayapp.ru/legal</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://uletay.ru/settings</loc>
+    <loc>https://uletayapp.ru/settings</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>

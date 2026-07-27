@@ -9,9 +9,9 @@ import {
   loadNotifiedIds,
   saveNotifiedIds,
   shouldFireReminder,
-  showReminderAlert,
   syncFavoriteNotifications,
 } from '../utils/favoriteNotifications';
+import { syncWebPushFavorites } from '../utils/remotePushNotifications';
 
 const POLL_MS = 30_000;
 
@@ -37,22 +37,6 @@ export function useFavoriteNotifications() {
   const notifiedIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') {
-      return;
-    }
-
-    const handler = (event: Event) => {
-      const detail = (event as CustomEvent<FavoriteReminderPayload>).detail;
-      if (detail) {
-        setActiveReminder(detail);
-      }
-    };
-
-    window.addEventListener('uletay-favorite-reminder', handler);
-    return () => window.removeEventListener('uletay-favorite-reminder', handler);
-  }, []);
-
-  useEffect(() => {
     if (!favoritesReady) {
       return;
     }
@@ -69,6 +53,11 @@ export function useFavoriteNotifications() {
     }
 
     void syncFavoriteNotifications(favorites, data);
+    if (Platform.OS === 'web' && notificationsEnabled) {
+      void syncWebPushFavorites(favorites).catch(() => {
+        // The next app launch or favorite change retries the server sync.
+      });
+    }
 
     if (!notifiedLoaded || !notificationsEnabled) {
       return;
@@ -103,11 +92,11 @@ export function useFavoriteNotifications() {
           id: event.notificationId,
           title: event.title,
           body: event.body,
+          url: event.url,
         };
 
         notifiedIdsRef.current.add(event.notificationId);
         void saveNotifiedIds(notifiedIdsRef.current);
-        void showReminderAlert(payload);
         setActiveReminder(payload);
       }
     };

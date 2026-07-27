@@ -23,9 +23,9 @@ function getDisabledSubtitle(permission: NotificationPermissionStatus): string {
 
 function getEnabledSubtitle(): string {
   if (Platform.OS === 'web') {
-    return 'Напомним за 10 минут, пока открыт сайт. На iPhone во вкладке Safari — баннер внутри приложения.';
+    return 'Push-новости и напоминания будут приходить, даже когда сайт закрыт. На iPhone требуется версия с экрана «Домой».';
   }
-  return 'Напомним за 10 минут до избранного события';
+  return 'Push-новости фестиваля и напоминания за 10 минут до избранного события';
 }
 
 type EnableButtonProps = {
@@ -112,7 +112,7 @@ export function FavoriteNotificationsCard() {
         <View style={styles.row}>
           <Ionicons name="notifications" size={22} color={colors.primary} />
           <View style={styles.textWrap}>
-            <Text style={styles.title}>Уведомления включены</Text>
+            <Text style={styles.title}>Push-уведомления включены</Text>
             <Text style={styles.subtitle}>{getEnabledSubtitle()}</Text>
           </View>
         </View>
@@ -134,7 +134,7 @@ export function FavoriteNotificationsCard() {
       <View style={styles.row}>
         <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
         <View style={styles.textWrap}>
-          <Text style={styles.title}>Напоминания об избранном</Text>
+        <Text style={styles.title}>Push-уведомления</Text>
           <Text style={styles.subtitle}>{getDisabledSubtitle(permission)}</Text>
         </View>
       </View>

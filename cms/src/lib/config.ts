@@ -22,4 +22,8 @@ export const config = {
   })(),
   uploadUrl: `${basePath}/api/uploads`,
   port: Number(env('PORT', '3000')),
+  vapidPublicKey: env('VAPID_PUBLIC_KEY'),
+  vapidPrivateKey: env('VAPID_PRIVATE_KEY'),
+  vapidSubject: env('VAPID_SUBJECT', 'mailto:admin@uletay.ru'),
+  expoPushAccessToken: env('EXPO_PUSH_ACCESS_TOKEN'),
 };

@@ -5,6 +5,7 @@ import {
   FESTIVAL_TIMEZONE,
   formatFestivalClock,
   getCurrentFestivalDayDate,
+  getFestivalDayDate,
   getFestivalClockParts,
   getFestivalDayWindow,
   parseFestivalDateOnly,
@@ -433,10 +434,20 @@ export function isFestivalFinished(
   performances: SchedulePerformance[],
   now = new Date(),
 ): boolean {
-  return (
-    isFestivalEnded(endDate, now) ||
-    (isFestivalStarted(startDate, now) && isFestivalScheduleEnded(performances, now))
-  );
+  if (isFestivalEnded(endDate, now)) {
+    return true;
+  }
+
+  if (!isFestivalStarted(startDate, now) || getCurrentFestivalDayDate(now) !== endDate) {
+    return false;
+  }
+
+  const currentFestivalPerformances = performances.filter((performance) => {
+    const festivalDay = getFestivalDayDate(performance.date, performance.startTime);
+    return festivalDay >= startDate && festivalDay <= endDate;
+  });
+
+  return isFestivalScheduleEnded(currentFestivalPerformances, now);
 }
 
 // Backward-compatible alias

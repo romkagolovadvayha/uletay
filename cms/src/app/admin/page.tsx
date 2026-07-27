@@ -1,16 +1,18 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { AdminImageUpload } from './components/AdminImageUpload';
+import { AdminNotice } from './components/AdminNotice';
+import { AdminShell } from './components/AdminShell';
 import { AutographsEditor } from './components/AutographsEditor';
 import { FoodcourtEditor } from './components/FoodcourtEditor';
 import { HeadlinersEditor } from './components/HeadlinersEditor';
 import { MapEditor } from './components/MapEditor';
 import { ScheduleEditor } from './components/ScheduleEditor';
+import { PushEditor } from './components/PushEditor';
 import {
   loadAdminData,
   logoutAction,
   saveFestivalAction,
   saveStagesAction,
-  uploadImageAction,
 } from './actions';
 import type { AdminTab } from '@/types';
 import { presetHint } from '@/lib/image-presets';
@@ -18,6 +20,8 @@ import {
   resolveAdminFestivalHeroSrc,
   resolveAdminFestivalLogoSrc,
 } from '@/lib/resolve-admin-image';
+import { config } from '@/lib/config';
+import { getPushBroadcastHistory, getPushStats } from '@/lib/push';
 
 const TABS: Record<AdminTab, string> = {
   festival: 'Фестиваль',
@@ -27,6 +31,7 @@ const TABS: Record<AdminTab, string> = {
   headliners: 'Хэдлайнеры',
   foodcourt: 'Фудкорт',
   map: 'Карта',
+  push: 'Push',
 };
 
 export default async function AdminPage({
@@ -40,6 +45,7 @@ export default async function AdminPage({
     stage?: string;
     date?: string;
     category?: string;
+    pushResult?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -54,110 +60,138 @@ export default async function AdminPage({
   }
 
   return (
-    <>
-      <header className="topbar">
-        <h1>УЛЕТАЙ — админка</h1>
-        <form action={logoutAction}>
-          <button type="submit" className="link-button">
-            Выйти
-          </button>
-        </form>
-      </header>
+    <AdminShell activeTab={activeTab} logoutAction={logoutAction}>
+      {params.ok ? <AdminNotice tone="success">Изменения сохранены</AdminNotice> : null}
+      {params.error ? (
+        <AdminNotice tone="error">{decodeURIComponent(params.error)}</AdminNotice>
+      ) : null}
 
-      <nav className="tabs">
-        {(Object.entries(TABS) as [AdminTab, string][]).map(([key, label]) => (
-          <Link key={key} className={activeTab === key ? 'active' : ''} href={`/admin?tab=${key}`}>
-            {label}
-          </Link>
-        ))}
-      </nav>
-
-      <main className="container">
-        {params.ok ? <p className="ok">Сохранено</p> : null}
-        {params.error ? <p className="error">{decodeURIComponent(params.error)}</p> : null}
-
-        {activeTab === 'festival' ? (
-          <>
-            <form action={saveFestivalAction} className="panel">
+      {activeTab === 'festival' ? (
+        <form
+          action={saveFestivalAction}
+          className="admin-form"
+          encType="multipart/form-data"
+        >
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Основная информация</h2>
+                <p>Базовые данные, которые отображаются в приложении и на сайте.</p>
+              </div>
+            </div>
+            <div className="panel-body">
               <div className="grid">
-                <label>
+                <label className="span-2">
                   Название
-                  <input name="name" defaultValue={data.festival.name} />
+                  <input name="name" defaultValue={data.festival.name} required />
                 </label>
                 <label>
                   Год
-                  <input name="year" type="number" defaultValue={data.festival.year} />
+                  <input
+                    name="year"
+                    type="number"
+                    min="2020"
+                    max="2100"
+                    defaultValue={data.festival.year}
+                    required
+                  />
                 </label>
                 <label>
-                  Начало
-                  <input name="startDate" type="date" defaultValue={data.festival.startDate} />
-                </label>
-                <label>
-                  Конец
-                  <input name="endDate" type="date" defaultValue={data.festival.endDate} />
-                </label>
-                <label>
-                  Локация
-                  <input name="location" defaultValue={data.festival.location} />
-                </label>
-                <label>
-                  Локация (коротко)
-                  <input name="locationShort" defaultValue={data.festival.locationShort} />
-                </label>
-                <label>
-                  Возраст
-                  <input name="ageRating" defaultValue={data.festival.ageRating} />
-                </label>
-                <label>
-                  Hero image URL
-                  <input name="heroImageUrl" defaultValue={data.festival.heroImageUrl ?? ''} />
-                </label>
-                <label>
-                  Logo image URL
-                  <input name="logoImageUrl" defaultValue={data.festival.logoImageUrl ?? ''} />
+                  Возрастной рейтинг
+                  <select name="ageRating" defaultValue={data.festival.ageRating}>
+                    {['0+', '6+', '12+', '16+', '18+'].map((rating) => (
+                      <option key={rating} value={rating}>
+                        {rating}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
-              <img
-                className="preview"
-                src={resolveAdminFestivalHeroSrc(data.festival.heroImageUrl)}
-                alt="hero"
-              />
-              <img
-                className="preview logo-preview"
-                src={resolveAdminFestivalLogoSrc(data.festival.logoImageUrl)}
-                alt="logo"
-              />
-              <button type="submit" className="btn-primary">
-                Сохранить фестиваль
-              </button>
-            </form>
-            <form action={uploadImageAction} className="panel" encType="multipart/form-data">
-              <input type="hidden" name="target" value="festival_logo" />
-              <label>
-                Загрузить логотип
-                <input type="file" name="file" accept="image/*" required />
-                <span className="hint">{presetHint('logo')}</span>
-              </label>
-              <button type="submit" className="btn-primary">
-                Загрузить логотип
-              </button>
-            </form>
-            <form action={uploadImageAction} className="panel" encType="multipart/form-data">
-              <input type="hidden" name="target" value="festival_hero" />
-              <label>
-                Загрузить фон главной
-                <input type="file" name="file" accept="image/*" required />
-                <span className="hint">{presetHint('hero')}</span>
-              </label>
-              <button type="submit" className="btn-primary">
-                Загрузить фон
-              </button>
-            </form>
-          </>
-        ) : null}
+            </div>
+          </section>
 
-        {activeTab === 'stages' ? (
-          <form action={saveStagesAction} className="panel">
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Даты и локация</h2>
+                <p>Период проведения и подписи места для разных размеров экрана.</p>
+              </div>
+            </div>
+            <div className="panel-body">
+              <div className="grid">
+                <label>
+                  Дата начала
+                  <input name="startDate" type="date" defaultValue={data.festival.startDate} required />
+                </label>
+                <label>
+                  Дата окончания
+                  <input name="endDate" type="date" defaultValue={data.festival.endDate} required />
+                </label>
+                <label className="span-2">
+                  Полная локация
+                  <input name="location" defaultValue={data.festival.location} required />
+                  <span className="hint">Например: Удмуртия, с. Лагуново</span>
+                </label>
+                <label className="span-2">
+                  Короткая подпись
+                  <input name="locationShort" defaultValue={data.festival.locationShort} required />
+                  <span className="hint">Используется в компактных карточках и заголовках.</span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Медиа-материалы</h2>
+                <p>Файлы автоматически обрезаются и оптимизируются при сохранении.</p>
+              </div>
+            </div>
+            <div className="panel-body image-fields-grid">
+              <AdminImageUpload
+                aspect="logo"
+                currentSrc={resolveAdminFestivalLogoSrc(data.festival.logoImageUrl)}
+                currentValue={data.festival.logoImageUrl}
+                fileName="logoFile"
+                hint={presetHint('logo')}
+                label="Логотип фестиваля"
+                removeName="removeLogoImage"
+                valueName="logoImageUrl"
+              />
+              <AdminImageUpload
+                aspect="hero"
+                currentSrc={resolveAdminFestivalHeroSrc(data.festival.heroImageUrl)}
+                currentValue={data.festival.heroImageUrl}
+                fileName="heroFile"
+                hint={presetHint('hero')}
+                label="Фон главной страницы"
+                removeName="removeHeroImage"
+                valueName="heroImageUrl"
+              />
+            </div>
+          </section>
+
+          <div className="sticky-form-actions">
+            <span>Изменения применятся после сохранения.</span>
+            <button type="submit" className="btn-primary">
+              Сохранить изменения
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      {activeTab === 'stages' ? (
+        <form action={saveStagesAction} className="admin-form">
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Список сцен</h2>
+                <p>Цвет используется в расписании, фильтрах и на карте.</p>
+              </div>
+              <span className="count-badge">{data.stages.length}</span>
+            </div>
+            <div className="panel-body stage-list">
             {data.stages.map((stage) => (
               <div key={stage.id} className="stage-row">
                 <input type="hidden" name="stage_id" value={stage.id} />
@@ -175,17 +209,25 @@ export default async function AdminPage({
                 </label>
                 <label>
                   Цвет
-                  <input name="stage_color" type="color" defaultValue={stage.color ?? '#FFFFFF'} />
+                  <span className="color-field">
+                    <input name="stage_color" type="color" defaultValue={stage.color ?? '#FFFFFF'} />
+                    <code>{stage.color ?? '#FFFFFF'}</code>
+                  </span>
                 </label>
               </div>
             ))}
+            </div>
+          </section>
+          <div className="sticky-form-actions">
+            <span>Проверьте короткие названия перед сохранением.</span>
             <button type="submit" className="btn-primary">
               Сохранить сцены
             </button>
-          </form>
-        ) : null}
+          </div>
+        </form>
+      ) : null}
 
-        {activeTab === 'schedule' ? (
+      {activeTab === 'schedule' ? (
           <ScheduleEditor
             items={data.schedule}
             stages={data.stages}
@@ -194,9 +236,9 @@ export default async function AdminPage({
             stageFilter={params.stage}
             dateFilter={params.date}
           />
-        ) : null}
+      ) : null}
 
-        {activeTab === 'autographs' ? (
+      {activeTab === 'autographs' ? (
           <AutographsEditor
             items={data.autographs}
             stages={data.stages}
@@ -205,24 +247,33 @@ export default async function AdminPage({
             stageFilter={params.stage}
             dateFilter={params.date}
           />
-        ) : null}
+      ) : null}
 
-        {activeTab === 'headliners' ? (
+      {activeTab === 'headliners' ? (
           <HeadlinersEditor items={data.headliners} editId={params.edit} />
-        ) : null}
+      ) : null}
 
-        {activeTab === 'foodcourt' ? (
+      {activeTab === 'foodcourt' ? (
           <FoodcourtEditor
             items={data.foodcourt}
             editId={params.edit}
             categoryFilter={params.category}
           />
-        ) : null}
+      ) : null}
 
-        {activeTab === 'map' ? (
+      {activeTab === 'map' ? (
           <MapEditor data={data} />
-        ) : null}
-      </main>
-    </>
+      ) : null}
+
+      {activeTab === 'push' ? (
+          <PushEditor
+            data={data}
+            stats={await getPushStats()}
+            history={await getPushBroadcastHistory()}
+            resultMessage={params.pushResult}
+            webPushConfigured={Boolean(config.vapidPublicKey && config.vapidPrivateKey)}
+          />
+      ) : null}
+    </AdminShell>
   );
 }

@@ -13,7 +13,7 @@ function normalizeSiteUrl(url: string): string {
 }
 
 const configuredSiteUrl =
-  (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_SITE_URL) || 'https://uletay.ru';
+  (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_SITE_URL) || 'https://uletayapp.ru';
 
 export const SITE_URL = normalizeSiteUrl(configuredSiteUrl);
 
@@ -22,3 +22,10 @@ export const DEFAULT_DESCRIPTION =
 
 export const DEFAULT_KEYWORDS =
   'УЛЕТАЙ, фестиваль, Лагуново, Удмуртия, расписание, карта, концерты, автографы, фудкорт';
+
+export const DEFAULT_SOCIAL_IMAGE_PATH = '/hero-video-poster.webp';
+
+export const DEFAULT_SOCIAL_IMAGE_URL = new URL(
+  DEFAULT_SOCIAL_IMAGE_PATH,
+  `${SITE_URL.replace(/\/$/, '')}/`,
+).href;

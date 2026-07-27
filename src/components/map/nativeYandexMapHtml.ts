@@ -32,6 +32,19 @@ export function buildNativeYandexMapHtml(
       background: #0A84FF; border: 2px solid #fff;
       box-sizing: border-box; transform: translate(-50%, -50%);
     }
+    .fest-poi-marker {
+      min-width: 36px; height: 36px; padding: 0 7px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 18px; background: #1C1C1E; color: #FFC107;
+      border: 2px solid rgba(255,255,255,.22); box-sizing: border-box;
+      transform: translate(-50%, -50%);
+      font: 800 11px/1 system-ui, sans-serif; letter-spacing: .1px;
+      box-shadow: 0 3px 10px rgba(0,0,0,.35);
+    }
+    .fest-poi-marker--selected {
+      background: #FFC107; color: #000; border-color: #fff;
+      transform: translate(-50%, -50%) scale(1.12);
+    }
     .fest-zone-label {
       display: flex; align-items: center; justify-content: center;
       color: #fff; font: 700 12px/1.15 system-ui, sans-serif;
@@ -90,6 +103,15 @@ export function buildNativeYandexMapHtml(
     return { stroke: [strokeLine(s.width, s.color, s.dash)], simplificationRate: 0 };
   }
 
+  function poiGlyph(category) {
+    var glyphs = {
+      stage: '♪', foodcourt: 'ЕДА', toilet: 'WC', shower: 'ДУШ',
+      water: 'H₂O', medical: '+', info: 'i', entrance: 'ВХОД',
+      parking: 'P', custom: '•'
+    };
+    return glyphs[category] || '•';
+  }
+
   var LAYER_Z = { paths: 1400, overlay: 2000, zoneImages: 3500, routes: 3400, zones: 3600, zoneLabels: 3700, markers: 3800 };
   var FEST_PATH = 'fest-paths';
   var FEST_ROUTE = 'fest-routes';
@@ -107,9 +129,11 @@ export function buildNativeYandexMapHtml(
   var zoneLabels = [];
   var pathItems = [];
   var routeItems = [];
+  var poiMarkers = [];
   var schemeOverlay = null;
   var userMarker = null;
   var selectedZoneId = null;
+  var selectedPoiId = null;
   var mapZoom = ${initZoom};
   var locationSynced = false;
   var INIT_CENTER = { lat: ${initLat}, lng: ${initLng} };
@@ -174,6 +198,7 @@ export function buildNativeYandexMapHtml(
       return;
     }
     selectedZoneId = state.selectedZoneId || null;
+    selectedPoiId = state.selectedPoiId || null;
     var container = document.getElementById('map');
 
     removeAll(pathItems);
@@ -287,6 +312,27 @@ export function buildNativeYandexMapHtml(
       });
       map.addChild(rItem);
       routeItems.push(rItem);
+    }
+
+    removeAll(poiMarkers);
+    var pois = state.pois || [];
+    for (var oi = 0; oi < pois.length; oi++) {
+      var poi = pois[oi];
+      if (!poi.geometry || poi.geometry.type !== 'Point') continue;
+      var pp = poi.properties || {};
+      var poiEl = document.createElement('div');
+      poiEl.className = 'fest-poi-marker' + (pp.id === selectedPoiId ? ' fest-poi-marker--selected' : '');
+      poiEl.textContent = poiGlyph(pp.category);
+      poiEl.setAttribute('aria-label', pp.name || 'Место');
+      var poiMarker = new ymaps3.YMapMarker({
+        id: 'poi-' + (pp.id || oi),
+        source: FEST_MARKER,
+        coordinates: poi.geometry.coordinates,
+        zIndex: LAYER_Z.markers + (pp.id === selectedPoiId ? 20 : 0),
+        properties: { poiId: pp.id }
+      }, poiEl);
+      map.addChild(poiMarker);
+      poiMarkers.push(poiMarker);
     }
 
     if (userMarker) {
@@ -408,6 +454,14 @@ export function buildNativeYandexMapHtml(
           }
         },
         onClick: function (object) {
+          var poiId = object && object.entity && object.entity.properties && object.entity.properties.poiId;
+          if (!poiId && object && object.entity && object.entity.id && String(object.entity.id).indexOf('poi-') === 0) {
+            poiId = String(object.entity.id).slice(4);
+          }
+          if (poiId) {
+            post({ type: 'poiPress', poiId: poiId });
+            return;
+          }
           var zoneId = object && object.entity && object.entity.properties && object.entity.properties.zoneId;
           if (!zoneId && object && object.entity && object.entity.id && String(object.entity.id).indexOf('zone-') === 0) {
             zoneId = String(object.entity.id).slice(5);

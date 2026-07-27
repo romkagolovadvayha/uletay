@@ -1,4 +1,4 @@
-const MUSICBRAINZ_USER_AGENT = 'UletayFestApp/1.0 (+https://uletay.ru)';
+const MUSICBRAINZ_USER_AGENT = 'UletayFestApp/1.0 (+https://uletayapp.ru)';
 const MUSICBRAINZ_REQUEST_GAP_MS = 1100;
 
 let lastMusicBrainzRequestAt = 0;

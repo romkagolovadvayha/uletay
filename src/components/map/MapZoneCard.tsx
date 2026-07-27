@@ -75,7 +75,7 @@ export function MapZoneCard({
         </View>
 
         <Text style={styles.territoryNote}>
-          Вы находитесь не на фестивале — маршрут по карте можно построить только на площадке.
+          Вы вне площадки — маршрут построим до въезда по дорогам, затем по тропинкам фестиваля.
         </Text>
 
         {festivalDistanceM != null ? (
@@ -90,6 +90,7 @@ export function MapZoneCard({
         <PrimaryButton
           label={routing ? 'Строим маршрут…' : 'Построить маршрут'}
           onPress={onRoute}
+          loading={routing}
           style={styles.primary}
         />
         <Text style={styles.routeHint}>По дорогам Яндекса и тропинкам площадки</Text>
@@ -136,6 +137,7 @@ export function MapZoneCard({
       <PrimaryButton
         label={routing ? 'Строим маршрут…' : 'Построить маршрут'}
         onPress={onRoute}
+        loading={routing}
         style={styles.primary}
       />
       <Text style={styles.routeHint}>По дорогам Яндекса и тропинкам площадки</Text>

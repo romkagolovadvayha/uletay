@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { PrimaryButton } from '../components/PrimaryButton';
+import { ExternalLink } from '../components/ExternalLink';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RulesTabBar } from '../components/RulesTabBar';
 import { ScreenTitle } from '../components/ScreenTitle';
@@ -13,7 +13,6 @@ import { screenHeaderStyle } from '../theme/layout';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
-import { openExternalUrl } from '../utils/openExternalUrl';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'FestivalRules'>;
 
@@ -33,11 +32,13 @@ function RulesBlockView({ block }: { block: FestivalRulesBlock }) {
         </View>
       ))}
       {block.link ? (
-        <PrimaryButton
-          label={block.link.label}
-          onPress={() => openExternalUrl(block.link!.url)}
+        <ExternalLink
+          href={block.link.url}
+          accessibilityLabel={block.link.label}
           style={styles.linkButton}
-        />
+        >
+          <Text style={styles.linkButtonLabel}>{block.link.label}</Text>
+        </ExternalLink>
       ) : null}
     </View>
   );
@@ -152,6 +153,17 @@ const styles = StyleSheet.create({
   linkButton: {
     alignSelf: 'flex-start',
     marginTop: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 17,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 54,
+  },
+  linkButtonLabel: {
+    ...typography.button,
+    color: colors.primaryText,
   },
   empty: {
     flex: 1,

@@ -16,6 +16,9 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: read
+
 concurrency:
   group: sync-headliner-web-images
   cancel-in-progress: false
@@ -31,19 +34,20 @@ jobs:
       SSH_HOST: ${{ vars.SSH_HOST || secrets.SSH_HOST }}
       SSH_USER: ${{ vars.SSH_USER || secrets.SSH_USER }}
       SSH_PORT: ${{ vars.SSH_PORT || secrets.SSH_PORT || '22' }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
       DB_NAME: ${{ vars.DB_NAME || secrets.DB_NAME }}
       DB_USER: ${{ vars.DB_USER || secrets.DB_USER }}
-      DB_PASS: ${{ vars.DB_PASS || secrets.DB_PASS }}
+      DB_PASS: ${{ secrets.DB_PASS }}
       LOCAL_UPLOAD_DIR: ${{ github.workspace }}/.web-image-uploads
       DB_TUNNEL_PORT: '3308'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Validate secrets
         run: |
-          for name in SSH_HOST SSH_USER DB_NAME DB_USER DB_PASS; do
+          for name in SSH_HOST SSH_USER SSH_KNOWN_HOSTS DB_NAME DB_USER DB_PASS; do
             if [ -z "${!name}" ]; then
               echo "Missing $name in production Environment"
               exit 1
@@ -51,7 +55,7 @@ jobs:
           done
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: npm
@@ -62,32 +66,26 @@ jobs:
 
       - name: Setup SSH key
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY || vars.SSH_PRIVATE_KEY }}
-          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
         run: bash deploy/gha-setup-ssh.sh
 
       - name: Open MySQL SSH tunnel
         run: |
-          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
-            -f -N -L "${DB_TUNNEL_PORT}:127.0.0.1:3306" "${SSH_USER}@${SSH_HOST}"
-          sleep 2
+          TUNNEL_SOCKET="$RUNNER_TEMP/headliner-images-mysql.sock"
+          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
+            -M -S "$TUNNEL_SOCKET" -f -N \
+            -L "${DB_TUNNEL_PORT}:127.0.0.1:3306" "${SSH_USER}@${SSH_HOST}"
+          echo "TUNNEL_SOCKET=$TUNNEL_SOCKET" >> "$GITHUB_ENV"
           echo "MySQL tunnel: 127.0.0.1:${DB_TUNNEL_PORT} -> ${SSH_HOST}:3306"
 
       - name: Sync headliner images from web
-        run: |
-          mkdir -p "$LOCAL_UPLOAD_DIR/images"
-          ARGS=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
-          fi
-          if [ "${{ github.event.inputs.force }}" = "true" ]; then
-            ARGS="$ARGS --force"
-          fi
-          if [ -n "${{ github.event.inputs.limit }}" ]; then
-            ARGS="$ARGS --limit=${{ github.event.inputs.limit }}"
-          fi
-          npm run headliners:sync-web-images --prefix cms -- $ARGS
         env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          FORCE: ${{ inputs.force }}
+          LIMIT: ${{ inputs.limit }}
           DB_HOST: 127.0.0.1
           DB_PORT: ${{ env.DB_TUNNEL_PORT }}
           DB_NAME: ${{ env.DB_NAME }}
@@ -95,15 +93,32 @@ jobs:
           DB_PASS: ${{ env.DB_PASS }}
           UPLOAD_DIR: ${{ env.LOCAL_UPLOAD_DIR }}
           BASE_PATH: ''
+        run: |
+          mkdir -p "$LOCAL_UPLOAD_DIR/images"
+          ARGS=()
+          if [ "$DRY_RUN" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          if [ "$FORCE" = "true" ]; then
+            ARGS+=(--force)
+          fi
+          if [ -n "$LIMIT" ]; then
+            if [[ ! "$LIMIT" =~ ^[0-9]+$ ]]; then
+              echo "::error::limit must be a non-negative integer"
+              exit 1
+            fi
+            ARGS+=("--limit=$LIMIT")
+          fi
+          npm run headliners:sync-web-images --prefix cms -- "${ARGS[@]}"
 
       - name: Upload headliner images to server
-        if: github.event.inputs.dry_run != 'true'
+        if: inputs.dry_run != true
         run: |
           if [ ! -d "$LOCAL_UPLOAD_DIR/images" ] || [ -z "$(ls -A "$LOCAL_UPLOAD_DIR/images" 2>/dev/null)" ]; then
             echo "No new images to upload"
             exit 0
           fi
-          RSYNC_SSH="ssh -i $DEPLOY_KEY_FILE -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
+          RSYNC_SSH="ssh -i $DEPLOY_KEY_FILE -p $SSH_PORT -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
           rsync -az -e "$RSYNC_SSH" \
             "$LOCAL_UPLOAD_DIR/images/" \
             "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/uploads/images/"
@@ -112,4 +127,6 @@ jobs:
       - name: Close SSH tunnel
         if: always()
         run: |
-          pkill -f "ssh -i ${DEPLOY_KEY_FILE} -p ${SSH_PORT}.*${DB_TUNNEL_PORT}:127.0.0.1:3306" || true
+          if [ -n "${TUNNEL_SOCKET:-}" ] && [ -S "$TUNNEL_SOCKET" ]; then
+            ssh -p "$SSH_PORT" -S "$TUNNEL_SOCKET" -O exit "${SSH_USER}@${SSH_HOST}" || true
+          fi

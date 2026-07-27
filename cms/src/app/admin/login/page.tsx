@@ -11,8 +11,16 @@ export default async function LoginPage({
   return (
     <div className="auth-page">
       <form action={loginAction} className="auth-card">
-        <h1>УЛЕТАЙ — вход</h1>
-        {hasError ? <p className="error">Неверный логин или пароль</p> : null}
+        <div className="auth-heading">
+          <span className="admin-brand-mark">У</span>
+          <div>
+            <h1>Вход в админку</h1>
+            <p>Управление контентом фестиваля УЛЕТАЙ</p>
+          </div>
+        </div>
+        {hasError ? (
+          <p className="admin-notice admin-notice--error">Неверный логин или пароль</p>
+        ) : null}
         <label>
           Логин
           <input name="username" required autoComplete="username" />

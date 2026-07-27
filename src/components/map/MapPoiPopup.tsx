@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -16,9 +17,10 @@ import { useMapMotion } from './MapMotionConfig';
 type Props = {
   visible: boolean;
   children: React.ReactNode;
+  onClose?: () => void;
 };
 
-export function MapPoiPopup({ visible, children }: Props) {
+export function MapPoiPopup({ visible, children, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { reduceMotion } = useMapMotion();
   const translateY = useSharedValue(320);
@@ -41,8 +43,7 @@ export function MapPoiPopup({ visible, children }: Props) {
 
   return (
     <Animated.View
-      pointerEvents="box-none"
-      style={[styles.wrap, sheetStyle]}
+      style={[styles.wrap, { pointerEvents: 'box-none' }, sheetStyle]}
     >
       <View
         style={[
@@ -52,6 +53,17 @@ export function MapPoiPopup({ visible, children }: Props) {
       >
         <View style={styles.handleWrap}>
           <View style={styles.handle} />
+          {onClose ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Закрыть карточку"
+              onPress={onClose}
+              hitSlop={8}
+              style={styles.close}
+            >
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
+          ) : null}
         </View>
         <View style={styles.content}>{children}</View>
       </View>
@@ -76,9 +88,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   handleWrap: {
+    position: 'relative',
     alignItems: 'center',
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
+  },
+  close: {
+    position: 'absolute',
+    right: spacing.screen,
+    top: spacing.sm,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   handle: {
     width: 40,

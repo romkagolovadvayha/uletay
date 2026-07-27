@@ -5,7 +5,8 @@ import { defaultAppData } from '../storage/dataStore';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { normalizeAppData } from '../utils/appDataNormalize';
 
-export const APP_DATA_CACHE_KEY = '@uletay_api_cache_v2';
+// v4 drops pre-migration snapshots that could remain fresh-looking after app_content is replaced.
+export const APP_DATA_CACHE_KEY = '@uletay_api_cache_v4';
 const FETCH_TIMEOUT_MS = 8_000;
 
 let memoryCache: CachedAppData | null = null;

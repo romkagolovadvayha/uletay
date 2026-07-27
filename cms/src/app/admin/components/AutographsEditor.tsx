@@ -86,11 +86,16 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
 
       {editId ? (
         <form action={upsertAutographAction} className="panel">
-          <h2>{isNew ? 'Новая сессия' : 'Редактирование'}</h2>
+          <div className="panel-heading">
+            <div>
+              <h2>{isNew ? 'Новая автограф-сессия' : `Редактирование: ${editing?.artist ?? ''}`}</h2>
+              <p>Время, место встречи и артист из общего списка хэдлайнеров.</p>
+            </div>
+          </div>
           <input type="hidden" name="isNew" value={isNew ? '1' : '0'} />
           {!isNew && editing ? <input type="hidden" name="id" value={editing.id} /> : null}
 
-          <div className="grid">
+          <div className="panel-body grid">
             <label>
               Сцена
               <select name="stageId" defaultValue={editing?.stageId ?? stages[0]?.id} required>
@@ -143,9 +148,16 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
         </form>
       ) : null}
 
-      <div className="panel table-wrap">
-        <p className="hint">{filtered.length} записей</p>
-        <table className="data-table">
+      <div className="panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Автограф-сессии</h2>
+            <p>Список отсортирован по дате и времени начала.</p>
+          </div>
+          <span className="count-badge">{filtered.length}</span>
+        </div>
+        <div className="panel-body table-wrap">
+          <table className="data-table">
           <thead>
             <tr>
               <th />
@@ -190,8 +202,9 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
               );
             })}
           </tbody>
-        </table>
-        {filtered.length === 0 ? <p className="hint">Нет записей</p> : null}
+          </table>
+          {filtered.length === 0 ? <p className="empty-state">Сессий не найдено</p> : null}
+        </div>
       </div>
     </>
   );

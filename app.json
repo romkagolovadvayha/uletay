@@ -26,6 +26,9 @@
     "android": {
       "package": "ru.uletay.app",
       "versionCode": 5,
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#FFD100",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -57,7 +60,10 @@
       [
         "expo-notifications",
         {
-          "iosDisplayInForeground": true
+          "iosDisplayInForeground": true,
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#FFD100",
+          "defaultChannel": "broadcasts"
         }
       ],
       [

@@ -21,6 +21,26 @@ npm run web           # приложение → http://localhost:8081
 | API | `http://localhost:3000/api/data` |
 | Админка | `http://localhost:3000/admin` |
 
+### Push-уведомления
+
+В админке откройте вкладку **Push**: там задаются заголовок, текст, аудитория и
+экран, который откроется по нажатию. Подписки создаются только после явного
+включения уведомлений пользователем в настройках приложения.
+
+- iOS/Android используют Expo Push Service. Для Android нужен development/production
+  build — удалённые push не работают в Expo Go.
+- Web использует стандартные Service Worker + Push API. Нужен HTTPS; на iPhone
+  сайт должен быть добавлен на экран «Домой».
+- Для событий из избранного напоминание отправляется за 10 минут до начала:
+  локально на iOS/Android и серверным Web Push в браузере, даже если вкладка закрыта.
+  Production-деплой автоматически устанавливает ежеминутный cron с защитой от дублей.
+- При первом production-деплое VAPID-ключи генерируются автоматически и затем
+  сохраняются в `cms/.env`. Не меняйте их после появления подписчиков.
+
+Для локальной настройки сгенерируйте ключи командой
+`npx web-push generate-vapid-keys` и добавьте `VAPID_PUBLIC_KEY`,
+`VAPID_PRIVATE_KEY` и `VAPID_SUBJECT` в `cms/.env`.
+
 Подробнее: [API_SETUP.md](API_SETUP.md)
 
 ---
@@ -48,29 +68,21 @@ npm run web           # приложение → http://localhost:8081
 ssh root@ВАШ_IP
 ```
 
-Создайте пользователя для деплоя:
-
-```bash
-adduser deploy
-usermod -aG sudo deploy
-mkdir -p /home/deploy/.ssh
-cp ~/.ssh/authorized_keys /home/deploy/.ssh/
-chown -R deploy:deploy /home/deploy/.ssh
-chmod 700 /home/deploy/.ssh
-chmod 600 /home/deploy/.ssh/authorized_keys
-```
+Текущие серверные скрипты управляют nginx, certbot и файлами в `/etc/cron.d`,
+поэтому workflow использует отдельный SSH-ключ пользователя `root`. Не
+используйте для него личный SSH-ключ.
 
 ### 4. Установите ПО на сервере
 
 ```bash
 sudo apt update
-sudo apt install -y nginx certbot python3-certbot-nginx mysql-server rsync git
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nginx certbot python3-certbot-nginx mysql-server rsync git cron logrotate
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 sudo npm install -g pm2
 
 sudo mkdir -p /var/www/uletay
-sudo chown -R $USER:www-data /var/www/uletay
+sudo chown -R root:www-data /var/www/uletay
 ```
 
 ### 5. Настройте MySQL
@@ -87,24 +99,32 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-### 6. Права для автодеплоя
+### 6. Системные службы
 
 ```bash
-sudo visudo
-```
-
-```
-deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bin/certbot
+sudo systemctl enable --now nginx mysql cron
 ```
 
 ### 7. SSH-ключ для GitHub Actions
 
 ```bash
-ssh-keygen -t ed25519 -C "github-deploy-uletay" -f ~/.ssh/uletay_deploy
-ssh-copy-id -i ~/.ssh/uletay_deploy.pub deploy@ВАШ_IP
+ssh-keygen -t ed25519 -N "" -C "github-deploy-uletay" -f ~/.ssh/uletay_deploy
+cat ~/.ssh/uletay_deploy.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
 ```
 
-Приватный ключ → GitHub Secret `SSH_PRIVATE_KEY`.
+Однострочный приватный ключ → GitHub Secret `SSH_PRIVATE_KEY_B64`:
+
+```bash
+base64 -w0 ~/.ssh/uletay_deploy && echo
+```
+
+После независимой проверки fingerprint добавьте вывод следующей команды в
+GitHub Secret `SSH_KNOWN_HOSTS`:
+
+```bash
+ssh-keyscan -H -p 22 ВАШ_IP
+```
 
 ### 8. GitHub Environment `production`
 
@@ -112,25 +132,28 @@ ssh-copy-id -i ~/.ssh/uletay_deploy.pub deploy@ВАШ_IP
 
 **Settings → Environments → `production`**
 
-Каждый параметр можно добавить в **Variables** или **Secrets** (сначала берётся Variables, если пусто — Secrets).
+Несекретные настройки добавляются в **Variables**, пароли и ключи — только в
+**Secrets**.
 
 | Имя | Пример | Обязательный |
 |-----|--------|--------------|
-| `DOMAIN` | `uletay.ru` | да |
+| `DOMAIN` | `uletayapp.ru` | да |
 | `LE_EMAIL` | `you@mail.ru` | да |
 | `SSH_HOST` | IP VPS (`185.x.x.x`) | да |
 | `SSH_USER` | `root` | да |
-| `SSH_PRIVATE_KEY` | приватный ключ | да — **только Secrets** |
+| `SSH_PRIVATE_KEY_B64` | приватный ключ в base64 | да — **только Secrets** |
+| `SSH_KNOWN_HOSTS` | закреплённый host key VPS | да — **только Secrets** |
 | `DB_HOST` | `127.0.0.1` | да |
 | `DB_NAME` | `uletay` | да |
 | `DB_USER` | `uletay` | да |
-| `DB_PASS` | пароль MySQL | да |
-| `ADMIN_PASSWORD` | пароль админки | да |
+| `DB_PASS` | пароль MySQL | да — **только Secrets** |
+| `ADMIN_PASSWORD` | пароль админки | да — **только Secrets** |
+| `SESSION_SECRET` | случайная строка 32+ символа | да — **только Secrets** |
+| `EXPO_PUBLIC_YANDEX_MAPS_API_KEY` | UUID ключа JS API | да |
 | `DEPLOY_PATH` | `/var/www/uletay` | нет |
 | `SSH_PORT` | `22` | нет |
 | `CMS_PORT` | `3000` | нет |
 | `ADMIN_USER` | `admin` | нет |
-| `SESSION_SECRET` | случайная строка | нет |
 
 ### 9. Первый деплой
 
@@ -138,9 +161,10 @@ Push в `master` или **Actions → Deploy → Run workflow**.
 
 Что произойдёт:
 
-1. Сборка Expo web → `dist/`
-2. Загрузка на VPS
-3. Сборка Next.js CMS, установка БД
+1. Проверка Expo SDK 57, TypeScript и lint
+2. Production-сборка и проверка Expo web/SEO/PWA и Next.js CMS
+3. Загрузка только runtime-файлов на VPS
+4. Миграция БД, перезапуск CMS и проверка публичного HTTPS/API
 4. PM2 запускает CMS
 5. nginx + **автоматический HTTPS** (certbot)
 
@@ -183,12 +207,22 @@ Push в `master` → автодеплой. Загруженные картинк
 npm run web           # dev-сервер приложения
 npm run cms:dev       # API + админка (Next.js)
 npm run build         # production-сборка web
+npm run seo:check     # проверка title, description, canonical, robots и sitemap в dist
+npm run test:push-web # проверка service worker, payload и перехода по клику
+npm run test:push-reminders --prefix cms # расчёт T−10 и deep links
+npm run test:push-favorites --prefix cms # избранное, выбор получателей и защита от дублей
 npm run cms:build     # сборка CMS
 npm run cms:install   # установка БД
 npm run seed:api      # экспорт сида
 npm run typecheck     # TypeScript
 npm run lint          # ESLint
 ```
+
+`npm run build` создаёт отдельный `index.html` для каждого публичного web-маршрута
+и заново генерирует `dist/sitemap.xml`. Список динамических страниц берётся из
+API, указанного в `EXPO_PUBLIC_API_URL`; если API недоступен, сборка использует
+данные репозитория. Файлы `robots.txt`, sitemap и HTML всех URL проверяются
+автоматически до завершения сборки.
 
 ## Репозиторий
 

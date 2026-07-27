@@ -6,4 +6,4 @@ Disallow: /admin/
 Disallow: /api/
 Disallow: /_next/
 
-Sitemap: https://uletay.ru/sitemap.xml
+Sitemap: https://uletayapp.ru/sitemap.xml

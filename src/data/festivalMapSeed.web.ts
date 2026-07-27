@@ -1,8 +1,8 @@
 import type { FestivalMapConfig, MapPathsGeoJson, MapPoisGeoJson, MapZonesGeoJson } from '../types/map';
 
 /**
- * Web eager bundle: skip heavy GeoJSON defaults (~13 KiB+).
- * Live map data comes from the API; empty collections are only a cold-start fallback.
+ * Web eager bundle: all map objects come from the API/CMS.
+ * Do not invent local POIs when the administrator only configured polygons.
  */
 const FESTIVAL_CENTER = { lat: 56.606975, lng: 53.622461 };
 

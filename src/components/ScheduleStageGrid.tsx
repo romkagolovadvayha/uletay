@@ -169,7 +169,7 @@ export function ScheduleStageGrid({
           {hourMarkers.map((minute) => {
             const top = minutesToGridOffset(minute, dayStart, pixelsPerMinute);
             return (
-              <View key={minute} style={[styles.hourLine, { top }]} pointerEvents="none">
+              <View key={minute} style={[styles.hourLine, { top, pointerEvents: 'none' }]}>
                 <Text style={styles.hourLabel}>{formatFestivalDayTimelineLabel(minute, selectedDate)}</Text>
                 <View style={styles.hourRule} />
               </View>
@@ -214,8 +214,10 @@ export function ScheduleStageGrid({
 
           {nowInRange ? (
             <View
-              style={[styles.nowMarker, { top: nowTop - NOW_LINE_HEIGHT / 2 }]}
-              pointerEvents="none"
+              style={[
+                styles.nowMarker,
+                { top: nowTop - NOW_LINE_HEIGHT / 2, pointerEvents: 'none' },
+              ]}
             >
               <View style={styles.nowLine}>
                 <Text style={styles.nowTime}>{formatFestivalClock(now)}</Text>
@@ -344,10 +346,7 @@ const styles = StyleSheet.create({
   nowRule: {
     height: NOW_RULE_HEIGHT,
     backgroundColor: colors.live,
-    shadowColor: colors.live,
-    shadowOpacity: 0.7,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
+    boxShadow: `0 0 10px ${colors.live}`,
   },
   empty: {
     paddingVertical: spacing.xxxl,

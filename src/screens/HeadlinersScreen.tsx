@@ -35,15 +35,17 @@ export function HeadlinersScreen({ navigation }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<HeadlinerSortMode>('popularity');
 
+  const activeYear = years.includes(Number(selectedYear)) ? selectedYear : String(defaultYear);
+
   const yearCategories = useMemo(() => buildHeadlinerYearCategories(years), [years]);
   const items = useMemo(
     () =>
       filterHeadlinersList(data.headliners, {
-        year: Number(selectedYear),
+        year: Number(activeYear),
         query: searchQuery,
         sort: sortMode,
       }),
-    [data.headliners, searchQuery, selectedYear, sortMode],
+    [activeYear, data.headliners, searchQuery, sortMode],
   );
   const fallbackYear = useMemo(
     () => years.find((year) => String(year) !== selectedYear),
@@ -60,7 +62,7 @@ export function HeadlinersScreen({ navigation }: Props) {
         <HeadlinerFilterBar
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
-          selectedYear={selectedYear}
+          selectedYear={activeYear}
           yearOptions={yearCategories}
           onYearChange={setSelectedYear}
           sortMode={sortMode}

@@ -143,6 +143,9 @@ setup_https_nginx() {
 
 verify_https() {
   local html_check="/tmp/uletay-https-check.html"
+  local seo_check="/tmp/uletay-seo-check.html"
+  local sitemap_check="/tmp/uletay-sitemap-check.xml"
+  local robots_check="/tmp/uletay-robots-check.txt"
   local www_domain="www.${DOMAIN}"
   local code
   local location
@@ -152,6 +155,26 @@ verify_https() {
   head -c 200 "$html_check" | grep -qiE 'html|УЛЕТАЙ|root' \
     || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check"; exit 1; }
   rm -f "$html_check"
+
+  curl -fsS -k "https://127.0.0.1/about" -H "Host: ${DOMAIN}" -o "$seo_check" \
+    || { echo "HTTPS is not serving the /about SEO route"; rm -f "$seo_check"; exit 1; }
+  grep -Fq "<title>О фестивале — УЛЕТАЙ" "$seo_check" \
+    || { echo "/about has the wrong title"; rm -f "$seo_check"; exit 1; }
+  grep -Fq "rel=\"canonical\" href=\"https://${DOMAIN}/about\"" "$seo_check" \
+    || { echo "/about has the wrong canonical URL"; rm -f "$seo_check"; exit 1; }
+  rm -f "$seo_check"
+
+  curl -fsS -k "https://127.0.0.1/sitemap.xml" -H "Host: ${DOMAIN}" -o "$sitemap_check" \
+    || { echo "sitemap.xml is not available"; rm -f "$sitemap_check"; exit 1; }
+  grep -Fq "<loc>https://${DOMAIN}/headliners</loc>" "$sitemap_check" \
+    || { echo "sitemap.xml does not contain public routes"; rm -f "$sitemap_check"; exit 1; }
+  rm -f "$sitemap_check"
+
+  curl -fsS -k "https://127.0.0.1/robots.txt" -H "Host: ${DOMAIN}" -o "$robots_check" \
+    || { echo "robots.txt is not available"; rm -f "$robots_check"; exit 1; }
+  grep -Fq "Sitemap: https://${DOMAIN}/sitemap.xml" "$robots_check" \
+    || { echo "robots.txt points to the wrong sitemap"; rm -f "$robots_check"; exit 1; }
+  rm -f "$robots_check"
 
   code=$(curl -fsS -o /dev/null -w '%{http_code}' -H "Host: ${DOMAIN}" "http://127.0.0.1/")
   if [[ "$code" != "301" && "$code" != "308" ]]; then

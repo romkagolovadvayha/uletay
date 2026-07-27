@@ -108,11 +108,11 @@ export async function buildCombinedRouteToTarget(options: {
 
   let summary = '';
   if (externalSeg && internalSeg) {
-    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до въезда (~${formatDuration(externalSeg.durationSeconds)}), затем ${formatDistance(internalSeg.distanceMeters)} пешком до ${options.targetName} (~${formatDuration(internalSeg.durationSeconds)})`;
+    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до въезда (${formatDuration(externalSeg.durationSeconds)}), затем ${formatDistance(internalSeg.distanceMeters)} пешком до ${options.targetName} (${formatDuration(internalSeg.durationSeconds)})`;
   } else if (externalSeg) {
-    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до ${options.targetName} (~${formatDuration(externalSeg.durationSeconds)})`;
+    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до ${options.targetName} (${formatDuration(externalSeg.durationSeconds)})`;
   } else if (internalSeg) {
-    summary = `${formatDistance(internalSeg.distanceMeters)} пешком до ${options.targetName} (~${formatDuration(internalSeg.durationSeconds)})`;
+    summary = `${formatDistance(internalSeg.distanceMeters)} пешком до ${options.targetName} (${formatDuration(internalSeg.durationSeconds)})`;
   }
 
   return {

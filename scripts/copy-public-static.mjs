@@ -12,7 +12,7 @@ const HOME_TITLE = `Официальное приложение фестивал
 const DESCRIPTION =
   'Официальное приложение фестиваля УЛЕТАЙ в Лагуново, Удмуртия: расписание концертов, карта площадки, автограф-сессии, фудкорт и радио в эфире.';
 const SITE_URL = (() => {
-  const raw = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://uletay.ru';
+  const raw = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://uletayapp.ru';
   try {
     const parsed = new URL(raw);
     if (parsed.hostname.startsWith('www.')) {
@@ -23,6 +23,7 @@ const SITE_URL = (() => {
     return raw.replace(/\/$/, '');
   }
 })();
+const SOCIAL_IMAGE_URL = `${SITE_URL.replace(/\/$/, '')}/hero-video-poster.webp`;
 
 function copyPublicFiles() {
   if (!existsSync(publicDir)) {
@@ -51,6 +52,7 @@ function patchIndexHtml() {
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="description" content="${DESCRIPTION}" />
   <meta name="keywords" content="УЛЕТАЙ, фестиваль, Лагуново, Удмуртия, расписание, карта, концерты" />
   <meta name="robots" content="index, follow" />
@@ -61,12 +63,21 @@ function patchIndexHtml() {
   <meta property="og:description" content="${DESCRIPTION}" />
   <meta property="og:url" content="${SITE_URL}/" />
   <meta property="og:locale" content="ru_RU" />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:image" content="${SOCIAL_IMAGE_URL}" />
+  <meta property="og:image:width" content="1024" />
+  <meta property="og:image:height" content="576" />
+  <meta property="og:image:alt" content="${SITE_NAME} — фестиваль в Удмуртии" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${HOME_TITLE}" />
-  <meta name="twitter:description" content="${DESCRIPTION}" />`;
+  <meta name="twitter:description" content="${DESCRIPTION}" />
+  <meta name="twitter:image" content="${SOCIAL_IMAGE_URL}" />`;
 
   if (!html.includes('name="description"')) {
     html = html.replace('</head>', `${seoBlock}\n</head>`);
+  }
+
+  if (!html.includes('rel="manifest"')) {
+    html = html.replace('</head>', '  <link rel="manifest" href="/manifest.webmanifest" />\n</head>');
   }
 
   if (!html.includes('<title>')) {
@@ -75,10 +86,7 @@ function patchIndexHtml() {
     html = html.replace(/<title>.*?<\/title>/, `<title>${HOME_TITLE}</title>`);
   }
 
-  if (!html.includes('lang=')) {
-    html = html.replace('<html lang="en">', '<html lang="ru">');
-    html = html.replace('<html>', '<html lang="ru">');
-  }
+  html = html.replace(/<html(?:\s+lang="[^"]*")?>/, '<html lang="ru">');
 
   html = html.replace(
     /name="viewport" content="[^"]*"/,
@@ -101,7 +109,7 @@ function patchSitemap() {
   }
 
   const siteUrl = SITE_URL.replace(/\/$/, '');
-  const xml = readFileSync(sitemapPath, 'utf8').replaceAll('https://uletay.ru', siteUrl);
+  const xml = readFileSync(sitemapPath, 'utf8').replaceAll('https://uletayapp.ru', siteUrl);
   writeFileSync(sitemapPath, xml, 'utf8');
 }
 
@@ -112,7 +120,7 @@ function patchRobots() {
   }
 
   const siteUrl = SITE_URL.replace(/\/$/, '');
-  const robots = readFileSync(robotsPath, 'utf8').replaceAll('https://uletay.ru', siteUrl);
+  const robots = readFileSync(robotsPath, 'utf8').replaceAll('https://uletayapp.ru', siteUrl);
   writeFileSync(robotsPath, robots, 'utf8');
 }
 

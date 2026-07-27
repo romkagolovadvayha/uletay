@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { navigationRef } from '../navigation/navigationRef';
 import { defaultAppData } from '../storage/dataStore';
 import type { AppData } from '../types';
+import { enforceExternalAnchorRel } from '../utils/openExternalUrl';
 import { applyWebSeo } from './applyWebSeo';
 import { resolveSeoMeta, type NavState, type SeoMeta } from './routeSeo';
 
@@ -37,6 +38,23 @@ function withPlaylistTitleOverride(meta: SeoMeta, state: NavState | undefined): 
   return { ...meta, title: playlistNowPlayingTitle };
 }
 
+function hasMatchingStaticSeo(meta: SeoMeta): boolean {
+  if (!meta.provisional || typeof document === 'undefined' || typeof window === 'undefined') {
+    return false;
+  }
+
+  const canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href;
+  if (!canonical) {
+    return false;
+  }
+
+  try {
+    return new URL(canonical).pathname === window.location.pathname;
+  } catch {
+    return false;
+  }
+}
+
 export function syncWebSeo(retry = 0) {
   if (Platform.OS !== 'web') {
     return;
@@ -56,5 +74,9 @@ export function syncWebSeo(retry = 0) {
   }
 
   const state = navigationRef.getRootState() as NavState;
-  applyWebSeo(withPlaylistTitleOverride(resolveSeoMeta(state, latestAppData), state));
+  const meta = withPlaylistTitleOverride(resolveSeoMeta(state, latestAppData), state);
+  if (!hasMatchingStaticSeo(meta)) {
+    applyWebSeo(meta);
+  }
+  enforceExternalAnchorRel(document);
 }

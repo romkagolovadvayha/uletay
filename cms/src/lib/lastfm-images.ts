@@ -103,7 +103,7 @@ async function downloadImageBuffer(imageUrl: string): Promise<Buffer> {
     ? await lastFmFetch(imageUrl)
     : await fetch(imageUrl, {
         headers: {
-          'User-Agent': 'UletayFestApp/1.0 (+https://uletay.ru)',
+          'User-Agent': 'UletayFestApp/1.0 (+https://uletayapp.ru)',
         },
         redirect: 'follow',
       });

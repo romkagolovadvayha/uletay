@@ -7,6 +7,11 @@ import {
   requestNotificationPermissions,
   saveNotificationsEnabled,
 } from '../utils/favoriteNotifications';
+import {
+  addRemotePushTokenRefreshListener,
+  syncRemotePushSubscription,
+  unregisterRemotePushSubscription,
+} from '../utils/remotePushNotifications';
 
 type NotificationSettingsContextValue = {
   enabled: boolean;
@@ -77,6 +82,9 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
         setPermission(status);
 
         if (granted) {
+          if (status === 'granted') {
+            await syncRemotePushSubscription();
+          }
           await saveNotificationsEnabled(true);
           setEnabled(true);
           setFeedback(null);
@@ -85,8 +93,9 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
 
         setFeedback(getEnableFailureMessage(status));
         return false;
-      } catch {
-        setFeedback('Ошибка при запросе уведомлений.');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Неизвестная ошибка';
+        setFeedback(`Не удалось подключить push: ${message}`);
         return false;
       } finally {
         setBusy(false);
@@ -101,11 +110,29 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
     try {
       await saveNotificationsEnabled(false);
       await cancelAllFavoriteNotifications();
+      await unregisterRemotePushSubscription().catch(() => undefined);
       setEnabled(false);
     } finally {
       setBusy(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!ready || !enabled || permission !== 'granted') {
+      return;
+    }
+    void syncRemotePushSubscription().catch(() => {
+      // Сохраняем локальные напоминания и повторим регистрацию при следующем запуске.
+    });
+  }, [enabled, permission, ready]);
+
+  useEffect(() => {
+    if (!ready || !enabled || permission !== 'granted') {
+      return;
+    }
+    const subscription = addRemotePushTokenRefreshListener();
+    return () => subscription?.remove();
+  }, [enabled, permission, ready]);
 
   const value = useMemo(
     () => ({

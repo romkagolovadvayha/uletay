@@ -4,7 +4,7 @@ import type { FestivalMapViewProps } from './types';
 import { resolveMediaUrl } from '../../config/api';
 import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
 import { mapColors } from '../../theme/map';
-import type { MapZoneProperties } from '../../types/map';
+import type { MapPoiCategory, MapPoiProperties, MapZoneProperties } from '../../types/map';
 import { filterZoneFeatures } from '../../utils/map/layerStyles';
 import { pathFeatureStyle, zoneFeatureStyle } from '../../utils/map/featureStyles';
 import { overlayToYandexLayoutBounds } from '../../utils/map/overlayGeoref';
@@ -44,6 +44,29 @@ function ensureMapStyles() {
       border: 2px solid #fff;
       box-sizing: border-box;
       transform: translate(-50%, -50%);
+    }
+    .fest-poi-marker {
+      min-width: 36px;
+      height: 36px;
+      padding: 0 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: #1C1C1E;
+      color: #FFC107;
+      border: 2px solid rgba(255,255,255,.22);
+      box-sizing: border-box;
+      transform: translate(-50%, -50%);
+      font: 800 11px/1 system-ui, sans-serif;
+      box-shadow: 0 3px 10px rgba(0,0,0,.35);
+      cursor: pointer;
+    }
+    .fest-poi-marker--selected {
+      background: #FFC107;
+      color: #000;
+      border-color: #fff;
+      transform: translate(-50%, -50%) scale(1.12);
     }
     ${zoneLabelCssRules('fest')}
     .fest-zone-fill-image {
@@ -125,16 +148,34 @@ function zoneStyle(feature: GeoJSON.Feature, selected: boolean) {
   return zoneFeatureStyle((feature.properties ?? {}) as MapZoneProperties, selected);
 }
 
+function poiGlyph(category: MapPoiCategory) {
+  return {
+    stage: '♪',
+    foodcourt: 'ЕДА',
+    toilet: 'WC',
+    shower: 'ДУШ',
+    water: 'H₂O',
+    medical: '+',
+    info: 'i',
+    entrance: 'ВХОД',
+    parking: 'P',
+    custom: '•',
+  }[category];
+}
+
 export function FestivalMapView({
   config,
   zones,
+  pois,
   paths,
   userLocation,
   routeSegments,
   filter,
   selectedZoneId,
+  selectedPoiId,
   followUser,
   onZonePress,
+  onPoiPress,
   onMapPress,
   onMapReady,
   onMapLoaded,
@@ -146,6 +187,7 @@ export function FestivalMapView({
   const mapRef = useRef<YandexMapInstance | null>(null);
   const readyRef = useRef(false);
   const onZonePressRef = useLatestRef(onZonePress);
+  const onPoiPressRef = useLatestRef(onPoiPress);
   const onMapPressRef = useLatestRef(onMapPress);
 
   const zoneFeaturesRef = useRef<YandexMapEntity[]>([]);
@@ -153,6 +195,7 @@ export function FestivalMapView({
   const zoneLabelRefs = useRef<YandexMapEntity[]>([]);
   const pathFeaturesRef = useRef<YandexMapEntity[]>([]);
   const routeFeaturesRef = useRef<YandexMapEntity[]>([]);
+  const poiMarkerRefs = useRef<YandexMapEntity[]>([]);
   const userMarkerRef = useRef<YandexMapEntity | null>(null);
   const schemeOverlayRef = useRef<YandexMapEntity | null>(null);
   const listenerRef = useRef<YandexMapEntity | null>(null);
@@ -177,6 +220,9 @@ export function FestivalMapView({
   const filteredZones = useMemo(() => filterZoneFeatures(zones?.features ?? [], filter), [zones, filter]);
   const zonesByIdRef = useRef(
     new Map<string, GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>>(),
+  );
+  const poisByIdRef = useRef(
+    new Map<string, GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>>(),
   );
 
   useEffect(() => {
@@ -254,6 +300,17 @@ export function FestivalMapView({
             }
           },
           onClick: (object: YandexDomEventObject) => {
+            let poi = object?.entity?.properties?.__poi as
+              | GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>
+              | undefined;
+            if (!poi && object?.entity?.id?.startsWith('poi-')) {
+              const poiId = object.entity.id.slice('poi-'.length);
+              poi = poisByIdRef.current.get(poiId);
+            }
+            if (poi) {
+              onPoiPressRef.current(poi);
+              return;
+            }
             let zone = object?.entity?.properties?.__zone as
               | GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>
               | undefined;
@@ -341,6 +398,7 @@ export function FestivalMapView({
       const zoneLabels = zoneLabelRefs.current;
       const pathItems = pathFeaturesRef.current;
       const routeItems = routeFeaturesRef.current;
+      const poiItems = poiMarkerRefs.current;
       /* eslint-enable react-hooks/exhaustive-deps */
       const map = mapRef.current;
       if (map) {
@@ -351,6 +409,7 @@ export function FestivalMapView({
         removeAll(map, zoneLabels);
         removeAll(map, pathItems);
         removeAll(map, routeItems);
+        removeAll(map, poiItems);
         if (userMarkerRef.current) map.removeChild(userMarkerRef.current);
         map.destroy?.();
       }
@@ -517,6 +576,37 @@ export function FestivalMapView({
       routeFeaturesRef.current.push(item);
     });
   }, [routeSegments, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const bundle = bundleRef.current;
+    if (!map || !mapReady || !bundle) return;
+
+    removeAll(map, poiMarkerRefs.current);
+    poisByIdRef.current.clear();
+    pois?.features.forEach((poi, index) => {
+      if (poi.geometry.type !== 'Point') return;
+      poisByIdRef.current.set(poi.properties.id, poi);
+      const selected = poi.properties.id === selectedPoiId;
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = `fest-poi-marker${selected ? ' fest-poi-marker--selected' : ''}`;
+      el.textContent = poiGlyph(poi.properties.category);
+      el.setAttribute('aria-label', poi.properties.name);
+      const marker = new bundle.ymaps3.YMapMarker(
+        {
+          id: `poi-${poi.properties.id ?? index}`,
+          source: FEST_MARKER_SOURCE,
+          coordinates: poi.geometry.coordinates,
+          zIndex: LAYER_Z.markers + (selected ? 20 : 0),
+          properties: { __poi: poi },
+        },
+        el,
+      );
+      map.addChild(marker);
+      poiMarkerRefs.current.push(marker);
+    });
+  }, [mapReady, pois, selectedPoiId]);
 
   useEffect(() => {
     const map = mapRef.current;

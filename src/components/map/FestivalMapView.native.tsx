@@ -4,7 +4,7 @@ import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { resolveMediaUrl } from '../../config/api';
 import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
 import { useLatestRef } from '../../hooks/useLatestRef';
-import type { MapZoneProperties } from '../../types/map';
+import type { MapPoiProperties, MapZoneProperties } from '../../types/map';
 import { filterZoneFeatures } from '../../utils/map/layerStyles';
 import { overlayToYandexLayoutBounds } from '../../utils/map/overlayGeoref';
 import { buildNativeYandexMapHtml } from './nativeYandexMapHtml';
@@ -16,18 +16,22 @@ type BridgeMessage =
   | { type: 'loaded' }
   | { type: 'error'; message?: string }
   | { type: 'zonePress'; zoneId: string }
+  | { type: 'poiPress'; poiId: string }
   | { type: 'mapPress' };
 
 export function FestivalMapView({
   config,
   zones,
+  pois,
   paths,
   userLocation,
   routeSegments,
   selectedZoneId,
+  selectedPoiId,
   filter,
   followUser,
   onZonePress,
+  onPoiPress,
   onMapPress,
   onMapReady,
   onMapLoaded,
@@ -36,8 +40,10 @@ export function FestivalMapView({
   const webRef = useRef<WebView>(null);
   const bridgeReadyRef = useRef(false);
   const onZonePressRef = useLatestRef(onZonePress);
+  const onPoiPressRef = useLatestRef(onPoiPress);
   const onMapPressRef = useLatestRef(onMapPress);
   const zonesRef = useLatestRef(zones);
+  const poisRef = useLatestRef(pois);
 
   const filteredZones = useMemo(
     () => filterZoneFeatures(zones?.features ?? [], filter),
@@ -60,6 +66,7 @@ export function FestivalMapView({
       center: config.center,
       defaultZoom: config.defaultZoom,
       selectedZoneId: selectedZoneId ?? null,
+      selectedPoiId: selectedPoiId ?? null,
       followUser,
       userLocation: userLocation
         ? { lat: userLocation.lat, lng: userLocation.lng }
@@ -83,6 +90,11 @@ export function FestivalMapView({
           fillImageUrl: resolveMediaUrl(feature.properties.fillImageUrl) ?? null,
         },
       })),
+      pois: (pois?.features ?? []).map((feature) => ({
+        type: 'Feature' as const,
+        geometry: feature.geometry,
+        properties: feature.properties,
+      })),
     };
   }, [
     config.adminOverlay,
@@ -91,8 +103,10 @@ export function FestivalMapView({
     filteredZones,
     followUser,
     paths,
+    pois,
     routeSegments,
     selectedZoneId,
+    selectedPoiId,
     userLocation,
   ]);
 
@@ -151,6 +165,14 @@ export function FestivalMapView({
         | GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>
         | undefined;
       if (zone) onZonePressRef.current(zone);
+      return;
+    }
+
+    if (msg.type === 'poiPress') {
+      const poi = poisRef.current?.features.find((f) => f.properties.id === msg.poiId) as
+        | GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>
+        | undefined;
+      if (poi) onPoiPressRef.current(poi);
       return;
     }
 

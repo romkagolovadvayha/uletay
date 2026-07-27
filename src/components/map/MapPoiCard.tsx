@@ -90,6 +90,7 @@ export function MapPoiCard({
         <PrimaryButton
           label={routing ? 'Строим маршрут…' : 'Построить маршрут'}
           onPress={onRoute}
+          loading={routing}
           style={styles.primary}
         />
         <Text style={styles.routeHint}>По дорогам и тропинкам площадки</Text>
@@ -136,6 +137,7 @@ export function MapPoiCard({
       <PrimaryButton
         label={routing ? 'Строим маршрут…' : 'Построить маршрут'}
         onPress={onRoute}
+        loading={routing}
         style={styles.primary}
       />
       <Text style={styles.routeHint}>По дорогам и тропинкам площадки</Text>

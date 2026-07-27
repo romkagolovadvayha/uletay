@@ -32,25 +32,33 @@ import type {
   StageId,
 } from '@/types';
 import { defaultOverlayFromBounds } from '@/lib/map-overlay-georef';
+import { sendPushBroadcast, type PushAudience } from '@/lib/push';
 
-async function requireSession() {
+async function requireSession(): Promise<number> {
   const session = await getSession();
   if (!session.adminUserId) {
     redirect('/admin/login');
   }
+  return session.adminUserId;
 }
 
 async function optionalImageUrl(
   formData: FormData,
   current?: string,
   preset: ImagePreset = 'artist',
+  fileField = 'file',
+  valueField = 'imageUrl',
+  removeField = 'removeImage',
 ): Promise<string | undefined> {
-  const manual = String(formData.get('imageUrl') ?? '').trim();
-  const file = formData.get('file');
+  const storedValue = String(formData.get(valueField) ?? '').trim();
+  const file = formData.get(fileField);
   if (file instanceof File && file.size > 0) {
     return saveUploadedImage(file, 'images', preset);
   }
-  return manual || current || undefined;
+  if (formData.get(removeField) === '1') {
+    return undefined;
+  }
+  return storedValue || current || undefined;
 }
 
 function uploadErrorMessage(error: unknown): string {
@@ -117,9 +125,64 @@ export async function logoutAction() {
   redirect('/admin/login');
 }
 
+export async function sendPushBroadcastAction(formData: FormData) {
+  const adminUserId = await requireSession();
+  const title = String(formData.get('title') ?? '');
+  const body = String(formData.get('body') ?? '');
+  const audience = String(formData.get('audience') ?? 'all') as PushAudience;
+  const presetPath = String(formData.get('targetPath') ?? '/');
+  const customPath = String(formData.get('customPath') ?? '').trim();
+
+  let result;
+  try {
+    result = await sendPushBroadcast(
+      {
+        title,
+        body,
+        audience,
+        targetPath: customPath || presetPath,
+      },
+      adminUserId,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Не удалось отправить push';
+    redirect('/admin?tab=push&error=' + encodeURIComponent(message));
+  }
+  const summary =
+    `Приложения: ${result.nativeAccepted} принято, ${result.nativeFailed} ошибок. ` +
+    `Веб: ${result.webSent} отправлено, ${result.webFailed} ошибок.`;
+  const warning = result.errors.length ? ` ${result.errors.join('; ')}` : '';
+  redirect('/admin?tab=push&pushResult=' + encodeURIComponent(summary + warning));
+}
+
 export async function saveFestivalAction(formData: FormData) {
   await requireSession();
   const data = await getAppData();
+
+  let heroImageUrl: string | undefined;
+  let logoImageUrl: string | undefined;
+  try {
+    [heroImageUrl, logoImageUrl] = await Promise.all([
+      optionalImageUrl(
+        formData,
+        data.festival.heroImageUrl,
+        'hero',
+        'heroFile',
+        'heroImageUrl',
+        'removeHeroImage',
+      ),
+      optionalImageUrl(
+        formData,
+        data.festival.logoImageUrl,
+        'logo',
+        'logoFile',
+        'logoImageUrl',
+        'removeLogoImage',
+      ),
+    ]);
+  } catch (error) {
+    redirect('/admin?tab=festival&error=' + encodeURIComponent(uploadErrorMessage(error)));
+  }
 
   data.festival = {
     ...data.festival,
@@ -130,8 +193,8 @@ export async function saveFestivalAction(formData: FormData) {
     location: String(formData.get('location') ?? '').trim(),
     locationShort: String(formData.get('locationShort') ?? '').trim(),
     ageRating: String(formData.get('ageRating') ?? '').trim(),
-    heroImageUrl: String(formData.get('heroImageUrl') ?? '').trim() || data.festival.heroImageUrl,
-    logoImageUrl: String(formData.get('logoImageUrl') ?? '').trim() || data.festival.logoImageUrl,
+    ...(heroImageUrl ? { heroImageUrl } : { heroImageUrl: undefined }),
+    ...(logoImageUrl ? { logoImageUrl } : { logoImageUrl: undefined }),
   };
 
   await saveAppData(data);
@@ -326,7 +389,7 @@ export async function upsertFoodcourtAction(formData: FormData) {
     distance,
     imageTint,
     ...(priceRange ? { priceRange } : {}),
-    ...(imageUrl ? { imageUrl } : existing?.imageUrl ? { imageUrl: existing.imageUrl } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
     ...(existing?.legalName ? { legalName: existing.legalName } : {}),
     ...(existing?.contacts ? { contacts: existing.contacts } : {}),
     ...(existing?.notes ? { notes: existing.notes } : {}),

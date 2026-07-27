@@ -12,7 +12,7 @@ if [[ -f "${DEPLOY_PATH}/cms/.env" ]]; then
 fi
 
 : "${DOMAIN:?Set DOMAIN or cms/.env}"
-: "${LE_EMAIL:?Set LE_EMAIL (email for Let's Encrypt)}"
+: "${LE_EMAIL:?Set LE_EMAIL (ACME account email)}"
 : "${DEPLOY_PATH:?DEPLOY_PATH required}"
 CMS_PORT="${PORT:-${CMS_PORT:-3000}}"
 

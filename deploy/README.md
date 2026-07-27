@@ -1,6 +1,6 @@
 # Деплой на VPS (GitHub Actions)
 
-Автодеплой при push в `main` / `master`. Переменные и секреты — из GitHub Environment **`production`**.
+Автодеплой при push в `master`. Переменные и секреты — из GitHub Environment **`production`**.
 
 Стек на сервере: **nginx** (Expo web + reverse proxy) + **Next.js CMS** (PM2) + **MySQL**.
 
@@ -8,24 +8,25 @@
 
 **Settings → Environments → `production`**
 
-Каждый параметр можно указать в **Variables** или **Secrets** — workflow берёт значение из Variables, если пусто — из Secrets.
+Несекретные параметры задаются в **Variables**, пароли и ключи — в **Secrets**.
 
 ### Обязательные
 
 | Имя | Пример | Описание |
 |-----|--------|----------|
-| `DOMAIN` | `uletay.ru` | Основное зеркало **без www** |
+| `DOMAIN` | `uletayapp.ru` | Основное зеркало **без www** |
 | `LE_EMAIL` | `you@mail.ru` | Email для Let's Encrypt |
 | `SSH_HOST` | `185.x.x.x` | IP VPS |
 | `SSH_USER` | `root` | SSH-пользователь |
-| `SSH_PRIVATE_KEY` | `-----BEGIN...` | да — **только Secrets**, весь файл |
-| `SSH_PRIVATE_KEY_B64` | `base64 -w0 uletay_deploy` | вместо `SSH_PRIVATE_KEY` (надёжнее) |
-| `SSH_KEY_PASSPHRASE` | пароль от ключа | только если ключ **с паролем** |
+| `SSH_PRIVATE_KEY_B64` | `base64 -w0 uletay_deploy` | **Secret**, приватный ключ без passphrase |
+| `SSH_KNOWN_HOSTS` | результат `ssh-keyscan` | **Secret**, закреплённый host key сервера |
 | `DB_HOST` | `127.0.0.1` | MySQL host |
 | `DB_NAME` | `uletay` | Имя БД |
 | `DB_USER` | `uletay` | Пользователь MySQL |
-| `DB_PASS` | `***` | Пароль MySQL |
-| `ADMIN_PASSWORD` | `***` | Пароль админки |
+| `DB_PASS` | `***` | **Secret**, пароль MySQL |
+| `ADMIN_PASSWORD` | `***` | **Secret**, пароль админки |
+| `SESSION_SECRET` | случайная строка 32+ символа | **Secret**, постоянный секрет сессии CMS |
+| `EXPO_PUBLIC_YANDEX_MAPS_API_KEY` | UUID ключа | Публичный ключ JS API Яндекс Карт |
 
 ### Опциональные (есть значения по умолчанию)
 
@@ -35,11 +36,18 @@
 | `SSH_PORT` | `22` | SSH-порт |
 | `CMS_PORT` | `3000` | Порт Next.js CMS |
 | `ADMIN_USER` | `admin` | Логин админки |
-| `SESSION_SECRET` | генерируется на сервере | Секрет сессии CMS |
+| `LASTFM_API_KEY` | пусто | **Secret**, нужен scheduled sync |
+| `LASTFM_PROXY_URL` | пусто | **Secret**, если URL содержит логин/пароль |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | генерируются один раз | Web Push; private key — **Secret** |
+| `VAPID_SUBJECT` | `mailto:admin@DOMAIN` | Контакт Web Push |
+| `EXPO_PUSH_ACCESS_TOKEN` | пусто | **Secret**, если включена enhanced push security |
 
-> Пароли и ключи лучше хранить в **Secrets**, но технически можно и в Variables.
+> `DB_PASS`, `ADMIN_PASSWORD`, `SESSION_SECRET`, SSH-ключ, Last.fm/proxy,
+> VAPID private key и push token хранятся **только в Secrets**. Workflow намеренно
+> не читает эти значения из Variables.
 
-> `SSH_PRIVATE_KEY` — **только в Secrets** (Variables ломают многострочный ключ).
+> Альтернатива `SSH_PRIVATE_KEY_B64` — Secret `SSH_PRIVATE_KEY` с полным
+> приватным ключом. Ключ с passphrase в неинтерактивном CI не поддерживается.
 
 **Рекомендуется `SSH_PRIVATE_KEY_B64`** — на сервере:
 ```bash
@@ -52,7 +60,14 @@ grep -qxF "$(cat ~/.ssh/uletay_deploy.pub)" ~/.ssh/authorized_keys || cat ~/.ssh
 # одна строка для GitHub Secret SSH_PRIVATE_KEY_B64
 base64 -w0 ~/.ssh/uletay_deploy && echo
 ```
-Скопируй вывод в Secret `SSH_PRIVATE_KEY_B64`. Удали `SSH_PRIVATE_KEY` и `SSH_KEY_PASSPHRASE`, если ключ без пароля.
+Скопируй вывод в Secret `SSH_PRIVATE_KEY_B64`.
+
+Закрепи host key сервера отдельным Secret `SSH_KNOWN_HOSTS` (сверь fingerprint
+по независимому каналу, прежде чем сохранять):
+
+```bash
+ssh-keyscan -H -p 22 ВАШ_IP
+```
 
 ## SSH: Permission denied (publickey)
 
@@ -88,8 +103,8 @@ chmod 600 ~/.ssh/authorized_keys
 
 ```bash
 sudo apt update
-sudo apt install -y nginx certbot python3-certbot-nginx mysql-server rsync
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nginx certbot python3-certbot-nginx mysql-server rsync cron logrotate
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 sudo npm install -g pm2
 
@@ -106,17 +121,14 @@ GRANT ALL ON uletay.* TO 'uletay'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Sudoers (nginx + certbot + pm2):
-
-```
-deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx, /bin/systemctl reload nginx, /usr/bin/certbot
-```
+Серверные скрипты управляют nginx, certbot и `/etc/cron.d`, поэтому текущий
+workflow запускается отдельным deployment-ключом пользователя `root`.
 
 ## 3. Что делает деплой
 
-1. `npm run build` — Expo web → `dist/`
-2. `rsync` на VPS
-3. На сервере: `cms/.env`, `npm ci`, `npm run build` в `cms/`
+1. Expo dependency check, TypeScript, lint, web/PWA/SEO и CMS production build
+2. `rsync` только runtime-каталогов (`dist`, `assets`, `cms`, `deploy`) на VPS
+3. На сервере: безопасное обновление `cms/.env` и `npm ci`
 4. `npm run db:migrate` — только схема БД (`CREATE TABLE IF NOT EXISTS`). **Контент, imageUrl и uploads не трогаются.**
 5. PM2 запускает Next.js standalone
 6. nginx: `/` → `dist/`, `/api`, `/admin`, `/_next` → CMS
@@ -202,8 +214,8 @@ sudo ss -tlnp | grep ':443'    # nginx слушает 443
 Проверка зеркала:
 
 ```bash
-curl -I http://www.uletay.ru    # 301 → https://uletay.ru/...
-curl -I https://www.uletay.ru   # 301 → https://uletay.ru/...
+curl -I http://www.uletayapp.ru    # 301 → https://uletayapp.ru/...
+curl -I https://www.uletayapp.ru   # 301 → https://uletayapp.ru/...
 ```
 
 В [Яндекс.Вебмастер](https://webmaster.yandex.ru/) и Google Search Console укажите основное зеркало **без www**.

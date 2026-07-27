@@ -11,7 +11,7 @@ const LIVE = colors.live;
 
 export function NowTimeTrail({ height }: Props) {
   return (
-    <View style={[styles.wrap, { height }]} pointerEvents="none">
+    <View style={[styles.wrap, { height, pointerEvents: 'none' }]}>
       <Svg width="100%" height={height} preserveAspectRatio="none">
         <Defs>
           <LinearGradient id="nowTrailVertical" x1="0" y1="0" x2="0" y2="1">

@@ -17,7 +17,11 @@ import { findHeadlinerByRadioArtist } from '../utils/matchRadioArtist';
 type RadioPlayerContextValue = {
   isPlaying: boolean;
   isLoading: boolean;
+  isBuffering: boolean;
+  isMetadataLoading: boolean;
+  isPlayerVisible: boolean;
   error: string | null;
+  lastUpdatedAt: number | null;
   nowPlaying: RadioNowPlaying | null;
   matchedHeadliner: Headliner | null;
   togglePlayback: () => void;
@@ -36,7 +40,9 @@ const LazyRadioAudioEngine = React.lazy(() =>
 export function RadioPlayerProvider({ children }: { children: React.ReactNode }) {
   const { data } = useAppData();
   const [nowPlaying, setNowPlaying] = useState<RadioNowPlaying | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [isMetadataLoading, setIsMetadataLoading] = useState(false);
   const [playlistActive, setPlaylistActive] = useState(false);
   const [audioMounted, setAudioMounted] = useState(false);
@@ -58,9 +64,10 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
     try {
       const next = await fetchRadioNowPlaying();
       setNowPlaying(next);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось получить эфир');
+      setMetadataError(null);
+      setLastUpdatedAt(Date.now());
+    } catch {
+      setMetadataError('Не удалось обновить информацию об эфире');
     } finally {
       setIsMetadataLoading(false);
     }
@@ -86,15 +93,18 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
   }, [playlistActive, isPlaying, refreshNowPlaying]);
 
   const handlePlaybackChange = useCallback(
-    (state: { playing: boolean; isBuffering: boolean }) => {
+    (state: { playing: boolean; isBuffering: boolean; error: string | null }) => {
       setIsPlaying(state.playing);
       setIsBuffering(state.isBuffering);
+      setPlaybackError(
+        state.error ? 'Не удалось подключиться к эфиру. Проверьте интернет и повторите.' : null,
+      );
     },
     [],
   );
 
   const play = useCallback(() => {
-    setError(null);
+    setPlaybackError(null);
     void refreshNowPlaying();
     if (!audioMounted) {
       pendingPlayRef.current = true;
@@ -120,8 +130,12 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
   const value = useMemo(
     () => ({
       isPlaying,
-      isLoading: isBuffering || isMetadataLoading,
-      error,
+      isLoading: isBuffering,
+      isBuffering,
+      isMetadataLoading,
+      isPlayerVisible: audioMounted,
+      error: playbackError ?? metadataError,
+      lastUpdatedAt,
       nowPlaying,
       matchedHeadliner,
       togglePlayback,
@@ -131,14 +145,17 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       setPlaylistActive,
     }),
     [
-      error,
+      audioMounted,
       isBuffering,
       isMetadataLoading,
       isPlaying,
+      lastUpdatedAt,
       matchedHeadliner,
+      metadataError,
       nowPlaying,
       pause,
       play,
+      playbackError,
       refreshNowPlaying,
       togglePlayback,
     ],

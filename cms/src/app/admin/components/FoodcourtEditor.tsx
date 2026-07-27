@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { upsertFoodcourtAction } from '../actions';
-import { AdminImagePreview } from './AdminImageThumb';
+import { AdminImageUpload } from './AdminImageUpload';
 import { FoodcourtSortableTable } from './FoodcourtSortableTable';
 import type { FoodCourtCategory, FoodCourtVendor } from '@/types';
 import { presetHint } from '@/lib/image-presets';
@@ -63,11 +63,16 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
 
       {editId ? (
         <form action={upsertFoodcourtAction} className="panel" encType="multipart/form-data">
-          <h2>{isNew ? 'Новая точка' : 'Редактирование'}</h2>
+          <div className="panel-heading">
+            <div>
+              <h2>{isNew ? 'Новая точка' : `Редактирование: ${editing?.name ?? ''}`}</h2>
+              <p>Информация, часы работы, цены и изображение карточки.</p>
+            </div>
+          </div>
           <input type="hidden" name="isNew" value={isNew ? '1' : '0'} />
           {!isNew && editing ? <input type="hidden" name="id" value={editing.id} /> : null}
 
-          <div className="grid">
+          <div className="panel-body grid">
             <label className="span-2">
               Название
               <input name="name" defaultValue={editing?.name ?? ''} required />
@@ -110,22 +115,16 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
               Расстояние
               <input name="distance" defaultValue={editing?.distance ?? ''} placeholder="80 м" required />
             </label>
-            <label className="span-2">
-              URL картинки
-              <input name="imageUrl" defaultValue={editing?.imageUrl ?? ''} />
-            </label>
-            <label className="span-2">
-              Загрузить картинку
-              <input type="file" name="file" accept="image/*" />
-              <span className="hint">{presetHint('thumb')}</span>
-            </label>
+            <div className="span-2">
+              <AdminImageUpload
+                aspect="square"
+                currentSrc={resolveAdminImageSrc(editing?.imageUrl)}
+                currentValue={editing?.imageUrl}
+                hint={presetHint('thumb')}
+                label="Изображение точки"
+              />
+            </div>
           </div>
-
-          <AdminImagePreview
-            imageUrl={editing?.imageUrl}
-            alt={editing?.name ?? 'preview'}
-            className="preview thumb"
-          />
 
           <div className="form-actions">
             <button type="submit" className="btn-primary">
@@ -138,17 +137,25 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
         </form>
       ) : null}
 
-      <div className="panel table-wrap">
-        <p className="hint">{filtered.length} записей</p>
-        {filtered.length > 0 ? (
-          <FoodcourtSortableTable
-            key={tableItems.map((item) => item.id).join('|')}
-            items={tableItems}
-            sortable={!categoryFilter}
-          />
-        ) : (
-          <p className="hint">Нет записей</p>
-        )}
+      <div className="panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Точки фудкорта</h2>
+            <p>Порядок без фильтра соответствует порядку в приложении.</p>
+          </div>
+          <span className="count-badge">{filtered.length}</span>
+        </div>
+        <div className="panel-body table-wrap">
+          {filtered.length > 0 ? (
+            <FoodcourtSortableTable
+              key={tableItems.map((item) => item.id).join('|')}
+              items={tableItems}
+              sortable={!categoryFilter}
+            />
+          ) : (
+            <p className="empty-state">По выбранному фильтру ничего не найдено</p>
+          )}
+        </div>
       </div>
     </>
   );

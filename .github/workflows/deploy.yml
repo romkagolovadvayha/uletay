@@ -1,15 +1,17 @@
-name: Deploy
+name: Deploy production
 
 on:
   push:
     branches:
       - master
-      - main
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: deploy-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -18,209 +20,204 @@ jobs:
     environment: production
 
     env:
+      NODE_VERSION: '24'
       DOMAIN: ${{ vars.DOMAIN || secrets.DOMAIN }}
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH || secrets.DEPLOY_PATH || '/var/www/uletay' }}
       LE_EMAIL: ${{ vars.LE_EMAIL || secrets.LE_EMAIL }}
       SSH_HOST: ${{ vars.SSH_HOST || secrets.SSH_HOST }}
       SSH_USER: ${{ vars.SSH_USER || secrets.SSH_USER }}
       SSH_PORT: ${{ vars.SSH_PORT || secrets.SSH_PORT || '22' }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
       CMS_PORT: ${{ vars.CMS_PORT || secrets.CMS_PORT || '3000' }}
       ADMIN_USER: ${{ vars.ADMIN_USER || secrets.ADMIN_USER || 'admin' }}
       DB_HOST: ${{ vars.DB_HOST || secrets.DB_HOST }}
       DB_NAME: ${{ vars.DB_NAME || secrets.DB_NAME }}
       DB_USER: ${{ vars.DB_USER || secrets.DB_USER }}
-      DB_PASS: ${{ vars.DB_PASS || secrets.DB_PASS }}
-      ADMIN_PASSWORD: ${{ vars.ADMIN_PASSWORD || secrets.ADMIN_PASSWORD }}
-      SESSION_SECRET: ${{ vars.SESSION_SECRET || secrets.SESSION_SECRET }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
       EXPO_PUBLIC_API_URL: https://${{ vars.DOMAIN || secrets.DOMAIN }}/api
       EXPO_PUBLIC_SITE_URL: https://${{ vars.DOMAIN || secrets.DOMAIN }}
       EXPO_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.EXPO_PUBLIC_YANDEX_MAPS_API_KEY || secrets.EXPO_PUBLIC_YANDEX_MAPS_API_KEY }}
-      NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
-      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY || vars.LASTFM_API_KEY }}
-      LASTFM_PROXY_URL: ${{ secrets.LASTFM_PROXY_URL || vars.LASTFM_PROXY_URL }}
+      NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || vars.EXPO_PUBLIC_YANDEX_MAPS_API_KEY || secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || secrets.EXPO_PUBLIC_YANDEX_MAPS_API_KEY }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+      LASTFM_PROXY_URL: ${{ secrets.LASTFM_PROXY_URL }}
+      VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+      VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || secrets.VAPID_SUBJECT }}
+      EXPO_PUSH_ACCESS_TOKEN: ${{ secrets.EXPO_PUSH_ACCESS_TOKEN }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - name: Validate environment
+      - name: Validate production configuration
+        shell: bash
         run: |
+          set -euo pipefail
+
           require() {
-            name="$1"
-            value="$2"
-            if [ -z "$value" ]; then
-              echo "Set $name in GitHub Environment → production → Variables or Secrets"
+            local name="$1"
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Set ${name} in GitHub Environment 'production'."
               exit 1
             fi
           }
 
-          require DOMAIN "$DOMAIN"
-          require LE_EMAIL "$LE_EMAIL"
-          require SSH_HOST "$SSH_HOST"
-          require SSH_USER "$SSH_USER"
-          require DB_HOST "$DB_HOST"
-          require DB_NAME "$DB_NAME"
-          require DB_USER "$DB_USER"
-          require DB_PASS "$DB_PASS"
-          require ADMIN_PASSWORD "$ADMIN_PASSWORD"
+          for name in \
+            DOMAIN LE_EMAIL SSH_HOST SSH_USER SSH_KNOWN_HOSTS \
+            DB_HOST DB_NAME DB_USER DB_PASS ADMIN_PASSWORD SESSION_SECRET \
+            EXPO_PUBLIC_YANDEX_MAPS_API_KEY; do
+            require "$name"
+          done
 
-          if [ -z "${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 || secrets.SSH_PRIVATE_KEY || vars.SSH_PRIVATE_KEY }}" ]; then
-            echo "Set SSH_PRIVATE_KEY_B64 (recommended) or SSH_PRIVATE_KEY in Secrets"
+          if [ -z "$SSH_PRIVATE_KEY_B64" ] && [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "::error::Set SSH_PRIVATE_KEY_B64 (preferred) or SSH_PRIVATE_KEY as a production Secret."
             exit 1
           fi
 
-          if [ -n "${{ vars.SSH_PRIVATE_KEY }}" ]; then
-            echo "::warning::Remove SSH_PRIVATE_KEY from Variables — use Secrets or SSH_PRIVATE_KEY_B64 only"
+          if [[ ! "$DOMAIN" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]$ ]] ||
+             [[ "$DOMAIN" != *.* || "$DOMAIN" == *..* || "$DOMAIN" == www.* ]]; then
+            echo "::error::DOMAIN must be an apex host name without scheme, path, or www: ${DOMAIN}"
+            exit 1
+          fi
+
+          if [[ "$DEPLOY_PATH" != /* || "$DEPLOY_PATH" == "/" || "$DEPLOY_PATH" == *".."* ]] ||
+             [[ "$DEPLOY_PATH" =~ [^A-Za-z0-9_./-] ]]; then
+            echo "::error::DEPLOY_PATH must be a safe absolute directory below /, got: ${DEPLOY_PATH}"
+            exit 1
+          fi
+
+          for port_name in SSH_PORT CMS_PORT; do
+            port="${!port_name}"
+            if [[ ! "$port" =~ ^[0-9]+$ ]] || ((port < 1 || port > 65535)); then
+              echo "::error::${port_name} must be an integer from 1 to 65535."
+              exit 1
+            fi
+          done
+
+          if ((${#SESSION_SECRET} < 32)); then
+            echo "::error::SESSION_SECRET must contain at least 32 characters."
+            exit 1
           fi
 
           if [ -z "$LASTFM_API_KEY" ]; then
-            echo "::warning::LASTFM_API_KEY is not set in CI — check production Environment Secrets (not only Variables), then redeploy"
-          else
-            echo "LASTFM_API_KEY is set in CI (${#LASTFM_API_KEY} characters)"
+            echo "::warning::LASTFM_API_KEY is not set; the scheduled Last.fm sync will not work."
           fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            cms/package-lock.json
 
-      - name: Install app dependencies
-        run: npm ci
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix cms
 
-      - name: Build web app
+      - name: Run preflight checks
+        run: |
+          npx expo install --check
+          npm run lint
+          npm run typecheck
+          npm run test:push-reminders --prefix cms
+          test -f deploy/setup-push-reminders-cron.sh
+          bash -n deploy/*.sh
+
+      - name: Build and verify web app
         run: |
           npm run build:web
+          npm run seo:check
+          npm run test:push-web
           test -f dist/index.html
           test -f dist/404.html
+          test -f dist/manifest.webmanifest
+          test -f dist/push-sw.js
           test -d dist/_expo/static/js/web
           find dist/assets -name 'Ionicons*.ttf' | grep -q .
           find dist/assets -name 'Montserrat_400Regular*.ttf' | grep -q .
-        env:
-          EXPO_PUBLIC_API_URL: ${{ env.EXPO_PUBLIC_API_URL }}
-          EXPO_PUBLIC_SITE_URL: ${{ env.EXPO_PUBLIC_SITE_URL }}
-          EXPO_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.EXPO_PUBLIC_YANDEX_MAPS_API_KEY || secrets.EXPO_PUBLIC_YANDEX_MAPS_API_KEY }}
 
-      - name: Build CMS
+      - name: Build and verify CMS
         run: |
-          npm ci --prefix cms
           npm run build --prefix cms
-          cp -r cms/.next/static cms/.next/standalone/.next/static
-          mkdir -p cms/.next/standalone/data
-          cp -r cms/data/. cms/.next/standalone/data/
-          mkdir -p cms/.next/standalone/node_modules
-          cp -a cms/node_modules/sharp cms/.next/standalone/node_modules/
-          if [ -d cms/node_modules/@img ]; then
-            cp -a cms/node_modules/@img cms/.next/standalone/node_modules/
-          fi
+          test -f cms/.next/BUILD_ID
+          test -f cms/.next/standalone/server.js
 
-      - name: Setup SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY || vars.SSH_PRIVATE_KEY }}
-          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 }}
-          SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE || vars.SSH_KEY_PASSPHRASE }}
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          KEY_FILE="$HOME/.ssh/deploy_key"
-
-          if [ -n "$SSH_PRIVATE_KEY_B64" ]; then
-            echo "Using SSH_PRIVATE_KEY_B64"
-            B64=$(echo "$SSH_PRIVATE_KEY_B64" | tr -d '\r\n \t')
-            case $((${#B64} % 4)) in 2) B64="${B64}==" ;; 3) B64="${B64}=" ;; esac
-            if ! echo "$B64" | openssl base64 -d -A > "$KEY_FILE" 2>/dev/null; then
-              echo "$B64" | base64 -d > "$KEY_FILE"
-            fi
-            sed -i '1s/^\xEF\xBB\xBF//' "$KEY_FILE" 2>/dev/null || true
-          elif [ -n "$SSH_PRIVATE_KEY" ]; then
-            echo "Using SSH_PRIVATE_KEY (prefer SSH_PRIVATE_KEY_B64)"
-            if printf '%s' "$SSH_PRIVATE_KEY" | grep -q '\\n'; then
-              printf '%b' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$KEY_FILE"
-            else
-              printf '%s' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$KEY_FILE"
-            fi
-          else
-            echo "::error::No SSH key configured"
-            exit 1
-          fi
-          chmod 600 "$KEY_FILE"
-
-          KEY_SIZE=$(wc -c < "$KEY_FILE" | tr -d ' ')
-          echo "Key file size: ${KEY_SIZE} bytes"
-
-          if head -c 4 "$KEY_FILE" | grep -q '^ssh-'; then
-            echo "::error::This looks like a .pub file. Encode the private key: base64 -w0 ~/.ssh/uletay_deploy"
-            exit 1
-          fi
-
-          if ! ssh-keygen -y -f "$KEY_FILE" > "$HOME/.ssh/deploy_key.pub" 2>keygen.err; then
-            echo "::error::SSH key is invalid."
-            echo "Key header (hex):"
-            head -c 32 "$KEY_FILE" | xxd || true
-            echo "ssh-keygen says:"
-            cat keygen.err || true
-            if grep -qi 'passphrase\|decrypt\|bad decrypt' keygen.err 2>/dev/null; then
-              echo "Key is password-protected. On server run:"
-              echo "  bash deploy/print-github-ssh-key.sh"
-            else
-              echo "On server run:"
-              echo "  bash deploy/print-github-ssh-key.sh"
-              echo "Put the single b64 line in Secret SSH_PRIVATE_KEY_B64 only."
-            fi
-            exit 1
-          fi
-
-          ssh-keygen -y -f "$KEY_FILE" > "$HOME/.ssh/deploy_key.pub"
-          echo "DEPLOY_KEY_FILE=$KEY_FILE" >> "$GITHUB_ENV"
-
-          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-
-          echo "=== Add this line to /root/.ssh/authorized_keys on the server ==="
-          cat "$HOME/.ssh/deploy_key.pub"
-          echo "=== Target: ${SSH_USER}@${SSH_HOST}:${SSH_PORT} ==="
+      - name: Setup pinned SSH connection
+        run: bash deploy/gha-setup-ssh.sh
 
       - name: Verify SSH connection
         run: |
-          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
-            "${SSH_USER}@${SSH_HOST}" "echo SSH connection OK" \
-            || (echo "SSH failed. On server run: cat ~/.ssh/uletay_ci.pub >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" && exit 1)
+          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "${SSH_USER}@${SSH_HOST}" "echo 'SSH connection OK'"
 
-      - name: Sync files to server
+      - name: Sync release files to server
         run: |
-          RSYNC_SSH="ssh -i $DEPLOY_KEY_FILE -p $SSH_PORT -o StrictHostKeyChecking=accept-new"
-          TARGET="${SSH_USER}@${SSH_HOST}:$DEPLOY_PATH"
+          RSYNC_SSH="ssh -i $DEPLOY_KEY_FILE -p $SSH_PORT -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          TARGET="${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}"
 
-          rsync -az --delete -e "$RSYNC_SSH" \
-            --filter 'P uploads/' \
-            --filter 'P cms/.env' \
-            --exclude '/node_modules' \
-            --exclude '/cms/node_modules' \
-            --exclude '/.git' \
-            --exclude '/.expo' \
-            --exclude '/uploads' \
+          rsync -az --delete --delete-delay --delay-updates --relative -e "$RSYNC_SSH" \
+            --filter 'protect /cms/.env' \
             --exclude '/cms/.env' \
-            ./ "$TARGET/"
+            --exclude '/cms/node_modules/***' \
+            --exclude '/cms/.next/cache/***' \
+            ./dist/ ./assets/ ./cms/ ./deploy/ "$TARGET/"
 
-      - name: Configure server (Node CMS + nginx + HTTPS)
+      - name: Configure server and activate release
+        shell: bash
         run: |
-          LASTFM_API_KEY_B64=$(printf '%s' "$LASTFM_API_KEY" | base64 -w0)
-          LASTFM_PROXY_URL_B64=$(printf '%s' "$LASTFM_PROXY_URL" | base64 -w0)
+          printf -v REMOTE_SCRIPT '%q' "${DEPLOY_PATH}/deploy/remote-deploy.sh"
 
-          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
-            "${SSH_USER}@${SSH_HOST}" \
-            "DOMAIN='$DOMAIN' \
-             DEPLOY_PATH='$DEPLOY_PATH' \
-             LE_EMAIL='$LE_EMAIL' \
-             CMS_PORT='$CMS_PORT' \
-             DB_HOST='$DB_HOST' \
-             DB_NAME='$DB_NAME' \
-             DB_USER='$DB_USER' \
-             DB_PASS='$DB_PASS' \
-             ADMIN_USER='$ADMIN_USER' \
-             ADMIN_PASSWORD='$ADMIN_PASSWORD' \
-             SESSION_SECRET='$SESSION_SECRET' \
-             NEXT_PUBLIC_YANDEX_MAPS_API_KEY='${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:-}' \
-             LASTFM_API_KEY=\$(printf '%s' '${LASTFM_API_KEY_B64}' | base64 -d) \
-             LASTFM_PROXY_URL=\$(printf '%s' '${LASTFM_PROXY_URL_B64}' | base64 -d) \
-             bash '$DEPLOY_PATH/deploy/remote-deploy.sh'"
+          {
+            printf '%s\0' \
+              "$DOMAIN" \
+              "$DEPLOY_PATH" \
+              "$LE_EMAIL" \
+              "$CMS_PORT" \
+              "$DB_HOST" \
+              "$DB_NAME" \
+              "$DB_USER" \
+              "$DB_PASS" \
+              "$ADMIN_USER" \
+              "$ADMIN_PASSWORD" \
+              "$SESSION_SECRET" \
+              "$NEXT_PUBLIC_YANDEX_MAPS_API_KEY" \
+              "$LASTFM_API_KEY" \
+              "$LASTFM_PROXY_URL" \
+              "$VAPID_PUBLIC_KEY" \
+              "$VAPID_PRIVATE_KEY" \
+              "$VAPID_SUBJECT" \
+              "$EXPO_PUSH_ACCESS_TOKEN" \
+              "$GITHUB_SHA"
+          } | ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "${SSH_USER}@${SSH_HOST}" "bash ${REMOTE_SCRIPT} --env-stdin"
+
+      - name: Verify public production endpoints
+        run: |
+          curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
+            "https://${DOMAIN}/" -o "$RUNNER_TEMP/uletay-index.html"
+          grep -qi '<html' "$RUNNER_TEMP/uletay-index.html"
+
+          curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
+            "https://${DOMAIN}/api/data" -o "$RUNNER_TEMP/uletay-api.json"
+          node -e "JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8'))" \
+            "$RUNNER_TEMP/uletay-api.json"
+
+      - name: Write deployment summary
+        if: success()
+        run: |
+          {
+            echo "## Production deployment"
+            echo
+            echo "- URL: https://${DOMAIN}/"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Web, CMS, SSH, database migration, and public HTTPS checks passed."
+          } >> "$GITHUB_STEP_SUMMARY"

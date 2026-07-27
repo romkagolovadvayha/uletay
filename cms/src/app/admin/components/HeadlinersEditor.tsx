@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { upsertHeadlinerAction } from '../actions';
-import { AdminImagePreview } from './AdminImageThumb';
+import { AdminImageUpload } from './AdminImageUpload';
 import { HeadlinersSortableTable } from './HeadlinersSortableTable';
 import type { Headliner } from '@/types';
 import { presetHint } from '@/lib/image-presets';
@@ -36,11 +36,16 @@ export function HeadlinersEditor({ items, editId }: Props) {
 
       {editId ? (
         <form action={upsertHeadlinerAction} className="panel" encType="multipart/form-data">
-          <h2>{isNew ? 'Новый хэдлайнер' : 'Редактирование'}</h2>
+          <div className="panel-heading">
+            <div>
+              <h2>{isNew ? 'Новый хэдлайнер' : `Редактирование: ${editing?.name ?? ''}`}</h2>
+              <p>Основная карточка артиста, связи и изображение для приложения.</p>
+            </div>
+          </div>
           <input type="hidden" name="isNew" value={isNew ? '1' : '0'} />
           {!isNew && editing ? <input type="hidden" name="id" value={editing.id} /> : null}
 
-          <div className="grid">
+          <div className="panel-body grid">
             <label className="span-2">
               Имя артиста
               <input name="name" defaultValue={editing?.name ?? ''} required />
@@ -105,23 +110,16 @@ export function HeadlinersEditor({ items, editId }: Props) {
                 Можно указать вручную. Годы также подтягиваются из расписания и автографов.
               </span>
             </label>
-            <label className="span-2">
-              URL картинки
-              <input name="imageUrl" defaultValue={editing?.imageUrl ?? ''} placeholder="/api/uploads/..." />
-            </label>
-            <label className="span-2">
-              Загрузить фото
-              <input type="file" name="file" accept="image/*" />
-              <span className="hint">{presetHint('artist')}</span>
-            </label>
+            <div className="span-2">
+              <AdminImageUpload
+                aspect="square"
+                currentSrc={resolveAdminImageSrc(editing?.imageUrl, editing?.name)}
+                currentValue={editing?.imageUrl}
+                hint={presetHint('artist')}
+                label="Фотография артиста"
+              />
+            </div>
           </div>
-
-          <AdminImagePreview
-            imageUrl={editing?.imageUrl}
-            artist={editing?.name}
-            alt={editing?.name ?? 'preview'}
-            className="preview thumb"
-          />
 
           <div className="form-actions">
             <button type="submit" className="btn-primary">
@@ -134,10 +132,18 @@ export function HeadlinersEditor({ items, editId }: Props) {
         </form>
       ) : null}
 
-      <div className="panel table-wrap">
-        <p className="hint">{items.length} артистов в общем списке</p>
-        <HeadlinersSortableTable items={tableItems} />
-        {items.length === 0 ? <p className="hint">Нет хэдлайнеров</p> : null}
+      <div className="panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Все хэдлайнеры</h2>
+            <p>Перетаскивание меняет порядок карточек в приложении.</p>
+          </div>
+          <span className="count-badge">{items.length}</span>
+        </div>
+        <div className="panel-body table-wrap">
+          <HeadlinersSortableTable items={tableItems} />
+          {items.length === 0 ? <p className="empty-state">Хэдлайнеров пока нет</p> : null}
+        </div>
       </div>
     </>
   );

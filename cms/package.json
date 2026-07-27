@@ -17,6 +17,9 @@
     "schedule:patch-db:dry": "node scripts/patch-schedule-db.mjs --dry-run",
     "headliners:patch-db": "node scripts/patch-headliners-db.mjs",
     "headliners:patch-db:dry": "node scripts/patch-headliners-db.mjs --dry-run",
+    "headliners:reconcile-history": "node scripts/patch-headliners-db.mjs",
+    "headliners:reconcile-history:dry": "node scripts/patch-headliners-db.mjs --dry-run",
+    "headliners:reconcile-history:verbose": "node scripts/patch-headliners-db.mjs --dry-run --verbose",
     "headliners:patch-2023-db": "node scripts/patch-headliners-2023-db.mjs",
     "headliners:patch-2023-db:dry": "node scripts/patch-headliners-2023-db.mjs --dry-run",
     "headliners:patch-2018-db": "node scripts/patch-headliners-2018-db.mjs",
@@ -44,7 +47,10 @@
     "headliners:patch-2026-db": "node scripts/patch-headliners-2026-db.mjs",
     "headliners:patch-2026-db:dry": "node scripts/patch-headliners-2026-db.mjs --dry-run",
     "images:generate-list": "node scripts/generate-list-images.mjs",
-    "images:generate-list:dry": "node scripts/generate-list-images.mjs --dry"
+    "images:generate-list:dry": "node scripts/generate-list-images.mjs --dry",
+    "push:reminders": "tsx scripts/send-favorite-reminders.ts",
+    "test:push-reminders": "tsx scripts/test-favorite-reminders.ts",
+    "test:push-favorites": "tsx scripts/test-push-favorites-integration.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -54,13 +60,15 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sharp": "^0.34.5",
-    "undici": "^7.28.0"
+    "undici": "^7.28.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.21",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "@types/web-push": "^3.6.4",
     "tsx": "^4.22.5",
     "typescript": "^5.8.3"
   }

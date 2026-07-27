@@ -1,7 +1,7 @@
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Linking from 'expo-linking';
 import { FavoriteReminderPayload } from '../utils/favoriteNotifications';
-import { navigateToMySchedule } from '../navigation/navigationRef';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -34,11 +34,11 @@ export function FavoriteReminderToast({ reminder, onDismiss }: Props) {
 
   const handleNavigate = () => {
     onDismiss();
-    navigateToMySchedule();
+    void Linking.openURL(Linking.createURL(reminder.url));
   };
 
   return (
-    <View pointerEvents="box-none" style={styles.host}>
+    <View style={[styles.host, { pointerEvents: 'box-none' }]}>
       <View style={styles.toast}>
         <View style={styles.textWrap}>
           <Text style={styles.title}>{reminder.title}</Text>
@@ -49,7 +49,7 @@ export function FavoriteReminderToast({ reminder, onDismiss }: Props) {
           onPress={handleNavigate}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
         >
-          <Text style={styles.buttonText}>МОЁ РАСПИСАНИЕ</Text>
+          <Text style={styles.buttonText}>ОТКРЫТЬ СОБЫТИЕ</Text>
         </Pressable>
       </View>
     </View>
@@ -74,10 +74,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
     gap: spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.35)',
     elevation: 8,
   },
   textWrap: {

@@ -19,9 +19,10 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { WebSeoManager } from './src/components/WebSeoManager';
 import { syncWebSeo } from './src/seo/syncWebSeo';
 import { colors } from './src/theme/colors';
+import { installExternalLinkRel } from './src/utils/installExternalLinkRel';
 import { installWebMainLandmark } from './src/utils/webMainLandmark';
-import { installWebPreventInputZoom } from './src/utils/webPreventInputZoom';
 import { installWebOffline } from './src/utils/installWebOffline';
+import { installWebPreventInputZoom } from './src/utils/webPreventInputZoom';
 
 const navigationTheme = {
   ...DarkTheme,
@@ -92,7 +93,12 @@ export default function App() {
   useEffect(() => {
     installWebMainLandmark();
     installWebOffline();
-    return installWebPreventInputZoom();
+    const disposeZoom = installWebPreventInputZoom();
+    const disposeExternalRel = installExternalLinkRel();
+    return () => {
+      disposeZoom();
+      disposeExternalRel();
+    };
   }, []);
 
   return (

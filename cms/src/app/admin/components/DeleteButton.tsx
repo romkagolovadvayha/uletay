@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminIcon } from './AdminIcon';
+
 type DeleteButtonProps = {
   action: (formData: FormData) => void | Promise<void>;
   id: string;
@@ -18,6 +20,7 @@ export function DeleteButton({ action, id, label = 'Удалить' }: DeleteBut
     >
       <input type="hidden" name="id" value={id} />
       <button type="submit" className="btn-danger btn-sm">
+        <AdminIcon name="close" size={16} />
         {label}
       </button>
     </form>

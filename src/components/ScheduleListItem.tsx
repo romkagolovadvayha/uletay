@@ -182,10 +182,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.screen,
     paddingHorizontal: spacing.screen,
     borderLeftWidth: 0,
-    shadowColor: colors.live,
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
+    boxShadow: '0 0 10px rgba(255, 59, 48, 0.2)',
   },
   timelineTime: {
     width: 52,

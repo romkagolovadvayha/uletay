@@ -127,10 +127,7 @@ export function getDefaultHeadlinerYear(headliners: Headliner[], festivalYear: n
     return festivalYear;
   }
 
-  if (years.includes(festivalYear)) {
-    return festivalYear;
-  }
-
+  // Always prefer the freshest year that has headliners (e.g. 2027 over 2026).
   return years[0];
 }
 

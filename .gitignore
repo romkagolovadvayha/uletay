@@ -55,3 +55,6 @@ scripts/fest-artist-sync-report.json
 # generated native folders
 /ios
 /android
+
+# Superdesign session scratch files
+.superdesign/tmp/

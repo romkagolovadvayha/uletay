@@ -11,9 +11,10 @@ type Props = {
   zones?: MapZonesGeoJson;
   value: MapFilterId;
   onChange: (value: MapFilterId) => void;
+  embedded?: boolean;
 };
 
-export function MapFilterChips({ zones, value, onChange }: Props) {
+export function MapFilterChips({ zones, value, onChange, embedded = false }: Props) {
   const filters = useMemo(() => {
     const zoneTypes = getActiveZoneTypes(zones?.features ?? []);
     return [
@@ -30,7 +31,7 @@ export function MapFilterChips({ zones, value, onChange }: Props) {
   }
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, embedded && styles.wrapEmbedded]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {filters.map((filter) => {
           const active = filter.id === value;
@@ -60,12 +61,16 @@ const styles = StyleSheet.create({
     zIndex: 100,
     elevation: 100,
   },
+  wrapEmbedded: {
+    position: 'relative',
+    top: 0,
+  },
   row: {
     paddingHorizontal: spacing.screen,
     gap: spacing.sm,
   },
   chip: {
-    minHeight: 36,
+    minHeight: 44,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.pill,
     backgroundColor: mapColors.chipInactive,

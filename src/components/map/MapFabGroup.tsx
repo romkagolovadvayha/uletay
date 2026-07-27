@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { mapColors } from '../../theme/map';
 import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
 
 type FabProps = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -30,15 +31,24 @@ function MapFab({ icon, label, onPress, active }: FabProps) {
 
 type Props = {
   onLocate: () => void;
-  onFestival: () => void;
+  onDirections: () => void;
   followUser: boolean;
+  bottomOffset?: number;
 };
 
-export function MapFabGroup({ onLocate, onFestival, followUser }: Props) {
+export function MapFabGroup({ onLocate, onDirections, followUser, bottomOffset = 160 }: Props) {
   return (
-    <View style={styles.col}>
+    <View style={[styles.col, { bottom: bottomOffset }]}>
       <MapFab icon="locate" label="Моё местоположение" onPress={onLocate} active={followUser} />
-      <MapFab icon="flag-outline" label="К фестивалю" onPress={onFestival} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Как добраться до фестиваля"
+        onPress={onDirections}
+        style={({ pressed }) => [styles.directions, pressed && styles.fabPressed]}
+      >
+        <Ionicons name="navigate-outline" size={20} color="#000" />
+        <Text style={styles.directionsLabel}>Как добраться</Text>
+      </Pressable>
     </View>
   );
 }
@@ -47,7 +57,7 @@ const styles = StyleSheet.create({
   col: {
     position: 'absolute',
     right: spacing.screen,
-    bottom: 160,
+    alignItems: 'flex-end',
     gap: spacing.sm,
     zIndex: 25,
   },
@@ -66,5 +76,22 @@ const styles = StyleSheet.create({
   },
   fabPressed: {
     transform: [{ scale: 0.94 }],
+  },
+  directions: {
+    minHeight: 48,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: mapColors.chipActive,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.72)',
+    boxShadow: '0 4px 14px rgba(0,0,0,0.34)',
+  },
+  directionsLabel: {
+    ...typography.button,
+    color: '#000',
   },
 });

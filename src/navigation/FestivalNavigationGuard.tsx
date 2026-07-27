@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { navigationRef } from './navigationRef';
 import { RootTabParamList } from './types';
@@ -72,6 +73,10 @@ export function FestivalNavigationGuard() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     const { currentTab, moreNestedRoute } = readGuardState();
     if (shouldRedirect(festivalActive, currentTab, moreNestedRoute) && navigationRef.isReady()) {
       navigationRef.navigate('HomeTab');

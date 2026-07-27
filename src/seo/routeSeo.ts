@@ -6,6 +6,8 @@ export type SeoMeta = {
   description: string;
   path: string;
   noIndex?: boolean;
+  /** The route is valid, but its entity has not arrived from the API yet. */
+  provisional?: boolean;
 };
 
 type RouteNode = {
@@ -56,7 +58,7 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path'> & { path: string }> = {
     path: '/favorites',
   },
   PlaylistTab: {
-    title: `Радио и плейлист — ${SITE_NAME}`,
+    title: `Фестивальное радио — ${SITE_NAME}`,
     description:
       'Слушайте радио фестиваля УЛЕТАЙ в прямом эфире и смотрите, что сейчас играет на площадке.',
     path: '/playlist',
@@ -179,6 +181,30 @@ function collectRoutes(state: NavState | undefined, acc: RouteNode[] = []): Rout
   return acc;
 }
 
+function formatSeoDate(date: string): string {
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return date;
+  }
+
+  const [, year, month, day] = match;
+  const months = [
+    'января',
+    'февраля',
+    'марта',
+    'апреля',
+    'мая',
+    'июня',
+    'июля',
+    'августа',
+    'сентября',
+    'октября',
+    'ноября',
+    'декабря',
+  ];
+  return `${Number(day)} ${months[Number(month) - 1] ?? month} ${year}`;
+}
+
 export function resolveSeoMeta(
   navigationState: NavState | undefined,
   data: AppData,
@@ -189,20 +215,21 @@ export function resolveSeoMeta(
   const params = (active?.params ?? {}) as Record<string, string | undefined>;
   const path = chain.length ? buildPath(chain) : '/';
 
-  const staticMeta = STATIC_SEO[routeName];
-  if (staticMeta) {
-    return { ...staticMeta, path: path || staticMeta.path };
-  }
-
   if (routeName === 'LiveDetail' && params.performanceId) {
     const performance = data.schedule.find((item) => item.id === params.performanceId);
     const artist = performance?.artist ?? 'Выступление';
+    const stage = performance
+      ? data.stages.find((item) => item.id === performance.stageId)?.name
+      : undefined;
     return {
-      title: `${artist} — расписание | ${SITE_NAME}`,
+      title: performance
+        ? `${artist} — ${formatSeoDate(performance.date)}, ${performance.startTime} | ${SITE_NAME}`
+        : `${artist} — расписание | ${SITE_NAME}`,
       description: performance
-        ? `Выступление ${artist} на фестивале УЛЕТАЙ. Время, сцена и детали концерта.`
-        : DEFAULT_DESCRIPTION,
+        ? `${artist} на фестивале УЛЕТАЙ: ${formatSeoDate(performance.date)}, ${performance.startTime}–${performance.endTime}${stage ? `, ${stage}` : ''}.`
+        : 'Страница выступления на фестивале УЛЕТАЙ: время, сцена и подробности концерта.',
       path: `/schedule/live/${params.performanceId}`,
+      provisional: !performance,
     };
   }
 
@@ -210,11 +237,14 @@ export function resolveSeoMeta(
     const session = data.autographs.find((item) => item.id === params.sessionId);
     const artist = session?.artist ?? 'Автограф-сессия';
     return {
-      title: `${artist} — автограф | ${SITE_NAME}`,
+      title: session
+        ? `${artist} — автограф ${formatSeoDate(session.date)}, ${session.startTime} | ${SITE_NAME}`
+        : `${artist} — автограф | ${SITE_NAME}`,
       description: session
-        ? `Автограф-сессия ${artist} на фестивале УЛЕТАЙ: время и место встречи с артистом.`
-        : DEFAULT_DESCRIPTION,
+        ? `Автограф-сессия ${artist}: ${formatSeoDate(session.date)}, ${session.startTime}–${session.endTime}${session.location ? `, ${session.location}` : ''}.`
+        : 'Страница автограф-сессии на фестивале УЛЕТАЙ: время и место встречи с артистом.',
       path: `/autographs/${params.sessionId}`,
+      provisional: !session,
     };
   }
 
@@ -225,8 +255,9 @@ export function resolveSeoMeta(
       title: `${name} — фудкорт | ${SITE_NAME}`,
       description: vendor
         ? `${name} на фудкорте фестиваля УЛЕТАЙ: меню, цены и описание точки питания.`
-        : DEFAULT_DESCRIPTION,
+        : 'Страница точки питания на фудкорте фестиваля УЛЕТАЙ: меню, цены и расположение.',
       path: `/foodcourt/${params.vendorId}`,
+      provisional: !vendor,
     };
   }
 
@@ -261,9 +292,15 @@ export function resolveSeoMeta(
         ? lastfm?.bioSummary?.trim() ||
           headliner.description.trim() ||
           `${name} — хэдлайнер фестиваля УЛЕТАЙ${yearsLabel}.`
-        : DEFAULT_DESCRIPTION,
+        : 'Страница артиста — участника фестиваля УЛЕТАЙ: годы выступлений и популярные треки.',
       path: `/headliners/${params.headlinerId}`,
+      provisional: !headliner,
     };
+  }
+
+  const staticMeta = STATIC_SEO[routeName];
+  if (staticMeta) {
+    return { ...staticMeta, path: path || staticMeta.path };
   }
 
   return {
@@ -275,5 +312,15 @@ export function resolveSeoMeta(
 
 export function getCanonicalUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;
-  return `${SITE_URL.replace(/\/$/, '')}${normalized === '/' ? '' : normalized}`;
+  const encodedPath = normalized
+    .split('/')
+    .map((segment) => {
+      try {
+        return encodeURIComponent(decodeURIComponent(segment));
+      } catch {
+        return encodeURIComponent(segment);
+      }
+    })
+    .join('/');
+  return new URL(encodedPath, `${SITE_URL.replace(/\/$/, '')}/`).href;
 }

@@ -3,16 +3,24 @@
 map $uri $is_spa_route {
     default 0;
     ~^/$ 1;
-    ~^/map(/.*)?$ 1;
-    ~^/schedule(/.*)?$ 1;
-    ~^/autographs(/.*)?$ 1;
+    ~^/map(?:/[^/]+)?/?$ 1;
+    ~^/schedule/?$ 1;
+    ~^/schedule/live/[^/]+/?$ 1;
+    ~^/schedule/full(?:/[^/]+)?/?$ 1;
+    ~^/autographs(?:/[^/]+)?/?$ 1;
     ~^/favorites/?$ 1;
     ~^/playlist/?$ 1;
-    ~^/headliners(/.*)?$ 1;
+    ~^/headliners(?:/[^/]+)?/?$ 1;
     ~^/more/?$ 1;
-    ~^/foodcourt(/.*)?$ 1;
+    ~^/foodcourt(?:/[^/]+)?/?$ 1;
     ~^/about/?$ 1;
     ~^/rules/?$ 1;
     ~^/settings/?$ 1;
     ~^/legal/?$ 1;
+}
+
+# SEO route files use URL-encoded directory names so dynamic IDs are portable
+# across Windows development and Linux production filesystems.
+map $request_uri $seo_static_uri {
+    ~^([^?]*) $1;
 }

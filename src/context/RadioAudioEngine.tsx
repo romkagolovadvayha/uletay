@@ -50,7 +50,11 @@ function buildLockScreenMetadata(
 export type RadioAudioEngineProps = {
   engineRef: React.MutableRefObject<{ play: () => void; pause: () => void } | null>;
   pendingPlayRef: React.MutableRefObject<boolean>;
-  onPlaybackChange: (state: { playing: boolean; isBuffering: boolean }) => void;
+  onPlaybackChange: (state: {
+    playing: boolean;
+    isBuffering: boolean;
+    error: string | null;
+  }) => void;
   nowPlaying: RadioNowPlaying | null;
   matchedHeadliner: Headliner | null;
 };
@@ -98,8 +102,9 @@ export function RadioAudioEngine({
     onPlaybackChange({
       playing: status.playing,
       isBuffering: status.isBuffering,
+      error: status.error,
     });
-  }, [onPlaybackChange, status.isBuffering, status.playing]);
+  }, [onPlaybackChange, status.error, status.isBuffering, status.playing]);
 
   useEffect(() => {
     if (Platform.OS === 'web' || !status.playing) {

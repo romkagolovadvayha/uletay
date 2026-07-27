@@ -1,11 +1,12 @@
 import type { RowDataPacket } from 'mysql2';
-import type { AppData, MapPathsGeoJson, MapZonesGeoJson } from '@/types';
+import type { AppData, MapPathsGeoJson, MapPoisGeoJson, MapZonesGeoJson } from '@/types';
 import { getPool } from './db';
 import { resolveAllHeadlinerLastFm } from './headliner-lastfm-resolve';
 import { syncAppHeadliners } from './headliners';
 
 const EMPTY_ZONES: MapZonesGeoJson = { type: 'FeatureCollection', features: [] };
 const EMPTY_PATHS: MapPathsGeoJson = { type: 'FeatureCollection', features: [] };
+const EMPTY_POIS: MapPoisGeoJson = { type: 'FeatureCollection', features: [] };
 
 type AppDataCache = {
   raw: AppData;
@@ -15,7 +16,7 @@ type AppDataCache = {
 
 let appDataCache: AppDataCache | null = null;
 
-function normalizeFeatureCollection<T extends MapZonesGeoJson | MapPathsGeoJson>(
+function normalizeFeatureCollection<T extends MapZonesGeoJson | MapPathsGeoJson | MapPoisGeoJson>(
   value: unknown,
   fallback: T,
 ): T {
@@ -41,6 +42,7 @@ function normalizeStoredAppData(content: AppData): AppData {
     stages: Array.isArray(content.stages) ? content.stages : [],
     mapZones: normalizeFeatureCollection(content.mapZones, EMPTY_ZONES),
     mapPaths: normalizeFeatureCollection(content.mapPaths, EMPTY_PATHS),
+    mapPois: normalizeFeatureCollection(content.mapPois, EMPTY_POIS),
   });
 }
 

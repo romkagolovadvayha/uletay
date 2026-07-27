@@ -4,7 +4,7 @@ import { config } from '@/lib/config';
 export function corsHeaders(): HeadersInit {
   return {
     'Access-Control-Allow-Origin': config.corsOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
   };
