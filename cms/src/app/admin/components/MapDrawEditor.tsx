@@ -1267,6 +1267,19 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                 ))}
               </select>
             </label>
+            <label className="map-draw-checkbox">
+              <input
+                type="checkbox"
+                checked={selectedPath.properties.closed === true}
+                onChange={(e) =>
+                  updatePath(selectedPath.properties.id, (f) => ({
+                    ...f,
+                    properties: { ...f.properties, closed: e.target.checked },
+                  }))
+                }
+              />
+              Временно закрыта для маршрутов
+            </label>
           </div>
         </div>
       ) : null}

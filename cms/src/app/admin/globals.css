@@ -2018,3 +2018,70 @@ details.panel > summary {
     animation-iteration-count: 1 !important;
   }
 }
+/* Operational map editor: POIs and route-network health. */
+.map-operations {
+  display: grid;
+  gap: 18px;
+}
+
+.map-validation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.map-check {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.map-check strong {
+  font-size: 28px;
+}
+
+.map-check span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.map-check-ok {
+  border-color: rgba(52, 199, 89, 0.45);
+}
+
+.map-check-error {
+  border-color: rgba(255, 69, 58, 0.65);
+}
+
+.map-validation-error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #ffaaa5;
+  background: rgba(255, 69, 58, 0.1);
+}
+
+.map-poi-list {
+  display: grid;
+  gap: 10px;
+}
+
+.map-poi-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(130px, 1fr) repeat(2, minmax(120px, 1fr)) minmax(110px, 0.8fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 960px) {
+  .map-validation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-poi-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -1,4 +1,4 @@
-import { fetchRadioNowPlaying } from '@/lib/radio-icy';
+import { getRadioSnapshot } from '@/lib/radio-icy';
 import { jsonResponse, optionsResponse } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export async function OPTIONS() {
 
 export async function GET() {
   try {
-    const nowPlaying = await fetchRadioNowPlaying();
+    const nowPlaying = await getRadioSnapshot();
     if (!nowPlaying) {
       return jsonResponse({ error: 'Metadata unavailable' }, 502);
     }

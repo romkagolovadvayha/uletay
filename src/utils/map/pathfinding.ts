@@ -1,10 +1,12 @@
 import { nearestPointOnLine } from '@turf/nearest-point-on-line';
 import { lineString, point } from '@turf/helpers';
 import type { LatLng, MapPathProperties, MapPathsGeoJson, MapZonesGeoJson } from '../../types/map';
-import { fetchWalkingRoute, fetchWalkingDurationForPath, type RouteRequestOptions } from './externalRouting';
+import { fetchWalkingRoute, type RouteRequestOptions, walkingDurationSeconds } from './externalRouting';
 import {
+  extractFencePaths,
   extractFenceZones,
   fenceAvoidZonesParam,
+  routeCrossesFencePaths,
   routeCrossesFenceZones,
   routableDrawnFeatures,
   type FenceZones,
@@ -39,21 +41,23 @@ type CameFromEntry = {
   edge: GraphEdge | null;
 };
 
-/** Yandex/OSRM only when start/end is farther than this from a drawn path. */
-const CONNECTOR_THRESHOLD_M = 10;
+/** A POI must have an explicit access point close to a drawn visitor path. */
+const MAX_CONNECTOR_DISTANCE_M = 25;
 const EXACT_MERGE_M = 2;
-const MERGE_STEPS_M = [6, 12] as const;
+const MERGE_STEPS_M = [2, 3] as const;
 const VIRTUAL_FEATURE = -1;
 
 type RouteContext = {
   fenceZones: FenceZones;
+  fencePaths: ReturnType<typeof extractFencePaths>;
   routeOptions: RouteRequestOptions;
 };
 
-function createRouteContext(mapZones?: MapZonesGeoJson): RouteContext {
+function createRouteContext(mapZones?: MapZonesGeoJson, mapPaths?: MapPathsGeoJson): RouteContext {
   const fenceZones = extractFenceZones(mapZones);
   return {
     fenceZones,
+    fencePaths: extractFencePaths(mapPaths),
     routeOptions: { avoidZones: fenceAvoidZonesParam(fenceZones) },
   };
 }
@@ -423,18 +427,6 @@ function pathLengthMeters(coordinates: [number, number][]): number {
   return distanceMeters;
 }
 
-async function appendWalkingSegment(
-  coordinates: [number, number][],
-  from: LatLng,
-  to: LatLng,
-  routeOptions: RouteRequestOptions,
-) {
-  const segment = await fetchWalkingRoute(from, to, routeOptions);
-  for (const coord of segment.coordinates) {
-    appendUnique(coordinates, coord);
-  }
-}
-
 async function composeRouteAsync(
   start: LatLng,
   startSnap: PathSnap,
@@ -445,40 +437,28 @@ async function composeRouteAsync(
 ): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
   const coordinates: [number, number][] = [];
 
-  if (startSnap.distance > CONNECTOR_THRESHOLD_M) {
-    await appendWalkingSegment(
-      coordinates,
-      start,
-      { lat: startSnap.lat, lng: startSnap.lng },
-      ctx.routeOptions,
-    );
-  } else {
-    appendUnique(coordinates, [start.lng, start.lat]);
-    appendUnique(coordinates, [startSnap.lng, startSnap.lat]);
+  if (startSnap.distance > MAX_CONNECTOR_DISTANCE_M || endSnap.distance > MAX_CONNECTOR_DISTANCE_M) {
+    return null;
   }
+  appendUnique(coordinates, [start.lng, start.lat]);
+  appendUnique(coordinates, [startSnap.lng, startSnap.lat]);
 
   for (const coord of drawnCoords) {
     appendUnique(coordinates, coord);
   }
 
-  if (endSnap.distance > CONNECTOR_THRESHOLD_M) {
-    await appendWalkingSegment(
-      coordinates,
-      { lat: endSnap.lat, lng: endSnap.lng },
-      end,
-      ctx.routeOptions,
-    );
-  } else {
-    appendUnique(coordinates, [endSnap.lng, endSnap.lat]);
-    appendUnique(coordinates, [end.lng, end.lat]);
-  }
+  appendUnique(coordinates, [endSnap.lng, endSnap.lat]);
+  appendUnique(coordinates, [end.lng, end.lat]);
 
-  if (routeCrossesFenceZones(coordinates, ctx.fenceZones)) {
+  if (
+    routeCrossesFenceZones(coordinates, ctx.fenceZones) ||
+    routeCrossesFencePaths(coordinates, ctx.fencePaths)
+  ) {
     return null;
   }
 
   const distanceMeters = pathLengthMeters(coordinates);
-  const durationSeconds = await fetchWalkingDurationForPath(coordinates, ctx.routeOptions);
+  const durationSeconds = walkingDurationSeconds(distanceMeters);
 
   return {
     coordinates,
@@ -511,7 +491,7 @@ async function tryGraphRouteAsync(
   return composeRouteAsync(start, startSnap, drawnCoords, endSnap, end, ctx);
 }
 
-async function tryBridgedRouteAsync(
+export async function tryBridgedRouteAsync(
   paths: MapPathsGeoJson,
   start: LatLng,
   end: LatLng,
@@ -594,9 +574,7 @@ async function tryBridgedRouteAsync(
   return null;
 }
 
-/**
- * Route strictly along drawn paths; Yandex/OSRM only to reach or leave the path network.
- */
+/** Route strictly along the connected visitor path network. */
 export async function findInternalPathAsync(
   paths: MapPathsGeoJson | undefined,
   start: LatLng,
@@ -605,16 +583,11 @@ export async function findInternalPathAsync(
 ): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
   if (!paths?.features.length) return null;
 
-  const ctx = createRouteContext(mapZones);
+  const ctx = createRouteContext(mapZones, paths);
 
   for (const mergeM of MERGE_STEPS_M) {
     const exact = await tryGraphRouteAsync(paths, start, end, mergeM, ctx);
     if (exact) return exact;
-  }
-
-  for (const mergeM of MERGE_STEPS_M) {
-    const bridged = await tryBridgedRouteAsync(paths, start, end, mergeM, ctx);
-    if (bridged) return bridged;
   }
 
   return null;

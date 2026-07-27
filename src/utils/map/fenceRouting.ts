@@ -3,6 +3,7 @@ import { point, polygon as turfPolygon } from '@turf/helpers';
 import type { MapPathProperties, MapPathsGeoJson, MapZoneProperties, MapZonesGeoJson } from '../../types/map';
 
 export type FenceZones = GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>[];
+export type FencePaths = GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>[];
 
 const FENCE_NAME_RE = /забор|ограж|fence|barrier/i;
 
@@ -20,12 +21,60 @@ export function isRoutableDrawnPath(
   return (
     feature.geometry.type === 'LineString' &&
     feature.geometry.coordinates.length >= 2 &&
+    feature.properties.closed !== true &&
     !isFencePathFeature(feature)
   );
 }
 
 export function extractFenceZones(zones?: MapZonesGeoJson): FenceZones {
   return (zones?.features ?? []).filter((f) => f.properties.zoneType === 'fence') as FenceZones;
+}
+
+export function extractFencePaths(paths?: MapPathsGeoJson): FencePaths {
+  return (paths?.features ?? []).filter((feature) =>
+    isFencePathFeature(feature as GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>),
+  ) as FencePaths;
+}
+
+function orientation(a: [number, number], b: [number, number], c: [number, number]) {
+  return (b[1] - a[1]) * (c[0] - b[0]) - (b[0] - a[0]) * (c[1] - b[1]);
+}
+
+function segmentsIntersect(
+  a: [number, number],
+  b: [number, number],
+  c: [number, number],
+  d: [number, number],
+) {
+  const o1 = orientation(a, b, c);
+  const o2 = orientation(a, b, d);
+  const o3 = orientation(c, d, a);
+  const o4 = orientation(c, d, b);
+  return o1 * o2 < 0 && o3 * o4 < 0;
+}
+
+export function routeCrossesFencePaths(
+  coordinates: [number, number][],
+  fencePaths: FencePaths,
+): boolean {
+  for (let routeIndex = 0; routeIndex < coordinates.length - 1; routeIndex += 1) {
+    for (const fence of fencePaths) {
+      const fenceCoordinates = fence.geometry.coordinates as [number, number][];
+      for (let fenceIndex = 0; fenceIndex < fenceCoordinates.length - 1; fenceIndex += 1) {
+        if (
+          segmentsIntersect(
+            coordinates[routeIndex],
+            coordinates[routeIndex + 1],
+            fenceCoordinates[fenceIndex],
+            fenceCoordinates[fenceIndex + 1],
+          )
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 /** Yandex Router avoid_zones: each polygon as lat,lng|lat,lng|... */

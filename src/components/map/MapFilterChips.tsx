@@ -1,15 +1,19 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { ViewStyle } from 'react-native';
-import type { MapFilterId, MapZonesGeoJson } from '../../types/map';
+import type { MapFilterId, MapPoisGeoJson, MapZonesGeoJson } from '../../types/map';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getActiveZoneTypes, ZONE_TYPE_LABELS } from '../../utils/map/layerStyles';
+import {
+  getActivePoiCategories,
+  POI_CATEGORY_LABELS,
+} from '../../utils/map/layerStyles';
 
 type Props = {
   zones?: MapZonesGeoJson;
+  pois?: MapPoisGeoJson;
   value: MapFilterId;
   onChange: (value: MapFilterId) => void;
   embedded?: boolean;
@@ -33,7 +37,7 @@ const endFadeGradientStyle = Platform.select<ViewStyle & { backgroundImage?: str
   },
 });
 
-export function MapFilterChips({ zones, value, onChange, embedded = false }: Props) {
+export function MapFilterChips({ pois, value, onChange, embedded = false }: Props) {
   const scrollMetrics = useRef<ScrollMetrics>({
     viewportWidth: 0,
     contentWidth: 0,
@@ -42,15 +46,15 @@ export function MapFilterChips({ zones, value, onChange, embedded = false }: Pro
   const [showEndFade, setShowEndFade] = useState(false);
 
   const filters = useMemo(() => {
-    const zoneTypes = getActiveZoneTypes(zones?.features ?? []);
+    const categories = getActivePoiCategories(pois?.features ?? []);
     return [
-      { id: 'all' as const, label: 'Все' },
-      ...zoneTypes.map((zoneType) => ({
-        id: zoneType as MapFilterId,
-        label: ZONE_TYPE_LABELS[zoneType],
+      { id: 'all' as const, label: 'Всё' },
+      ...categories.map((category) => ({
+        id: category as MapFilterId,
+        label: POI_CATEGORY_LABELS[category],
       })),
     ];
-  }, [zones?.features]);
+  }, [pois?.features]);
 
   const updateScrollMetrics = useCallback((next: Partial<ScrollMetrics>) => {
     const metrics = { ...scrollMetrics.current, ...next };

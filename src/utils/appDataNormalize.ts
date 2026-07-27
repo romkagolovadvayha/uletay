@@ -3,6 +3,7 @@ import { festivalRules } from '../data/festivalRules';
 import { capPerformanceEndTime } from './performanceTime';
 import { getDefaultMapData } from '../data/festivalMapSeed';
 import { syncAppHeadliners } from './headlinersCore';
+import { withOperationalPois } from './map/poiData';
 
 export const defaultStageColors: Record<Stage['id'], string> = {
   south: '#F5C518',
@@ -19,6 +20,8 @@ export function withDefaultStages(stages: Stage[]): Stage[] {
 
 export function normalizeAppData(data: AppData): AppData {
   const mapDefaults = getDefaultMapData();
+  const mapZones = data.mapZones ?? mapDefaults.mapZones;
+  const mapPois = withOperationalPois(mapZones, data.mapPois ?? mapDefaults.mapPois);
   const base: AppData = {
     ...data,
     festival: {
@@ -45,9 +48,9 @@ export function normalizeAppData(data: AppData): AppData {
     headliners: Array.isArray(data.headliners) ? data.headliners : [],
     rules: Array.isArray(data.rules) && data.rules.length ? data.rules : festivalRules,
     festivalMap: data.festivalMap ?? mapDefaults.festivalMap,
-    mapZones: data.mapZones ?? mapDefaults.mapZones,
+    mapZones,
     mapPaths: data.mapPaths ?? mapDefaults.mapPaths,
-    mapPois: data.mapPois ?? mapDefaults.mapPois,
+    mapPois,
   };
 
   return syncAppHeadliners({

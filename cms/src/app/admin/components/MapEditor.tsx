@@ -3,15 +3,18 @@ import {
   saveMapConfigAction,
   saveMapGeoJsonAction,
   saveMapLayersAction,
+  saveMapPoisAction,
   saveMapOverlayGeorefAction,
   uploadMapSchemeAction,
 } from '../actions';
 import { MapDrawEditor } from './MapDrawEditor';
 import { MapOverlayEditor } from './MapOverlayEditor';
+import { MapOperationsEditor } from './MapOperationsEditor';
 import type {
   AppData,
   FestivalMapConfig,
   MapPathsGeoJson,
+  MapPoisGeoJson,
   MapZonesGeoJson,
 } from '@/types';
 
@@ -27,11 +30,13 @@ const emptyConfig: FestivalMapConfig = {
 
 const emptyZones: MapZonesGeoJson = { type: 'FeatureCollection', features: [] };
 const emptyPaths: MapPathsGeoJson = { type: 'FeatureCollection', features: [] };
+const emptyPois: MapPoisGeoJson = { type: 'FeatureCollection', features: [] };
 
 export function MapEditor({ data }: Props) {
   const config = data.festivalMap ?? emptyConfig;
   const zones = data.mapZones ?? emptyZones;
   const paths = data.mapPaths ?? emptyPaths;
+  const pois = data.mapPois ?? emptyPois;
 
   const bounds = config.territoryBounds;
 
@@ -53,6 +58,13 @@ export function MapEditor({ data }: Props) {
         paths={paths}
         overlay={config.adminOverlay}
         saveAction={saveMapLayersAction}
+      />
+
+      <MapOperationsEditor
+        config={config}
+        initialPois={pois}
+        paths={paths}
+        saveAction={saveMapPoisAction}
       />
 
       <form action={saveMapConfigAction} className="panel">
@@ -112,6 +124,10 @@ export function MapEditor({ data }: Props) {
           <label className="full">
             Дорожки (LineString)
             <textarea name="mapPaths" rows={8} defaultValue={JSON.stringify(paths, null, 2)} />
+          </label>
+          <label className="full">
+            Точки (Point)
+            <textarea name="mapPois" rows={8} defaultValue={JSON.stringify(pois, null, 2)} />
           </label>
           <button type="submit" className="btn-secondary">
             Сохранить GeoJSON

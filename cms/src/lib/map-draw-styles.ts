@@ -166,7 +166,9 @@ export function pathFeatureStyle(props: MapPathProperties) {
     walkway: { color: '#8e8e93', width: 3, dash: [2, 3] },
     fence: { color: '#FF3B30', width: 2, dash: [4, 4] },
   };
-  const s = styles[kind];
+  const s = props.closed
+    ? { color: '#FF9F0A', width: 4, dash: [2, 2] }
+    : styles[kind];
   return {
     stroke: [strokeLine(s.width, s.color, s.dash)],
     simplificationRate: 0,

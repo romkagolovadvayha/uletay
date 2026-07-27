@@ -111,6 +111,14 @@ export function MoreMenuSheet() {
     ...(festivalActive
       ? [
           {
+            icon: 'star-outline' as const,
+            label: 'Моё расписание',
+            onPress: () => {
+              close();
+              navigation.navigate('FavoritesTab');
+            },
+          },
+          {
             icon: 'radio-outline' as const,
             label: 'Радио',
             onPress: () => {
@@ -155,8 +163,16 @@ export function MoreMenuSheet() {
       },
     },
     {
+      icon: 'medical-outline',
+      label: 'Экстренная помощь',
+      onPress: () => {
+        close();
+        navigation.navigate('HelpTab');
+      },
+    },
+    {
       icon: 'help-circle-outline',
-      label: 'Контакты и помощь',
+      label: 'Юридическая информация',
       onPress: () => {
         close();
         navigation.navigate('MoreTab', { screen: 'Legal' });

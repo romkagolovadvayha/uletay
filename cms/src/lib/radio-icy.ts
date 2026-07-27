@@ -6,6 +6,15 @@ export type RadioNowPlaying = {
   raw: string;
 };
 
+export type RadioHistoryItem = RadioNowPlaying & { playedAt: string };
+export type RadioSnapshot = RadioNowPlaying & { recent: RadioHistoryItem[] };
+
+const CACHE_TTL_MS = 15_000;
+const MAX_HISTORY = 20;
+let cachedSnapshot: RadioSnapshot | null = null;
+let cachedAt = 0;
+let inflight: Promise<RadioSnapshot | null> | null = null;
+
 function decodeIcyMetadata(bytes: Uint8Array): string {
   let end = bytes.length;
   while (end > 0 && bytes[end - 1] === 0) {
@@ -95,4 +104,39 @@ export async function fetchRadioNowPlaying(
   } finally {
     await reader.cancel().catch(() => undefined);
   }
+}
+
+export async function getRadioSnapshot(): Promise<RadioSnapshot | null> {
+  if (cachedSnapshot && Date.now() - cachedAt < CACHE_TTL_MS) {
+    return cachedSnapshot;
+  }
+  if (inflight) return inflight;
+
+  inflight = fetchRadioNowPlaying()
+    .then((current) => {
+      if (!current) return cachedSnapshot;
+      const previous = cachedSnapshot?.recent ?? [];
+      const changed = !cachedSnapshot || cachedSnapshot.raw !== current.raw;
+      const recent = changed && cachedSnapshot?.raw
+        ? [
+            {
+              title: cachedSnapshot.title,
+              artist: cachedSnapshot.artist,
+              raw: cachedSnapshot.raw,
+              playedAt: new Date().toISOString(),
+            },
+            ...previous,
+          ].filter(
+            (item, index, all) =>
+              all.findIndex((candidate) => candidate.raw === item.raw) === index,
+          ).slice(0, MAX_HISTORY)
+        : previous;
+      cachedSnapshot = { ...current, recent };
+      cachedAt = Date.now();
+      return cachedSnapshot;
+    })
+    .finally(() => {
+      inflight = null;
+    });
+  return inflight;
 }

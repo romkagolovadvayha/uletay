@@ -7,6 +7,7 @@ import type {
   MapZoneProperties,
   MapZonesGeoJson,
   RouteSegment,
+  UserMapMarker,
   UserLocationState,
 } from '../../types/map';
 
@@ -16,6 +17,7 @@ export type FestivalMapViewProps = {
   pois?: MapPoisGeoJson;
   paths?: MapPathsGeoJson;
   userLocation?: UserLocationState | null;
+  userMarkers?: UserMapMarker[];
   routeSegments?: RouteSegment[];
   selectedZoneId?: string | null;
   selectedPoiId?: string | null;
@@ -24,6 +26,7 @@ export type FestivalMapViewProps = {
   onZonePress: (zone: GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>) => void;
   onPoiPress: (poi: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>) => void;
   onMapPress?: () => void;
+  onMapCoordinatePress?: (coordinate: { lat: number; lng: number }) => void;
   onZoneRoute?: () => void;
   routing?: boolean;
   onMapReady?: (api: FestivalMapApi) => void;

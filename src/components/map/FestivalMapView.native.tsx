@@ -5,7 +5,7 @@ import { resolveMediaUrl } from '../../config/api';
 import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
 import { useLatestRef } from '../../hooks/useLatestRef';
 import type { MapPoiProperties, MapZoneProperties } from '../../types/map';
-import { filterZoneFeatures } from '../../utils/map/layerStyles';
+import { filterPoiFeatures, filterZoneFeatures } from '../../utils/map/layerStyles';
 import { overlayToYandexLayoutBounds } from '../../utils/map/overlayGeoref';
 import { buildNativeYandexMapHtml } from './nativeYandexMapHtml';
 import type { FestivalMapViewProps } from './types';
@@ -17,7 +17,7 @@ type BridgeMessage =
   | { type: 'error'; message?: string }
   | { type: 'zonePress'; zoneId: string }
   | { type: 'poiPress'; poiId: string }
-  | { type: 'mapPress' };
+  | { type: 'mapPress'; coordinate?: { lat: number; lng: number } };
 
 export function FestivalMapView({
   config,
@@ -25,6 +25,7 @@ export function FestivalMapView({
   pois,
   paths,
   userLocation,
+  userMarkers,
   routeSegments,
   selectedZoneId,
   selectedPoiId,
@@ -33,6 +34,7 @@ export function FestivalMapView({
   onZonePress,
   onPoiPress,
   onMapPress,
+  onMapCoordinatePress,
   onMapReady,
   onMapLoaded,
   onMapLoadError,
@@ -42,12 +44,17 @@ export function FestivalMapView({
   const onZonePressRef = useLatestRef(onZonePress);
   const onPoiPressRef = useLatestRef(onPoiPress);
   const onMapPressRef = useLatestRef(onMapPress);
+  const onMapCoordinatePressRef = useLatestRef(onMapCoordinatePress);
   const zonesRef = useLatestRef(zones);
   const poisRef = useLatestRef(pois);
 
   const filteredZones = useMemo(
     () => filterZoneFeatures(zones?.features ?? [], filter),
     [zones, filter],
+  );
+  const filteredPois = useMemo(
+    () => filterPoiFeatures(pois?.features ?? [], filter),
+    [pois, filter],
   );
 
   const html = useMemo(() => {
@@ -71,6 +78,7 @@ export function FestivalMapView({
       userLocation: userLocation
         ? { lat: userLocation.lat, lng: userLocation.lng }
         : null,
+      userMarkers: userMarkers ?? [],
       paths: paths ?? null,
       routeSegments: routeSegments ?? [],
       overlay:
@@ -90,7 +98,7 @@ export function FestivalMapView({
           fillImageUrl: resolveMediaUrl(feature.properties.fillImageUrl) ?? null,
         },
       })),
-      pois: (pois?.features ?? []).map((feature) => ({
+      pois: filteredPois.map((feature) => ({
         type: 'Feature' as const,
         geometry: feature.geometry,
         properties: feature.properties,
@@ -103,11 +111,12 @@ export function FestivalMapView({
     filteredZones,
     followUser,
     paths,
-    pois,
+    filteredPois,
     routeSegments,
     selectedZoneId,
     selectedPoiId,
     userLocation,
+    userMarkers,
   ]);
 
   const inject = (js: string) => {
@@ -177,7 +186,11 @@ export function FestivalMapView({
     }
 
     if (msg.type === 'mapPress') {
-      onMapPressRef.current?.();
+      if (msg.coordinate) {
+        onMapCoordinatePressRef.current?.(msg.coordinate);
+      } else {
+        onMapPressRef.current?.();
+      }
     }
   };
 

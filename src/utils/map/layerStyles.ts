@@ -64,8 +64,11 @@ export function filterZoneFeatures(
   filter: import('../../types/map').MapFilterId,
 ) {
   if (filter === 'all') return features;
+  const zoneTypes = POI_CATEGORY_ORDER.includes(filter as MapPoiCategory)
+    ? poiCategoryToZoneTypes(filter as MapPoiCategory)
+    : [filter as MapZoneType];
   return features.filter(
-    (f) => f.properties.zoneType === filter || f.properties.zoneType === 'fence',
+    (f) => zoneTypes.includes(f.properties.zoneType) || f.properties.zoneType === 'fence',
   );
 }
 
@@ -108,6 +111,7 @@ export const POI_CATEGORY_LABELS: Record<MapPoiCategory, string> = {
   shower: 'Душ',
   water: 'Вода',
   medical: 'Медпункт',
+  security: 'Охрана',
   info: 'Инфо',
   entrance: 'Въезд',
   parking: 'Парковка',
@@ -122,6 +126,7 @@ export const POI_CATEGORY_ORDER: import('../../types/map').MapPoiCategory[] = [
   'shower',
   'water',
   'medical',
+  'security',
   'info',
   'entrance',
   'parking',
@@ -149,7 +154,7 @@ export function getActivePoiCategories(
 
 export function getPoiIconName(
   category: string,
-): 'musical-notes' | 'restaurant' | 'water' | 'medkit' | 'information-circle' | 'enter' | 'car' | 'man' | 'rainy' | 'location' {
+): 'musical-notes' | 'restaurant' | 'water' | 'medkit' | 'shield-checkmark' | 'information-circle' | 'enter' | 'car' | 'man' | 'rainy' | 'location' {
   switch (category) {
     case 'stage':
       return 'musical-notes';
@@ -159,6 +164,8 @@ export function getPoiIconName(
       return 'water';
     case 'medical':
       return 'medkit';
+    case 'security':
+      return 'shield-checkmark';
     case 'info':
       return 'information-circle';
     case 'entrance':
@@ -176,9 +183,61 @@ export function getPoiIconName(
 
 export function filterPoiFeatures(
   features: GeoJSON.Feature<GeoJSON.Point, import('../../types/map').MapPoiProperties>[],
-  _filter: import('../../types/map').MapFilterId,
+  filter: import('../../types/map').MapFilterId,
 ) {
-  return features;
+  if (filter === 'all') return features;
+  const categories = zoneTypeToPoiCategories(filter);
+  return features.filter((feature) => categories.includes(feature.properties.category));
+}
+
+function zoneTypeToPoiCategories(
+  filter: import('../../types/map').MapFilterId,
+): MapPoiCategory[] {
+  if (POI_CATEGORY_ORDER.includes(filter as MapPoiCategory)) {
+    return [filter as MapPoiCategory];
+  }
+  switch (filter) {
+    case 'stage_area':
+      return ['stage'];
+    case 'trade':
+      return ['foodcourt'];
+    case 'toilet':
+      return ['toilet'];
+    case 'shower':
+      return ['shower'];
+    case 'water':
+      return ['water'];
+    case 'parking':
+    case 'autocamp':
+      return ['parking'];
+    case 'service':
+      return ['medical', 'security', 'info'];
+    default:
+      return [];
+  }
+}
+
+function poiCategoryToZoneTypes(category: MapPoiCategory): MapZoneType[] {
+  switch (category) {
+    case 'stage':
+      return ['stage_area'];
+    case 'foodcourt':
+      return ['trade'];
+    case 'toilet':
+      return ['toilet'];
+    case 'shower':
+      return ['shower'];
+    case 'water':
+      return ['water'];
+    case 'medical':
+    case 'security':
+    case 'info':
+      return ['service'];
+    case 'parking':
+      return ['parking', 'autocamp'];
+    default:
+      return [];
+  }
 }
 
 export const MAP_CAMERA_2D = { pitch: 0, bearing: 0 };

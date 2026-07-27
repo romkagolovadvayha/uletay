@@ -31,7 +31,8 @@ export type HeadlinersStackParamList = {
 
 export type RootTabParamList = {
   HomeTab: undefined;
-  MapTab: { poiId?: string } | undefined;
+  MapTab: { poiId?: string; routeTo?: boolean } | undefined;
+  HelpTab: undefined;
   ScheduleTab: NavigatorScreenParams<ScheduleStackParamList>;
   Autographs: NavigatorScreenParams<AutographStackParamList>;
   FavoritesTab: undefined;

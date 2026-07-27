@@ -8,7 +8,11 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { fetchRadioNowPlaying, RadioNowPlaying } from '../api/radioNowPlayingApi';
+import {
+  fetchRadioNowPlaying,
+  RadioHistoryItem,
+  RadioNowPlaying,
+} from '../api/radioNowPlayingApi';
 import { useAppData } from './DataContext';
 import { RADIO_NOW_PLAYING_POLL_MS } from '../config/radio';
 import { Headliner } from '../types';
@@ -23,6 +27,7 @@ type RadioPlayerContextValue = {
   error: string | null;
   lastUpdatedAt: number | null;
   nowPlaying: RadioNowPlaying | null;
+  recentTracks: RadioHistoryItem[];
   matchedHeadliner: Headliner | null;
   togglePlayback: () => void;
   play: () => void;
@@ -40,6 +45,7 @@ const LazyRadioAudioEngine = React.lazy(() =>
 export function RadioPlayerProvider({ children }: { children: React.ReactNode }) {
   const { data } = useAppData();
   const [nowPlaying, setNowPlaying] = useState<RadioNowPlaying | null>(null);
+  const [recentTracks, setRecentTracks] = useState<RadioHistoryItem[]>([]);
   const [metadataError, setMetadataError] = useState<string | null>(null);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
@@ -64,6 +70,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
     try {
       const next = await fetchRadioNowPlaying();
       setNowPlaying(next);
+      setRecentTracks(next.recent);
       setMetadataError(null);
       setLastUpdatedAt(Date.now());
     } catch {
@@ -137,6 +144,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       error: playbackError ?? metadataError,
       lastUpdatedAt,
       nowPlaying,
+      recentTracks,
       matchedHeadliner,
       togglePlayback,
       play,
@@ -153,6 +161,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       matchedHeadliner,
       metadataError,
       nowPlaying,
+      recentTracks,
       pause,
       play,
       playbackError,

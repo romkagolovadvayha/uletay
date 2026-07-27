@@ -2,11 +2,13 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as Linking from 'expo-linking';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  Share,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
+import { useRadioFavorites } from '../hooks/useRadioFavorites';
 import { openHeadlinerDetail } from '../navigation/scheduleNavigation';
 import { RootTabParamList } from '../navigation/types';
 import { setPlaylistNowPlayingTitle } from '../seo/syncWebSeo';
@@ -48,12 +51,15 @@ export function PlaylistScreen() {
     error,
     lastUpdatedAt,
     nowPlaying,
+    recentTracks,
     matchedHeadliner,
     togglePlayback,
     play,
     refreshNowPlaying,
     setPlaylistActive,
   } = useRadioPlayer();
+  const { favorites, isFavorite, toggleFavorite } = useRadioFavorites();
+  const [showAllRecent, setShowAllRecent] = useState(false);
 
   const trackTitle = nowPlaying?.title?.trim() || '';
   const trackArtist = (matchedHeadliner?.name || nowPlaying?.artist || '').trim();
@@ -94,6 +100,18 @@ export function PlaylistScreen() {
       return;
     }
     play();
+  };
+
+  const shareTrack = (track = nowPlaying) => {
+    if (!track) return;
+    const label = [track.artist, track.title].filter(Boolean).join(' — ') || track.raw;
+    void Share.share({ message: `Сейчас на «Улетай радио»: ${label}\nhttps://www.uletayradio.ru/` });
+  };
+
+  const openMusic = (track = nowPlaying) => {
+    if (!track) return;
+    const query = encodeURIComponent([track.artist, track.title].filter(Boolean).join(' '));
+    void Linking.openURL(`https://music.yandex.ru/search?text=${query}`);
   };
 
   return (
@@ -190,7 +208,26 @@ export function PlaylistScreen() {
                     />
                   )}
                 </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={isFavorite(nowPlaying) ? 'Убрать трек из избранного' : 'Добавить трек в избранное'}
+                  disabled={!nowPlaying?.raw}
+                  onPress={() => nowPlaying && toggleFavorite(nowPlaying)}
+                  style={styles.roundAction}
+                >
+                  <Ionicons name={isFavorite(nowPlaying) ? 'heart' : 'heart-outline'} size={23} color={colors.primary} />
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="Поделиться треком" disabled={!nowPlaying?.raw} onPress={() => shareTrack()} style={styles.roundAction}>
+                  <Ionicons name="share-outline" size={23} color={colors.text} />
+                </Pressable>
               </View>
+
+              {nowPlaying?.raw ? (
+                <Pressable onPress={() => openMusic()} style={styles.musicLink}>
+                  <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
+                  <Text style={styles.musicLinkText}>Найти трек в Яндекс Музыке</Text>
+                </Pressable>
+              ) : null}
 
               {matchedHeadliner ? (
                 <Pressable
@@ -235,9 +272,89 @@ export function PlaylistScreen() {
               </Pressable>
             </View>
           </View>
+
+          {recentTracks.length ? (
+            <View style={styles.section}>
+              <View style={styles.sectionHeading}>
+                <View>
+                  <Text style={styles.sectionTitle}>Недавно в эфире</Text>
+                  <Text style={styles.sectionCaption}>История не требует аккаунта</Text>
+                </View>
+                {recentTracks.length > 5 ? (
+                  <Pressable onPress={() => setShowAllRecent((value) => !value)}>
+                    <Text style={styles.sectionAction}>{showAllRecent ? 'Свернуть' : 'Все'}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              {(showAllRecent ? recentTracks : recentTracks.slice(0, 5)).map((track) => (
+                <View key={`${track.raw}-${track.playedAt}`} style={styles.trackRow}>
+                  <View style={styles.trackIndex}>
+                    <Ionicons name="musical-note" size={16} color={colors.textMuted} />
+                  </View>
+                  <View style={styles.trackCopy}>
+                    <Text style={styles.trackRowTitle} numberOfLines={1}>{track.title || track.raw}</Text>
+                    <Text style={styles.trackRowArtist} numberOfLines={1}>{track.artist || 'Улетай радио'}</Text>
+                  </View>
+                  <Pressable accessibilityLabel="Найти трек" onPress={() => openMusic(track)} style={styles.smallAction}>
+                    <Ionicons name="search-outline" size={19} color={colors.textSecondary} />
+                  </Pressable>
+                  <Pressable accessibilityLabel="Добавить в избранное" onPress={() => toggleFavorite(track)} style={styles.smallAction}>
+                    <Ionicons name={isFavorite(track) ? 'heart' : 'heart-outline'} size={19} color={colors.primary} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {favorites.length ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Любимые треки</Text>
+              <Text style={styles.sectionCaption}>Сохранены только на этом устройстве · {favorites.length}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.promoGrid}>
+            <PromoCard
+              icon="trophy-outline"
+              title="Улётная десятка"
+              caption="Голосуйте на сайте радио — без отдельной регистрации в приложении."
+              action="Голосовать"
+              onPress={() => void Linking.openURL('https://www.uletayradio.ru/')}
+            />
+            <PromoCard
+              icon="rocket-outline"
+              title="Молодым группам"
+              caption="Правила отбора и подача заявки — на официальном сайте фестиваля."
+              action="Подать заявку"
+              onPress={() => void Linking.openURL('https://uletayfest.ru/otborochnie_tury')}
+            />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function PromoCard({
+  icon,
+  title,
+  caption,
+  action,
+  onPress,
+}: {
+  icon: 'trophy-outline' | 'rocket-outline';
+  title: string;
+  caption: string;
+  action: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="link" onPress={onPress} style={({ pressed }) => [styles.promoCard, pressed && styles.pressed]}>
+      <Ionicons name={icon} size={26} color={colors.primary} />
+      <Text style={styles.promoTitle}>{title}</Text>
+      <Text style={styles.promoCaption}>{caption}</Text>
+      <Text style={styles.promoAction}>{action} →</Text>
+    </Pressable>
   );
 }
 
@@ -394,6 +511,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.md,
     paddingVertical: spacing.sm,
   },
   playButton: {
@@ -403,6 +521,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  roundAction: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  musicLink: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  musicLinkText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
   },
   playPressed: {
     transform: [{ scale: 0.97 }],
@@ -465,5 +603,90 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.84,
+  },
+  section: {
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sectionHeading: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    ...typography.sectionTitle,
+    color: colors.text,
+  },
+  sectionCaption: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  sectionAction: {
+    ...typography.button,
+    color: colors.primary,
+  },
+  trackRow: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  trackIndex: {
+    width: 28,
+    alignItems: 'center',
+  },
+  trackCopy: {
+    flex: 1,
+  },
+  trackRowTitle: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  trackRowArtist: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  smallAction: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  promoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  promoCard: {
+    flexGrow: 1,
+    flexBasis: 280,
+    minHeight: 180,
+    padding: spacing.lg,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  promoTitle: {
+    ...typography.sectionTitle,
+    color: colors.text,
+  },
+  promoCaption: {
+    ...typography.body,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  promoAction: {
+    ...typography.button,
+    color: colors.primary,
   },
 });

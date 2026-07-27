@@ -94,6 +94,9 @@ export function buildNativeYandexMapHtml(
 
   function pathStyle(props) {
     var kind = (props && props.pathKind) || 'road';
+    if (props && props.closed) {
+      return { stroke: [strokeLine(4, '#FF9F0A', [2, 2])], simplificationRate: 0 };
+    }
     var styles = {
       road: { color: '#5a5a5e', width: 6 },
       walkway: { color: '#8e8e93', width: 3, dash: [2, 3] },
@@ -106,7 +109,7 @@ export function buildNativeYandexMapHtml(
   function poiGlyph(category) {
     var glyphs = {
       stage: '♪', foodcourt: 'ЕДА', toilet: 'WC', shower: 'ДУШ',
-      water: 'H₂O', medical: '+', info: 'i', entrance: 'ВХОД',
+      water: 'H₂O', medical: '+', security: 'ЩИТ', info: 'i', entrance: 'ВХОД',
       parking: 'P', custom: '•'
     };
     return glyphs[category] || '•';
@@ -130,6 +133,7 @@ export function buildNativeYandexMapHtml(
   var pathItems = [];
   var routeItems = [];
   var poiMarkers = [];
+  var savedMarkers = [];
   var schemeOverlay = null;
   var userMarker = null;
   var selectedZoneId = null;
@@ -335,6 +339,24 @@ export function buildNativeYandexMapHtml(
       poiMarkers.push(poiMarker);
     }
 
+    removeAll(savedMarkers);
+    var saved = state.userMarkers || [];
+    for (var si = 0; si < saved.length; si++) {
+      var savedItem = saved[si];
+      if (!savedItem.coordinate) continue;
+      var savedEl = document.createElement('div');
+      savedEl.className = 'fest-poi-marker fest-poi-marker--selected';
+      savedEl.textContent = savedItem.kind === 'car' ? '🚗' : '⛺';
+      var savedMarker = new ymaps3.YMapMarker({
+        id: 'saved-' + savedItem.kind,
+        source: FEST_MARKER,
+        coordinates: [savedItem.coordinate.lng, savedItem.coordinate.lat],
+        zIndex: LAYER_Z.markers + 30
+      }, savedEl);
+      map.addChild(savedMarker);
+      savedMarkers.push(savedMarker);
+    }
+
     if (userMarker) {
       try { map.removeChild(userMarker); } catch (e) {}
       userMarker = null;
@@ -453,7 +475,7 @@ export function buildNativeYandexMapHtml(
             mapZoom = event.location.zoom;
           }
         },
-        onClick: function (object) {
+        onClick: function (object, event) {
           var poiId = object && object.entity && object.entity.properties && object.entity.properties.poiId;
           if (!poiId && object && object.entity && object.entity.id && String(object.entity.id).indexOf('poi-') === 0) {
             poiId = String(object.entity.id).slice(4);
@@ -470,7 +492,11 @@ export function buildNativeYandexMapHtml(
             post({ type: 'zonePress', zoneId: zoneId });
             return;
           }
-          post({ type: 'mapPress' });
+          var coordinates = event && event.coordinates;
+          post({
+            type: 'mapPress',
+            coordinate: coordinates ? { lat: coordinates[1], lng: coordinates[0] } : undefined
+          });
         }
       }));
 

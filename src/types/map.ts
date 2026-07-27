@@ -66,6 +66,8 @@ export type MapPathProperties = {
   id: string;
   name?: string;
   pathKind?: 'road' | 'walkway' | 'fence';
+  /** Temporarily removes the segment from visitor routing without deleting it. */
+  closed?: boolean;
 };
 
 export type MapPoiCategory =
@@ -75,6 +77,7 @@ export type MapPoiCategory =
   | 'shower'
   | 'water'
   | 'medical'
+  | 'security'
   | 'info'
   | 'entrance'
   | 'parking'
@@ -91,6 +94,12 @@ export interface MapPoiProperties {
   category: MapPoiCategory;
   description?: string;
   link?: MapPoiLink;
+  /** Explicit visitor-facing entrance used as the route destination. */
+  accessPoint?: LatLng;
+  emergencyCode?: string;
+  phone?: string;
+  hours?: string;
+  status?: 'open' | 'closed' | 'unknown';
 }
 
 export type MapPathsGeoJson = GeoJSON.FeatureCollection<
@@ -110,7 +119,16 @@ export type MapPoisGeoJson = GeoJSON.FeatureCollection<
 
 export type MapViewMode = '2d' | '3d';
 
-export type MapFilterId = 'all' | MapZoneType;
+export type MapFilterId = 'all' | MapZoneType | MapPoiCategory;
+
+export type UserMapMarkerKind = 'car' | 'tent';
+
+export interface UserMapMarker {
+  kind: UserMapMarkerKind;
+  coordinate: LatLng;
+  savedAt: number;
+  accuracy?: number | null;
+}
 
 export interface UserLocationState {
   lat: number;
@@ -118,7 +136,7 @@ export interface UserLocationState {
   accuracy: number | null;
 }
 
-export type RouteSegmentKind = 'external' | 'internal';
+export type RouteSegmentKind = 'external' | 'internal' | 'connector';
 
 export interface RouteSegment {
   kind: RouteSegmentKind;

@@ -5,7 +5,7 @@ import { resolveMediaUrl } from '../../config/api';
 import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
 import { mapColors } from '../../theme/map';
 import type { MapPoiCategory, MapPoiProperties, MapZoneProperties } from '../../types/map';
-import { filterZoneFeatures } from '../../utils/map/layerStyles';
+import { filterPoiFeatures, filterZoneFeatures } from '../../utils/map/layerStyles';
 import { pathFeatureStyle, zoneFeatureStyle } from '../../utils/map/featureStyles';
 import { overlayToYandexLayoutBounds } from '../../utils/map/overlayGeoref';
 import { loadYandexMaps } from '../../utils/map/yandexMapsLoader';
@@ -156,6 +156,7 @@ function poiGlyph(category: MapPoiCategory) {
     shower: 'ДУШ',
     water: 'H₂O',
     medical: '+',
+    security: 'ЩИТ',
     info: 'i',
     entrance: 'ВХОД',
     parking: 'P',
@@ -169,6 +170,7 @@ export function FestivalMapView({
   pois,
   paths,
   userLocation,
+  userMarkers,
   routeSegments,
   filter,
   selectedZoneId,
@@ -177,6 +179,7 @@ export function FestivalMapView({
   onZonePress,
   onPoiPress,
   onMapPress,
+  onMapCoordinatePress,
   onMapReady,
   onMapLoaded,
   onMapLoadError,
@@ -189,6 +192,7 @@ export function FestivalMapView({
   const onZonePressRef = useLatestRef(onZonePress);
   const onPoiPressRef = useLatestRef(onPoiPress);
   const onMapPressRef = useLatestRef(onMapPress);
+  const onMapCoordinatePressRef = useLatestRef(onMapCoordinatePress);
 
   const zoneFeaturesRef = useRef<YandexMapEntity[]>([]);
   const zoneImageRefs = useRef<YandexMapEntity[]>([]);
@@ -218,6 +222,7 @@ export function FestivalMapView({
   }, [onMapLoadError]);
 
   const filteredZones = useMemo(() => filterZoneFeatures(zones?.features ?? [], filter), [zones, filter]);
+  const filteredPois = useMemo(() => filterPoiFeatures(pois?.features ?? [], filter), [pois, filter]);
   const zonesByIdRef = useRef(
     new Map<string, GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>>(),
   );
@@ -299,7 +304,7 @@ export function FestivalMapView({
               refreshZoneLabelSizesRef.current();
             }
           },
-          onClick: (object: YandexDomEventObject) => {
+          onClick: (object: YandexDomEventObject, event?: { coordinates?: [number, number] }) => {
             let poi = object?.entity?.properties?.__poi as
               | GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>
               | undefined;
@@ -322,7 +327,14 @@ export function FestivalMapView({
               onZonePressRef.current(zone);
               return;
             }
-            onMapPressRef.current?.();
+            if (event?.coordinates) {
+              onMapCoordinatePressRef.current?.({
+                lat: event.coordinates[1],
+                lng: event.coordinates[0],
+              });
+            } else {
+              onMapPressRef.current?.();
+            }
           },
         });
         map.addChild(listener);
@@ -584,14 +596,14 @@ export function FestivalMapView({
 
     removeAll(map, poiMarkerRefs.current);
     poisByIdRef.current.clear();
-    pois?.features.forEach((poi, index) => {
+    filteredPois.forEach((poi, index) => {
       if (poi.geometry.type !== 'Point') return;
       poisByIdRef.current.set(poi.properties.id, poi);
       const selected = poi.properties.id === selectedPoiId;
       const el = document.createElement('button');
       el.type = 'button';
       el.className = `fest-poi-marker${selected ? ' fest-poi-marker--selected' : ''}`;
-      el.textContent = poiGlyph(poi.properties.category);
+      el.textContent = poiGlyph(poi.properties.category) ?? '•';
       el.setAttribute('aria-label', poi.properties.name);
       const marker = new bundle.ymaps3.YMapMarker(
         {
@@ -606,7 +618,24 @@ export function FestivalMapView({
       map.addChild(marker);
       poiMarkerRefs.current.push(marker);
     });
-  }, [mapReady, pois, selectedPoiId]);
+    userMarkers?.forEach((saved) => {
+      const el = document.createElement('div');
+      el.className = 'fest-poi-marker fest-poi-marker--selected';
+      el.textContent = saved.kind === 'car' ? '🚗' : '⛺';
+      el.setAttribute('aria-label', saved.kind === 'car' ? 'Моя машина' : 'Моя палатка');
+      const marker = new bundle.ymaps3.YMapMarker(
+        {
+          id: `saved-${saved.kind}`,
+          source: FEST_MARKER_SOURCE,
+          coordinates: [saved.coordinate.lng, saved.coordinate.lat],
+          zIndex: LAYER_Z.markers + 30,
+        },
+        el,
+      );
+      map.addChild(marker);
+      poiMarkerRefs.current.push(marker);
+    });
+  }, [filteredPois, mapReady, selectedPoiId, userMarkers]);
 
   useEffect(() => {
     const map = mapRef.current;

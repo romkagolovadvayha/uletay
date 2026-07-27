@@ -222,6 +222,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
           const tabIcons: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
             HomeTab: 'home-outline',
             MapTab: 'map-outline',
+            HelpTab: 'medical-outline',
             ScheduleTab: 'calendar-outline',
             Autographs: 'ticket-outline',
             FavoritesTab: 'star-outline',

@@ -1,4 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -7,7 +8,7 @@ import { FoodCourtCard } from '../components/FoodCourtCard';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
-import { MoreStackParamList } from '../navigation/types';
+import { MoreStackParamList, RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
@@ -21,6 +22,13 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
   const vendor = useMemo(
     () => data.foodcourt.find((item) => item.id === route.params.vendorId),
     [data.foodcourt, route.params.vendorId],
+  );
+  const mapPoi = useMemo(
+    () =>
+      data.mapPois?.features.find(
+        (poi) => poi.properties.link?.type === 'foodcourt' && poi.properties.link.id === route.params.vendorId,
+      ) ?? data.mapPois?.features.find((poi) => poi.properties.category === 'foodcourt'),
+    [data.mapPois, route.params.vendorId],
   );
 
   if (!vendor) {
@@ -75,6 +83,19 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
           <Ionicons name="location-outline" size={16} color={colors.text} />
           <Text style={styles.locationText}>{vendor.location}</Text>
         </View>
+        {mapPoi ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              const tabs = navigation.getParent() as BottomTabNavigationProp<RootTabParamList> | undefined;
+              tabs?.navigate('MapTab', { poiId: mapPoi.properties.id });
+            }}
+            style={styles.mapButton}
+          >
+            <Ionicons name="map-outline" size={19} color={colors.primaryText} />
+            <Text style={styles.mapButtonText}>Показать на карте</Text>
+          </Pressable>
+        ) : null}
 
         {vendor.legalName ? (
           <Text style={styles.metaLine}>{vendor.legalName}</Text>
@@ -161,6 +182,20 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontSize: 14,
+  },
+  mapButton: {
+    minHeight: 48,
+    marginTop: spacing.md,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  mapButtonText: {
+    ...typography.button,
+    color: colors.primaryText,
   },
   metaLine: {
     ...typography.caption,

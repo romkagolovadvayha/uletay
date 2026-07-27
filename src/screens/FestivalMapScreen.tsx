@@ -1,4 +1,4 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -13,22 +13,34 @@ import { MapFilterChips } from '../components/map/MapFilterChips';
 import { MapLocationBanner } from '../components/map/MapLocationBanner';
 import { MapMotionConfig } from '../components/map/MapMotionConfig';
 import { MapPoiPopup } from '../components/map/MapPoiPopup';
+import { MapPoiCard } from '../components/map/MapPoiCard';
 import { MapRoutePanel } from '../components/map/MapRoutePanel';
+import { MapSavedPlacesPanel } from '../components/map/MapSavedPlacesPanel';
 import { MapZoneCard } from '../components/map/MapZoneCard';
 import { useAppData } from '../context/DataContext';
 import { useUserLocation } from '../hooks/useUserLocation';
+import { useUserMapMarkers } from '../hooks/useUserMapMarkers';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import type { CombinedRoute, MapFilterId, MapZoneProperties } from '../types/map';
+import type {
+  CombinedRoute,
+  MapFilterId,
+  MapPoiProperties,
+  MapPoiCategory,
+  MapZoneProperties,
+  UserMapMarkerKind,
+} from '../types/map';
 import { allRouteCoordinates, buildCombinedRouteToTarget } from '../utils/map/combinedRoute';
 import { isInsideTerritory } from '../utils/map/geo';
-import { getActiveZoneTypes } from '../utils/map/layerStyles';
+import { getActivePoiCategories } from '../utils/map/layerStyles';
+import { nearestPois, poiCoordinate } from '../utils/map/poiData';
 import { zoneTargetPoint } from '../utils/map/zoneGeo';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'MapTab'>;
 type ZoneFeature = GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>;
+type PoiFeature = GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>;
 
 type MapErrorBoundaryProps = {
   children: React.ReactNode;
@@ -60,18 +72,22 @@ class MapErrorBoundary extends React.Component<MapErrorBoundaryProps, MapErrorBo
 
 type Props = {
   navigation: Navigation;
+  route: RouteProp<RootTabParamList, 'MapTab'>;
 };
 
-export function FestivalMapScreen({ navigation: _navigation }: Props) {
+export function FestivalMapScreen({ route }: Props) {
   const { data } = useAppData();
   const mapConfig = data.festivalMap;
   // The map is useful without precise location. Ask only after the user taps locate.
   const { location, status, requestPermission } = useUserLocation(false);
   const mapApi = useRef<FestivalMapApi | null>(null);
+  const handledRouteRequestRef = useRef<string | null>(null);
+  const { markers, saveMarker, removeMarker } = useUserMapMarkers();
 
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
   const [followUser, setFollowUser] = useState(false);
   const [pickedZoneId, setPickedZoneId] = useState<string | null>(null);
+  const [pickedPoiId, setPickedPoiId] = useState<string | null>(null);
   const [highlightZoneId, setHighlightZoneId] = useState<string | null>(null);
   const [activeRoute, setActiveRoute] = useState<CombinedRoute | null>(null);
   const [routing, setRouting] = useState(false);
@@ -82,17 +98,21 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
   const [mapErrorDetail, setMapErrorDetail] = useState<string | null>(null);
   const [locationRequested, setLocationRequested] = useState(false);
   const [directionsVisible, setDirectionsVisible] = useState(false);
+  const [savedPlacesVisible, setSavedPlacesVisible] = useState(false);
+  const [placingMarkerKind, setPlacingMarkerKind] = useState<UserMapMarkerKind | null>(null);
 
   const selectedZoneId = pickedZoneId;
 
-  const activeZoneTypes = useMemo(
-    () => getActiveZoneTypes(data.mapZones?.features ?? []),
-    [data.mapZones],
+  const activePoiCategories = useMemo(
+    () => getActivePoiCategories(data.mapPois?.features ?? []),
+    [data.mapPois],
   );
   const filter = useMemo((): MapFilterId => {
     if (filterChoice === 'all') return 'all';
-    return activeZoneTypes.includes(filterChoice) ? filterChoice : 'all';
-  }, [filterChoice, activeZoneTypes]);
+    return activePoiCategories.includes(filterChoice as MapPoiCategory)
+      ? (filterChoice as MapPoiCategory)
+      : 'all';
+  }, [filterChoice, activePoiCategories]);
 
   const selectedZone = useMemo(() => {
     if (!selectedZoneId) return null;
@@ -100,9 +120,18 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     return (zone as ZoneFeature | undefined) ?? null;
   }, [selectedZoneId, data.mapZones]);
 
+  const selectedPoi = useMemo(() => {
+    if (!pickedPoiId) return null;
+    return (data.mapPois?.features.find((item) => item.properties.id === pickedPoiId) as
+      | PoiFeature
+      | undefined) ?? null;
+  }, [data.mapPois, pickedPoiId]);
+
   const mapSelectedZoneId = highlightZoneId ?? pickedZoneId;
 
-  const popupVisible = Boolean(directionsVisible || pickedZoneId || activeRoute || routing);
+  const popupVisible = Boolean(
+    directionsVisible || savedPlacesVisible || pickedZoneId || pickedPoiId || activeRoute || routing,
+  );
 
   const outsideTerritory = useMemo(() => {
     if (!location || !mapConfig) return false;
@@ -112,8 +141,10 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
   const dismissPopup = useCallback(() => {
     setDirectionsVisible(false);
     setPickedZoneId(null);
+    setPickedPoiId(null);
     setHighlightZoneId(null);
     setActiveRoute(null);
+    setSavedPlacesVisible(false);
     setRouteError(null);
   }, []);
 
@@ -121,8 +152,11 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     useCallback(() => {
       return () => {
         setPickedZoneId(null);
+        setPickedPoiId(null);
         setHighlightZoneId(null);
         setActiveRoute(null);
+        setSavedPlacesVisible(false);
+        setPlacingMarkerKind(null);
       };
     }, []),
   );
@@ -164,6 +198,12 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     }
   }, [selectedZone]);
 
+  useEffect(() => {
+    if (!selectedPoi) return;
+    const target = poiCoordinate(selectedPoi);
+    mapApi.current?.flyTo(target.lat, target.lng, 18);
+  }, [selectedPoi]);
+
   const runRoute = useCallback(
     async (target: { lat: number; lng: number }, targetName: string, restoreZoneId?: string) => {
       setRouting(true);
@@ -179,7 +219,7 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
           mapZones: data.mapZones,
         });
         if (!combined) {
-          setRouteError('Не удалось проложить маршрут. Попробуйте ещё раз.');
+          setRouteError('Нет связного маршрута по дорожкам. Сообщите организатору — участок карты требует исправления.');
           if (restoreZoneId) {
             setPickedZoneId(restoreZoneId);
             setHighlightZoneId(null);
@@ -212,6 +252,64 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
     await runRoute(zoneTargetPoint(selectedZone), selectedZone.properties.name, zoneId);
   }, [selectedZone, runRoute, location, mapConfig]);
 
+  const handlePoiRoute = useCallback(async () => {
+    if (!selectedPoi) return;
+    const target = selectedPoi.properties.accessPoint ?? poiCoordinate(selectedPoi);
+    await runRoute(target, selectedPoi.properties.name);
+  }, [runRoute, selectedPoi]);
+
+  useEffect(() => {
+    const poiId = route.params?.poiId;
+    if (!poiId || !data.mapPois?.features.some((item) => item.properties.id === poiId)) return;
+    const requestKey = `${poiId}:${route.params?.routeTo ? 'route' : 'show'}`;
+    if (handledRouteRequestRef.current === requestKey) return;
+    handledRouteRequestRef.current = requestKey;
+    const timer = setTimeout(() => {
+      setPickedZoneId(null);
+      setPickedPoiId(poiId);
+      if (route.params?.routeTo) {
+        const poi = data.mapPois?.features.find((item) => item.properties.id === poiId);
+        if (poi) void runRoute(poi.properties.accessPoint ?? poiCoordinate(poi), poi.properties.name);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [data.mapPois, route.params?.poiId, route.params?.routeTo, runRoute]);
+
+  const handleFilterChange = useCallback(
+    (next: MapFilterId) => {
+      setFilterChoice(next);
+      setActiveRoute(null);
+      setPickedZoneId(null);
+      if (next === 'all') {
+        setPickedPoiId(null);
+        return;
+      }
+      const origin = location ?? mapConfig?.center;
+      const candidates =
+        origin && activePoiCategories.includes(next as MapPoiCategory)
+          ? nearestPois(data.mapPois, next as MapPoiCategory, origin, 3)
+          : [];
+      const first = candidates[0];
+      if (first) setPickedPoiId(first.properties.id);
+    },
+    [activePoiCategories, data.mapPois, location, mapConfig?.center],
+  );
+
+  const saveAtCurrentLocation = useCallback(
+    (kind: UserMapMarkerKind) => {
+      if (!location) return;
+      saveMarker(kind, location, location.accuracy);
+    },
+    [location, saveMarker],
+  );
+
+  const placeMarkerOnMap = useCallback((kind: UserMapMarkerKind) => {
+    setSavedPlacesVisible(false);
+    setPlacingMarkerKind(kind);
+    setPickedPoiId(null);
+    setPickedZoneId(null);
+  }, []);
+
   if (!mapConfig?.enabled) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -239,8 +337,10 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
                 pois={data.mapPois}
                 paths={data.mapPaths}
                 userLocation={location}
+                userMarkers={markers}
                 routeSegments={activeRoute?.segments}
                 selectedZoneId={mapSelectedZoneId}
+                selectedPoiId={pickedPoiId}
                 filter={filter}
                 followUser={followUser}
                 onZonePress={(zone) => {
@@ -249,11 +349,28 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
                   setActiveRoute(null);
                   setHighlightZoneId(null);
                   setPickedZoneId(zone.properties.id);
+                  setPickedPoiId(null);
                 }}
-                onPoiPress={() => undefined}
+                onPoiPress={(poi) => {
+                  setDirectionsVisible(false);
+                  setSavedPlacesVisible(false);
+                  setRouteError(null);
+                  setActiveRoute(null);
+                  setPickedZoneId(null);
+                  setPickedPoiId(poi.properties.id);
+                }}
                 onZoneRoute={handleZoneRoute}
                 routing={routing}
                 onMapPress={dismissPopup}
+                onMapCoordinatePress={(coordinate) => {
+                  if (placingMarkerKind) {
+                    saveMarker(placingMarkerKind, coordinate);
+                    setPlacingMarkerKind(null);
+                    setSavedPlacesVisible(true);
+                    return;
+                  }
+                  dismissPopup();
+                }}
                 onMapReady={handleMapReady}
                 onMapLoaded={() => {
                   setMapLoaded(true);
@@ -283,7 +400,20 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
             ) : null}
           </View>
           <View style={styles.mapOverlay} pointerEvents="box-none">
-            <MapFilterChips zones={data.mapZones} value={filter} onChange={setFilterChoice} />
+            <MapFilterChips
+              zones={data.mapZones}
+              pois={data.mapPois}
+              value={filter}
+              onChange={handleFilterChange}
+            />
+            {placingMarkerKind ? (
+              <View style={styles.placingBanner}>
+                <Text style={styles.placingText}>
+                  Нажмите на карту, чтобы запомнить {placingMarkerKind === 'car' ? 'машину' : 'палатку'}
+                </Text>
+                <Text onPress={() => setPlacingMarkerKind(null)} style={styles.placingCancel}>Отмена</Text>
+              </View>
+            ) : null}
             {locationRequested || outsideTerritory ? (
               <MapLocationBanner
                 status={status}
@@ -294,6 +424,13 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
             <MapFabGroup
               onLocate={handleLocate}
               onFestival={handleFestivalCenter}
+              onSavedPlaces={() => {
+                setDirectionsVisible(false);
+                setPickedPoiId(null);
+                setPickedZoneId(null);
+                setActiveRoute(null);
+                setSavedPlacesVisible(true);
+              }}
               followUser={followUser}
             />
             {!popupVisible ? (
@@ -316,6 +453,22 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
               location={data.festival.locationShort || data.festival.location}
               onClose={dismissPopup}
             />
+          ) : savedPlacesVisible ? (
+            <MapSavedPlacesPanel
+              markers={markers}
+              userLocation={location}
+              onSaveHere={saveAtCurrentLocation}
+              onPlaceOnMap={placeMarkerOnMap}
+              onRoute={(marker) => {
+                setSavedPlacesVisible(false);
+                void runRoute(
+                  marker.coordinate,
+                  marker.kind === 'car' ? 'Моя машина' : 'Моя палатка',
+                );
+              }}
+              onRemove={removeMarker}
+              onClose={dismissPopup}
+            />
           ) : activeRoute ? (
             <MapRoutePanel
               route={activeRoute}
@@ -326,6 +479,16 @@ export function FestivalMapScreen({ navigation: _navigation }: Props) {
             <View style={styles.routingPanel}>
               <Text style={styles.routingText}>Строим маршрут…</Text>
             </View>
+          ) : selectedPoi ? (
+            <MapPoiCard
+              poi={selectedPoi}
+              userLocation={location}
+              outsideTerritory={outsideTerritory}
+              festivalCenter={mapConfig.center}
+              onRoute={handlePoiRoute}
+              routing={routing}
+              routeError={routeError}
+            />
           ) : selectedZone ? (
             <MapZoneCard
               zone={selectedZone}
@@ -412,5 +575,28 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  placingBanner: {
+    position: 'absolute',
+    top: 64,
+    left: spacing.screen,
+    right: spacing.screen,
+    padding: spacing.md,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  placingText: {
+    ...typography.caption,
+    color: colors.text,
+    flex: 1,
+  },
+  placingCancel: {
+    ...typography.button,
+    color: colors.primary,
   },
 });

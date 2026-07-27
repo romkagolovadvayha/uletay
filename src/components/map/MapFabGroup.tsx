@@ -33,6 +33,7 @@ type Props = {
   onLocate: () => void;
   onFestival?: () => void;
   onDirections?: () => void;
+  onSavedPlaces?: () => void;
   followUser: boolean;
   bottomOffset?: number;
 };
@@ -41,6 +42,7 @@ export function MapFabGroup({
   onLocate,
   onFestival,
   onDirections,
+  onSavedPlaces,
   followUser,
   bottomOffset = 160,
 }: Props) {
@@ -49,6 +51,9 @@ export function MapFabGroup({
       <MapFab icon="locate" label="Моё местоположение" onPress={onLocate} active={followUser} />
       {onFestival ? (
         <MapFab icon="flag-outline" label="Центр фестиваля" onPress={onFestival} />
+      ) : null}
+      {onSavedPlaces ? (
+        <MapFab icon="bookmark-outline" label="Машина и палатка" onPress={onSavedPlaces} />
       ) : null}
       {onDirections ? (
         <Pressable

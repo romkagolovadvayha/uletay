@@ -14,6 +14,7 @@ import { formatDistance, formatDuration, haversineMeters, isInsideTerritory } fr
 import { findInternalPathAsync } from './pathfinding';
 
 function poiCoord(poi: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>): LatLng {
+  if (poi.properties.accessPoint) return poi.properties.accessPoint;
   const [lng, lat] = poi.geometry.coordinates;
   return { lat, lng };
 }

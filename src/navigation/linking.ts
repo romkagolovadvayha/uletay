@@ -116,6 +116,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
           poiId: (value: string) => value,
         },
       },
+      HelpTab: 'help',
       ScheduleTab: {
         path: 'schedule',
         screens: {

@@ -41,6 +41,9 @@ const LazyMoreMenuSheet = React.lazy(() =>
 const FestivalMapScreen = lazyScreen(() =>
   import('../screens/FestivalMapScreen').then((m) => m.FestivalMapScreen),
 );
+const HelpScreen = lazyScreen(() =>
+  import('../screens/HelpScreen').then((m) => m.HelpScreen),
+);
 const ScheduleMainScreen = lazyScreen(() =>
   import('../screens/ScheduleMainScreen').then((m) => m.ScheduleMainScreen),
 );
@@ -245,6 +248,15 @@ function RootTabs() {
         options={{
           title: 'Карта',
           tabBarIcon: ({ color }) => <TabIcon name="map-outline" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="HelpTab"
+        component={HelpScreen}
+        listeners={({ navigation }) => createFlatTabListeners(navigation)}
+        options={{
+          title: 'Помощь',
+          tabBarIcon: ({ color }) => <TabIcon name="medical-outline" color={color} />,
         }}
       />
       <Tab.Screen

@@ -190,6 +190,7 @@ export type MapPathProperties = {
   id: string;
   name?: string;
   pathKind?: 'road' | 'walkway' | 'fence';
+  closed?: boolean;
 };
 
 export type MapPoiCategory =
@@ -199,6 +200,7 @@ export type MapPoiCategory =
   | 'shower'
   | 'water'
   | 'medical'
+  | 'security'
   | 'info'
   | 'entrance'
   | 'parking'
@@ -215,6 +217,11 @@ export interface MapPoiProperties {
   category: MapPoiCategory;
   description?: string;
   link?: MapPoiLink;
+  accessPoint?: LatLng;
+  emergencyCode?: string;
+  phone?: string;
+  hours?: string;
+  status?: 'open' | 'closed' | 'unknown';
 }
 
 export type MapPathsGeoJson = GeoJSON.FeatureCollection<

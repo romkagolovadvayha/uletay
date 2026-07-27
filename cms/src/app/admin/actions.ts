@@ -27,6 +27,7 @@ import type {
   FoodCourtVendor,
   Headliner,
   MapPathsGeoJson,
+  MapPoisGeoJson,
   MapZonesGeoJson,
   SchedulePerformance,
   StageId,
@@ -732,12 +733,21 @@ export async function saveMapLayersAction(formData: FormData) {
   redirect('/admin?tab=map&ok=1');
 }
 
+export async function saveMapPoisAction(formData: FormData) {
+  await requireSession();
+  const data = await getAppData();
+  data.mapPois = parseGeoJson<MapPoisGeoJson>(formData.get('mapPois'), 'точки карты');
+  await saveAppData(data);
+  redirect('/admin?tab=map&ok=1');
+}
+
 export async function saveMapGeoJsonAction(formData: FormData) {
   await requireSession();
   const data = await getAppData();
 
   data.mapZones = parseGeoJson<MapZonesGeoJson>(formData.get('mapZones'), 'зоны');
   data.mapPaths = parseGeoJson<MapPathsGeoJson>(formData.get('mapPaths'), 'дорожки');
+  data.mapPois = parseGeoJson<MapPoisGeoJson>(formData.get('mapPois'), 'точки карты');
 
   await saveAppData(data);
   redirect('/admin?tab=map&ok=1');
