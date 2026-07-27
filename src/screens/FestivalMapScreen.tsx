@@ -127,7 +127,8 @@ export function FestivalMapScreen({ route }: Props) {
       | undefined) ?? null;
   }, [data.mapPois, pickedPoiId]);
 
-  const mapSelectedZoneId = highlightZoneId ?? pickedZoneId;
+  const mapSelectedZoneId =
+    highlightZoneId ?? pickedZoneId ?? selectedPoi?.properties.sourceZoneId ?? null;
 
   const popupVisible = Boolean(
     directionsVisible || savedPlacesVisible || pickedZoneId || pickedPoiId || activeRoute || routing,

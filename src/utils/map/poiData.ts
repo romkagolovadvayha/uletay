@@ -68,6 +68,7 @@ function syntheticPoiFromZone(zone: ZoneFeature): PoiFeature | null {
       accessPoint: target,
       link: stageId ? { type: 'stage', id: stageId } : { type: 'none' },
       status: 'unknown',
+      sourceZoneId: zone.properties.id,
     },
   };
 }

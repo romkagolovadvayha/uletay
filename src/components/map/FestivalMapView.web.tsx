@@ -222,7 +222,13 @@ export function FestivalMapView({
   }, [onMapLoadError]);
 
   const filteredZones = useMemo(() => filterZoneFeatures(zones?.features ?? [], filter), [zones, filter]);
-  const filteredPois = useMemo(() => filterPoiFeatures(pois?.features ?? [], filter), [pois, filter]);
+  const filteredPois = useMemo(
+    () =>
+      filterPoiFeatures(pois?.features ?? [], filter).filter(
+        (poi) => !poi.properties.sourceZoneId,
+      ),
+    [pois, filter],
+  );
   const zonesByIdRef = useRef(
     new Map<string, GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>>(),
   );

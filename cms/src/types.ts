@@ -222,6 +222,7 @@ export interface MapPoiProperties {
   phone?: string;
   hours?: string;
   status?: 'open' | 'closed' | 'unknown';
+  sourceZoneId?: string;
 }
 
 export type MapPathsGeoJson = GeoJSON.FeatureCollection<

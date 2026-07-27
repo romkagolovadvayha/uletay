@@ -100,6 +100,8 @@ export interface MapPoiProperties {
   phone?: string;
   hours?: string;
   status?: 'open' | 'closed' | 'unknown';
+  /** Internal link for POIs derived from an existing zone; these POIs are not rendered as duplicate markers. */
+  sourceZoneId?: string;
 }
 
 export type MapPathsGeoJson = GeoJSON.FeatureCollection<

@@ -53,7 +53,10 @@ export function FestivalMapView({
     [zones, filter],
   );
   const filteredPois = useMemo(
-    () => filterPoiFeatures(pois?.features ?? [], filter),
+    () =>
+      filterPoiFeatures(pois?.features ?? [], filter).filter(
+        (poi) => !poi.properties.sourceZoneId,
+      ),
     [pois, filter],
   );
 
