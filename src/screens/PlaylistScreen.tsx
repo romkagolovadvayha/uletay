@@ -60,6 +60,7 @@ export function PlaylistScreen() {
   } = useRadioPlayer();
   const { favorites, isFavorite, toggleFavorite } = useRadioFavorites();
   const [showAllRecent, setShowAllRecent] = useState(false);
+  const [showAllFavorites, setShowAllFavorites] = useState(false);
 
   const trackTitle = nowPlaying?.title?.trim() || '';
   const trackArtist = (matchedHeadliner?.name || nowPlaying?.artist || '').trim();
@@ -306,55 +307,74 @@ export function PlaylistScreen() {
             </View>
           ) : null}
 
-          {favorites.length ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Любимые треки</Text>
-              <Text style={styles.sectionCaption}>Сохранены только на этом устройстве · {favorites.length}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.promoGrid}>
-            <PromoCard
-              icon="trophy-outline"
-              title="Улётная десятка"
-              caption="Голосуйте на сайте радио — без отдельной регистрации в приложении."
-              action="Голосовать"
-              onPress={() => void Linking.openURL('https://www.uletayradio.ru/')}
-            />
-            <PromoCard
-              icon="rocket-outline"
-              title="Молодым группам"
-              caption="Правила отбора и подача заявки — на официальном сайте фестиваля."
-              action="Подать заявку"
-              onPress={() => void Linking.openURL('https://uletayfest.ru/otborochnie_tury')}
-            />
+          <View style={styles.section}>
+              <View style={styles.sectionHeading}>
+                <View>
+                  <Text style={styles.sectionTitle}>Избранные треки</Text>
+                  <Text style={styles.sectionCaption}>
+                    {favorites.length
+                      ? `Сохранены только на этом устройстве · ${favorites.length}`
+                      : 'Нажмите сердце у трека — он появится здесь'}
+                  </Text>
+                </View>
+                {favorites.length > 5 ? (
+                  <Pressable onPress={() => setShowAllFavorites((value) => !value)}>
+                    <Text style={styles.sectionAction}>
+                      {showAllFavorites ? 'Свернуть' : 'Все'}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              {favorites.length ? (
+                (showAllFavorites ? favorites : favorites.slice(0, 5)).map((track) => (
+                <View key={track.raw} style={styles.trackRow}>
+                  <View style={styles.trackIndex}>
+                    <Ionicons name="heart" size={16} color={colors.primary} />
+                  </View>
+                  <View style={styles.trackCopy}>
+                    <Text style={styles.trackRowTitle} numberOfLines={1}>
+                      {track.title || track.raw}
+                    </Text>
+                    <Text style={styles.trackRowArtist} numberOfLines={1}>
+                      {track.artist || 'Улетай радио'}
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Найти трек"
+                    onPress={() => openMusic(track)}
+                    style={styles.smallAction}
+                  >
+                    <Ionicons name="search-outline" size={19} color={colors.textSecondary} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Поделиться треком"
+                    onPress={() => shareTrack(track)}
+                    style={styles.smallAction}
+                  >
+                    <Ionicons name="share-outline" size={19} color={colors.textSecondary} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Удалить из избранного"
+                    onPress={() => toggleFavorite(track)}
+                    style={styles.smallAction}
+                  >
+                    <Ionicons name="heart-dislike-outline" size={20} color={colors.primary} />
+                  </Pressable>
+                </View>
+                ))
+              ) : (
+                <View style={styles.emptyFavorites}>
+                  <Ionicons name="heart-outline" size={24} color={colors.textMuted} />
+                  <Text style={styles.emptyFavoritesText}>Пока нет избранных треков</Text>
+                </View>
+              )}
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function PromoCard({
-  icon,
-  title,
-  caption,
-  action,
-  onPress,
-}: {
-  icon: 'trophy-outline' | 'rocket-outline';
-  title: string;
-  caption: string;
-  action: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable accessibilityRole="link" onPress={onPress} style={({ pressed }) => [styles.promoCard, pressed && styles.pressed]}>
-      <Ionicons name={icon} size={26} color={colors.primary} />
-      <Text style={styles.promoTitle}>{title}</Text>
-      <Text style={styles.promoCaption}>{caption}</Text>
-      <Text style={styles.promoAction}>{action} →</Text>
-    </Pressable>
   );
 }
 
@@ -660,33 +680,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  promoGrid: {
+  emptyFavorites: {
+    minHeight: 72,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  promoCard: {
-    flexGrow: 1,
-    flexBasis: 280,
-    minHeight: 180,
-    padding: spacing.lg,
-    borderRadius: radius.xl,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
   },
-  promoTitle: {
-    ...typography.sectionTitle,
-    color: colors.text,
-  },
-  promoCaption: {
+  emptyFavoritesText: {
     ...typography.body,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  promoAction: {
-    ...typography.button,
-    color: colors.primary,
+    color: colors.textMuted,
   },
 });
