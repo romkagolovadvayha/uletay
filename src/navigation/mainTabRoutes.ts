@@ -5,46 +5,43 @@ import { useFestivalActive } from '../hooks/useFestivalActive';
 import { favoriteKey } from '../utils/favoriteKeys';
 import { RootTabParamList } from './types';
 
-export const MAIN_TAB_ROUTES_ACTIVE: (keyof RootTabParamList)[] = [
-  'HomeTab',
-  'MapTab',
-  'ScheduleTab',
-  'Autographs',
-  'FavoritesTab',
-  'PlaylistTab',
-];
-
-export const MAIN_TAB_ROUTES_FINISHED: (keyof RootTabParamList)[] = [
-  'HomeTab',
-  'MapTab',
-  'HeadlinersTab',
-  'PlaylistTab',
-];
-
 export type MainTabContentFlags = {
   hasSchedule: boolean;
   hasAutographs: boolean;
   hasFavorites: boolean;
 };
 
+/** Хэдлайнеры в «Ещё», только пока внизу уже есть живое расписание/автографы. */
+export function shouldPutHeadlinersInMoreTab(
+  festivalActive: boolean,
+  content: MainTabContentFlags,
+): boolean {
+  return festivalActive && (content.hasSchedule || content.hasAutographs);
+}
+
 export function getVisibleMainTabRoutes(
   festivalActive: boolean,
   content: MainTabContentFlags,
 ): (keyof RootTabParamList)[] {
-  const base = festivalActive ? MAIN_TAB_ROUTES_ACTIVE : MAIN_TAB_ROUTES_FINISHED;
+  const routes: (keyof RootTabParamList)[] = ['HomeTab', 'MapTab'];
 
-  return base.filter((name) => {
-    if (name === 'ScheduleTab') {
-      return content.hasSchedule;
-    }
-    if (name === 'Autographs') {
-      return content.hasAutographs;
-    }
-    if (name === 'FavoritesTab') {
-      return content.hasFavorites;
-    }
-    return true;
-  });
+  if (content.hasSchedule) {
+    routes.push('ScheduleTab');
+  }
+  if (content.hasAutographs) {
+    routes.push('Autographs');
+  }
+  if (festivalActive && content.hasFavorites) {
+    routes.push('FavoritesTab');
+  }
+
+  // Пока нет расписания/автографов (или фестиваль уже закончился) — хэдлайнеры в нижнем меню.
+  if (!shouldPutHeadlinersInMoreTab(festivalActive, content)) {
+    routes.push('HeadlinersTab');
+  }
+
+  routes.push('PlaylistTab');
+  return routes;
 }
 
 export function useMainTabContentFlags(): MainTabContentFlags {
@@ -69,6 +66,16 @@ export function useVisibleMainTabRoutes(): (keyof RootTabParamList)[] {
 
   return useMemo(
     () => getVisibleMainTabRoutes(festivalActive, content),
+    [content, festivalActive],
+  );
+}
+
+export function useHeadlinersInMoreTab(): boolean {
+  const festivalActive = useFestivalActive();
+  const content = useMainTabContentFlags();
+
+  return useMemo(
+    () => shouldPutHeadlinersInMoreTab(festivalActive, content),
     [content, festivalActive],
   );
 }

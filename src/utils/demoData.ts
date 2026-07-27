@@ -6,10 +6,10 @@ import {
   Stage,
   StageId,
 } from '../types';
+import { favoriteKey } from './favoriteKeys';
 import { capPerformanceEndTime } from './performanceTime';
 import {
   buildDemoFestivalNow,
-  remapFestivalDate,
   resolveDemoFestivalWindow,
 } from './demoTime';
 import { getFestivalDates } from './scheduleHelpers';
@@ -46,10 +46,10 @@ function minutesToTime(total: number): string {
 
 function pickHeadliners(headliners: Headliner[], rng: () => number): Headliner[] {
   if (headliners.length === 0) {
-    return Array.from({ length: 24 }, (_, index) => ({
+    return Array.from({ length: 36 }, (_, index) => ({
       id: `demo-hl-${index + 1}`,
       name: `ДЕМО АРТИСТ ${index + 1}`,
-      description: '',
+      description: 'Демо-карточка артиста для предварительного просмотра фестиваля.',
       imageTint: '#FFC107',
       years: [],
     }));
@@ -93,6 +93,7 @@ function generateDemoSchedule(
           headlinerId: headliner.id,
           artist: headliner.name,
           imageUrl: headliner.imageUrl,
+          isCompetition: rng() > 0.92,
         });
         minute += duration + 5 + Math.floor(rng() * 10);
       }
@@ -133,7 +134,7 @@ function generateDemoAutographs(
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
 
-    const count = Math.min(4 + Math.floor(rng() * 4), Math.max(candidates.length, 6));
+    const count = Math.min(5 + Math.floor(rng() * 4), Math.max(candidates.length, 8));
     let minute = 16 * 60 + Math.floor(rng() * 40);
 
     for (let i = 0; i < count; i += 1) {
@@ -168,37 +169,73 @@ function generateDemoAutographs(
   return sessions;
 }
 
-function remapDatedItems<T extends { id: string; date: string }>(
-  items: T[],
-  fromStart: string,
-  toStart: string,
-  toEnd: string,
-): T[] {
-  return items.map((item) => {
-    const date = remapFestivalDate(item.date, fromStart, toStart, toEnd);
-    return {
-      ...item,
-      date,
-      id: item.id.includes(item.date) ? item.id.replace(item.date, date) : item.id,
-    };
-  });
+function mergeDemoHeadliners(
+  existing: Headliner[],
+  schedule: SchedulePerformance[],
+  autographs: AutographSession[],
+): Headliner[] {
+  const byId = new Map(existing.map((item) => [item.id, item]));
+  const ensure = (id: string, name: string, imageUrl?: string) => {
+    if (byId.has(id)) {
+      return;
+    }
+    byId.set(id, {
+      id,
+      name,
+      description: 'Демо-карточка артиста для предварительного просмотра фестиваля.',
+      imageTint: '#FFC107',
+      imageUrl,
+      years: [],
+    });
+  };
+
+  for (const item of schedule) {
+    ensure(item.headlinerId, item.artist, item.imageUrl);
+  }
+  for (const item of autographs) {
+    ensure(item.headlinerId, item.artist, item.imageUrl);
+  }
+
+  return [...byId.values()];
 }
 
-/** Демо-оверлей: окно фестиваля + расписание/автографы при отсутствии реальных данных */
+/** Стабильный набор избранного для демо-режима (не пишется в AsyncStorage). */
+export function buildDemoFavoriteKeys(
+  schedule: SchedulePerformance[],
+  autographs: AutographSession[],
+  seedKey: string,
+): string[] {
+  const rng = createRng(hashSeed(`favorites:${seedKey}`));
+  const midDate =
+    schedule.map((item) => item.date).sort()[Math.floor(schedule.length / 2)] ?? schedule[0]?.date;
+
+  const dayPerformances = schedule.filter((item) => item.date === midDate);
+  const dayAutographs = autographs.filter((item) => item.date === midDate);
+
+  const pick = <T,>(items: T[], count: number): T[] => {
+    const pool = [...items];
+    for (let i = pool.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rng() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, Math.min(count, pool.length));
+  };
+
+  return [
+    ...pick(dayPerformances, 6).map((item) => favoriteKey('performance', item.id)),
+    ...pick(dayAutographs, 4).map((item) => favoriteKey('autograph', item.id)),
+  ];
+}
+
+/** Демо-оверлей: следующее окно фестиваля + всегда фейковое расписание и автографы */
 export function buildDemoAppData(data: AppData, realNow = new Date()): AppData {
   const window = resolveDemoFestivalWindow(data.festival, realNow);
   const dates = getFestivalDates(window.startDate, window.endDate);
   const seedKey = `${window.startDate}:${window.endDate}`;
 
-  const schedule =
-    data.schedule.length > 0
-      ? remapDatedItems(data.schedule, data.festival.startDate, window.startDate, window.endDate)
-      : generateDemoSchedule(dates, data.stages, data.headliners, seedKey);
-
-  const autographs =
-    data.autographs.length > 0
-      ? remapDatedItems(data.autographs, data.festival.startDate, window.startDate, window.endDate)
-      : generateDemoAutographs(dates, schedule, data.headliners, seedKey);
+  const schedule = generateDemoSchedule(dates, data.stages, data.headliners, seedKey);
+  const autographs = generateDemoAutographs(dates, schedule, data.headliners, seedKey);
+  const headliners = mergeDemoHeadliners(data.headliners, schedule, autographs);
 
   return {
     ...data,
@@ -208,6 +245,7 @@ export function buildDemoAppData(data: AppData, realNow = new Date()): AppData {
       endDate: window.endDate,
       year: window.year,
     },
+    headliners,
     schedule,
     autographs,
   };

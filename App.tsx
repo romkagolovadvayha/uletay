@@ -11,8 +11,8 @@ import { FavoritesProvider } from './src/context/FavoritesContext';
 import { IconsReadyProvider } from './src/context/IconsReadyContext';
 import { NotificationSettingsProvider } from './src/context/NotificationSettingsContext';
 import { useAppFonts } from './src/hooks/useAppFonts';
-import { useFestivalActive } from './src/hooks/useFestivalActive';
 import { linking } from './src/navigation/linking';
+import { useHeadlinersInMoreTab } from './src/navigation/mainTabRoutes';
 import { navigationRef } from './src/navigation/navigationRef';
 import { syncHeadlinersNavigationTarget, syncNestedStacksWithActiveTab } from './src/navigation/scheduleNavigation';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -38,9 +38,9 @@ const navigationTheme = {
 
 function AppContent() {
   const { loaded: fontsLoaded, iconsReady } = useAppFonts();
-  const festivalActive = useFestivalActive();
+  const headlinersInMore = useHeadlinersInMoreTab();
 
-  syncHeadlinersNavigationTarget(festivalActive);
+  syncHeadlinersNavigationTarget(headlinersInMore);
 
   if (!fontsLoaded) {
     return (

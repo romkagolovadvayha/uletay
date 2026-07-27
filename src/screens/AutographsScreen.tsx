@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AutographSessionRow } from '../components/AutographSessionRow';
@@ -8,6 +8,7 @@ import { DateTabBar } from '../components/DateTabBar';
 import { StageLegend } from '../components/StageLegend';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
+import { useFestivalSelectedDate } from '../hooks/useFestivalSelectedDate';
 import { useNow } from '../hooks/useNow';
 import { AutographStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -18,7 +19,6 @@ import { getAutographHighlight, type AutographHighlight } from '../utils/autogra
 import {
   filterByFestivalDay,
   formatSoonCountdown,
-  getDefaultFestivalDate,
   getFestivalDates,
   parseDateTime,
   sortByStartTime,
@@ -34,8 +34,10 @@ export function AutographsScreen({ navigation }: Props) {
     () => getFestivalDates(data.festival.startDate, data.festival.endDate),
     [data.festival.endDate, data.festival.startDate],
   );
-  const [selectedDate, setSelectedDate] = useState(
-    getDefaultFestivalDate(data.festival.startDate, data.festival.endDate, now),
+  const [selectedDate, setSelectedDate] = useFestivalSelectedDate(
+    data.festival.startDate,
+    data.festival.endDate,
+    now,
   );
 
   const daySessions = useMemo(

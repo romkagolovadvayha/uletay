@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { ScheduleStageGrid } from './ScheduleStageGrid';
 import { ScreenTitle } from './ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
+import { useFestivalSelectedDate } from '../hooks/useFestivalSelectedDate';
 import { useNow } from '../hooks/useNow';
 import { ScheduleStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -15,7 +16,6 @@ import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import {
   filterByFestivalDay,
-  getDefaultFestivalDate,
   getFestivalDates,
   sortByStartTime,
 } from '../utils/scheduleHelpers';
@@ -33,8 +33,11 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
     () => getFestivalDates(data.festival.startDate, data.festival.endDate),
     [data.festival.endDate, data.festival.startDate],
   );
-  const [selectedDate, setSelectedDate] = useState(
-    initialDate ?? getDefaultFestivalDate(data.festival.startDate, data.festival.endDate, now),
+  const [selectedDate, setSelectedDate] = useFestivalSelectedDate(
+    data.festival.startDate,
+    data.festival.endDate,
+    now,
+    initialDate,
   );
 
   const dayPerformances = useMemo(

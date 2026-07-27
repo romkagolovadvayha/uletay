@@ -16,6 +16,8 @@ import { useMoreMenu } from '../context/MoreMenuContext';
 import { useAppData } from '../context/DataContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { useIsTablet } from '../hooks/useIsTablet';
+import { useHeadlinersInMoreTab } from '../navigation/mainTabRoutes';
+import { openHeadlinersMain } from '../navigation/scheduleNavigation';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -41,6 +43,7 @@ export function MoreMenuSheet() {
   const { visible, close } = useMoreMenu();
   const { data } = useAppData();
   const festivalActive = useFestivalActive();
+  const headlinersInMore = useHeadlinersInMoreTab();
   const bottomInset = resolveAndroidBottomInset(insets.bottom);
   const [entrance] = useState(() => new Animated.Value(0));
 
@@ -73,6 +76,18 @@ export function MoreMenuSheet() {
   }
 
   const menuItems: MenuItem[] = [
+    ...(headlinersInMore
+      ? [
+          {
+            icon: 'mic-outline' as const,
+            label: 'Хэдлайнеры',
+            onPress: () => {
+              close();
+              openHeadlinersMain(navigation);
+            },
+          },
+        ]
+      : []),
     ...(festivalActive && data.festival.startDate && data.festival.endDate
       ? [{
           icon: 'restaurant-outline' as const,

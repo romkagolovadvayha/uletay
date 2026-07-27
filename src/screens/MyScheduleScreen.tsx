@@ -10,6 +10,7 @@ import { ScheduleStageGrid } from '../components/ScheduleStageGrid';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
+import { useFestivalSelectedDate } from '../hooks/useFestivalSelectedDate';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
@@ -21,7 +22,6 @@ import { favoriteKey } from '../utils/favoriteKeys';
 import {
   filterByFestivalDay,
   formatSoonCountdown,
-  getDefaultFestivalDate,
   getFestivalDates,
   parseDateTime,
   sortByStartTime,
@@ -48,8 +48,10 @@ export function MyScheduleScreen({ navigation }: Props) {
     () => getFestivalDates(data.festival.startDate, data.festival.endDate),
     [data.festival.endDate, data.festival.startDate],
   );
-  const [selectedDate, setSelectedDate] = useState(
-    getDefaultFestivalDate(data.festival.startDate, data.festival.endDate, now),
+  const [selectedDate, setSelectedDate] = useFestivalSelectedDate(
+    data.festival.startDate,
+    data.festival.endDate,
+    now,
   );
 
   const favoritePerformances = useMemo(

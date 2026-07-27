@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
-import { useVisibleMainTabRoutes } from '../navigation/mainTabRoutes';
+import { useHeadlinersInMoreTab, useVisibleMainTabRoutes } from '../navigation/mainTabRoutes';
 import {
   openAutographsMain,
   openHeadlinersMain,
@@ -75,6 +75,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   const { width } = useWindowDimensions();
   const festivalActive = useFestivalActive();
   const mainTabRoutes = useVisibleMainTabRoutes();
+  const headlinersInMore = useHeadlinersInMoreTab();
   const { isPlaying: isRadioPlaying } = useRadioPlayer();
   const tabNavigation = navigation as unknown as NavigationProp<RootTabParamList>;
 
@@ -115,6 +116,18 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   };
 
   const extraItems: ExtraItem[] = [
+    ...(headlinersInMore
+      ? [
+          {
+            key: 'headliners',
+            icon: 'mic-outline' as const,
+            label: 'Хэдлайнеры',
+            isActive:
+              moreNestedRoute === 'HeadlinersMain' || moreNestedRoute === 'HeadlinerDetail',
+            onPress: () => openHeadlinersMain(tabNavigation),
+          },
+        ]
+      : []),
     ...(festivalActive
       ? [
           {

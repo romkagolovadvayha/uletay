@@ -10,8 +10,6 @@ import { RootTabParamList } from './types';
 
 const FESTIVAL_ONLY_MORE_ROUTES = new Set(['FoodCourtMain', 'FoodCourtDetail']);
 
-const POST_FESTIVAL_ONLY_TABS: (keyof RootTabParamList)[] = ['HeadlinersTab'];
-
 function readGuardState(): {
   currentTab: keyof RootTabParamList | undefined;
   moreNestedRoute: string | null;
@@ -44,9 +42,7 @@ function shouldRedirect(
     return false;
   }
 
-  const shouldLeaveTab =
-    (!visibleTabs.has(currentTab) && currentTab !== 'MoreTab') ||
-    (festivalActive && POST_FESTIVAL_ONLY_TABS.includes(currentTab));
+  const shouldLeaveTab = currentTab !== 'MoreTab' && !visibleTabs.has(currentTab);
 
   const shouldLeaveMore =
     !festivalActive &&
