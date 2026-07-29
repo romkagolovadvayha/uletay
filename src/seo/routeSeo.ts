@@ -1,8 +1,9 @@
 import type { AppData } from '../types';
-import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from './site';
+import { DEFAULT_DESCRIPTION, getSiteName, SITE_NAME, SITE_URL } from './site';
 
 export type SeoMeta = {
   title: string;
+  siteName: string;
   description: string;
   path: string;
   noIndex?: boolean;
@@ -21,7 +22,7 @@ export type NavState = {
   index: number;
 };
 
-const STATIC_SEO: Record<string, Omit<SeoMeta, 'path'> & { path: string }> = {
+const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: string }> = {
   HomeTab: {
     title: `Официальное приложение фестиваля — ${SITE_NAME}`,
     description: DEFAULT_DESCRIPTION,
@@ -209,6 +210,7 @@ export function resolveSeoMeta(
   navigationState: NavState | undefined,
   data: AppData,
 ): SeoMeta {
+  const siteName = getSiteName(data.festival.year);
   const chain = collectRoutes(navigationState);
   const active = getDeepestRoute(navigationState ?? undefined);
   const routeName = active?.name ?? 'HomeTab';
@@ -223,8 +225,9 @@ export function resolveSeoMeta(
       : undefined;
     return {
       title: performance
-        ? `${artist} — ${formatSeoDate(performance.date)}, ${performance.startTime} | ${SITE_NAME}`
-        : `${artist} — расписание | ${SITE_NAME}`,
+        ? `${artist} — ${formatSeoDate(performance.date)}, ${performance.startTime} | ${siteName}`
+        : `${artist} — расписание | ${siteName}`,
+      siteName,
       description: performance
         ? `${artist} на фестивале УЛЕТАЙ: ${formatSeoDate(performance.date)}, ${performance.startTime}–${performance.endTime}${stage ? `, ${stage}` : ''}.`
         : 'Страница выступления на фестивале УЛЕТАЙ: время, сцена и подробности концерта.',
@@ -238,8 +241,9 @@ export function resolveSeoMeta(
     const artist = session?.artist ?? 'Автограф-сессия';
     return {
       title: session
-        ? `${artist} — автограф ${formatSeoDate(session.date)}, ${session.startTime} | ${SITE_NAME}`
-        : `${artist} — автограф | ${SITE_NAME}`,
+        ? `${artist} — автограф ${formatSeoDate(session.date)}, ${session.startTime} | ${siteName}`
+        : `${artist} — автограф | ${siteName}`,
+      siteName,
       description: session
         ? `Автограф-сессия ${artist}: ${formatSeoDate(session.date)}, ${session.startTime}–${session.endTime}${session.location ? `, ${session.location}` : ''}.`
         : 'Страница автограф-сессии на фестивале УЛЕТАЙ: время и место встречи с артистом.',
@@ -252,7 +256,8 @@ export function resolveSeoMeta(
     const vendor = data.foodcourt.find((item) => item.id === params.vendorId);
     const name = vendor?.name ?? 'Вендор';
     return {
-      title: `${name} — фудкорт | ${SITE_NAME}`,
+      title: `${name} — фудкорт | ${siteName}`,
+      siteName,
       description: vendor
         ? `${name} на фудкорте фестиваля УЛЕТАЙ: меню, цены и описание точки питания.`
         : 'Страница точки питания на фудкорте фестиваля УЛЕТАЙ: меню, цены и расположение.',
@@ -263,7 +268,8 @@ export function resolveSeoMeta(
 
   if (routeName === 'MapTab' && params.poiId) {
     return {
-      title: `Точка на карте — ${SITE_NAME}`,
+      title: `Точка на карте — ${siteName}`,
+      siteName,
       description: 'Подробности о выбранной точке на карте фестиваля УЛЕТАЙ.',
       path: `/map/${params.poiId}`,
     };
@@ -273,7 +279,8 @@ export function resolveSeoMeta(
     const stage = data.stages.find((item) => item.id === params.stageId);
     const stageName = stage?.name ?? 'Сцена';
     return {
-      title: `${stageName} — расписание | ${SITE_NAME}`,
+      title: `${stageName} — расписание | ${siteName}`,
+      siteName,
       description: `Расписание выступлений на сцене «${stageName}» на фестивале УЛЕТАЙ.`,
       path: `/schedule/full/${params.stageId}`,
     };
@@ -287,7 +294,8 @@ export function resolveSeoMeta(
       ? ` (${[...headliner.years].sort((a, b) => b - a).join(' ')})`
       : '';
     return {
-      title: `${name} — хэдлайнер | ${SITE_NAME}`,
+      title: `${name} — хэдлайнер | ${siteName}`,
+      siteName,
       description: headliner
         ? lastfm?.bioSummary?.trim() ||
           headliner.description.trim() ||
@@ -300,11 +308,17 @@ export function resolveSeoMeta(
 
   const staticMeta = STATIC_SEO[routeName];
   if (staticMeta) {
-    return { ...staticMeta, path: path || staticMeta.path };
+    return {
+      ...staticMeta,
+      title: staticMeta.title.replace(SITE_NAME, siteName),
+      siteName,
+      path: path || staticMeta.path,
+    };
   }
 
   return {
-    title: SITE_NAME,
+    title: siteName,
+    siteName,
     description: DEFAULT_DESCRIPTION,
     path: '/',
   };

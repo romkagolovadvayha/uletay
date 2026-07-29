@@ -4,7 +4,6 @@ import { getCanonicalUrl } from './routeSeo';
 import {
   DEFAULT_KEYWORDS,
   DEFAULT_SOCIAL_IMAGE_URL,
-  SITE_NAME,
 } from './site';
 
 function upsertMeta(name: string, content: string, attribute: 'name' | 'property' = 'name') {
@@ -71,13 +70,13 @@ export function applyWebSeo(meta: SeoMeta) {
   upsertMeta('og:title', meta.title, 'property');
   upsertMeta('og:description', meta.description, 'property');
   upsertMeta('og:url', canonical, 'property');
-  upsertMeta('og:site_name', SITE_NAME, 'property');
+  upsertMeta('og:site_name', meta.siteName, 'property');
   upsertMeta('og:type', 'website', 'property');
   upsertMeta('og:locale', 'ru_RU', 'property');
   upsertMeta('og:image', DEFAULT_SOCIAL_IMAGE_URL, 'property');
   upsertMeta('og:image:width', '1024', 'property');
   upsertMeta('og:image:height', '576', 'property');
-  upsertMeta('og:image:alt', `${SITE_NAME} — фестиваль в Удмуртии`, 'property');
+  upsertMeta('og:image:alt', `${meta.siteName} — фестиваль в Удмуртии`, 'property');
 
   upsertMeta('twitter:card', 'summary_large_image');
   upsertMeta('twitter:title', meta.title);

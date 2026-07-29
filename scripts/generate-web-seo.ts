@@ -12,7 +12,6 @@ import type {
 import { getCanonicalUrl, resolveSeoMeta, type NavState, type SeoMeta } from '../src/seo/routeSeo';
 import {
   DEFAULT_SOCIAL_IMAGE_URL,
-  SITE_NAME,
   SITE_URL,
 } from '../src/seo/site';
 
@@ -391,7 +390,9 @@ const primaryNavigation = [
 function fallbackMarkup(route: GeneratedRoute): string {
   const details = route.details?.filter(Boolean) ?? [];
   const links = route.links ?? [];
-  const heading = plainText(route.heading || route.meta.title.replace(` — ${SITE_NAME}`, ''));
+  const heading = plainText(
+    route.heading || route.meta.title.replace(` — ${route.meta.siteName}`, ''),
+  );
   const nav = primaryNavigation
     .map((item) => `<a href="${htmlEscape(encodedPathname(item.href))}">${htmlEscape(item.label)}</a>`)
     .join(' · ');
@@ -424,7 +425,7 @@ function structuredData(route: GeneratedRoute, data: AppData): Record<string, un
       '@type': 'WebSite',
       '@id': `${SITE_URL.replace(/\/$/, '')}/#website`,
       url: `${SITE_URL.replace(/\/$/, '')}/`,
-      name: SITE_NAME,
+      name: route.meta.siteName,
       inLanguage: 'ru-RU',
     },
     {
@@ -472,7 +473,7 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
   html = setMeta(html, 'name', 'description', truncate(plainText(route.meta.description), 180));
   html = setMeta(html, 'name', 'robots', route.meta.noIndex ? 'noindex, nofollow' : 'index, follow');
   html = setMeta(html, 'property', 'og:type', 'website');
-  html = setMeta(html, 'property', 'og:site_name', SITE_NAME);
+  html = setMeta(html, 'property', 'og:site_name', route.meta.siteName);
   html = setMeta(html, 'property', 'og:title', route.meta.title);
   html = setMeta(html, 'property', 'og:description', truncate(plainText(route.meta.description), 200));
   html = setMeta(html, 'property', 'og:url', route.canonical);
@@ -480,7 +481,12 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
   html = setMeta(html, 'property', 'og:image', DEFAULT_SOCIAL_IMAGE_URL);
   html = setMeta(html, 'property', 'og:image:width', '1024');
   html = setMeta(html, 'property', 'og:image:height', '576');
-  html = setMeta(html, 'property', 'og:image:alt', `${SITE_NAME} — фестиваль в Удмуртии`);
+  html = setMeta(
+    html,
+    'property',
+    'og:image:alt',
+    `${route.meta.siteName} — фестиваль в Удмуртии`,
+  );
   html = setMeta(html, 'name', 'twitter:card', 'summary_large_image');
   html = setMeta(html, 'name', 'twitter:title', route.meta.title);
   html = setMeta(html, 'name', 'twitter:description', truncate(plainText(route.meta.description), 200));

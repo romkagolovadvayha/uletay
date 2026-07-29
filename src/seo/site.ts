@@ -1,4 +1,14 @@
-export const SITE_NAME = 'УЛЕТАЙ 2026';
+export const DEFAULT_FESTIVAL_YEAR = 2026;
+
+export function getSiteName(festivalYear: number | null | undefined): string {
+  const year =
+    typeof festivalYear === 'number' && Number.isInteger(festivalYear) && festivalYear > 0
+      ? festivalYear
+      : DEFAULT_FESTIVAL_YEAR;
+  return `УЛЕТАЙ ${year}`;
+}
+
+export const SITE_NAME = getSiteName(DEFAULT_FESTIVAL_YEAR);
 
 function normalizeSiteUrl(url: string): string {
   try {
