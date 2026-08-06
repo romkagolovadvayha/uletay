@@ -9,7 +9,7 @@ import {
 
 type Props = {
   children: React.ReactNode;
-  level: 2 | 3;
+  level: 1 | 2 | 3;
   style?: StyleProp<TextStyle>;
 };
 

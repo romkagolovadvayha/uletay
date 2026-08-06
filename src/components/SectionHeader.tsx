@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import { colors } from '../theme/colors';
 import { sectionHeaderSpacing, sectionHeaderSpacingMuted } from '../theme/layout';
 import { typography } from '../theme/typography';
+import { SemanticHeading } from './SemanticHeading';
 
 type Props = {
   title: string;
@@ -19,7 +20,12 @@ export function SectionHeader({ title, variant = 'default', style }: Props) {
         style,
       ]}
     >
-      <Text style={[variant === 'muted' ? styles.mutedTitle : styles.title]}>{title}</Text>
+      <SemanticHeading
+        level={2}
+        style={variant === 'muted' ? styles.mutedTitle : styles.title}
+      >
+        {title}
+      </SemanticHeading>
     </View>
   );
 }

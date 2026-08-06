@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { AutographSessionRow } from '../components/AutographSessionRow';
 import { FestivalLogoImage } from '../components/FestivalLogoImage';
+import { SemanticHeading } from '../components/SemanticHeading';
 import { HomeHeadlinersWidget } from '../components/HomeHeadlinersWidget';
 import { LiveArtistCard } from '../components/LiveArtistCard';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -245,7 +246,9 @@ export function FestivalHomeScreen({ navigation }: Props) {
         <View style={[styles.heroStack, festivalPhase === 'after' && styles.heroStackCompact]}>
           <View style={[styles.heroContent, festivalPhase === 'after' && styles.heroContentCompact]}>
             <FestivalLogoImage logoImageUrl={data.festival.logoImageUrl} style={styles.logoImage} />
-            <Text style={styles.tagline}>ФЕСТИВАЛЬ НАСТОЯЩЕЙ МУЗЫКИ</Text>
+            <SemanticHeading level={1} style={styles.tagline}>
+              Фестиваль УЛЕТАЙ 2027
+            </SemanticHeading>
             <Text style={styles.location}>{data.festival.location}</Text>
           </View>
 
