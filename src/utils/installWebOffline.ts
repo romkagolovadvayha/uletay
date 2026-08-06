@@ -1,6 +1,12 @@
 import { Platform } from 'react-native';
 
 const RELOAD_FLAG = 'uletay_sw_reloaded';
+const LOCAL_CLEANUP_RELOAD_FLAG = 'uletay_local_sw_cleanup_reloaded';
+const APP_CACHE_PREFIX = 'uletay-';
+
+function isLoopbackHostname(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
 
 function reloadOnceForNewWorker(): void {
   // Avoid reload loops if something goes wrong with SW activation.
@@ -11,8 +17,57 @@ function reloadOnceForNewWorker(): void {
   window.location.reload();
 }
 
+async function disableLocalServiceWorker(): Promise<void> {
+  const hadController = Boolean(navigator.serviceWorker.controller);
+
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  } catch {
+    // A browser may expose serviceWorker but block registration access.
+  }
+
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith(APP_CACHE_PREFIX))
+          .map((key) => caches.delete(key)),
+      );
+    }
+  } catch {
+    // Cache Storage may be unavailable in private modes.
+  }
+
+  try {
+    if (hadController && sessionStorage.getItem(LOCAL_CLEANUP_RELOAD_FLAG) !== '1') {
+      sessionStorage.setItem(LOCAL_CLEANUP_RELOAD_FLAG, '1');
+      window.location.reload();
+      return;
+    }
+    if (!hadController) {
+      sessionStorage.removeItem(LOCAL_CLEANUP_RELOAD_FLAG);
+    }
+  } catch {
+    // Storage may be blocked; cleanup still succeeded without an automatic reload.
+  }
+}
+
 export function installWebOffline(): void {
-  if (Platform.OS !== 'web' || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+  if (
+    Platform.OS !== 'web' ||
+    typeof window === 'undefined' ||
+    typeof navigator === 'undefined' ||
+    !('serviceWorker' in navigator)
+  ) {
+    return;
+  }
+
+  if (isLoopbackHostname(window.location.hostname)) {
+    window.addEventListener('load', () => {
+      void disableLocalServiceWorker();
+    }, { once: true });
     return;
   }
 

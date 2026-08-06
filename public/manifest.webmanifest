@@ -1,7 +1,7 @@
 {
   "name": "УЛЕТАЙ",
   "short_name": "УЛЕТАЙ",
-  "description": "Официальное приложение фестиваля УЛЕТАЙ",
+  "description": "Приложение фестиваля УЛЕТАЙ",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

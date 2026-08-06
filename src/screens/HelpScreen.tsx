@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { ScreenTitle } from '../components/ScreenTitle';
+import { LEGAL_OPERATOR } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
 import { useUserLocation } from '../hooks/useUserLocation';
 import type { RootTabParamList } from '../navigation/types';
@@ -25,9 +27,6 @@ import { nearestPois, poiCoordinate } from '../utils/map/poiData';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'HelpTab'>;
 type Props = { navigation: Navigation };
-
-const ORGANIZER_PHONE = '+73412900920';
-const ORGANIZER_EMAIL = 'fonarizh@yandex.ru';
 
 const OFFLINE_INSTRUCTIONS = [
   {
@@ -85,8 +84,11 @@ export function HelpScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <View>
           <Text style={styles.eyebrow}>РАБОТАЕТ БЕЗ ИНТЕРНЕТА</Text>
-          <Text style={styles.screenTitle}>Помощь</Text>
-          <Text style={styles.lead}>Быстрые действия, когда некогда искать контакты.</Text>
+          <ScreenTitle style={styles.screenTitle}>Помощь на фестивале</ScreenTitle>
+          <Text style={styles.lead}>
+            Быстрые действия, маршруты к медпункту и охране, а также официальные
+            контакты организатора {data.festival.name} {data.festival.year}.
+          </Text>
         </View>
 
         <View style={styles.emergency}>
@@ -154,12 +156,14 @@ export function HelpScreen({ navigation }: Props) {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Организатор и потерянные вещи</Text>
-          <Text style={styles.caption}>«Фонари», Ижевск · официальный контакт фестиваля</Text>
+          <Text style={styles.caption}>
+            {LEGAL_OPERATOR.name} · {LEGAL_OPERATOR.phoneLabels[0]} · {LEGAL_OPERATOR.email}
+          </Text>
           <View style={styles.twoActions}>
-            <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`tel:${ORGANIZER_PHONE}`)} style={styles.secondaryButton}>
+            <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`tel:${LEGAL_OPERATOR.phones[0]}`)} style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Позвонить</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`mailto:${ORGANIZER_EMAIL}`)} style={styles.secondaryButton}>
+            <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`mailto:${LEGAL_OPERATOR.email}`)} style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Написать</Text>
             </Pressable>
           </View>
@@ -172,6 +176,7 @@ export function HelpScreen({ navigation }: Props) {
             return (
               <Pressable
                 accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
                 key={item.title}
                 onPress={() => setOpenInstruction(open ? null : index)}
                 style={styles.instruction}
@@ -250,12 +255,12 @@ const styles = StyleSheet.create({
   cardTitle: { ...typography.sectionTitle, color: colors.text },
   caption: { ...typography.caption, color: colors.textSecondary },
   twoActions: { flexDirection: 'row', gap: spacing.sm },
-  secondaryButton: { minHeight: 44, flex: 1, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md },
+  secondaryButton: { minHeight: 48, flex: 1, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md },
   secondaryButtonText: { ...typography.button, color: colors.primary, textAlign: 'center' },
   disabled: { opacity: 0.4 },
   section: { gap: spacing.sm, marginTop: spacing.md },
   sectionTitle: { ...typography.sectionTitle, color: colors.text },
-  instruction: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md, gap: spacing.sm },
+  instruction: { minHeight: 48, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.md, gap: spacing.sm },
   instructionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   instructionTitle: { ...typography.body, color: colors.text, fontWeight: '700' },
   instructionBody: { ...typography.body, color: colors.textSecondary },

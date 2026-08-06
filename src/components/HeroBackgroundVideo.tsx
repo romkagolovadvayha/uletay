@@ -21,7 +21,6 @@ export function HeroBackgroundVideo({ onReady }: HeroBackgroundVideoProps) {
     if (Platform.OS === 'ios') {
       player.allowsExternalPlayback = false;
     }
-    player.play();
   });
 
   useEffect(() => {
@@ -30,17 +29,8 @@ export function HeroBackgroundVideo({ onReady }: HeroBackgroundVideoProps) {
         onReady();
       }
     });
-    const statusListener = heroPlayer.addListener('statusChange', ({ status }) => {
-      if (status === 'readyToPlay') {
-        heroPlayer.play();
-      }
-    });
-
-    heroPlayer.play();
-
     return () => {
       playingListener.remove();
-      statusListener.remove();
     };
   }, [heroPlayer, onReady]);
 

@@ -143,18 +143,69 @@ setup_https_nginx() {
 
 verify_https() {
   local html_check="/tmp/uletay-https-check.html"
+  local headers_check="/tmp/uletay-https-check.headers"
+  local asset_headers_check="/tmp/uletay-asset-check.headers"
   local seo_check="/tmp/uletay-seo-check.html"
   local sitemap_check="/tmp/uletay-sitemap-check.xml"
   local robots_check="/tmp/uletay-robots-check.txt"
   local www_domain="www.${DOMAIN}"
   local code
+  local index_asset
   local location
 
-  curl -fsS -k "https://127.0.0.1/" -H "Host: ${DOMAIN}" -o "$html_check" \
-    || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check"; exit 1; }
+  curl -fsS -k --compressed "https://127.0.0.1/" \
+    -H "Host: ${DOMAIN}" \
+    -D "$headers_check" \
+    -o "$html_check" \
+    || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check" "$headers_check"; exit 1; }
   head -c 200 "$html_check" | grep -qiE 'html|УЛЕТАЙ|root' \
-    || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check"; exit 1; }
-  rm -f "$html_check"
+    || { echo "HTTPS is not serving dist/ for ${DOMAIN}"; rm -f "$html_check" "$headers_check"; exit 1; }
+  for required_header in \
+    strict-transport-security \
+    content-security-policy \
+    x-content-type-options \
+    x-frame-options \
+    referrer-policy \
+    permissions-policy; do
+    grep -qi "^${required_header}:" "$headers_check" \
+      || { echo "Missing production header: ${required_header}"; rm -f "$html_check" "$headers_check"; exit 1; }
+  done
+  grep -qi '^content-encoding: gzip' "$headers_check" \
+    || { echo "Homepage is not gzip-compressed"; rm -f "$html_check" "$headers_check"; exit 1; }
+  grep -qi '^link:.*hero-video-poster.webp.*rel=preload' "$headers_check" \
+    || { echo "Homepage does not preload the LCP poster"; rm -f "$html_check" "$headers_check"; exit 1; }
+  if grep -qiE '^server:.*nginx/[0-9]' "$headers_check"; then
+    echo "nginx version is exposed in the Server header"
+    rm -f "$html_check" "$headers_check"
+    exit 1
+  fi
+
+  index_asset=$(grep -oE '/_expo/static/js/web/index-[^" ]+\.js' "$html_check" | head -1)
+  if [[ -z "$index_asset" ]]; then
+    echo "Could not locate the hashed web entry bundle"
+    rm -f "$html_check" "$headers_check"
+    exit 1
+  fi
+  curl -fsS -k -o /dev/null \
+    -H "Host: ${DOMAIN}" \
+    -H "Accept-Encoding: gzip" \
+    -D "$asset_headers_check" \
+    "https://127.0.0.1${index_asset}"
+  grep -qi '^content-encoding: gzip' "$asset_headers_check" \
+    || { echo "Web entry bundle is not gzip-compressed"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
+  grep -qi '^cache-control:.*immutable' "$asset_headers_check" \
+    || { echo "Hashed web entry bundle is not cached as immutable"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
+
+  curl -fsS -k -o /dev/null \
+    -H "Host: ${DOMAIN}" \
+    -H "Accept-Encoding: gzip" \
+    -D "$asset_headers_check" \
+    "https://127.0.0.1/api/data"
+  grep -qi '^content-encoding: gzip' "$asset_headers_check" \
+    || { echo "API JSON is not gzip-compressed"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
+  grep -qi '^cache-control:.*max-age=60' "$asset_headers_check" \
+    || { echo "API cache policy is missing or too aggressive"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
+  rm -f "$html_check" "$headers_check" "$asset_headers_check"
 
   curl -fsS -k "https://127.0.0.1/about" -H "Host: ${DOMAIN}" -o "$seo_check" \
     || { echo "HTTPS is not serving the /about SEO route"; rm -f "$seo_check"; exit 1; }

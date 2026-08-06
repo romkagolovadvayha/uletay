@@ -26,7 +26,10 @@ const server = createServer((request, response) => {
   }
   if (existsSync(target) && statSync(target).isDirectory()) target = path.join(target, 'index.html');
   if (!existsSync(target)) target = path.join(root, 'index.html');
-  response.setHeader('Content-Type', mime[path.extname(target)] ?? 'application/octet-stream');
+  const contentType = pathname === '/api/data'
+    ? 'application/json; charset=utf-8'
+    : mime[path.extname(target)] ?? 'application/octet-stream';
+  response.setHeader('Content-Type', contentType);
   response.setHeader('Cache-Control', 'no-cache');
   createReadStream(target).pipe(response);
 });

@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeadlinerCard } from '../components/HeadlinerCard';
 import { HeadlinerFilterBar } from '../components/HeadlinerFilterBar';
@@ -42,18 +42,26 @@ export function HeadlinersScreen({ navigation }: Props) {
   const activeYear = years.includes(Number(selectedYear)) ? selectedYear : String(defaultYear);
 
   const yearCategories = useMemo(() => buildHeadlinerYearCategories(years), [years]);
+  const activeYearHasHeadliners = useMemo(
+    () => data.headliners.some((headliner) => headliner.years.includes(Number(activeYear))),
+    [activeYear, data.headliners],
+  );
+  const previousFestivalYear = useMemo(
+    () =>
+      activeYearHasHeadliners
+        ? undefined
+        : getPreviousHeadlinerYears(data.headliners, Number(activeYear), 1)[0],
+    [activeYear, activeYearHasHeadliners, data.headliners],
+  );
+  const displayedYear = previousFestivalYear ?? Number(activeYear);
   const items = useMemo(
     () =>
       filterHeadlinersList(data.headliners, {
-        year: Number(activeYear),
+        year: displayedYear,
         query: searchQuery,
         sort: sortMode,
       }),
-    [activeYear, data.headliners, searchQuery, sortMode],
-  );
-  const previousYears = useMemo(
-    () => getPreviousHeadlinerYears(data.headliners, Number(activeYear), 3),
-    [activeYear, data.headliners],
+    [data.headliners, displayedYear, searchQuery, sortMode],
   );
 
   return (
@@ -89,6 +97,16 @@ export function HeadlinersScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('HeadlinerDetail', { headlinerId: headliner.id })}
           />
         )}
+        ListHeaderComponent={previousFestivalYear != null ? (
+          <View style={styles.previousHeader}>
+            <Text style={styles.emptyText}>
+              Хэдлайнеры {activeYear} года ещё не объявлены
+            </Text>
+            <Text style={styles.previousTitle}>
+              Хедлайнеры предыдущего фестиваля {previousFestivalYear}
+            </Text>
+          </View>
+        ) : null}
         ListEmptyComponent={(
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
@@ -96,23 +114,6 @@ export function HeadlinersScreen({ navigation }: Props) {
                 ? 'Ничего не найдено — попробуйте другой запрос'
                 : `Хэдлайнеры ${activeYear} года ещё не объявлены`}
             </Text>
-            {!searchQuery.trim() && previousYears.length > 0 ? (
-              <View style={styles.emptyYears}>
-                <Text style={styles.emptyHint}>Посмотреть другие годы</Text>
-                <View style={styles.emptyButtons}>
-                  {previousYears.map((year) => (
-                    <Pressable
-                      key={year}
-                      accessibilityRole="button"
-                      onPress={() => setSelectedYear(String(year))}
-                      style={styles.emptyButton}
-                    >
-                      <Text style={styles.emptyButtonText}>{year}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            ) : null}
           </View>
         )}
       />
@@ -147,35 +148,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
   },
-  emptyYears: {
-    marginTop: spacing.xl,
+  previousHeader: {
+    paddingVertical: spacing.xl,
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.lg,
   },
-  emptyHint: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 13,
-  },
-  emptyButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  emptyButton: {
-    minHeight: 44,
-    minWidth: 88,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  emptyButtonText: {
-    ...typography.body,
+  previousTitle: {
+    ...typography.screenSubtitle,
     color: colors.primary,
-    fontSize: 14,
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: 'center',
   },
 });

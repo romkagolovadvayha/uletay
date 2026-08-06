@@ -31,13 +31,23 @@
       "ios": {
         "resourceClass": "m-medium"
       }
+    },
+    "rustore": {
+      "extends": "production",
+      "env": {
+        "RUSTORE_BUILD": "1"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
     "production": {
       "ios": {},
       "android": {
-        "track": "internal",
+        "track": "production",
+        "releaseStatus": "completed",
         "serviceAccountKeyPath": "./google-service-account.json"
       }
     }

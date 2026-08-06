@@ -27,6 +27,7 @@ import { installExternalLinkRel } from './src/utils/installExternalLinkRel';
 import { installWebMainLandmark } from './src/utils/webMainLandmark';
 import { installWebOffline } from './src/utils/installWebOffline';
 import { installWebPreventInputZoom } from './src/utils/webPreventInputZoom';
+import { trackWebPageView } from './src/utils/webAnalytics';
 
 const navigationTheme = {
   ...DarkTheme,
@@ -73,6 +74,7 @@ function AppContent() {
             }
             onReady={() => {
               syncWebSeo();
+              trackWebPageView();
             }}
             onStateChange={() => {
               if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -86,6 +88,7 @@ function AppContent() {
                   syncNestedStacksWithActiveTab(navigationRef);
                 }
                 syncWebSeo();
+                trackWebPageView();
               });
             }}
           >

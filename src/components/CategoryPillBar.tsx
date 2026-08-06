@@ -30,6 +30,7 @@ export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'd
           <MotionPressable
             key={category.id}
             accessibilityRole="button"
+            accessibilityState={{ selected: isActive }}
             onPress={() => onSelect(category.id)}
             style={[
               styles.pill,

@@ -10,10 +10,9 @@ import type {
   Stage,
 } from '../src/types';
 import { getCanonicalUrl, resolveSeoMeta, type NavState, type SeoMeta } from '../src/seo/routeSeo';
-import {
-  DEFAULT_SOCIAL_IMAGE_URL,
-  SITE_URL,
-} from '../src/seo/site';
+import { DEFAULT_SOCIAL_IMAGE_URL } from '../src/seo/site';
+import { buildWebStructuredData } from '../src/seo/structuredData';
+import { encodeSeoRouteId, isDateWithinFestival } from '../src/seo/seoRouteUtils';
 
 type SeedData = Partial<AppData> & {
   festival: AppData['festival'];
@@ -30,7 +29,6 @@ type RouteSpec = {
   heading?: string;
   details?: string[];
   links?: { href: string; label: string }[];
-  structuredData?: Record<string, unknown>;
 };
 
 type GeneratedRoute = RouteSpec & {
@@ -68,7 +66,7 @@ function plainText(value: unknown): string {
     .trim();
 }
 
-function truncate(value: string, maxLength = 180): string {
+function truncate(value: string, maxLength = 160): string {
   if (value.length <= maxLength) {
     return value;
   }
@@ -173,10 +171,6 @@ async function loadBuildData(): Promise<AppData> {
   return data;
 }
 
-function isoFestivalDateTime(date: string, time: string): string {
-  return `${date}T${time}:00+04:00`;
-}
-
 function stageName(stages: Stage[], stageId: string): string {
   return stages.find((stage) => stage.id === stageId)?.name ?? 'Сцена фестиваля';
 }
@@ -196,83 +190,45 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     { path: '/rules', routeName: 'FestivalRules' },
     { path: '/legal', routeName: 'Legal' },
     { path: '/settings', routeName: 'Settings' },
+    { path: '/help', routeName: 'HelpTab' },
   ];
 
-  const stageRoutes: RouteSpec[] = data.stages.map((stage) => ({
-    path: `/schedule/full/${stage.id}`,
-    routeName: 'FullSchedule',
-    params: { stageId: stage.id },
-    heading: stage.name,
-    details: [`Расписание выступлений на сцене «${stage.name}».`],
-  }));
+  const performanceRoutes: RouteSpec[] = data.schedule
+    .filter((performance) => isDateWithinFestival(performance.date, data.festival))
+    .map((performance) => ({
+      path: `/schedule/live/${encodeSeoRouteId(performance.id)}`,
+      routeName: 'LiveDetail',
+      params: { performanceId: performance.id },
+      heading: performance.artist,
+      details: [
+        `${performance.date}, ${performance.startTime}–${performance.endTime}`,
+        stageName(data.stages, performance.stageId),
+      ],
+    }));
 
-  const performanceRoutes: RouteSpec[] = data.schedule.map((performance) => ({
-    path: `/schedule/live/${performance.id}`,
-    routeName: 'LiveDetail',
-    params: { performanceId: performance.id },
-    heading: performance.artist,
-    details: [
-      `${performance.date}, ${performance.startTime}–${performance.endTime}`,
-      stageName(data.stages, performance.stageId),
-    ],
-    structuredData: {
-      '@type': 'MusicEvent',
-      name: `${performance.artist} на фестивале ${data.festival.name}`,
-      startDate: isoFestivalDateTime(performance.date, performance.startTime),
-      endDate: isoFestivalDateTime(performance.date, performance.endTime),
-      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-      eventStatus: 'https://schema.org/EventScheduled',
-      location: {
-        '@type': 'Place',
-        name: stageName(data.stages, performance.stageId),
-        address: data.festival.location,
-      },
-      performer: { '@type': 'MusicGroup', name: performance.artist },
-    },
-  }));
-
-  const autographRoutes: RouteSpec[] = data.autographs.map((session) => ({
-    path: `/autographs/${session.id}`,
-    routeName: 'AutographDetail',
-    params: { sessionId: session.id },
-    heading: session.artist,
-    details: [
-      `${session.date}, ${session.startTime}–${session.endTime}`,
-      session.location,
-    ],
-    structuredData: {
-      '@type': 'Event',
-      name: `Автограф-сессия: ${session.artist}`,
-      startDate: isoFestivalDateTime(session.date, session.startTime),
-      endDate: isoFestivalDateTime(session.date, session.endTime),
-      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-      eventStatus: 'https://schema.org/EventScheduled',
-      location: {
-        '@type': 'Place',
-        name: session.location,
-        address: data.festival.location,
-      },
-      performer: { '@type': 'MusicGroup', name: session.artist },
-    },
-  }));
+  const autographRoutes: RouteSpec[] = data.autographs
+    .filter((session) => isDateWithinFestival(session.date, data.festival))
+    .map((session) => ({
+      path: `/autographs/${encodeSeoRouteId(session.id)}`,
+      routeName: 'AutographDetail',
+      params: { sessionId: session.id },
+      heading: session.artist,
+      details: [
+        `${session.date}, ${session.startTime}–${session.endTime}`,
+        session.location,
+      ],
+    }));
 
   const foodcourtRoutes: RouteSpec[] = data.foodcourt.map((vendor) => ({
-    path: `/foodcourt/${vendor.id}`,
+    path: `/foodcourt/${encodeSeoRouteId(vendor.id)}`,
     routeName: 'FoodCourtDetail',
     params: { vendorId: vendor.id },
     heading: vendor.name,
     details: [vendor.description, vendor.hours, vendor.priceRange || vendor.priceFrom].filter(Boolean),
-    structuredData: {
-      '@type': 'FoodEstablishment',
-      name: vendor.name,
-      description: vendor.description,
-      address: data.festival.location,
-      priceRange: vendor.priceRange || vendor.priceFrom,
-    },
   }));
 
   const headlinerRoutes: RouteSpec[] = data.headliners.map((headliner) => ({
-    path: `/headliners/${headliner.id}`,
+    path: `/headliners/${encodeSeoRouteId(headliner.id)}`,
     routeName: 'HeadlinerDetail',
     params: { headlinerId: headliner.id },
     heading: headliner.name,
@@ -282,11 +238,6 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
         ? `Участие в фестивале: ${[...headliner.years].sort((a, b) => b - a).join(', ')}`
         : '',
     ].filter(Boolean),
-    structuredData: {
-      '@type': 'MusicGroup',
-      name: headliner.name,
-      description: plainText(headliner.description),
-    },
   }));
 
   const scheduleLinks = performanceRoutes.map((route) => ({
@@ -310,14 +261,6 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     switch (route.path) {
       case '/schedule':
         return { ...route, links: scheduleLinks };
-      case '/schedule/full':
-        return {
-          ...route,
-          links: stageRoutes.map((item) => ({
-            href: item.path,
-            label: item.heading ?? item.path,
-          })),
-        };
       case '/autographs':
         return { ...route, links: autographLinks };
       case '/foodcourt':
@@ -331,7 +274,6 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
 
   return [
     ...enrichedCommon,
-    ...stageRoutes,
     ...performanceRoutes,
     ...autographRoutes,
     ...foodcourtRoutes,
@@ -408,7 +350,7 @@ function fallbackMarkup(route: GeneratedRoute): string {
         .join('')}</ul></section>`
     : '';
 
-  return `<main id="seo-fallback">
+  return `<section id="seo-fallback" aria-label="Содержание страницы">
       <article>
         <h1>${htmlEscape(heading)}</h1>
         <p>${htmlEscape(route.meta.description)}</p>
@@ -416,61 +358,20 @@ function fallbackMarkup(route: GeneratedRoute): string {
         ${linksMarkup}
         <nav aria-label="Основные разделы">${nav}</nav>
       </article>
-    </main>`;
+    </section>`;
 }
 
 function structuredData(route: GeneratedRoute, data: AppData): Record<string, unknown> {
-  const graph: Record<string, unknown>[] = [
-    {
-      '@type': 'WebSite',
-      '@id': `${SITE_URL.replace(/\/$/, '')}/#website`,
-      url: `${SITE_URL.replace(/\/$/, '')}/`,
-      name: route.meta.siteName,
-      inLanguage: 'ru-RU',
-    },
-    {
-      '@type': 'WebPage',
-      '@id': `${route.canonical}#webpage`,
-      url: route.canonical,
-      name: route.meta.title,
-      description: route.meta.description,
-      inLanguage: 'ru-RU',
-      isPartOf: { '@id': `${SITE_URL.replace(/\/$/, '')}/#website` },
-    },
-  ];
-
-  if (route.path === '/') {
-    graph.push({
-      '@type': 'MusicFestival',
-      name: `${data.festival.name} ${data.festival.year}`,
-      startDate: data.festival.startDate,
-      endDate: data.festival.endDate,
-      location: {
-        '@type': 'Place',
-        name: data.festival.locationShort || data.festival.location,
-        address: data.festival.location,
-      },
-      url: route.canonical,
-    });
-  }
-
-  if (route.structuredData) {
-    graph.push({
-      ...route.structuredData,
-      url: route.canonical,
-    });
-  }
-
-  return {
-    '@context': 'https://schema.org',
-    '@graph': graph,
-  };
+  return buildWebStructuredData(route.meta, data);
 }
 
 function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData): string {
-  let html = template.replace(/<html(?:\s+lang=["'][^"']*["'])?>/i, '<html lang="ru">');
+  let html = template
+    .replace(/\s*<script\b[^>]*\bid=["']seo-jsonld["'][^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/\s*<style\b[^>]*\bid=["']seo-fallback-style["'][^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<html(?:\s+lang=["'][^"']*["'])?>/i, '<html lang="ru">');
   html = setTitle(html, route.meta.title);
-  html = setMeta(html, 'name', 'description', truncate(plainText(route.meta.description), 180));
+  html = setMeta(html, 'name', 'description', truncate(plainText(route.meta.description), 160));
   html = setMeta(html, 'name', 'robots', route.meta.noIndex ? 'noindex, nofollow' : 'index, follow');
   html = setMeta(html, 'property', 'og:type', 'website');
   html = setMeta(html, 'property', 'og:site_name', route.meta.siteName);
@@ -496,19 +397,19 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
   html = setLink(html, 'alternate', route.canonical, 'x-default');
 
   const jsonLd = JSON.stringify(structuredData(route, data)).replaceAll('<', '\\u003c');
-  // Keep crawlable HTML in #root, but hide it visually so users don't see a text dump
-  // before the Expo app boots (black shell matches the app background).
+  // Render useful no-JS content. React replaces this section when the app mounts.
   const bootStyle = [
-    'html,body,#root{background:#000;margin:0;min-height:100%}',
-    '#seo-fallback{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}',
+    'html,body,#root{background:#000;color:#f5f5f7;margin:0;min-height:100%}',
+    '#seo-fallback{box-sizing:border-box;max-width:960px;margin:0 auto;padding:32px 20px;font:16px/1.6 system-ui,sans-serif}',
+    '#seo-fallback a{color:#ffc107}#seo-fallback h1,#seo-fallback h2{line-height:1.2}',
   ].join('');
   html = html.replace(
     '</head>',
     `  <script id="seo-jsonld" type="application/ld+json">${jsonLd}</script>\n  <style id="seo-fallback-style">${bootStyle}</style>\n</head>`,
   );
   html = html.replace(
-    /<div\s+id=["']root["']\s*><\/div>/i,
-    `<div id="root">${fallbackMarkup(route)}</div>`,
+    /<(div|main)\s+id=["']root["']\s*><\/\1>/i,
+    (_match, tag: string) => `<${tag} id="root">${fallbackMarkup(route)}</${tag}>`,
   );
   return html;
 }
@@ -538,7 +439,7 @@ async function main() {
       meta: {
         ...meta,
         path: spec.path,
-        description: truncate(plainText(meta.description), 180),
+        description: truncate(plainText(meta.description), 160),
       },
       canonical,
     });
@@ -554,7 +455,7 @@ async function main() {
 
   writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml(routes), 'utf8');
   console.log(
-    `generate-web-seo: wrote ${routes.length} indexable route documents and sitemap.xml`,
+    `generate-web-seo: wrote ${routes.length} route documents and sitemap.xml`,
   );
 }
 

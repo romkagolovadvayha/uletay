@@ -1,4 +1,5 @@
 include __DEPLOY_PATH__/deploy/nginx.spa-routes.map;
+server_tokens off;
 
 server {
     listen 80;
@@ -20,6 +21,7 @@ server {
     server_name __DOMAIN__;
 
     client_max_body_size 20M;
+    include __DEPLOY_PATH__/deploy/nginx.compression.conf;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;

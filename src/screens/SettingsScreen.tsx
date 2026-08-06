@@ -124,6 +124,7 @@ export function SettingsScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Назад"
           onPress={() => navigation.goBack()}
           style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
         >
@@ -170,6 +171,12 @@ export function SettingsScreen({ navigation }: Props) {
             subtitle="Политика, соглашение, контакты организатора"
             onPress={() => navigation.navigate('Legal')}
           />
+          <SettingsLink
+            icon="document-text-outline"
+            title="Правила фестиваля"
+            subtitle="Правила посещения, безопасность и бытовая информация"
+            onPress={() => navigation.navigate('FestivalRules')}
+          />
           <Text style={styles.legalNote}>
             Политика конфиденциальности также доступна по адресу {PRIVACY_POLICY_URL}
           </Text>
@@ -195,6 +202,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.sm,
     alignSelf: 'flex-start',
+    minHeight: 48,
   },
   backLabel: {
     ...appFont('semiBold'),
@@ -219,6 +227,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   modeOption: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -252,6 +261,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   settingsLink: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,

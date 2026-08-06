@@ -19,10 +19,17 @@ export function ScreenTitle({ children, style, numberOfLines, accessibilityLabel
   const flattenedStyle = StyleSheet.flatten([webHeadingReset, style]);
 
   if (Platform.OS === 'web') {
+    const webStyle = {
+      ...flattenedStyle,
+      ...(typeof flattenedStyle.lineHeight === 'number'
+        ? { lineHeight: `${flattenedStyle.lineHeight}px` }
+        : {}),
+    } as React.CSSProperties;
+
     return createElement(
       'h1',
       {
-        style: flattenedStyle,
+        style: webStyle,
         'aria-label': accessibilityLabel,
       },
       children,

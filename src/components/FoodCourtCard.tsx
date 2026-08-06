@@ -46,8 +46,8 @@ function FoodCourtThumbnail({ vendor, large }: { vendor: FoodCourtVendor; large?
         contentFit="cover"
         accessibilityLabel={vendor.name}
         alt={vendor.name}
-        priority={large ? 'normal' : 'low'}
-        loading={!large && Platform.OS === 'web' ? 'lazy' : undefined}
+        priority={large ? 'high' : 'low'}
+        loading={Platform.OS === 'web' ? (large ? 'eager' : 'lazy') : undefined}
         onError={() => {
           if (!useFull) {
             setUseFull(true);

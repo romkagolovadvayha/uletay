@@ -1,6 +1,6 @@
 import { Image, ImageStyle } from 'expo-image';
 import React, { useMemo, useState } from 'react';
-import { StyleProp } from 'react-native';
+import { Platform, StyleProp } from 'react-native';
 import { resolveFestivalLogoSourceChain } from '../utils/imageSource';
 
 type Props = {
@@ -22,9 +22,10 @@ export function FestivalLogoImage({ logoImageUrl, style }: Props) {
       source={source}
       style={style}
       contentFit="contain"
-      accessibilityLabel="Улетай"
-      alt="Улетай"
+      accessibilityLabel="Логотип фестиваля УЛЕТАЙ"
+      alt="Логотип фестиваля УЛЕТАЙ"
       priority="high"
+      loading={Platform.OS === 'web' ? 'eager' : undefined}
       recyclingKey={`${logoImageUrl ?? 'default'}:${index}`}
       onError={() => setIndex((current) => Math.min(current + 1, chain.length - 1))}
     />

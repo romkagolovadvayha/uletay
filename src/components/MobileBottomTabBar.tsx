@@ -15,7 +15,7 @@ export const TAB_BAR_INNER_PADDING = 8;
 
 const ICON_SLOT = 24;
 /** Icon + gap + label — keeps native layout from collapsing under flex:1. */
-const ITEM_CONTENT_HEIGHT = ICON_SLOT + 2 + 12;
+const ITEM_CONTENT_HEIGHT = 48;
 
 /**
  * Phone bottom tab bar without React Navigation's empty absoluteFill

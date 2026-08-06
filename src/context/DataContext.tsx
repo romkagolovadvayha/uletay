@@ -3,6 +3,7 @@ import { ActivityIndicator, AppState, Platform, StyleSheet, View } from 'react-n
 import {
   APP_DATA_CACHE_KEY,
   AppDataRefreshResult,
+  isCurrentFestivalEdition,
   readCachedAppData,
   refreshAppDataInBackground,
 } from '../api/appDataApi';
@@ -35,7 +36,9 @@ function readCachedAppDataSync(): CachedAppData | null {
       return null;
     }
     const parsed = JSON.parse(raw) as { data?: AppData; fetchedAt?: number };
-    return parsed?.data && typeof parsed.fetchedAt === 'number'
+    return parsed?.data &&
+      typeof parsed.fetchedAt === 'number' &&
+      isCurrentFestivalEdition(parsed.data)
       ? { data: normalizeAppData(parsed.data), fetchedAt: parsed.fetchedAt }
       : null;
   } catch {

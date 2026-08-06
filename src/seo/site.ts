@@ -1,4 +1,4 @@
-export const DEFAULT_FESTIVAL_YEAR = 2026;
+export const DEFAULT_FESTIVAL_YEAR = 2027;
 
 export function getSiteName(festivalYear: number | null | undefined): string {
   const year =
@@ -28,7 +28,7 @@ const configuredSiteUrl =
 export const SITE_URL = normalizeSiteUrl(configuredSiteUrl);
 
 export const DEFAULT_DESCRIPTION =
-  'Официальное приложение фестиваля УЛЕТАЙ в Лагуново, Удмуртия: расписание концертов, карта площадки, автограф-сессии, фудкорт и радио в эфире.';
+  'Приложение фестиваля УЛЕТАЙ в Лагуново, Удмуртия: расписание концертов, карта площадки, автограф-сессии, фудкорт и радио в эфире.';
 
 export const DEFAULT_KEYWORDS =
   'УЛЕТАЙ, фестиваль, Лагуново, Удмуртия, расписание, карта, концерты, автографы, фудкорт';

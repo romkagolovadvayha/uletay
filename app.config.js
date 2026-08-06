@@ -6,6 +6,7 @@ const defaultGoogleServicesFile = './google-services.json';
 module.exports = ({ config }) => {
   const googleServicesFile =
     process.env.GOOGLE_SERVICES_FILE || defaultGoogleServicesFile;
+  const isRuStoreBuild = process.env.RUSTORE_BUILD === '1';
   const hasGoogleServicesFile = existsSync(
     path.resolve(__dirname, googleServicesFile),
   );
@@ -14,6 +15,20 @@ module.exports = ({ config }) => {
     ...config,
     android: {
       ...config.android,
+      ...(isRuStoreBuild
+        ? {
+            permissions: (config.android?.permissions || []).filter(
+              (permission) => permission !== 'SCHEDULE_EXACT_ALARM',
+            ),
+            blockedPermissions: [
+              ...(config.android?.blockedPermissions || []),
+              'android.permission.SCHEDULE_EXACT_ALARM',
+              'android.permission.SYSTEM_ALERT_WINDOW',
+              'android.permission.READ_EXTERNAL_STORAGE',
+              'android.permission.WRITE_EXTERNAL_STORAGE',
+            ],
+          }
+        : {}),
       ...(hasGoogleServicesFile ? { googleServicesFile } : {}),
     },
   };

@@ -11,12 +11,14 @@ import { HomeHeadlinersWidget } from '../components/HomeHeadlinersWidget';
 import { LiveArtistCard } from '../components/LiveArtistCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionHeader } from '../components/SectionHeader';
+import { WebFestivalGuide } from '../components/WebFestivalGuide';
 import { useAppData } from '../context/DataContext';
 import {
   usePrimaryAutographSessions,
   useStagePrimaryPerformances,
 } from '../hooks/useCurrentLivePerformance';
 import { useFavorites } from '../hooks/useFavorites';
+import { useDeferredHeroVideo } from '../hooks/useDeferredHeroVideo';
 import { useNow } from '../hooks/useNow';
 import { RootTabParamList } from '../navigation/types';
 import { openHeadlinerDetail, openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
@@ -112,6 +114,7 @@ export function FestivalHomeScreen({ navigation }: Props) {
   const stagePrimaries = useStagePrimaryPerformances();
   const autographPrimaries = usePrimaryAutographSessions(3);
   const { isAutographFavorite, toggleAutographFavorite } = useFavorites();
+  const allowHeroVideo = useDeferredHeroVideo();
   const scrollY = useMemo(() => new Animated.Value(0), []);
 
   const backgroundTranslateY = useMemo(
@@ -143,7 +146,12 @@ export function FestivalHomeScreen({ navigation }: Props) {
     : isFestivalFinished(data.festival.startDate, data.festival.endDate, data.schedule, now)
       ? 'after'
       : 'during';
-  const hasReliableFestivalData = dataSource !== 'fallback' || !error;
+  // The bundled snapshot is intentionally available offline. It contains the
+  // published festival window, so a temporary API failure must not hide the
+  // countdown or switch the home screen to an empty post-festival state.
+  const hasReliableFestivalData = Boolean(
+    data.festival.startDate && data.festival.endDate && data.festival.year,
+  );
   const nextFestivalYear = data.festival.year + 1;
   const hasNextYearSchedule = hasScheduleForYear(data.schedule, nextFestivalYear);
   const showPreFestivalHeadliners = hasReliableFestivalData && festivalPhase === 'before';
@@ -154,8 +162,6 @@ export function FestivalHomeScreen({ navigation }: Props) {
     () => getLatestHeadlinerYear(data.headliners),
     [data.headliners],
   );
-  const allowHeroVideo = true;
-
   const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');
   const hasAnySoon = stagePrimaries.some(
     (item) =>
@@ -207,7 +213,10 @@ export function FestivalHomeScreen({ navigation }: Props) {
       <HeroParallaxBackground translateY={backgroundTranslateY} allowVideo={allowHeroVideo} />
 
       <Animated.ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          Platform.OS === 'web' && styles.webContent,
+        ]}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={onScroll}
@@ -224,7 +233,11 @@ export function FestivalHomeScreen({ navigation }: Props) {
                   : 'Не удалось загрузить данные с сервера. Проверьте сеть и нажмите «Обновить».'}
               </Text>
             </View>
-            <Pressable accessibilityRole="button" onPress={() => void refreshData(true)}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void refreshData(true)}
+              style={styles.offlineRetryButton}
+            >
               <Text style={styles.offlineRetry}>Обновить</Text>
             </Pressable>
           </View>
@@ -352,6 +365,19 @@ export function FestivalHomeScreen({ navigation }: Props) {
             )}
           </View>
         ) : null}
+
+        {Platform.OS === 'web' ? (
+          <View style={styles.guideSection}>
+            <WebFestivalGuide
+              festival={data.festival}
+              onOpenSchedule={() => openScheduleTabMain(navigation)}
+              onOpenMap={() => navigation.navigate('MapTab')}
+              onOpenRules={() =>
+                navigation.navigate('MoreTab', { screen: 'FestivalRules' })
+              }
+            />
+          </View>
+        ) : null}
       </Animated.ScrollView>
     </SafeAreaView>
   );
@@ -378,6 +404,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: spacing.xxl,
+  },
+  webContent: {
+    paddingBottom: 0,
   },
   parallaxBackground: {
     position: 'absolute',
@@ -445,6 +474,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 14,
   },
+  offlineRetryButton: {
+    minHeight: 48,
+    minWidth: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
   heroStackCompact: {
     marginBottom: spacing.sm,
   },
@@ -489,6 +525,9 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: spacing.screen,
     marginBottom: spacing.section,
+  },
+  guideSection: {
+    paddingHorizontal: spacing.screen,
   },
   liveCardWrap: {
     marginBottom: spacing.sm,

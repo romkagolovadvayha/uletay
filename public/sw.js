@@ -1,10 +1,16 @@
 /* Offline shell + API cache. Bump CACHE_VERSION on every deploy that must invalidate clients. */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 const SHELL_CACHE = `uletay-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `uletay-data-${CACHE_VERSION}`;
 const APP_SHELL = ['/', '/api/data'];
+const IS_LOOPBACK = ['localhost', '127.0.0.1', '::1'].includes(self.location.hostname);
 
 self.addEventListener('install', (event) => {
+  if (IS_LOOPBACK) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
+
   event.waitUntil(
     caches.open(SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()),
   );
@@ -14,6 +20,16 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
+
+      if (IS_LOOPBACK) {
+        await Promise.all(
+          keys.filter((key) => key.startsWith('uletay-')).map((key) => caches.delete(key)),
+        );
+        await self.clients.claim();
+        await self.registration.unregister();
+        return;
+      }
+
       await Promise.all(
         keys
           .filter((key) => key !== SHELL_CACHE && key !== DATA_CACHE)
@@ -70,6 +86,10 @@ async function staleWhileRevalidate(request, cacheName) {
 }
 
 self.addEventListener('fetch', (event) => {
+  if (IS_LOOPBACK) {
+    return;
+  }
+
   const request = event.request;
   if (request.method !== 'GET') {
     return;

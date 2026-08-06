@@ -65,8 +65,8 @@ function ArtistImageResolved({
         contentFit={contentFit}
         accessibilityLabel={imageAlt}
         alt={imageAlt}
-        priority={preferList ? 'low' : 'normal'}
-        loading={preferList && Platform.OS === 'web' ? 'lazy' : undefined}
+        priority={preferList ? 'low' : 'high'}
+        loading={Platform.OS === 'web' ? (preferList ? 'lazy' : 'eager') : undefined}
         onError={() => setIndex((current) => current + 1)}
       />
     );

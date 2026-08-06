@@ -1,10 +1,20 @@
 import { Platform } from 'react-native';
+import type { AppData } from '../types';
 import type { SeoMeta } from './routeSeo';
 import { getCanonicalUrl } from './routeSeo';
+import { buildWebStructuredData } from './structuredData';
 import {
   DEFAULT_KEYWORDS,
   DEFAULT_SOCIAL_IMAGE_URL,
 } from './site';
+
+function truncateDescription(value: string, maxLength: number): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength - 1).replace(/\s+\S*$/, '')}…`;
+}
 
 function upsertMeta(name: string, content: string, attribute: 'name' | 'property' = 'name') {
   if (typeof document === 'undefined') {
@@ -53,22 +63,43 @@ function upsertLink(rel: string, href: string) {
   });
 }
 
-export function applyWebSeo(meta: SeoMeta) {
+function upsertJsonLd(meta: SeoMeta, data: AppData) {
+  const value = JSON.stringify(buildWebStructuredData(meta, data));
+  const matches = document.head.querySelectorAll<HTMLScriptElement>(
+    'script#seo-jsonld[type="application/ld+json"]',
+  );
+  const element = matches[0] ?? document.createElement('script');
+  element.id = 'seo-jsonld';
+  element.type = 'application/ld+json';
+  element.textContent = value;
+  if (!element.isConnected) {
+    document.head.appendChild(element);
+  }
+  matches.forEach((duplicate, index) => {
+    if (index > 0) {
+      duplicate.remove();
+    }
+  });
+}
+
+export function applyWebSeo(meta: SeoMeta, data: AppData) {
   if (Platform.OS !== 'web' || typeof document === 'undefined') {
     return;
   }
 
   const canonical = getCanonicalUrl(meta.path);
   const robots = meta.noIndex ? 'noindex, nofollow' : 'index, follow';
+  const description = truncateDescription(meta.description, 160);
+  const socialDescription = truncateDescription(meta.description, 200);
 
   document.title = meta.title;
-  upsertMeta('description', meta.description);
+  upsertMeta('description', description);
   upsertMeta('keywords', DEFAULT_KEYWORDS);
   upsertMeta('robots', robots);
   upsertLink('canonical', canonical);
 
   upsertMeta('og:title', meta.title, 'property');
-  upsertMeta('og:description', meta.description, 'property');
+  upsertMeta('og:description', socialDescription, 'property');
   upsertMeta('og:url', canonical, 'property');
   upsertMeta('og:site_name', meta.siteName, 'property');
   upsertMeta('og:type', 'website', 'property');
@@ -80,6 +111,7 @@ export function applyWebSeo(meta: SeoMeta) {
 
   upsertMeta('twitter:card', 'summary_large_image');
   upsertMeta('twitter:title', meta.title);
-  upsertMeta('twitter:description', meta.description);
+  upsertMeta('twitter:description', socialDescription);
   upsertMeta('twitter:image', DEFAULT_SOCIAL_IMAGE_URL);
+  upsertJsonLd(meta, data);
 }

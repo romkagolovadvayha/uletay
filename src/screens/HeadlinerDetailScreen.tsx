@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeadlinerCard } from '../components/HeadlinerCard';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { YandexMusicLink } from '../components/YandexMusicLink';
 import { useAppData } from '../context/DataContext';
 import { HeadlinersStackParamList, MoreStackParamList } from '../navigation/types';
@@ -114,7 +115,7 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
         </Pressable>
 
         <HeadlinerCard headliner={headliner} large />
-        <Text style={styles.name}>{headliner.name.toUpperCase()}</Text>
+        <ScreenTitle style={styles.name}>{headliner.name.toUpperCase()}</ScreenTitle>
         {alternateNames.length ? (
           <Text style={styles.alternateNames}>{alternateNames.join(' · ')}</Text>
         ) : null}
@@ -198,6 +199,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.headerTop,
     marginBottom: spacing.md,
     alignSelf: 'flex-start',
+    minHeight: 48,
   },
   backLabel: {
     ...appFont('semiBold'),
@@ -344,6 +346,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   similarText: {
     ...typography.caption,

@@ -6,6 +6,7 @@ import { ExternalLink } from '../components/ExternalLink';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RulesTabBar } from '../components/RulesTabBar';
 import { ScreenTitle } from '../components/ScreenTitle';
+import { SemanticHeading } from '../components/SemanticHeading';
 import { useAppData } from '../context/DataContext';
 import { MoreStackParamList } from '../navigation/types';
 import { FestivalRulesBlock } from '../types';
@@ -14,13 +15,18 @@ import { screenHeaderStyle } from '../theme/layout';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
+import { formatFestivalDateRange } from '../utils/festivalContent';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'FestivalRules'>;
 
 function RulesBlockView({ block }: { block: FestivalRulesBlock }) {
   return (
     <View style={[styles.block, block.important && styles.blockImportant]}>
-      {block.title ? <Text style={styles.blockTitle}>{block.title}</Text> : null}
+      {block.title ? (
+        <SemanticHeading level={2} style={styles.blockTitle}>
+          {block.title}
+        </SemanticHeading>
+      ) : null}
       {block.paragraphs?.map((paragraph) => (
         <Text key={paragraph} style={styles.paragraph}>
           {paragraph}
@@ -68,6 +74,10 @@ export function FestivalRulesScreen({ navigation }: Props) {
         <Text style={styles.backLabel}>Назад</Text>
       </Pressable>
       <ScreenTitle style={styles.title}>ПРАВИЛА И БЫТ</ScreenTitle>
+      <Text style={styles.lead}>
+        Правила посещения и бытовая информация для {data.festival.name} {data.festival.year},
+        {` ${formatFestivalDateRange(data.festival)}, ${data.festival.locationShort || data.festival.location}.`}
+      </Text>
     </View>
   );
 
@@ -111,6 +121,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: spacing.xs,
     marginBottom: spacing.sm,
+    minHeight: 48,
   },
   backLabel: {
     ...appFont('semiBold'),
@@ -121,8 +132,16 @@ const styles = StyleSheet.create({
     ...typography.screenTitle,
     color: colors.text,
   },
+  lead: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: spacing.sm,
+  },
   tabsWrap: {
     paddingHorizontal: spacing.screen,
+    zIndex: 20,
   },
   content: {
     paddingHorizontal: spacing.screen,

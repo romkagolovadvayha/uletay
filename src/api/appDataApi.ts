@@ -3,15 +3,20 @@ import { API_BASE_URL, APP_DATA_REFRESH_INTERVAL_MS, CachedAppData } from '../co
 import { AppData } from '../types';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { normalizeAppData } from '../utils/appDataNormalize';
+import { defaultAppData } from '../storage/dataStore';
 
-// v4 drops pre-migration snapshots that could remain fresh-looking after app_content is replaced.
-export const APP_DATA_CACHE_KEY = '@uletay_api_cache_v4';
+// v5 drops snapshots from the 2026 edition after the published festival window moved to 2027.
+export const APP_DATA_CACHE_KEY = '@uletay_api_cache_v5';
 /** Payload is ~1MB+; cold mobile links often need well over 8s. */
 const FETCH_TIMEOUT_MS = 25_000;
 const FETCH_RETRY_DELAYS_MS = [0, 1_200] as const;
 
 let memoryCache: CachedAppData | null = null;
 let inFlight: Promise<CachedAppData | null> | null = null;
+
+export function isCurrentFestivalEdition(data: AppData): boolean {
+  return data.festival.startDate >= defaultAppData.festival.startDate;
+}
 
 class ApiResponseError extends Error {
   constructor(public readonly status: number) {
@@ -49,7 +54,11 @@ async function readStorageCache(): Promise<CachedAppData | null> {
       return null;
     }
     const parsed = JSON.parse(raw) as CachedAppData;
-    if (!parsed?.data || typeof parsed.fetchedAt !== 'number') {
+    if (
+      !parsed?.data ||
+      typeof parsed.fetchedAt !== 'number' ||
+      !isCurrentFestivalEdition(parsed.data)
+    ) {
       return null;
     }
     return { data: normalizeAppData(parsed.data), fetchedAt: parsed.fetchedAt };

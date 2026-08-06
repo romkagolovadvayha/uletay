@@ -8,6 +8,10 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { RootTabParamList } from './types';
 import { getSafePushPath } from '../utils/pushNavigation';
+import {
+  decodeSeoRouteParam,
+  encodeSeoRouteId,
+} from '../seo/seoRouteUtils';
 
 const prefixes = [
   Linking.createURL('/'),
@@ -34,7 +38,7 @@ function getHeadlinersStateFromPath(path: string): PartialState<NavigationState>
             routes: [
               {
                 name: 'HeadlinerDetail',
-                params: { headlinerId: decodeURIComponent(detailMatch[1]) },
+                params: { headlinerId: decodeSeoRouteParam(detailMatch[1]) },
               },
             ],
             index: 0,
@@ -113,7 +117,10 @@ export const linking: LinkingOptions<RootTabParamList> = {
       MapTab: {
         path: 'map/:poiId?',
         parse: {
-          poiId: (value: string) => value,
+          poiId: decodeSeoRouteParam,
+        },
+        stringify: {
+          poiId: encodeSeoRouteId,
         },
       },
       HelpTab: 'help',
@@ -121,15 +128,27 @@ export const linking: LinkingOptions<RootTabParamList> = {
         path: 'schedule',
         screens: {
           ScheduleMain: '',
-          LiveDetail: 'live/:performanceId',
-          FullSchedule: 'full/:stageId?',
+          LiveDetail: {
+            path: 'live/:performanceId',
+            parse: { performanceId: decodeSeoRouteParam },
+            stringify: { performanceId: encodeSeoRouteId },
+          },
+          FullSchedule: {
+            path: 'full/:stageId?',
+            parse: { stageId: decodeSeoRouteParam },
+            stringify: { stageId: encodeSeoRouteId },
+          },
         },
       },
       Autographs: {
         path: 'autographs',
         screens: {
           AutographsMain: '',
-          AutographDetail: ':sessionId',
+          AutographDetail: {
+            path: ':sessionId',
+            parse: { sessionId: decodeSeoRouteParam },
+            stringify: { sessionId: encodeSeoRouteId },
+          },
         },
       },
       FavoritesTab: 'favorites',
@@ -138,7 +157,11 @@ export const linking: LinkingOptions<RootTabParamList> = {
         path: 'headliners',
         screens: {
           HeadlinersMain: '',
-          HeadlinerDetail: ':headlinerId',
+          HeadlinerDetail: {
+            path: ':headlinerId',
+            parse: { headlinerId: decodeSeoRouteParam },
+            stringify: { headlinerId: encodeSeoRouteId },
+          },
         },
       },
       MoreTab: {
@@ -146,7 +169,11 @@ export const linking: LinkingOptions<RootTabParamList> = {
           // MoreHome and headliners use custom path serialization below. Declaring
           // their paths here would conflict with HomeTab and HeadlinersTab.
           FoodCourtMain: 'foodcourt',
-          FoodCourtDetail: 'foodcourt/:vendorId',
+          FoodCourtDetail: {
+            path: 'foodcourt/:vendorId',
+            parse: { vendorId: decodeSeoRouteParam },
+            stringify: { vendorId: encodeSeoRouteId },
+          },
           FestivalAbout: 'about',
           FestivalRules: 'rules',
           Settings: 'settings',
@@ -181,7 +208,9 @@ export const linking: LinkingOptions<RootTabParamList> = {
     }
     if (active?.name === 'HeadlinerDetail') {
       const headlinerId = (active.params as { headlinerId?: string } | undefined)?.headlinerId;
-      return headlinerId ? `/headliners/${encodeURIComponent(headlinerId)}` : '/headliners';
+      return headlinerId
+        ? `/headliners/${encodeURIComponent(encodeSeoRouteId(headlinerId))}`
+        : '/headliners';
     }
 
     return getDefaultPathFromState(state, options);

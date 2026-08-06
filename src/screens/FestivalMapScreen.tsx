@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FestivalMapView } from '../components/map/FestivalMapView';
+import { ScreenTitle } from '../components/ScreenTitle';
 import type { FestivalMapApi } from '../components/map/types';
 import { MapFabGroup } from '../components/map/MapFabGroup';
 import { MapDirectionsButton } from '../components/map/MapDirectionsButton';
@@ -314,6 +315,7 @@ export function FestivalMapScreen({ route }: Props) {
   if (!mapConfig?.enabled) {
     return (
       <SafeAreaView style={styles.safe}>
+        <ScreenTitle style={styles.mapTitle}>Карта фестиваля</ScreenTitle>
         <Text style={styles.empty}>Карта скоро появится</Text>
       </SafeAreaView>
     );
@@ -325,6 +327,7 @@ export function FestivalMapScreen({ route }: Props) {
     <MapMotionConfig>
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.mapWrap}>
+          <ScreenTitle style={styles.visuallyHiddenTitle}>Карта фестиваля</ScreenTitle>
           <View style={styles.mapLayer}>
             <MapErrorBoundary
               onError={(message) => {
@@ -540,6 +543,20 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.xxxl,
+  },
+  mapTitle: {
+    ...typography.screenTitle,
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: spacing.xxxl,
+  },
+  visuallyHiddenTitle: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
   },
   mapLoading: {
     ...StyleSheet.absoluteFill,

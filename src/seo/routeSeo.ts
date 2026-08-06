@@ -1,4 +1,5 @@
 import type { AppData } from '../types';
+import { encodeSeoRouteId, isDateWithinFestival } from './seoRouteUtils';
 import { DEFAULT_DESCRIPTION, getSiteName, SITE_NAME, SITE_URL } from './site';
 
 export type SeoMeta = {
@@ -17,6 +18,53 @@ type RouteNode = {
   state?: NavState;
 };
 
+const HEADLINER_DESCRIPTION_MAX_LENGTH = 160;
+
+function formatHeadlinerYearsForDescription(years: number[]): string {
+  const sortedYears = [...years].sort((a, b) => b - a);
+  if (sortedYears.length <= 1) {
+    return sortedYears.join('');
+  }
+
+  return `${sortedYears.slice(0, -1).join(', ')} и ${sortedYears.at(-1)}`;
+}
+
+function buildHeadlinerDescription(
+  headliner: AppData['headliners'][number],
+): string {
+  const sortedYears = [...headliner.years].sort((a, b) => b - a);
+  const fullYears = formatHeadlinerYearsForDescription(sortedYears);
+  const recentYears =
+    sortedYears.length > 4
+      ? `${sortedYears.slice(0, 4).join(', ')} и другие годы`
+      : fullYears;
+  const details = [
+    'На странице собраны популярные треки, статистика прослушиваний, жанры и похожие артисты.',
+    'Популярные треки, статистика прослушиваний и похожие артисты.',
+    'Популярные треки, статистика и похожие артисты.',
+  ];
+
+  const introductions = sortedYears.length > 1
+    ? [
+        `${headliner.name} — хэдлайнер фестиваля УЛЕТАЙ. Годы выступлений: ${fullYears}.`,
+        `${headliner.name} — хэдлайнер фестиваля УЛЕТАЙ. Годы выступлений: ${recentYears}.`,
+      ]
+    : sortedYears.length === 1
+      ? [`${headliner.name} — участник фестиваля УЛЕТАЙ ${sortedYears[0]} года.`]
+      : [`${headliner.name} — артист фестиваля УЛЕТАЙ.`];
+
+  for (const introduction of introductions) {
+    for (const detail of details) {
+      const description = `${introduction} ${detail}`;
+      if (description.length <= HEADLINER_DESCRIPTION_MAX_LENGTH) {
+        return description;
+      }
+    }
+  }
+
+  return introductions.at(-1) ?? `${headliner.name} — артист фестиваля УЛЕТАЙ.`;
+}
+
 export type NavState = {
   routes: RouteNode[];
   index: number;
@@ -24,7 +72,7 @@ export type NavState = {
 
 const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: string }> = {
   HomeTab: {
-    title: `Официальное приложение фестиваля — ${SITE_NAME}`,
+    title: `Приложение фестиваля — ${SITE_NAME}`,
     description: DEFAULT_DESCRIPTION,
     path: '/',
   },
@@ -45,6 +93,7 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: st
     description:
       'Полная сетка расписания фестиваля УЛЕТАЙ по сценам и дням — удобный обзор всех концертов.',
     path: '/schedule/full',
+    noIndex: true,
   },
   AutographsMain: {
     title: `Автограф-сессии — ${SITE_NAME}`,
@@ -57,6 +106,7 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: st
     description:
       'Ваше избранное на фестивале УЛЕТАЙ: сохранённые выступления и напоминания о любимых артистах.',
     path: '/favorites',
+    noIndex: true,
   },
   PlaylistTab: {
     title: `Фестивальное радио — ${SITE_NAME}`,
@@ -92,11 +142,18 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: st
     title: `Настройки — ${SITE_NAME}`,
     description: 'Настройки приложения фестиваля УЛЕТАЙ: режим времени, уведомления и правовая информация.',
     path: '/settings',
+    noIndex: true,
+  },
+  HelpTab: {
+    title: `Помощь — ${SITE_NAME}`,
+    description:
+      'Помощь по приложению фестиваля УЛЕТАЙ: расписание, карта, уведомления и ответы на частые вопросы.',
+    path: '/help',
   },
   HeadlinersMain: {
     title: `Хэдлайнеры — ${SITE_NAME}`,
     description:
-      'Хэдлайнеры фестиваля УЛЕТАЙ: артисты прошлых лет и главные звёзды площадки в Лагуново.',
+      'Хэдлайнеры фестиваля УЛЕТАЙ по годам: состав участников, артисты прошлых фестивалей, поиск и сортировка по популярности, история выступлений музыкантов.',
     path: '/headliners',
   },
 };
@@ -126,17 +183,23 @@ function buildPath(chain: RouteNode[]): string {
     case 'HomeTab':
       return '/';
     case 'MapTab':
-      return params.poiId ? `/map/${params.poiId}` : '/map';
+      return params.poiId ? `/map/${encodeSeoRouteId(params.poiId)}` : '/map';
     case 'ScheduleMain':
       return '/schedule';
     case 'LiveDetail':
-      return params.performanceId ? `/schedule/live/${params.performanceId}` : '/schedule';
+      return params.performanceId
+        ? `/schedule/live/${encodeSeoRouteId(params.performanceId)}`
+        : '/schedule';
     case 'FullSchedule':
-      return params.stageId ? `/schedule/full/${params.stageId}` : '/schedule/full';
+      return params.stageId
+        ? `/schedule/full/${encodeSeoRouteId(params.stageId)}`
+        : '/schedule/full';
     case 'AutographsMain':
       return '/autographs';
     case 'AutographDetail':
-      return params.sessionId ? `/autographs/${params.sessionId}` : '/autographs';
+      return params.sessionId
+        ? `/autographs/${encodeSeoRouteId(params.sessionId)}`
+        : '/autographs';
     case 'FavoritesTab':
       return '/favorites';
     case 'PlaylistTab':
@@ -146,7 +209,9 @@ function buildPath(chain: RouteNode[]): string {
     case 'FoodCourtMain':
       return '/foodcourt';
     case 'FoodCourtDetail':
-      return params.vendorId ? `/foodcourt/${params.vendorId}` : '/foodcourt';
+      return params.vendorId
+        ? `/foodcourt/${encodeSeoRouteId(params.vendorId)}`
+        : '/foodcourt';
     case 'FestivalAbout':
       return '/about';
     case 'FestivalRules':
@@ -158,7 +223,9 @@ function buildPath(chain: RouteNode[]): string {
     case 'HeadlinersMain':
       return '/headliners';
     case 'HeadlinerDetail':
-      return params.headlinerId ? `/headliners/${params.headlinerId}` : '/headliners';
+      return params.headlinerId
+        ? `/headliners/${encodeSeoRouteId(params.headlinerId)}`
+        : '/headliners';
     default:
       return '/';
   }
@@ -231,7 +298,8 @@ export function resolveSeoMeta(
       description: performance
         ? `${artist} на фестивале УЛЕТАЙ: ${formatSeoDate(performance.date)}, ${performance.startTime}–${performance.endTime}${stage ? `, ${stage}` : ''}.`
         : 'Страница выступления на фестивале УЛЕТАЙ: время, сцена и подробности концерта.',
-      path: `/schedule/live/${params.performanceId}`,
+      path: `/schedule/live/${encodeSeoRouteId(params.performanceId)}`,
+      noIndex: !performance || !isDateWithinFestival(performance.date, data.festival),
       provisional: !performance,
     };
   }
@@ -247,7 +315,8 @@ export function resolveSeoMeta(
       description: session
         ? `Автограф-сессия ${artist}: ${formatSeoDate(session.date)}, ${session.startTime}–${session.endTime}${session.location ? `, ${session.location}` : ''}.`
         : 'Страница автограф-сессии на фестивале УЛЕТАЙ: время и место встречи с артистом.',
-      path: `/autographs/${params.sessionId}`,
+      path: `/autographs/${encodeSeoRouteId(params.sessionId)}`,
+      noIndex: !session || !isDateWithinFestival(session.date, data.festival),
       provisional: !session,
     };
   }
@@ -261,7 +330,8 @@ export function resolveSeoMeta(
       description: vendor
         ? `${name} на фудкорте фестиваля УЛЕТАЙ: меню, цены и описание точки питания.`
         : 'Страница точки питания на фудкорте фестиваля УЛЕТАЙ: меню, цены и расположение.',
-      path: `/foodcourt/${params.vendorId}`,
+      path: `/foodcourt/${encodeSeoRouteId(params.vendorId)}`,
+      noIndex: !vendor,
       provisional: !vendor,
     };
   }
@@ -271,7 +341,8 @@ export function resolveSeoMeta(
       title: `Точка на карте — ${siteName}`,
       siteName,
       description: 'Подробности о выбранной точке на карте фестиваля УЛЕТАЙ.',
-      path: `/map/${params.poiId}`,
+      path: `/map/${encodeSeoRouteId(params.poiId)}`,
+      noIndex: true,
     };
   }
 
@@ -282,26 +353,22 @@ export function resolveSeoMeta(
       title: `${stageName} — расписание | ${siteName}`,
       siteName,
       description: `Расписание выступлений на сцене «${stageName}» на фестивале УЛЕТАЙ.`,
-      path: `/schedule/full/${params.stageId}`,
+      path: `/schedule/full/${encodeSeoRouteId(params.stageId)}`,
+      noIndex: true,
     };
   }
 
   if (routeName === 'HeadlinerDetail' && params.headlinerId) {
     const headliner = data.headliners.find((item) => item.id === params.headlinerId);
     const name = headliner?.name ?? 'Хэдлайнер';
-    const lastfm = headliner?.lastfm;
-    const yearsLabel = headliner?.years.length
-      ? ` (${[...headliner.years].sort((a, b) => b - a).join(' ')})`
-      : '';
     return {
       title: `${name} — хэдлайнер | ${siteName}`,
       siteName,
       description: headliner
-        ? lastfm?.bioSummary?.trim() ||
-          headliner.description.trim() ||
-          `${name} — хэдлайнер фестиваля УЛЕТАЙ${yearsLabel}.`
+        ? buildHeadlinerDescription(headliner)
         : 'Страница артиста — участника фестиваля УЛЕТАЙ: годы выступлений и популярные треки.',
-      path: `/headliners/${params.headlinerId}`,
+      path: `/headliners/${encodeSeoRouteId(params.headlinerId)}`,
+      noIndex: !headliner,
       provisional: !headliner,
     };
   }

@@ -7,10 +7,17 @@ const publicDir = join(root, 'public');
 const distDir = join(root, process.env.DIST_DIR ?? 'dist');
 const indexPath = join(distDir, 'index.html');
 
-const SITE_NAME = 'УЛЕТАЙ 2026';
-const HOME_TITLE = `Официальное приложение фестиваля — ${SITE_NAME}`;
+const YANDEX_METRIKA_ID =
+  process.env.EXPO_PUBLIC_YANDEX_METRIKA_ID ?? '111346786';
+const GOOGLE_TAG_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_TAG_ID ?? 'G-CZN6F69VG0';
+
+// This is only the pre-generator shell fallback. generate-web-seo.ts replaces
+// it with the live festival year for every prerendered route.
+const SITE_NAME = 'УЛЕТАЙ 2027';
+const HOME_TITLE = `Приложение фестиваля — ${SITE_NAME}`;
 const DESCRIPTION =
-  'Официальное приложение фестиваля УЛЕТАЙ в Лагуново, Удмуртия: расписание концертов, карта площадки, автограф-сессии, фудкорт и радио в эфире.';
+  'Приложение фестиваля УЛЕТАЙ в Лагуново, Удмуртия: расписание концертов, карта площадки, автограф-сессии, фудкорт и радио в эфире.';
 const SITE_URL = (() => {
   const raw = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://uletayapp.ru';
   try {
@@ -39,6 +46,68 @@ function copyPublicFiles() {
   }
 }
 
+function analyticsMarkup() {
+  if (!/^\d+$/.test(YANDEX_METRIKA_ID)) {
+    throw new Error('EXPO_PUBLIC_YANDEX_METRIKA_ID must contain digits only');
+  }
+  if (!/^(?:G|GT)-[A-Z0-9]+$/.test(GOOGLE_TAG_ID)) {
+    throw new Error('EXPO_PUBLIC_GOOGLE_TAG_ID must be a valid Google tag ID');
+  }
+
+  return {
+    head: `  <!-- Analytics queues are available immediately; vendor scripts load after first paint. -->
+  <script>
+    (function(){
+    if(['localhost','127.0.0.1','::1'].includes(window.location.hostname)){return;}
+    window.dataLayer = window.dataLayer || [];
+    window.gtag=function(){window.dataLayer.push(arguments);};
+    window.gtag('js', new Date());
+    window.gtag('config', '${GOOGLE_TAG_ID}', {send_page_view:false});
+
+    (function(m,e,t,r,i,k,a){
+      m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+      m[i].l=1*new Date();
+    })(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=${YANDEX_METRIKA_ID}','ym');
+
+    window.ym(${YANDEX_METRIKA_ID},'init',{ssr:true,clickmap:true,ecommerce:'dataLayer',referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true,defer:true});
+
+    (function(){
+      var load=function(){
+        if(!document.querySelector('script[data-analytics="google"]')){
+          var g=document.createElement('script');
+          g.async=true;g.dataset.analytics='google';
+          g.src='https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}';
+          document.head.appendChild(g);
+        }
+        if(!document.querySelector('script[data-analytics="yandex"]')){
+          var y=document.createElement('script');
+          y.async=true;y.dataset.analytics='yandex';
+          y.src='https://mc.yandex.ru/metrika/tag.js?id=${YANDEX_METRIKA_ID}';
+          document.head.appendChild(y);
+        }
+      };
+      var schedule=function(){
+        // Keep analytics outside the critical rendering window, while still
+        // starting immediately when the visitor interacts with the page.
+        var timer=window.setTimeout(load,3500);
+        var events=['pointerdown','keydown','touchstart'];
+        var interact=function(){
+          window.clearTimeout(timer);
+          events.forEach(function(event){window.removeEventListener(event,interact);});
+          load();
+        };
+        events.forEach(function(event){window.addEventListener(event,interact,{once:true,passive:true});});
+      };
+      if(document.readyState==='complete'){schedule();}
+      else{window.addEventListener('load',schedule,{once:true});}
+    })();
+    })();
+  </script>
+  <!-- /Yandex.Metrika counter -->`,
+    body: `  <noscript><div><img src="https://mc.yandex.ru/watch/${YANDEX_METRIKA_ID}" style="position:absolute; left:-9999px;" alt="" /></div></noscript>`,
+  };
+}
+
 function patchIndexHtml() {
   if (!existsSync(indexPath)) {
     console.warn('copy-public-static: dist/index.html not found, skipping head patch');
@@ -46,6 +115,14 @@ function patchIndexHtml() {
   }
 
   let html = readFileSync(indexPath, 'utf8');
+  const analytics = analyticsMarkup();
+
+  if (!html.includes('googletagmanager.com/gtag/js')) {
+    html = html.replace(/<head([^>]*)>/i, `<head$1>\n${analytics.head}`);
+  }
+  if (!html.includes(`mc.yandex.ru/watch/${YANDEX_METRIKA_ID}`)) {
+    html = html.replace(/<body([^>]*)>/i, `<body$1>\n${analytics.body}`);
+  }
   const seoBlock = `
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -53,6 +130,7 @@ function patchIndexHtml() {
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preload" as="image" href="/hero-video-poster.webp" fetchpriority="high" />
   <meta name="description" content="${DESCRIPTION}" />
   <meta name="keywords" content="УЛЕТАЙ, фестиваль, Лагуново, Удмуртия, расписание, карта, концерты" />
   <meta name="robots" content="index, follow" />

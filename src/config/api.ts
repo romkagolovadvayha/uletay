@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { AppData, Stage, StageId } from '../types';
+import { isLoopbackUrl, resolveWebApiBaseUrl } from './web-api-base-url';
 
 const DEFAULT_COLORS: Record<StageId, string> = {
   south: '#F5C518',
@@ -7,21 +8,7 @@ const DEFAULT_COLORS: Record<StageId, string> = {
   'ren-tv': '#FF5520',
 };
 
-const EXPO_DEV_PORTS = new Set(['8081', '8082', '19006', '19000']);
 const PRODUCTION_API_BASE_URL = 'https://uletayapp.ru/api';
-
-function isLoopbackUrl(value: string): boolean {
-  try {
-    const hostname = new URL(value).hostname;
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
-  } catch {
-    return false;
-  }
-}
-
-function isLocalWebHost(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
-}
 
 function getWebApiBaseUrl(): string {
   if (typeof window === 'undefined') {
@@ -30,19 +17,14 @@ function getWebApiBaseUrl(): string {
 
   const { hostname, origin, port } = window.location;
   const configured = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
-  const localPage = isLocalWebHost(hostname);
 
-  // .env.local is intentionally used for local development, but Expo also reads
-  // it during a local production export. Never ship that loopback URL to visitors.
-  if (configured && (!isLoopbackUrl(configured) || localPage)) {
-    return configured;
-  }
-
-  if (EXPO_DEV_PORTS.has(port)) {
-    return 'http://localhost:3000/api';
-  }
-
-  return localPage ? `${origin}/api` : PRODUCTION_API_BASE_URL;
+  return resolveWebApiBaseUrl({
+    hostname,
+    origin,
+    port,
+    configured,
+    productionBaseUrl: PRODUCTION_API_BASE_URL,
+  });
 }
 
 function getNativeApiBaseUrl(): string {

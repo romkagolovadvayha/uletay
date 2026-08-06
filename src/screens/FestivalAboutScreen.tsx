@@ -1,26 +1,30 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { ExternalLink } from '../components/ExternalLink';
+import { WebFestivalGuide } from '../components/WebFestivalGuide';
 import { FESTIVAL_CONTACTS_URL, FESTIVAL_WEBSITE, LEGAL_OPERATOR } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
-import { MoreStackParamList } from '../navigation/types';
+import type { MoreStackParamList, RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { screenTitleSpacing } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography, appFont } from '../theme/typography';
+import { formatFestivalDateRange, getFestivalDisplayName } from '../utils/festivalContent';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'FestivalAbout'>;
 
 export function FestivalAboutScreen({ navigation }: Props) {
   const { data } = useAppData();
+  const rootNavigation = navigation.getParent<BottomTabNavigationProp<RootTabParamList>>();
 
   const items = [
-    { label: 'О фестивале', value: `${data.festival.name} ${data.festival.year}` },
-    { label: 'Даты', value: '8–12 июля 2026' },
+    { label: 'О фестивале', value: getFestivalDisplayName(data.festival) },
+    { label: 'Даты', value: formatFestivalDateRange(data.festival) },
     { label: 'Локация', value: data.festival.locationShort },
     { label: 'Возраст', value: data.festival.ageRating },
   ];
@@ -38,6 +42,11 @@ export function FestivalAboutScreen({ navigation }: Props) {
         </Pressable>
 
         <ScreenTitle style={styles.title}>О ФЕСТИВАЛЕ</ScreenTitle>
+        <Text style={styles.lead}>
+          Приложение {getFestivalDisplayName(data.festival)} помогает следить за
+          расписанием, ориентироваться на площадке и быстро находить правила и
+          контакты.
+        </Text>
 
         {items.map((item) => (
           <View key={item.label} style={styles.card}>
@@ -53,6 +62,16 @@ export function FestivalAboutScreen({ navigation }: Props) {
           <Text style={styles.cardMeta}>ИНН {LEGAL_OPERATOR.inn}</Text>
           <Text style={styles.cardMeta}>{LEGAL_OPERATOR.address}</Text>
         </View>
+
+        <WebFestivalGuide
+          festival={data.festival}
+          variant="full"
+          onOpenSchedule={() =>
+            rootNavigation?.navigate('ScheduleTab', { screen: 'ScheduleMain' })
+          }
+          onOpenMap={() => rootNavigation?.navigate('MapTab')}
+          onOpenRules={() => navigation.navigate('FestivalRules')}
+        />
 
         <View style={styles.linksSection}>
           <ExternalLink href={FESTIVAL_WEBSITE} style={styles.linkRow}>
@@ -92,6 +111,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.sm,
     alignSelf: 'flex-start',
+    minHeight: 48,
   },
   backLabel: {
     ...appFont('semiBold'),
@@ -102,6 +122,13 @@ const styles = StyleSheet.create({
     ...typography.screenTitle,
     color: colors.text,
     ...screenTitleSpacing,
+  },
+  lead: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 23,
+    marginBottom: spacing.lg,
   },
   card: {
     backgroundColor: colors.surface,
@@ -132,7 +159,7 @@ const styles = StyleSheet.create({
   },
   linksSection: {
     gap: spacing.sm,
-    marginTop: spacing.sm,
+    marginTop: spacing.lg,
   },
   linkRow: {
     flexDirection: 'row',
@@ -141,6 +168,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 16,
+    minHeight: 48,
     borderWidth: 1,
     borderColor: colors.border,
   },

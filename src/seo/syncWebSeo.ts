@@ -76,7 +76,7 @@ export function syncWebSeo(retry = 0) {
   const state = navigationRef.getRootState() as NavState;
   const meta = withPlaylistTitleOverride(resolveSeoMeta(state, latestAppData), state);
   if (!hasMatchingStaticSeo(meta)) {
-    applyWebSeo(meta);
+    applyWebSeo(meta, latestAppData);
   }
   enforceExternalAnchorRel(document);
 }

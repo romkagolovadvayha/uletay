@@ -17,6 +17,7 @@ map $uri $is_spa_route {
     ~^/rules/?$ 1;
     ~^/settings/?$ 1;
     ~^/legal/?$ 1;
+    ~^/help/?$ 1;
 }
 
 # SEO route files use URL-encoded directory names so dynamic IDs are portable
