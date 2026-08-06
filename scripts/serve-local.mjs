@@ -1,9 +1,18 @@
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
 
 const root = path.resolve(process.env.DIST_DIR ?? 'dist');
 const port = Number(process.env.PORT ?? 4174);
+const productionCsp = process.env.PREVIEW_PRODUCTION_CSP === '1'
+  ? readFileSync(path.resolve('deploy/nginx.security-headers.conf'), 'utf8')
+      .match(/add_header Content-Security-Policy "([^"]+)"/)?.[1]
+      ?.replace(/;\s*upgrade-insecure-requests\b/, '')
+  : undefined;
+
+if (process.env.PREVIEW_PRODUCTION_CSP === '1' && !productionCsp) {
+  throw new Error('Content-Security-Policy was not found in deploy/nginx.security-headers.conf');
+}
 const mime = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -31,9 +40,10 @@ const server = createServer((request, response) => {
     : mime[path.extname(target)] ?? 'application/octet-stream';
   response.setHeader('Content-Type', contentType);
   response.setHeader('Cache-Control', 'no-cache');
+  if (productionCsp) response.setHeader('Content-Security-Policy', productionCsp);
   createReadStream(target).pipe(response);
 });
 
 server.listen({ port, host: '::', ipv6Only: false }, () => {
-  console.log(`Local preview: http://localhost:${port}/`);
+  console.log(`Local preview: http://localhost:${port}/${productionCsp ? ' (production CSP enabled)' : ''}`);
 });

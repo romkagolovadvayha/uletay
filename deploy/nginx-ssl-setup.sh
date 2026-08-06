@@ -170,6 +170,8 @@ verify_https() {
     grep -qi "^${required_header}:" "$headers_check" \
       || { echo "Missing production header: ${required_header}"; rm -f "$html_check" "$headers_check"; exit 1; }
   done
+  grep -qiE '^content-security-policy:.*style-src[^;]*https://yastatic\.net' "$headers_check" \
+    || { echo "CSP style-src does not allow Yandex Maps styles"; rm -f "$html_check" "$headers_check"; exit 1; }
   grep -qi '^content-encoding: gzip' "$headers_check" \
     || { echo "Homepage is not gzip-compressed"; rm -f "$html_check" "$headers_check"; exit 1; }
   grep -qi '^link:.*hero-video-poster.webp.*rel=preload' "$headers_check" \
