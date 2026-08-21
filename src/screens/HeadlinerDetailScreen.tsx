@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
     textTransform: 'none',
     letterSpacing: 0.2,
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   trackMeta: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
     textTransform: 'none',
     letterSpacing: 0,

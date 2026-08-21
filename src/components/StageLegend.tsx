@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   legendLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 10,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },

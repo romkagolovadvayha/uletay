@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   nameSeparator: {
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 14,
     marginLeft: spacing.sm,
     marginRight: spacing.xs,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   alternateNames: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 14,
     textTransform: 'none',
     letterSpacing: 0.2,
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   stats: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 14,
     textTransform: 'none',
     letterSpacing: 0,

@@ -58,6 +58,20 @@ server {
     include __DEPLOY_PATH__/deploy/nginx.security-headers.conf;
     include __DEPLOY_PATH__/deploy/nginx.compression.conf;
 
+    # Uploaded festival images are public content used by cards and JSON-LD.
+    # Keep API responses private, but allow crawlers to index these media files.
+    location ^~ /api/uploads/ {
+        proxy_pass http://127.0.0.1:__CMS_PORT__;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        include __DEPLOY_PATH__/deploy/nginx.security-headers.conf;
+    }
+
     location /api/ {
         proxy_pass http://127.0.0.1:__CMS_PORT__;
         proxy_http_version 1.1;

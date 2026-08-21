@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.sectionTitle,
     color: colors.primary,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.6,
   },
   body: {
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   buttonText: {
     ...typography.button,
     color: colors.primaryText,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.3,
   },
 });

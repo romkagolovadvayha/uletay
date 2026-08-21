@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1 },
   title: { ...typography.screenTitle, color: colors.text, fontSize: 20, textTransform: 'none' },
   location: { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs },
-  close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   description: { ...typography.body, color: colors.textSecondary, lineHeight: 20 },
   routeButton: {
     minHeight: 48,

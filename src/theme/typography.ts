@@ -23,7 +23,7 @@ export function appFont(key: FontKey): Pick<TextStyle, 'fontFamily'> {
 export const typography = {
   logoTagline: {
     ...font('bold'),
-    fontSize: 9,
+    fontSize: 12,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   } satisfies TextStyle,
@@ -70,13 +70,13 @@ export const typography = {
   } satisfies TextStyle,
   sectionMuted: {
     ...font('semiBold'),
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1,
     textTransform: 'uppercase',
   } satisfies TextStyle,
   countdownTitle: {
     ...font('semiBold'),
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   } satisfies TextStyle,
@@ -87,7 +87,7 @@ export const typography = {
   } satisfies TextStyle,
   countdownLabel: {
     ...font('semiBold'),
-    fontSize: 9,
+    fontSize: 12,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   } satisfies TextStyle,
@@ -105,7 +105,7 @@ export const typography = {
   } satisfies TextStyle,
   artistStage: {
     ...font('bold'),
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   } satisfies TextStyle,
@@ -139,12 +139,12 @@ export const typography = {
   } satisfies TextStyle,
   tabLabel: {
     ...font('bold'),
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.1,
   } satisfies TextStyle,
   liveBadge: {
     ...font('extraBold'),
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   } satisfies TextStyle,
@@ -155,7 +155,7 @@ export const typography = {
   } satisfies TextStyle,
   caption: {
     ...font('semiBold'),
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   } satisfies TextStyle,

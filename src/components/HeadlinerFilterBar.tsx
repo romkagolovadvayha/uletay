@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
   type StyleProp,
   type ViewStyle,
@@ -125,14 +126,16 @@ export function HeadlinerFilterBar({
   sortMode,
   onSortModeChange,
 }: Props) {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 480;
   const sortOptions = useMemo(
     () => HEADLINER_SORT_OPTIONS.map((option) => ({ id: option.id, label: option.label })),
     [],
   );
 
   return (
-    <View style={styles.row}>
-      <View style={styles.searchWrap}>
+    <View style={[styles.row, isCompact && styles.rowCompact]}>
+      <View style={[styles.searchWrap, isCompact && styles.searchWrapCompact]}>
         <Ionicons name="search" size={16} color={colors.textMuted} style={styles.searchIcon} />
         <TextInput
           accessibilityLabel="Поиск хэдлайнера"
@@ -152,7 +155,7 @@ export function HeadlinerFilterBar({
         value={selectedYear}
         options={yearOptions}
         onChange={onYearChange}
-        style={styles.yearSelect}
+        style={[styles.yearSelect, isCompact && styles.selectCompact]}
       />
 
       <FilterSelect
@@ -160,7 +163,7 @@ export function HeadlinerFilterBar({
         value={sortMode}
         options={sortOptions}
         onChange={(id) => onSortModeChange(id as HeadlinerSortMode)}
-        style={styles.sortSelect}
+        style={[styles.sortSelect, isCompact && styles.selectCompact]}
       />
     </View>
   );
@@ -173,6 +176,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingBottom: spacing.md,
   },
+  rowCompact: {
+    flexWrap: 'wrap',
+  },
   searchWrap: {
     flex: 1,
     minWidth: 0,
@@ -183,7 +189,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     paddingHorizontal: spacing.sm,
-    height: 40,
+    height: 48,
+  },
+  searchWrapCompact: {
+    flexBasis: '100%',
   },
   searchIcon: {
     marginRight: spacing.xs,
@@ -191,6 +200,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     minWidth: 0,
+    height: 44,
     ...typography.body,
     color: colors.text,
     fontSize: 16,
@@ -198,7 +208,7 @@ const styles = StyleSheet.create({
     outlineWidth: 0,
   },
   select: {
-    height: 40,
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -217,6 +227,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 96,
     maxWidth: 148,
+  },
+  selectCompact: {
+    flex: 1,
+    maxWidth: undefined,
   },
   selectLabel: {
     ...typography.caption,

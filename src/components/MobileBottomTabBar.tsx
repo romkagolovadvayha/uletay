@@ -17,6 +17,15 @@ const ICON_SLOT = 24;
 /** Icon + gap + label — keeps native layout from collapsing under flex:1. */
 const ITEM_CONTENT_HEIGHT = 48;
 
+const MOBILE_TAB_LABELS: Partial<Record<keyof RootTabParamList, string>> = {
+  HomeTab: 'Домой',
+  MapTab: 'Карта',
+  FavoritesTab: 'Моё',
+  HeadlinersTab: 'Лайнап',
+  PlaylistTab: 'Радио',
+  MoreTab: 'Ещё',
+};
+
 /**
  * Phone bottom tab bar without React Navigation's empty absoluteFill
  * background wrapper, which leaves uneven top space on web/native.
@@ -75,6 +84,8 @@ export function MobileBottomTabBar({
               : typeof options.tabBarLabel === 'string'
                 ? options.tabBarLabel
                 : route.name;
+          const displayLabel =
+            MOBILE_TAB_LABELS[route.name as keyof RootTabParamList] ?? label;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -123,7 +134,7 @@ export function MobileBottomTabBar({
                   {icon}
                 </View>
                 <Text style={[styles.label, { color }]} numberOfLines={1} ellipsizeMode="clip">
-                  {label}
+                  {displayLabel}
                 </Text>
               </MotionPressable>
             </View>
@@ -201,8 +212,9 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.tabLabel,
-    fontSize: 10,
-    lineHeight: 12,
+    fontSize: 12,
+    lineHeight: 14,
+    letterSpacing: -0.1,
     textAlign: 'center',
     maxWidth: '100%',
     includeFontPadding: false,

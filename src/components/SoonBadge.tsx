@@ -41,22 +41,22 @@ const styles = StyleSheet.create({
   text: {
     ...typography.liveBadge,
     color: colors.primaryText,
-    fontSize: 11,
+    fontSize: 12,
   },
   compactText: {
-    fontSize: 9,
+    fontSize: 12,
   },
   countdown: {
     ...typography.caption,
     color: colors.primaryText,
-    fontSize: 8,
+    fontSize: 12,
     lineHeight: 10,
     marginTop: 1,
     textTransform: 'none',
     letterSpacing: 0,
   },
   compactCountdown: {
-    fontSize: 7,
+    fontSize: 12,
     lineHeight: 9,
   },
 });

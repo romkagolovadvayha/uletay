@@ -31,9 +31,9 @@ const styles = StyleSheet.create({
   text: {
     ...typography.liveBadge,
     color: colors.text,
-    fontSize: 11,
+    fontSize: 12,
   },
   compactText: {
-    fontSize: 9,
+    fontSize: 12,
   },
 });

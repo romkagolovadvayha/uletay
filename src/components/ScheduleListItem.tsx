@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   startsIn: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 9,
+    fontSize: 12,
     textTransform: 'none',
     letterSpacing: 0,
   },
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   stage: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 10,
+    fontSize: 12,
     textTransform: 'none',
     letterSpacing: 0,
   },

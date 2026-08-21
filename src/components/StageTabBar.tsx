@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 10,
+    fontSize: 12,
   },
   activeLabel: {
     color: colors.primaryText,

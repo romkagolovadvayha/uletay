@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   stageHeaderText: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 9,
+    fontSize: 12,
     lineHeight: 11,
     letterSpacing: 0.3,
     textAlign: 'center',
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     width: SCHEDULE_GRID_TIME_AXIS_WIDTH,
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 10,
+    fontSize: 12,
     textTransform: 'none',
     letterSpacing: 0,
     marginTop: -5,
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   nowTime: {
     width: SCHEDULE_GRID_TIME_AXIS_WIDTH,
     color: colors.live,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: NOW_LINE_HEIGHT,
     fontWeight: '800',
     letterSpacing: 0.1,

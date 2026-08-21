@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   },
   pill: {
     flexShrink: 1,
-    minHeight: 42,
+    minHeight: 44,
     borderRadius: radius.pill,
     paddingHorizontal: 18,
     paddingVertical: 10,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.caption,
     color: colors.text,
-    fontSize: 11,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },

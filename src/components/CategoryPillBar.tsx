@@ -21,7 +21,10 @@ type Props = {
 
 export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'default' }: Props) {
   return (
-    <CenteredHorizontalScroll contentContainerStyle={styles.container} rowStyle={styles.row}>
+    <CenteredHorizontalScroll
+      contentContainerStyle={styles.container}
+      rowStyle={[styles.row, variant === 'food' && styles.rowFood]}
+    >
       {categories.map((category) => {
         const isActive = category.id === selectedId;
         const isFood = variant === 'food';
@@ -34,7 +37,7 @@ export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'd
             onPress={() => onSelect(category.id)}
             style={[
               styles.pill,
-              isFood ? styles.pillFood : styles.pillDefault,
+              isFood ? [styles.pillFood, styles.pillFoodCompact] : styles.pillDefault,
               isActive && (isFood ? styles.pillFoodActive : styles.pillDefaultActive),
             ]}
           >
@@ -61,7 +64,11 @@ const styles = StyleSheet.create({
   row: {
     gap: spacing.sm,
   },
+  rowFood: {
+    gap: spacing.xs,
+  },
   pill: {
+    minHeight: 44,
     borderRadius: radius.pill,
     paddingHorizontal: 18,
     paddingVertical: 10,
@@ -78,13 +85,16 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     backgroundColor: colors.pillInactive,
   },
+  pillFoodCompact: {
+    paddingHorizontal: spacing.sm,
+  },
   pillFoodActive: {
     backgroundColor: colors.text,
     borderColor: colors.text,
   },
   label: {
     ...typography.caption,
-    fontSize: 11,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },

@@ -21,6 +21,7 @@ export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: P
         {dates.map((date) => {
           const isActive = date === selectedDate;
           const { day, month, weekday } = formatDateTabParts(date);
+          const shortWeekday = weekday.slice(0, 3);
 
           return (
             <MotionPressable
@@ -34,7 +35,12 @@ export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: P
             >
               <Text style={[styles.day, isActive && styles.textActive]}>{day}</Text>
               <Text style={[styles.month, isActive && styles.textActive]}>{month}</Text>
-              <Text style={[styles.weekday, isActive && styles.weekdayActive]}>{weekday}</Text>
+              <Text
+                accessibilityLabel={weekday}
+                style={[styles.weekday, isActive && styles.weekdayActive]}
+              >
+                {shortWeekday}
+              </Text>
             </MotionPressable>
           );
         })}
@@ -49,12 +55,14 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
   },
   tab: {
-    minWidth: 60,
+    flex: 1,
+    minWidth: 0,
+    minHeight: 60,
     borderRadius: radius.md,
     paddingVertical: 7,
     paddingHorizontal: 4,
@@ -77,8 +85,8 @@ const styles = StyleSheet.create({
   },
   month: {
     ...appFont('semiBold'),
-    fontSize: 10,
-    lineHeight: 13,
+    fontSize: 12,
+    lineHeight: 14,
     color: colors.text,
     letterSpacing: 0.2,
     marginBottom: 2,
@@ -86,8 +94,8 @@ const styles = StyleSheet.create({
   weekday: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 12,
+    lineHeight: 14,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },

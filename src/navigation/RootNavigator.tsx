@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     ...typography.tabLabel,
     marginTop: 4,
-    fontSize: 9,
+    fontSize: 12,
   },
   tabletTabBar: {
     backgroundColor: colors.background,

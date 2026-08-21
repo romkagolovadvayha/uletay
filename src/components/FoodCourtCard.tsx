@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   distance: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     textTransform: 'none',
     letterSpacing: 0,
   },

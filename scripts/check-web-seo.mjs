@@ -63,11 +63,18 @@ if (!existsSync(sitemapPath)) {
     const description = html.match(/<meta\s+name="description"\s+content="([^"]+)"/i)?.[1]?.trim();
     const canonical = html.match(/<link\s+rel="canonical"\s+href="([^"]+)"/i)?.[1]?.trim();
     const robots = html.match(/<meta\s+name="robots"\s+content="([^"]+)"/i)?.[1]?.trim();
+    const viewport = html.match(/<meta\s+name="viewport"\s+content="([^"]+)"/i)?.[1]?.trim();
 
     if (!title) fail(`${url} has no title`);
     if (!description) fail(`${url} has no meta description`);
     if (canonical !== url) fail(`${url} canonical mismatch: ${canonical ?? 'missing'}`);
     if (robots !== 'index, follow') fail(`${url} is not indexable: ${robots ?? 'missing'}`);
+    if (!viewport || !/\bwidth\s*=\s*device-width\b/i.test(viewport)) {
+      fail(`${url} has no mobile-friendly viewport: ${viewport ?? 'missing'}`);
+    }
+    if (viewport && !/\binitial-scale\s*=\s*1(?:\.0+)?\b/i.test(viewport)) {
+      fail(`${url} has an invalid initial scale: ${viewport}`);
+    }
     if (!html.includes('<html lang="ru">')) fail(`${url} does not declare lang="ru"`);
     const jsonLdMatches = [...html.matchAll(
       /<script\b[^>]*\bid=["']seo-jsonld["'][^>]*>([\s\S]*?)<\/script>/gi,

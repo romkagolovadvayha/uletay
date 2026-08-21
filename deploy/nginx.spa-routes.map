@@ -5,14 +5,13 @@ map $uri $is_spa_route {
     ~^/$ 1;
     ~^/map(?:/[^/]+)?/?$ 1;
     ~^/schedule/?$ 1;
-    ~^/schedule/live/[^/]+/?$ 1;
     ~^/schedule/full(?:/[^/]+)?/?$ 1;
-    ~^/autographs(?:/[^/]+)?/?$ 1;
+    ~^/autographs/?$ 1;
     ~^/favorites/?$ 1;
     ~^/playlist/?$ 1;
-    ~^/headliners(?:/[^/]+)?/?$ 1;
+    ~^/headliners/?$ 1;
     ~^/more/?$ 1;
-    ~^/foodcourt(?:/[^/]+)?/?$ 1;
+    ~^/foodcourt/?$ 1;
     ~^/about/?$ 1;
     ~^/rules/?$ 1;
     ~^/settings/?$ 1;

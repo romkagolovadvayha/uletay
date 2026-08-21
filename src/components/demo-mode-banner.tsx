@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     ...appFont('bold'),
     flexShrink: 1,
     color: colors.primaryText,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.5,
   },
 });

@@ -5,7 +5,7 @@ import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 
 export const performanceMetaTextStyle = {
-  fontSize: 10,
+  fontSize: 12,
   color: colors.textSecondary,
   textTransform: 'none' as const,
   letterSpacing: 0,

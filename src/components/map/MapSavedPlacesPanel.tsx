@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   placeTitle: { ...typography.body, color: colors.text, fontWeight: '700' },
   placeCaption: { ...typography.caption, color: colors.textSecondary },
   actions: { flexDirection: 'row', gap: spacing.sm },
-  action: { minHeight: 42, flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs },
+  action: { minHeight: 44, flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs },
   actionPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
   actionText: { ...typography.button, color: colors.text },
   actionPrimaryText: { ...typography.button, color: '#000' },

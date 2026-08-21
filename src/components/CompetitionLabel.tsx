@@ -15,7 +15,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.caption,
     color: colors.competitionLabel,
-    fontSize: 9,
+    fontSize: 12,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },

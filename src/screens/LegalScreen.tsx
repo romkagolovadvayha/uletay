@@ -167,6 +167,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.sm,
     alignSelf: 'flex-start',
+    minHeight: 44,
+    paddingHorizontal: spacing.xs,
   },
   backLabel: {
     ...appFont('semiBold'),
@@ -215,7 +217,7 @@ const styles = StyleSheet.create({
   contactLabel: {
     ...typography.body,
     color: colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
     minWidth: 66,
   },
   contactValue: {

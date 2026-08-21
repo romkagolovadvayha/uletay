@@ -44,6 +44,7 @@ export function PlaylistScreen() {
   const isFocused = useIsFocused();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
+  const isCompact = width < 480;
   const {
     isPlaying,
     isBuffering,
@@ -123,7 +124,7 @@ export function PlaylistScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentInner}>
-          <View style={styles.headingRow}>
+          <View style={[styles.headingRow, isCompact && styles.headingRowCompact]}>
             <View style={styles.headingCopy}>
               <ScreenTitle style={styles.title}>ФЕСТИВАЛЬНОЕ РАДИО</ScreenTitle>
               <Text style={styles.subtitle}>Музыка «Улетая» круглосуточно</Text>
@@ -277,7 +278,7 @@ export function PlaylistScreen() {
           {recentTracks.length ? (
             <View style={styles.section}>
               <View style={styles.sectionHeading}>
-                <View>
+                <View style={styles.sectionHeadingCopy}>
                   <Text style={styles.sectionTitle}>Недавно в эфире</Text>
                   <Text style={styles.sectionCaption}>История не требует аккаунта</Text>
                 </View>
@@ -309,7 +310,7 @@ export function PlaylistScreen() {
 
           <View style={styles.section}>
               <View style={styles.sectionHeading}>
-                <View>
+                <View style={styles.sectionHeadingCopy}>
                   <Text style={styles.sectionTitle}>Избранные треки</Text>
                   <Text style={styles.sectionCaption}>
                     {favorites.length
@@ -401,8 +402,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
+  headingRowCompact: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
   headingCopy: {
     flex: 1,
+    minWidth: 0,
     gap: spacing.xs,
   },
   title: {
@@ -434,7 +440,7 @@ const styles = StyleSheet.create({
   livePillText: {
     ...appFont('bold'),
     color: colors.text,
-    fontSize: 9,
+    fontSize: 12,
     letterSpacing: 0.7,
   },
   playerCard: {
@@ -474,7 +480,7 @@ const styles = StyleSheet.create({
   nowPlayingLabel: {
     ...appFont('bold'),
     color: colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1.1,
   },
   trackTitle: {
@@ -492,7 +498,7 @@ const styles = StyleSheet.create({
   updatedAt: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 10,
+    fontSize: 12,
   },
   errorCard: {
     width: '100%',
@@ -518,7 +524,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     alignSelf: 'flex-start',
-    minHeight: 40,
+    minHeight: 44,
     justifyContent: 'center',
   },
   retryText: {
@@ -585,7 +591,7 @@ const styles = StyleSheet.create({
   artistLinkLabel: {
     ...appFont('bold'),
     color: colors.textMuted,
-    fontSize: 9,
+    fontSize: 12,
     letterSpacing: 0.8,
   },
   artistLinkName: {
@@ -596,7 +602,7 @@ const styles = StyleSheet.create({
   artistLinkYears: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 10,
+    fontSize: 12,
   },
   artistLinkAction: {
     flexDirection: 'row',
@@ -606,7 +612,7 @@ const styles = StyleSheet.create({
   artistLinkActionText: {
     ...appFont('semiBold'),
     color: colors.primary,
-    fontSize: 11,
+    fontSize: 12,
   },
   refreshButton: {
     minHeight: 44,
@@ -631,11 +637,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    alignSelf: 'flex-start',
   },
   sectionHeading: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  sectionHeadingCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   sectionTitle: {
     ...typography.sectionTitle,
@@ -675,8 +686,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   smallAction: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

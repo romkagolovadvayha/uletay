@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   teaserYears: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     textTransform: 'none',
     letterSpacing: 0,
   },
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   teaserStatLabel: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 10,
+    fontSize: 12,
     lineHeight: 12,
     textTransform: 'none',
     letterSpacing: 0,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   trackMeta: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
     textTransform: 'none',
     letterSpacing: 0,

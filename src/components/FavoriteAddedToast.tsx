@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   buttonText: {
     ...typography.button,
     color: colors.primaryText,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.3,
   },
 });

@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   time: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontSize: 9,
+    fontSize: 12,
     flex: 1,
     textTransform: 'none',
     letterSpacing: 0,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   artist: {
     ...typography.scheduleArtist,
     color: colors.text,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 14,
   },
   badgeRow: {
