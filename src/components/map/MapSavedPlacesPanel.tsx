@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { UserMapMarker, UserMapMarkerKind } from '../../types/map';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { formatDistance, haversineMeters } from '../../utils/map/geo';
+import { MotionPressable } from '../MotionPressable';
 
 type Props = {
   markers: UserMapMarker[];
@@ -39,9 +40,9 @@ export function MapSavedPlacesPanel({
           <Text style={styles.title}>Мои места</Text>
           <Text style={styles.subtitle}>Хранятся только на этом устройстве</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Закрыть" onPress={onClose} style={styles.close}>
+        <MotionPressable accessibilityRole="button" accessibilityLabel="Закрыть" onPress={onClose} style={styles.close}>
           <Ionicons name="close" size={22} color={colors.text} />
-        </Pressable>
+        </MotionPressable>
       </View>
 
       {(['car', 'tent'] as const).map((kind) => {
@@ -70,22 +71,22 @@ export function MapSavedPlacesPanel({
             <View style={styles.actions}>
               {marker ? (
                 <>
-                  <Pressable accessibilityRole="button" onPress={() => onRoute(marker)} style={[styles.action, styles.actionPrimary]}>
+                  <MotionPressable accessibilityRole="button" onPress={() => onRoute(marker)} style={[styles.action, styles.actionPrimary]}>
                     <Ionicons name="navigate" size={16} color="#000" />
                     <Text style={styles.actionPrimaryText}>Маршрут</Text>
-                  </Pressable>
-                  <Pressable accessibilityRole="button" onPress={() => onRemove(kind)} style={styles.action}>
+                  </MotionPressable>
+                  <MotionPressable accessibilityRole="button" onPress={() => onRemove(kind)} style={styles.action}>
                     <Text style={styles.actionText}>Удалить</Text>
-                  </Pressable>
+                  </MotionPressable>
                 </>
               ) : (
                 <>
-                  <Pressable accessibilityRole="button" disabled={!userLocation} onPress={() => onSaveHere(kind)} style={[styles.action, !userLocation && styles.disabled]}>
+                  <MotionPressable accessibilityRole="button" disabled={!userLocation} onPress={() => onSaveHere(kind)} style={[styles.action, !userLocation && styles.disabled]}>
                     <Text style={styles.actionText}>Я здесь</Text>
-                  </Pressable>
-                  <Pressable accessibilityRole="button" onPress={() => onPlaceOnMap(kind)} style={styles.action}>
+                  </MotionPressable>
+                  <MotionPressable accessibilityRole="button" onPress={() => onPlaceOnMap(kind)} style={styles.action}>
                     <Text style={styles.actionText}>На карте</Text>
-                  </Pressable>
+                  </MotionPressable>
                 </>
               )}
             </View>

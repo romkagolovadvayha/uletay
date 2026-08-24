@@ -1,11 +1,12 @@
 import React from 'react';
 import {
   Platform,
-  Pressable,
   StyleSheet,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { MotionPressable } from './MotionPressable';
 
 type Props = {
   href: string;
@@ -46,12 +47,25 @@ export function AppRouteLink({
   accessibilityLabel,
   style,
 }: Props) {
+  const [pointerPressed, setPointerPressed] = React.useState(false);
+  const reduceMotion = useReducedMotion();
+
   if (Platform.OS === 'web') {
     return (
       <a
         href={href}
         aria-label={accessibilityLabel}
-        style={toWebStyle(style)}
+        style={{
+          ...toWebStyle(style),
+          transform: pointerPressed && !reduceMotion ? 'scale(0.97)' : 'scale(1)',
+          transition: reduceMotion
+            ? 'none'
+            : 'transform 120ms cubic-bezier(0.23, 1, 0.32, 1)',
+        }}
+        onPointerDown={() => setPointerPressed(true)}
+        onPointerUp={() => setPointerPressed(false)}
+        onPointerCancel={() => setPointerPressed(false)}
+        onPointerLeave={() => setPointerPressed(false)}
         onClick={(event) => {
           if (
             !onPress ||
@@ -73,13 +87,13 @@ export function AppRouteLink({
   }
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="link"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={style}
     >
       {children}
-    </Pressable>
+    </MotionPressable>
   );
 }

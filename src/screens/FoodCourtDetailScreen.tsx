@@ -2,9 +2,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FoodCourtCard } from '../components/FoodCourtCard';
+import { MotionPressable } from '../components/MotionPressable';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -34,7 +35,7 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
   if (!vendor) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.empty}>Точка не найдена</Text>
+        <ScreenTitle style={styles.empty}>Точка не найдена</ScreenTitle>
       </SafeAreaView>
     );
   }
@@ -44,32 +45,33 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Назад"
           accessibilityHint="Вернуться к списку фудкорта"
           onPress={() => navigation.goBack()}
           hitSlop={12}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={styles.iconButton}
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Pressable
+        </MotionPressable>
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel={
             isFavorite ? 'Убрать точку из избранного' : 'Добавить точку в избранное'
           }
           accessibilityState={{ selected: isFavorite }}
+          aria-pressed={isFavorite}
           onPress={() => toggleFoodFavorite(vendor.id)}
           hitSlop={12}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={styles.iconButton}
         >
           <Ionicons
             name={isFavorite ? 'star' : 'star-outline'}
             size={22}
             color={isFavorite ? colors.star : colors.text}
           />
-        </Pressable>
+        </MotionPressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -84,7 +86,7 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
           <Text style={styles.locationText}>{vendor.location}</Text>
         </View>
         {mapPoi ? (
-          <Pressable
+          <MotionPressable
             accessibilityRole="button"
             onPress={() => {
               const tabs = navigation.getParent() as BottomTabNavigationProp<RootTabParamList> | undefined;
@@ -94,7 +96,7 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
           >
             <Ionicons name="map-outline" size={19} color={colors.primaryText} />
             <Text style={styles.mapButtonText}>Показать на карте</Text>
-          </Pressable>
+          </MotionPressable>
         ) : null}
 
         {vendor.legalName ? (
@@ -267,8 +269,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.xxxl,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

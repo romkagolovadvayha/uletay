@@ -512,8 +512,10 @@ button[type='submit']:not(.btn-danger):not(.link-button) {
   cursor: pointer;
 }
 
-.btn-mini:hover {
-  background: #3a3a3c;
+@media (hover: hover) and (pointer: fine) {
+  .btn-mini:hover {
+    background: #3a3a3c;
+  }
 }
 
 .overlay-nudge {
@@ -534,36 +536,31 @@ button[type='submit']:not(.btn-danger):not(.link-button) {
   color: #aeaeb2;
 }
 
-.overlay-drag-handle {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #ffc107;
-  border: 3px solid #000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-  cursor: grab;
-  transform: translate(-50%, -50%);
-  position: relative;
-  z-index: 2;
-}
-
-.overlay-drag-handle:active {
-  cursor: grabbing;
-}
-
+.overlay-drag-handle,
 .editor-move-handle {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #ffc107;
-  border: 3px solid #000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  width: 44px;
+  height: 44px;
   cursor: grab;
   transform: translate(-50%, -50%);
   position: relative;
   z-index: 2;
 }
 
+.overlay-drag-handle::before,
+.editor-move-handle::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffc107;
+  border: 3px solid #000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.overlay-drag-handle:active,
 .editor-move-handle:active {
   cursor: grabbing;
 }
@@ -640,8 +637,10 @@ button[type='submit']:not(.btn-danger):not(.link-button) {
   gap: 2px;
 }
 
-.map-layer-item:hover {
-  background: #2c2c2e;
+@media (hover: hover) and (pointer: fine) {
+  .map-layer-item:hover {
+    background: #2c2c2e;
+  }
 }
 
 .map-layer-item.active {
@@ -736,14 +735,24 @@ button[type='submit']:not(.btn-danger):not(.link-button) {
 }
 
 .editor-vertex-handle {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #74acfc;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  position: relative;
+  width: 44px;
+  height: 44px;
   cursor: grab;
   transform: translate(-50%, -50%);
+}
+
+.editor-vertex-handle::before {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #74acfc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 .editor-poi-marker.selected {
@@ -770,8 +779,10 @@ details.panel summary {
   font: inherit;
 }
 
-.btn-secondary:hover {
-  background: #3a3a3c;
+@media (hover: hover) and (pointer: fine) {
+  .btn-secondary:hover {
+    background: #3a3a3c;
+  }
 }
 
 .link-button.danger {
@@ -837,9 +848,14 @@ details.panel summary {
   font: inherit;
 }
 
-.headliner-search-list button:hover,
 .headliner-search-list button.is-selected {
   background: #2c2c2e;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .headliner-search-list button:hover {
+    background: #2c2c2e;
+  }
 }
 
 .headliner-search-empty {
@@ -870,6 +886,48 @@ details.panel summary {
   --admin-sidebar-width: 248px;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 193, 7, 0.76) rgba(255, 255, 255, 0.06);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+*::-webkit-scrollbar-thumb {
+  min-width: 32px;
+  min-height: 32px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(255, 193, 7, 0.76);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--admin-accent);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: #ffd54a;
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--admin-bg);
+}
+
 html {
   background: var(--admin-bg);
 }
@@ -895,7 +953,13 @@ textarea {
     color 160ms ease,
     box-shadow 160ms ease,
     opacity 160ms ease,
-    transform 160ms ease;
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+button:not(:disabled):not(.drag-handle):not(.overlay-drag-handle):not(.editor-move-handle):active,
+a[href]:active,
+[role='button']:not([aria-disabled='true']):active {
+  transform: scale(0.97);
 }
 
 button:focus-visible,
@@ -985,8 +1049,8 @@ label[for]:focus-visible {
 
 .admin-sidebar-close {
   display: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   margin: 0 0 0 auto;
   padding: 0;
   border: 0;
@@ -1028,9 +1092,11 @@ label[for]:focus-visible {
   text-decoration: none;
 }
 
-.admin-nav-link:hover {
-  background: var(--admin-surface);
-  color: var(--admin-text);
+@media (hover: hover) and (pointer: fine) {
+  .admin-nav-link:hover {
+    background: var(--admin-surface);
+    color: var(--admin-text);
+  }
 }
 
 .admin-nav-link.active {
@@ -1081,7 +1147,7 @@ label[for]:focus-visible {
 .admin-logout {
   display: flex;
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
   justify-content: flex-start;
   gap: 10px;
@@ -1094,8 +1160,10 @@ label[for]:focus-visible {
   font-weight: 700;
 }
 
-.admin-logout:hover {
-  background: rgba(255, 69, 58, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .admin-logout:hover {
+    background: rgba(255, 69, 58, 0.08);
+  }
 }
 
 .admin-workspace {
@@ -1243,10 +1311,12 @@ textarea::placeholder {
   color: var(--admin-text-muted);
 }
 
-input:hover,
-textarea:hover,
-select:hover {
-  border-color: var(--admin-border-strong);
+@media (hover: hover) and (pointer: fine) {
+  input:hover,
+  textarea:hover,
+  select:hover {
+    border-color: var(--admin-border-strong);
+  }
 }
 
 input:focus,
@@ -1362,7 +1432,7 @@ button,
 .btn-secondary,
 .btn-danger,
 .btn-ghost-danger {
-  min-height: 42px;
+  min-height: 44px;
   gap: 7px;
   border-radius: 10px;
   padding: 10px 15px;
@@ -1377,21 +1447,10 @@ button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout) {
   color: #000;
 }
 
-.btn-primary:hover,
-button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout):hover {
-  background: #ffd035;
-  transform: translateY(-1px);
-}
-
 .btn-secondary {
   border: 1px solid var(--admin-border-strong);
   background: var(--admin-surface-raised);
   color: var(--admin-text);
-}
-
-.btn-secondary:hover {
-  background: #2a2a2f;
-  border-color: #5a5a60;
 }
 
 .btn-danger {
@@ -1400,8 +1459,21 @@ button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout):hove
   color: #ff7068;
 }
 
-.btn-danger:hover {
-  background: rgba(255, 69, 58, 0.18);
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover,
+  button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout):hover {
+    background: #ffd035;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary:hover {
+    background: #2a2a2f;
+    border-color: #5a5a60;
+  }
+
+  .btn-danger:hover {
+    background: rgba(255, 69, 58, 0.18);
+  }
 }
 
 .btn-ghost-danger {
@@ -1507,8 +1579,9 @@ button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout):hove
 }
 
 .admin-notice button {
-  width: 32px;
-  min-height: 32px;
+  width: 44px;
+  min-height: 44px;
+  margin: -6px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -1592,10 +1665,16 @@ button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout):hove
   aspect-ratio: 1;
 }
 
-.image-dropzone.is-dragging,
-.image-dropzone:hover {
+.image-dropzone.is-dragging {
   border-color: var(--admin-accent);
   background-color: rgba(255, 193, 7, 0.03);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .image-dropzone:hover {
+    border-color: var(--admin-accent);
+    background-color: rgba(255, 193, 7, 0.03);
+  }
 }
 
 .image-dropzone img {
@@ -1693,8 +1772,10 @@ button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout):hove
   background: var(--admin-surface);
 }
 
-.data-table tbody tr:hover {
-  background: var(--admin-surface-raised);
+@media (hover: hover) and (pointer: fine) {
+  .data-table tbody tr:hover {
+    background: var(--admin-surface-raised);
+  }
 }
 
 .data-table tbody tr:last-child td {
@@ -1714,9 +1795,11 @@ button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout):hove
   color: var(--admin-text-muted);
 }
 
-.drag-handle:hover {
-  background: var(--admin-surface-raised);
-  color: var(--admin-text);
+@media (hover: hover) and (pointer: fine) {
+  .drag-handle:hover {
+    background: var(--admin-surface-raised);
+    color: var(--admin-text);
+  }
 }
 
 .list-thumb {
@@ -1740,10 +1823,16 @@ button[type='submit']:not(.btn-danger):not(.link-button):not(.admin-logout):hove
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.5);
 }
 
-.headliner-search-list button:hover,
 .headliner-search-list button.is-selected {
   background: rgba(255, 193, 7, 0.09);
   color: var(--admin-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .headliner-search-list button:hover {
+    background: rgba(255, 193, 7, 0.09);
+    color: var(--admin-accent);
+  }
 }
 
 .push-stats {
@@ -1854,7 +1943,7 @@ details.panel > summary {
 @media (max-width: 860px) {
   .admin-sidebar {
     transform: translateX(-100%);
-    transition: transform 180ms ease;
+    transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .admin-sidebar.is-open {
@@ -1900,7 +1989,7 @@ details.panel > summary {
     pointer-events: auto;
   }
 
-  .admin-sidebar-toggle:focus-visible ~ .admin-workspace .admin-menu-button {
+  .admin-menu-button:focus-visible {
     outline: 3px solid rgba(255, 193, 7, 0.28);
     outline-offset: 2px;
   }
@@ -1919,8 +2008,8 @@ details.panel > summary {
 
   .admin-menu-button {
     display: grid;
-    width: 42px;
-    min-height: 42px;
+    width: 44px;
+    min-height: 44px;
     flex: 0 0 auto;
     place-items: center;
     padding: 0;
@@ -1936,6 +2025,21 @@ details.panel > summary {
 }
 
 @media (max-width: 680px) {
+  input[type='range'] {
+    min-height: 44px;
+  }
+
+  .btn-mini,
+  .btn-sm,
+  .link-button {
+    min-height: 44px;
+  }
+
+  .drag-handle {
+    width: 44px;
+    margin-inline: -8px;
+  }
+
   .admin-page-heading p,
   .admin-breadcrumbs {
     display: none;
@@ -2013,9 +2117,28 @@ details.panel > summary {
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    transition-property: border-color, background-color, color, box-shadow, opacity !important;
+    transition-duration: 120ms !important;
+    transition-timing-function: ease !important;
+  }
+
+  .admin-sidebar {
+    transition: none !important;
+  }
+
+  button:not(.drag-handle):not(.overlay-drag-handle):not(.editor-move-handle),
+  a[href],
+  [role='button']:not([aria-disabled='true']) {
+    transform: none !important;
   }
 }
 /* Operational map editor: POIs and route-network health. */

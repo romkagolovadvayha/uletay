@@ -1,14 +1,28 @@
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeOutDown,
+  useReducedMotion,
+} from 'react-native-reanimated';
 import * as Linking from 'expo-linking';
 import { FavoriteReminderPayload } from '../utils/favoriteNotifications';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { MotionPressable } from './MotionPressable';
 
 const TAB_BAR_OFFSET = Platform.select({ ios: 96, android: 84, default: 84 });
 const AUTO_HIDE_MS = 8000;
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+const TOAST_ENTER = FadeInDown.duration(220).easing(EASE_OUT);
+const TOAST_EXIT = FadeOutDown.duration(170).easing(EASE_OUT);
+const REDUCED_TOAST_ENTER = FadeIn.duration(160).easing(EASE_OUT);
+const REDUCED_TOAST_EXIT = FadeOut.duration(120).easing(EASE_OUT);
 
 type Props = {
   reminder: FavoriteReminderPayload | null;
@@ -16,6 +30,8 @@ type Props = {
 };
 
 export function FavoriteReminderToast({ reminder, onDismiss }: Props) {
+  const reduceMotion = useReducedMotion();
+
   React.useEffect(() => {
     if (!reminder) {
       return;
@@ -38,21 +54,26 @@ export function FavoriteReminderToast({ reminder, onDismiss }: Props) {
   };
 
   return (
-    <View style={[styles.host, { pointerEvents: 'box-none' }]}>
+    <Animated.View
+      style={[styles.host, { pointerEvents: 'box-none' }]}
+      accessibilityLiveRegion="polite"
+      entering={reduceMotion ? REDUCED_TOAST_ENTER : TOAST_ENTER}
+      exiting={reduceMotion ? REDUCED_TOAST_EXIT : TOAST_EXIT}
+    >
       <View style={styles.toast}>
         <View style={styles.textWrap}>
           <Text style={styles.title}>{reminder.title}</Text>
           <Text style={styles.body}>{reminder.body}</Text>
         </View>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           onPress={handleNavigate}
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          style={styles.button}
         >
           <Text style={styles.buttonText}>ОТКРЫТЬ СОБЫТИЕ</Text>
-        </Pressable>
+        </MotionPressable>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -98,9 +119,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-  },
-  buttonPressed: {
-    opacity: 0.9,
   },
   buttonText: {
     ...typography.button,

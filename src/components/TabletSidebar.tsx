@@ -30,6 +30,7 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 import { RadioTabIcon } from './RadioTabIcon';
+import { webKeyboardActivationProps } from '../utils/webKeyboardActivation';
 
 type ExtraItem = {
   key: string;
@@ -52,8 +53,10 @@ function SidebarItem({ icon, iconNode, label, active, onPress }: SidebarItemProp
 
   return (
     <Pressable
-      accessibilityRole="button"
+      {...webKeyboardActivationProps(onPress)}
+      accessibilityRole="tab"
       accessibilityState={{ selected: active }}
+      aria-selected={active}
       onPress={onPress}
       style={({ pressed }) => [
         styles.item,

@@ -1,38 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeOutDown,
+  useReducedMotion,
+} from 'react-native-reanimated';
 import { useFavorites } from '../context/FavoritesContext';
 import { navigateToMySchedule } from '../navigation/navigationRef';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { MotionPressable } from './MotionPressable';
 
 const TAB_BAR_OFFSET = Platform.select({ ios: 96, android: 84, default: 84 });
 const AUTO_HIDE_MS = 5000;
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+const TOAST_ENTER = FadeInDown.duration(220).easing(EASE_OUT);
+const TOAST_EXIT = FadeOutDown.duration(170).easing(EASE_OUT);
+const REDUCED_TOAST_ENTER = FadeIn.duration(160).easing(EASE_OUT);
+const REDUCED_TOAST_EXIT = FadeOut.duration(120).easing(EASE_OUT);
 
 export function FavoriteAddedToast() {
   const { addedToastVisible, hideAddedToast } = useFavorites();
-  const [entrance] = useState(() => new Animated.Value(0));
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!addedToastVisible) {
       return;
     }
 
-    entrance.setValue(0);
-    Animated.spring(entrance, {
-      toValue: 1,
-      damping: 20,
-      stiffness: 210,
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-
     const timer = setTimeout(() => {
       hideAddedToast();
     }, AUTO_HIDE_MS);
 
     return () => clearTimeout(timer);
-  }, [addedToastVisible, entrance, hideAddedToast]);
+  }, [addedToastVisible, hideAddedToast]);
 
   if (!addedToastVisible) {
     return null;
@@ -44,26 +50,24 @@ export function FavoriteAddedToast() {
   };
 
   return (
-    <View pointerEvents="box-none" style={styles.host}>
-      <Animated.View
-        style={[
-          styles.toast,
-          {
-            opacity: entrance,
-            transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
-          },
-        ]}
-      >
+    <Animated.View
+      pointerEvents="box-none"
+      style={styles.host}
+      accessibilityLiveRegion="polite"
+      entering={reduceMotion ? REDUCED_TOAST_ENTER : TOAST_ENTER}
+      exiting={reduceMotion ? REDUCED_TOAST_EXIT : TOAST_EXIT}
+    >
+      <View style={styles.toast}>
         <Text style={styles.message}>Добавлено в избранное</Text>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           onPress={handleNavigate}
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          style={styles.button}
         >
           <Text style={styles.buttonText}>МОЁ РАСПИСАНИЕ</Text>
-        </Pressable>
-      </Animated.View>
-    </View>
+        </MotionPressable>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -105,9 +109,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-  },
-  buttonPressed: {
-    opacity: 0.9,
   },
   buttonText: {
     ...typography.button,

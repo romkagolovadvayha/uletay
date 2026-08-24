@@ -207,7 +207,6 @@ const styles = StyleSheet.create({
   },
   sectionTabsWrap: {
     paddingHorizontal: spacing.screen,
-    paddingBottom: spacing.xs,
   },
   tabsWrap: {
     paddingHorizontal: spacing.screen,

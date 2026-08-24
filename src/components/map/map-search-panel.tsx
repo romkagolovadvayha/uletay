@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -13,6 +12,7 @@ import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { MotionPressable } from '../MotionPressable';
 import type {
   MapPoiProperties,
   MapPoisGeoJson,
@@ -96,7 +96,7 @@ export function MapSearchPanel({
           style={styles.input}
         />
         {query ? (
-          <Pressable
+          <MotionPressable
             accessibilityRole="button"
             accessibilityLabel="Очистить поиск"
             onPress={() => setQuery('')}
@@ -104,7 +104,7 @@ export function MapSearchPanel({
             style={styles.clear}
           >
             <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-          </Pressable>
+          </MotionPressable>
         ) : null}
       </View>
 
@@ -112,18 +112,18 @@ export function MapSearchPanel({
         <View style={styles.results}>
           {results.length ? (
             results.map((result) => (
-              <Pressable
+              <MotionPressable
                 key={`${result.kind}-${result.id}`}
                 accessibilityRole="button"
                 onPress={() => select(result)}
-                style={({ pressed }) => [styles.result, pressed && styles.resultPressed]}
+                style={styles.result}
               >
                 <View style={styles.resultIcon}>
                   <Ionicons name={result.icon} size={18} color={colors.primary} />
                 </View>
                 <Text numberOfLines={1} style={styles.resultName}>{result.name}</Text>
                 <Text style={styles.resultKind}>{result.kind === 'zone' ? 'Зона' : 'Место'}</Text>
-              </Pressable>
+              </MotionPressable>
             ))
           ) : (
             <Text style={styles.empty}>Ничего не найдено</Text>
@@ -178,9 +178,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-  },
-  resultPressed: {
-    backgroundColor: colors.surfaceMuted,
   },
   resultIcon: {
     width: 28,

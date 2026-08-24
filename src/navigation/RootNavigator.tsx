@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { Suspense } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
 import { DeferredIonicons } from '../components/DeferredIonicons';
 import { RadioTabIcon } from '../components/RadioTabIcon';
@@ -137,10 +138,13 @@ function TabLabel({ color, children }: { color: string; children: string }) {
 }
 
 function ScheduleNavigator() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <ScheduleStack.Navigator
       initialRouteName="ScheduleMain"
       screenOptions={{
+        animation: reduceMotion ? 'fade' : 'default',
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
       }}
@@ -153,9 +157,12 @@ function ScheduleNavigator() {
 }
 
 function AutographNavigator() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <AutographStack.Navigator
       screenOptions={{
+        animation: reduceMotion ? 'fade' : 'default',
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
       }}
@@ -167,9 +174,12 @@ function AutographNavigator() {
 }
 
 function HeadlinersNavigator() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <HeadlinersStack.Navigator
       screenOptions={{
+        animation: reduceMotion ? 'fade' : 'default',
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
       }}
@@ -181,10 +191,13 @@ function HeadlinersNavigator() {
 }
 
 function MoreNavigator() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <MoreStack.Navigator
       initialRouteName="MoreHome"
       screenOptions={{
+        animation: reduceMotion ? 'fade' : 'default',
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
       }}
@@ -211,6 +224,7 @@ function RootTabs() {
       initialRouteName="HomeTab"
       tabBar={(props) => <AdaptiveTabBar {...props} />}
       screenOptions={{
+        animation: 'none',
         headerShown: false,
         tabBarPosition: isTablet ? 'left' : 'bottom',
         tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon',

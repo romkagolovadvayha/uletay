@@ -6,6 +6,7 @@ import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FestivalMapView } from '../components/map/FestivalMapView';
 import { ScreenTitle } from '../components/ScreenTitle';
+import { MotionPressable } from '../components/MotionPressable';
 import type { FestivalMapApi } from '../components/map/types';
 import { MapFabGroup } from '../components/map/MapFabGroup';
 import { MapDirectionsButton } from '../components/map/MapDirectionsButton';
@@ -417,7 +418,14 @@ export function FestivalMapScreen({ route }: Props) {
                 <Text style={styles.placingText}>
                   Нажмите на карту, чтобы запомнить {placingMarkerKind === 'car' ? 'машину' : 'палатку'}
                 </Text>
-                <Text onPress={() => setPlacingMarkerKind(null)} style={styles.placingCancel}>Отмена</Text>
+                <MotionPressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Отменить сохранение места"
+                  hitSlop={14}
+                  onPress={() => setPlacingMarkerKind(null)}
+                >
+                  <Text style={styles.placingCancel}>Отмена</Text>
+                </MotionPressable>
               </View>
             ) : null}
             {locationRequested || outsideTerritory ? (
@@ -452,7 +460,7 @@ export function FestivalMapScreen({ route }: Props) {
           </View>
         </View>
 
-        <MapPoiPopup visible={popupVisible}>
+        <MapPoiPopup visible={popupVisible} onClose={dismissPopup}>
           {directionsVisible ? (
             <MapDirectionsSheet
               center={mapConfig.center}

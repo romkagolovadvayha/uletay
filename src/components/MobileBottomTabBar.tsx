@@ -1,14 +1,14 @@
 import { BottomTabBarHeightCallbackContext, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { CommonActions } from '@react-navigation/native';
 import React, { useContext, useMemo } from 'react';
-import { LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVisibleMainTabRoutes } from '../navigation/mainTabRoutes';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { resolveAndroidBottomInset } from '../utils/safeArea';
-import { MotionPressable } from './MotionPressable';
+import { webKeyboardActivationProps } from '../utils/webKeyboardActivation';
 
 /** Equal inner padding above/below tab items (safe-area added separately below). */
 export const TAB_BAR_INNER_PADDING = 8;
@@ -119,15 +119,16 @@ export function MobileBottomTabBar({
           return (
             // Flex lives on View so web <button> defaults cannot stretch columns unevenly.
             <View key={route.key} style={styles.itemSlot}>
-              <MotionPressable
+              <Pressable
+                {...webKeyboardActivationProps(onPress)}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
+                aria-selected={focused}
                 accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
                 testID={options.tabBarButtonTestID}
                 onPress={onPress}
                 onLongPress={onLongPress}
                 style={styles.item}
-                pressedScale={0.92}
               >
                 <View style={styles.iconSlot}>
                   {focused ? <View style={styles.activeGlow} /> : null}
@@ -136,7 +137,7 @@ export function MobileBottomTabBar({
                 <Text style={[styles.label, { color }]} numberOfLines={1} ellipsizeMode="clip">
                   {displayLabel}
                 </Text>
-              </MotionPressable>
+              </Pressable>
             </View>
           );
         })}

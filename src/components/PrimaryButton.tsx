@@ -39,6 +39,8 @@ export function PrimaryButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
+      aria-disabled={isDisabled}
+      aria-busy={loading}
       onPress={onPress}
       disabled={isDisabled}
       style={[styles.button, isDisabled && styles.disabled, style]}

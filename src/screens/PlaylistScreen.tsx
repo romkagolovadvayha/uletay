@@ -7,7 +7,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   Share,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MotionPressable } from '../components/MotionPressable';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { useRadioFavorites } from '../hooks/useRadioFavorites';
@@ -44,7 +44,6 @@ export function PlaylistScreen() {
   const isFocused = useIsFocused();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
-  const isCompact = width < 480;
   const {
     isPlaying,
     isBuffering,
@@ -124,14 +123,10 @@ export function PlaylistScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentInner}>
-          <View style={[styles.headingRow, isCompact && styles.headingRowCompact]}>
+          <View style={styles.headingRow}>
             <View style={styles.headingCopy}>
               <ScreenTitle style={styles.title}>ФЕСТИВАЛЬНОЕ РАДИО</ScreenTitle>
               <Text style={styles.subtitle}>Музыка «Улетая» круглосуточно</Text>
-            </View>
-            <View style={styles.livePill}>
-              <View style={styles.liveDot} />
-              <Text style={styles.livePillText}>ПРЯМОЙ ЭФИР</Text>
             </View>
           </View>
 
@@ -180,24 +175,25 @@ export function PlaylistScreen() {
                     <Text selectable style={styles.errorText}>
                       {error}
                     </Text>
-                    <Pressable
+                    <MotionPressable
                       accessibilityRole="button"
                       onPress={retry}
-                      style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                      style={styles.retryButton}
                     >
                       <Text style={styles.retryText}>Повторить</Text>
-                    </Pressable>
+                    </MotionPressable>
                   </View>
                 </View>
               ) : null}
 
               <View style={styles.controlsRow}>
-                <Pressable
+                <MotionPressable
                   accessibilityRole="button"
                   accessibilityLabel={isPlaying ? 'Пауза' : 'Слушать радио'}
                   accessibilityState={{ busy: isBuffering }}
+                  aria-busy={isBuffering}
                   onPress={togglePlayback}
-                  style={({ pressed }) => [styles.playButton, pressed && styles.playPressed]}
+                  style={styles.playButton}
                 >
                   {isBuffering && !isPlaying ? (
                     <ActivityIndicator color={colors.primaryText} />
@@ -209,8 +205,8 @@ export function PlaylistScreen() {
                       style={!isPlaying ? styles.playIconOffset : undefined}
                     />
                   )}
-                </Pressable>
-                <Pressable
+                </MotionPressable>
+                <MotionPressable
                   accessibilityRole="button"
                   accessibilityLabel={isFavorite(nowPlaying) ? 'Убрать трек из избранного' : 'Добавить трек в избранное'}
                   disabled={!nowPlaying?.raw}
@@ -218,25 +214,25 @@ export function PlaylistScreen() {
                   style={styles.roundAction}
                 >
                   <Ionicons name={isFavorite(nowPlaying) ? 'heart' : 'heart-outline'} size={23} color={colors.primary} />
-                </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel="Поделиться треком" disabled={!nowPlaying?.raw} onPress={() => shareTrack()} style={styles.roundAction}>
+                </MotionPressable>
+                <MotionPressable accessibilityRole="button" accessibilityLabel="Поделиться треком" disabled={!nowPlaying?.raw} onPress={() => shareTrack()} style={styles.roundAction}>
                   <Ionicons name="share-outline" size={23} color={colors.text} />
-                </Pressable>
+                </MotionPressable>
               </View>
 
               {nowPlaying?.raw ? (
-                <Pressable onPress={() => openMusic()} style={styles.musicLink}>
+                <MotionPressable onPress={() => openMusic()} style={styles.musicLink}>
                   <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
                   <Text style={styles.musicLinkText}>Найти трек в Яндекс Музыке</Text>
-                </Pressable>
+                </MotionPressable>
               ) : null}
 
               {matchedHeadliner ? (
-                <Pressable
+                <MotionPressable
                   accessibilityRole="button"
                   accessibilityLabel={`Открыть артиста ${matchedHeadliner.name}`}
                   onPress={openMatchedHeadliner}
-                  style={({ pressed }) => [styles.artistLink, pressed && styles.pressed]}
+                  style={styles.artistLink}
                 >
                   <View style={styles.artistLinkCopy}>
                     <Text style={styles.artistLinkLabel}>ХЭДЛАЙНЕР «УЛЕТАЯ»</Text>
@@ -251,19 +247,17 @@ export function PlaylistScreen() {
                     <Text style={styles.artistLinkActionText}>Открыть артиста</Text>
                     <Ionicons name="chevron-forward" size={18} color={colors.primary} />
                   </View>
-                </Pressable>
+                </MotionPressable>
               ) : null}
 
-              <Pressable
+              <MotionPressable
                 accessibilityRole="button"
                 accessibilityLabel="Обновить информацию о треке"
                 accessibilityState={{ busy: isMetadataLoading }}
+                aria-busy={isMetadataLoading}
                 disabled={isMetadataLoading}
                 onPress={() => void refreshNowPlaying()}
-                style={({ pressed }) => [
-                  styles.refreshButton,
-                  pressed && !isMetadataLoading && styles.pressed,
-                ]}
+                style={styles.refreshButton}
               >
                 {isMetadataLoading ? (
                   <ActivityIndicator size="small" color={colors.textSecondary} />
@@ -271,7 +265,7 @@ export function PlaylistScreen() {
                   <Ionicons name="refresh-outline" size={17} color={colors.textSecondary} />
                 )}
                 <Text style={styles.refreshText}>Обновить информацию</Text>
-              </Pressable>
+              </MotionPressable>
             </View>
           </View>
 
@@ -283,9 +277,9 @@ export function PlaylistScreen() {
                   <Text style={styles.sectionCaption}>История не требует аккаунта</Text>
                 </View>
                 {recentTracks.length > 5 ? (
-                  <Pressable onPress={() => setShowAllRecent((value) => !value)}>
+                  <MotionPressable onPress={() => setShowAllRecent((value) => !value)}>
                     <Text style={styles.sectionAction}>{showAllRecent ? 'Свернуть' : 'Все'}</Text>
-                  </Pressable>
+                  </MotionPressable>
                 ) : null}
               </View>
               {(showAllRecent ? recentTracks : recentTracks.slice(0, 5)).map((track) => (
@@ -297,12 +291,12 @@ export function PlaylistScreen() {
                     <Text style={styles.trackRowTitle} numberOfLines={1}>{track.title || track.raw}</Text>
                     <Text style={styles.trackRowArtist} numberOfLines={1}>{track.artist || 'Улетай радио'}</Text>
                   </View>
-                  <Pressable accessibilityLabel="Найти трек" onPress={() => openMusic(track)} style={styles.smallAction}>
+                  <MotionPressable accessibilityLabel="Найти трек" onPress={() => openMusic(track)} style={styles.smallAction}>
                     <Ionicons name="search-outline" size={19} color={colors.textSecondary} />
-                  </Pressable>
-                  <Pressable accessibilityLabel="Добавить в избранное" onPress={() => toggleFavorite(track)} style={styles.smallAction}>
+                  </MotionPressable>
+                  <MotionPressable accessibilityLabel="Добавить в избранное" onPress={() => toggleFavorite(track)} style={styles.smallAction}>
                     <Ionicons name={isFavorite(track) ? 'heart' : 'heart-outline'} size={19} color={colors.primary} />
-                  </Pressable>
+                  </MotionPressable>
                 </View>
               ))}
             </View>
@@ -319,11 +313,11 @@ export function PlaylistScreen() {
                   </Text>
                 </View>
                 {favorites.length > 5 ? (
-                  <Pressable onPress={() => setShowAllFavorites((value) => !value)}>
+                  <MotionPressable onPress={() => setShowAllFavorites((value) => !value)}>
                     <Text style={styles.sectionAction}>
                       {showAllFavorites ? 'Свернуть' : 'Все'}
                     </Text>
-                  </Pressable>
+                  </MotionPressable>
                 ) : null}
               </View>
               {favorites.length ? (
@@ -340,30 +334,30 @@ export function PlaylistScreen() {
                       {track.artist || 'Улетай радио'}
                     </Text>
                   </View>
-                  <Pressable
+                  <MotionPressable
                     accessibilityRole="button"
                     accessibilityLabel="Найти трек"
                     onPress={() => openMusic(track)}
                     style={styles.smallAction}
                   >
                     <Ionicons name="search-outline" size={19} color={colors.textSecondary} />
-                  </Pressable>
-                  <Pressable
+                  </MotionPressable>
+                  <MotionPressable
                     accessibilityRole="button"
                     accessibilityLabel="Поделиться треком"
                     onPress={() => shareTrack(track)}
                     style={styles.smallAction}
                   >
                     <Ionicons name="share-outline" size={19} color={colors.textSecondary} />
-                  </Pressable>
-                  <Pressable
+                  </MotionPressable>
+                  <MotionPressable
                     accessibilityRole="button"
                     accessibilityLabel="Удалить из избранного"
                     onPress={() => toggleFavorite(track)}
                     style={styles.smallAction}
                   >
                     <Ionicons name="heart-dislike-outline" size={20} color={colors.primary} />
-                  </Pressable>
+                  </MotionPressable>
                 </View>
                 ))
               ) : (
@@ -399,12 +393,6 @@ const styles = StyleSheet.create({
   headingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  headingRowCompact: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
   },
   headingCopy: {
     flex: 1,
@@ -419,29 +407,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     fontSize: 13,
-  },
-  livePill: {
-    minHeight: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.live,
-  },
-  livePillText: {
-    ...appFont('bold'),
-    color: colors.text,
-    fontSize: 12,
-    letterSpacing: 0.7,
   },
   playerCard: {
     alignItems: 'center',
@@ -568,9 +533,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-  playPressed: {
-    transform: [{ scale: 0.97 }],
-  },
   playIconOffset: {
     marginLeft: 4,
   },
@@ -626,9 +588,6 @@ const styles = StyleSheet.create({
     ...appFont('semiBold'),
     color: colors.textSecondary,
     fontSize: 13,
-  },
-  pressed: {
-    opacity: 0.84,
   },
   section: {
     gap: spacing.sm,

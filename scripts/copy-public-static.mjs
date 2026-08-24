@@ -175,7 +175,7 @@ function patchIndexHtml() {
   if (!html.includes('id="app-boot-style"')) {
     html = html.replace(
       '</head>',
-      '  <style id="app-boot-style">html,body,#root{background:#000;margin:0;min-height:100%}</style>\n</head>',
+      '  <style id="app-boot-style">html,body{overflow:hidden;overflow:clip}body{position:fixed;inset:0;width:100%}html,body,#root{background:#000;margin:0;min-height:100%}</style>\n</head>',
     );
   }
 

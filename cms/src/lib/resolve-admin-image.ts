@@ -1,10 +1,14 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import foodcourtSeed from '../../seed/foodcourt.json';
 import { config } from './config';
-import { lookupFestArtistAssetUrl } from './fest-artist-sources';
+import {
+  lookupFestArtistAssetUrl,
+  lookupFestArtistUploadUrl,
+} from './fest-artist-sources';
 import { festAssetUrl, repoAssetsDir } from './repo-assets';
 
-function resolveUploadUrl(url: string): string {
+function resolveUploadUrl(url: string): string | undefined {
   const match = url.match(/^\/api\/uploads\/images\/(.+)$/);
   if (!match?.[1]) return url;
 
@@ -17,8 +21,12 @@ function resolveUploadUrl(url: string): string {
     return festAssetUrl('images', 'artists', filename);
   }
 
-  return url;
+  return undefined;
 }
+
+const foodcourtFallbackById = new Map(
+  foodcourtSeed.map((item) => [item.id, item.imageUrl] as const),
+);
 
 export function resolveAdminImageSrc(
   imageUrl?: string | null,
@@ -26,15 +34,39 @@ export function resolveAdminImageSrc(
 ): string | undefined {
   const trimmed = imageUrl?.trim();
   if (trimmed) {
-    return resolveUploadUrl(trimmed);
+    const resolved = resolveUploadUrl(trimmed);
+    if (resolved) return resolved;
+  }
+
+  const artistUpload = lookupFestArtistUploadUrl(artist);
+  if (artistUpload) {
+    const resolved = resolveUploadUrl(artistUpload);
+    if (resolved) return resolved;
   }
 
   return lookupFestArtistAssetUrl(artist);
 }
 
+export function resolveAdminFoodcourtImageSrc(
+  imageUrl?: string | null,
+  vendorId?: string | null,
+): string | undefined {
+  const trimmed = imageUrl?.trim();
+  if (trimmed) {
+    const resolved = resolveUploadUrl(trimmed);
+    if (resolved) return resolved;
+  }
+
+  const fallback = vendorId ? foodcourtFallbackById.get(vendorId) : undefined;
+  return fallback ? resolveUploadUrl(fallback) : undefined;
+}
+
 export function resolveAdminFestivalHeroSrc(heroImageUrl?: string | null): string {
   const trimmed = heroImageUrl?.trim();
-  if (trimmed) return resolveUploadUrl(trimmed);
+  if (trimmed) {
+    const resolved = resolveUploadUrl(trimmed);
+    if (resolved) return resolved;
+  }
   return festAssetUrl('images', 'hero-crowd.png');
 }
 
@@ -48,7 +80,7 @@ export function resolveAdminFestivalLogoSrc(logoImageUrl?: string | null): strin
         return festAssetUrl('images', 'festival-logo.png');
       }
     }
-    return resolveUploadUrl(trimmed);
+    return resolveUploadUrl(trimmed) ?? festAssetUrl('images', 'festival-logo.png');
   }
   return festAssetUrl('images', 'festival-logo.png');
 }

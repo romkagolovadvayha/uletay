@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Headliner } from '../types';
 import { formatLastFmCount } from '../utils/lastfmFormat';
 import { getHeadlinerDisplayAlternateNames } from '../utils/headlinerGroups';
@@ -8,6 +8,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { MotionPressable } from './MotionPressable';
 
 type Props = {
   headliner: Headliner;
@@ -64,10 +65,10 @@ export function HeadlinerCard({ headliner, allHeadliners, onPress, large }: Prop
   const alternateNames = getHeadlinerDisplayAlternateNames(headliner);
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={styles.card}
     >
       <HeadlinerThumbnail headliner={headliner} />
       <View style={styles.content}>
@@ -90,7 +91,7 @@ export function HeadlinerCard({ headliner, allHeadliners, onPress, large }: Prop
           </Text>
         ) : null}
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -106,9 +107,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     backgroundColor: colors.surfaceGlass,
     borderRadius: radius.xl,
-  },
-  pressed: {
-    opacity: 0.9,
   },
   content: {
     flex: 1,

@@ -4,7 +4,7 @@ import { AdminImageUpload } from './AdminImageUpload';
 import { FoodcourtSortableTable } from './FoodcourtSortableTable';
 import type { FoodCourtCategory, FoodCourtVendor } from '@/types';
 import { presetHint } from '@/lib/image-presets';
-import { resolveAdminImageSrc } from '@/lib/resolve-admin-image';
+import { resolveAdminFoodcourtImageSrc } from '@/lib/resolve-admin-image';
 
 const CATEGORIES: { value: FoodCourtCategory; label: string }[] = [
   { value: 'hot', label: 'Горячее' },
@@ -33,7 +33,7 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
 
   const tableItems = filtered.map((item) => ({
     ...item,
-    imageSrc: resolveAdminImageSrc(item.imageUrl),
+    imageSrc: resolveAdminFoodcourtImageSrc(item.imageUrl, item.id),
   }));
 
   return (
@@ -118,7 +118,7 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
             <div className="span-2">
               <AdminImageUpload
                 aspect="square"
-                currentSrc={resolveAdminImageSrc(editing?.imageUrl)}
+                currentSrc={resolveAdminFoodcourtImageSrc(editing?.imageUrl, editing?.id)}
                 currentValue={editing?.imageUrl}
                 hint={presetHint('thumb')}
                 label="Изображение точки"

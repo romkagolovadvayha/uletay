@@ -399,6 +399,8 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
   const jsonLd = JSON.stringify(structuredData(route, data)).replaceAll('<', '\\u003c');
   // Render useful no-JS content. React replaces this section when the app mounts.
   const bootStyle = [
+    'html,body{overflow:hidden;overflow:clip}',
+    'body{position:fixed;inset:0;width:100%}',
     'html,body,#root{background:#000;color:#f5f5f7;margin:0;min-height:100%}',
     '#seo-fallback{box-sizing:border-box;max-width:960px;margin:0 auto;padding:32px 20px;font:16px/1.6 system-ui,sans-serif}',
     '#seo-fallback a{color:#ffc107}#seo-fallback h1,#seo-fallback h2{line-height:1.2}',

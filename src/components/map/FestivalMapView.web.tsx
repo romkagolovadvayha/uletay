@@ -21,6 +21,14 @@ import { ensureZoneLabelFont, zoneLabelCssRules } from '../../utils/map/zoneLabe
 import { useLatestRef } from '../../hooks/useLatestRef';
 
 const STYLE_ID = 'fest-yandex-map-styles';
+const MAP_CAMERA_DURATION_MS = 280;
+
+function mapCameraDuration(): number {
+  return typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ? 0
+    : MAP_CAMERA_DURATION_MS;
+}
 
 function ensureMapStyles() {
   if (typeof document === 'undefined' || document.getElementById(STYLE_ID)) return;
@@ -58,6 +66,11 @@ function ensureMapStyles() {
       border: 2px solid rgba(255,255,255,.22);
       box-sizing: border-box;
       transform: translate(-50%, -50%);
+      transition:
+        transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+        background-color 160ms ease,
+        color 160ms ease,
+        border-color 160ms ease;
       font: 800 11px/1 system-ui, sans-serif;
       box-shadow: 0 3px 10px rgba(0,0,0,.35);
       cursor: pointer;
@@ -75,8 +88,21 @@ function ensureMapStyles() {
       transform-origin: center center;
       pointer-events: none;
     }
+    @media (prefers-reduced-motion: reduce) {
+      .fest-poi-marker {
+        transition-property: background-color, color, border-color;
+      }
+    }
   `;
   document.head.appendChild(style);
+}
+
+function labelYandexMapLinks(container: HTMLElement) {
+  container.querySelectorAll<HTMLAnchorElement>('a[href*="yandex.ru/maps"]').forEach((link) => {
+    if (!link.getAttribute('aria-label') && !link.textContent?.trim()) {
+      link.setAttribute('aria-label', 'Открыть карту в Яндекс Картах');
+    }
+  });
 }
 
 function getContainerElement(ref: React.RefObject<View | null>): HTMLElement | null {
@@ -275,6 +301,11 @@ export function FestivalMapView({
 
     ensureMapStyles();
     let cancelled = false;
+    const accessibilityObserver = new MutationObserver(() => {
+      labelYandexMapLinks(container);
+    });
+    accessibilityObserver.observe(container, { childList: true, subtree: true });
+    labelYandexMapLinks(container);
 
     void (async () => {
       try {
@@ -357,7 +388,7 @@ export function FestivalMapView({
               location: {
                 center: [lng, lat],
                 zoom,
-                duration: 600,
+                duration: mapCameraDuration(),
               },
             });
           },
@@ -408,6 +439,7 @@ export function FestivalMapView({
 
     return () => {
       cancelled = true;
+      accessibilityObserver.disconnect();
       readyRef.current = false;
       setMapReady(false);
       /* eslint-disable react-hooks/exhaustive-deps -- Yandex map entities are torn down on unmount */
@@ -676,7 +708,7 @@ export function FestivalMapView({
       location: {
         center: [userLocation.lng, userLocation.lat],
         zoom: Math.max(config.defaultZoom, 16),
-        duration: 600,
+        duration: mapCameraDuration(),
       },
     });
   }, [followUser, userLocation, config.defaultZoom]);

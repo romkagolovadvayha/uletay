@@ -38,6 +38,7 @@ export function buildNativeYandexMapHtml(
       border-radius: 18px; background: #1C1C1E; color: #FFC107;
       border: 2px solid rgba(255,255,255,.22); box-sizing: border-box;
       transform: translate(-50%, -50%);
+      transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, color 160ms ease, border-color 160ms ease;
       font: 800 11px/1 system-ui, sans-serif; letter-spacing: .1px;
       box-shadow: 0 3px 10px rgba(0,0,0,.35);
     }
@@ -52,6 +53,9 @@ export function buildNativeYandexMapHtml(
       pointer-events: none; box-sizing: border-box;
       transform: translate(-50%, -50%);
     }
+    @media (prefers-reduced-motion: reduce) {
+      .fest-poi-marker { transition-property: background-color, color, border-color; }
+    }
   </style>
   <script src="https://api-maps.yandex.ru/v3/?apikey=${key}&lang=ru_RU"></script>
 </head>
@@ -59,6 +63,12 @@ export function buildNativeYandexMapHtml(
   <div id="map"></div>
   <script>
 (function () {
+  function cameraDuration() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 0
+      : 280;
+  }
+
   function post(msg) {
     try {
       if (window.ReactNativeWebView) {
@@ -378,7 +388,7 @@ export function buildNativeYandexMapHtml(
         location: {
           center: [state.userLocation.lng, state.userLocation.lat],
           zoom: Math.max(state.defaultZoom || INIT_ZOOM, 16),
-          duration: 600
+          duration: cameraDuration()
         }
       });
     } else if (!locationSynced && state.center) {
@@ -406,7 +416,7 @@ export function buildNativeYandexMapHtml(
         location: {
           center: [cmd.lng, cmd.lat],
           zoom: cmd.zoom != null ? cmd.zoom : 16,
-          duration: 600
+          duration: cameraDuration()
         }
       });
     } else if (cmd.type === 'fitRoute' && cmd.coordinates && cmd.coordinates.length) {

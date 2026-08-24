@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { StageId } from '../types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -10,6 +10,7 @@ import { performanceTimeWeightStyle } from './PerformanceTimeDateRow';
 import { SoonBadge } from './SoonBadge';
 import { FavoriteStar } from './ScheduleListItem';
 import { StageDot } from './StageDot';
+import { MotionPressable } from './MotionPressable';
 
 type SubtitleTone = 'performance' | 'autograph';
 type RowVariant = 'default' | 'autograph';
@@ -48,10 +49,11 @@ export function EventScheduleRow({
   isCompetition,
 }: Props) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole={onPress ? 'button' : undefined}
+      disabled={!onPress}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={styles.row}
     >
       <Text
         style={[styles.time, variant === 'autograph' && styles.timeAutograph, isLive && styles.timeLive]}
@@ -84,7 +86,7 @@ export function EventScheduleRow({
         ) : null}
         {trailing}
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -96,9 +98,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-  },
-  pressed: {
-    opacity: 0.92,
   },
   time: {
     flexShrink: 1,

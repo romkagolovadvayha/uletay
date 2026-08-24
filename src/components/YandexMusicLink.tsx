@@ -38,52 +38,68 @@ export function YandexMusicLink({ artist, track, variant = 'icon', size = 32 }: 
       <ExternalLink
         href={url}
         accessibilityLabel={accessibilityLabel}
-        style={({ pressed }) => [styles.listenButton, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.listenTarget, pressed && styles.pressed]}
       >
-        <View style={styles.listenRow}>
-          <Text style={styles.listenLabel} numberOfLines={1}>
-            Слушать в
-          </Text>
-          <Image
-            source={YANDEX_MUSIC_LOGO}
-            style={styles.listenLogo}
-            contentFit="contain"
-            accessibilityLabel=""
-            alt=""
-            accessibilityIgnoresInvertColors
-          />
-          <Text style={styles.listenBrand} numberOfLines={1}>
-            Яндекс Музыка
-          </Text>
+        <View style={styles.listenButton}>
+          <View style={styles.listenRow}>
+            <Text style={styles.listenLabel} numberOfLines={1}>
+              Слушать в
+            </Text>
+            <Image
+              source={YANDEX_MUSIC_LOGO}
+              style={styles.listenLogo}
+              contentFit="contain"
+              accessibilityLabel=""
+              alt=""
+              accessibilityIgnoresInvertColors
+            />
+            <Text style={styles.listenBrand} numberOfLines={1}>
+              Яндекс Музыка
+            </Text>
+          </View>
         </View>
       </ExternalLink>
     );
   }
 
+  const targetSize = Math.max(44, size);
+  const targetMargin = (size - targetSize) / 2;
+
   return (
     <ExternalLink
       href={url}
       accessibilityLabel={accessibilityLabel}
-      hitSlop={6}
       style={({ pressed }) => [
-        styles.iconButton,
-        { width: size, height: size, borderRadius: radius.sm },
+        styles.iconTarget,
+        {
+          width: targetSize,
+          height: targetSize,
+          marginHorizontal: targetMargin,
+          marginVertical: targetMargin,
+        },
         pressed && styles.pressed,
       ]}
     >
-      <Image
-        source={YANDEX_MUSIC_LOGO}
-        style={{ width: size - 4, height: size - 4 }}
-        contentFit="contain"
-        accessibilityLabel=""
-        alt=""
-        accessibilityIgnoresInvertColors
-      />
+      <View style={[styles.iconButton, { width: size, height: size, borderRadius: radius.sm }]}>
+        <Image
+          source={YANDEX_MUSIC_LOGO}
+          style={{ width: size - 4, height: size - 4 }}
+          contentFit="contain"
+          accessibilityLabel=""
+          alt=""
+          accessibilityIgnoresInvertColors
+        />
+      </View>
     </ExternalLink>
   );
 }
 
 const styles = StyleSheet.create({
+  iconTarget: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
   iconButton: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -93,9 +109,16 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
-  listenButton: {
+  listenTarget: {
     alignSelf: 'center',
-    marginBottom: spacing.lg,
+    minHeight: 44,
+    marginTop: -3,
+    marginBottom: spacing.lg - 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '100%',
+  },
+  listenButton: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,

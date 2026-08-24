@@ -27,6 +27,8 @@ export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: P
             <MotionPressable
               key={date}
               accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
+              aria-pressed={isActive}
               onPress={() => onSelect(date)}
               style={[
                 styles.tab,

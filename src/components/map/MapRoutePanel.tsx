@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { CombinedRoute, LatLng } from '../../types/map';
 import { ExternalLink } from '../ExternalLink';
+import { MotionPressable } from '../MotionPressable';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -34,9 +35,9 @@ export function MapRoutePanel({ route, userLocation, onClear }: Props) {
           <Text style={styles.navText}>Открыть в навигаторе</Text>
         </ExternalLink>
       ) : null}
-      <Pressable accessibilityRole="button" onPress={onClear} style={styles.clearBtn}>
+      <MotionPressable accessibilityRole="button" onPress={onClear} style={styles.clearBtn}>
         <Text style={styles.clearText}>Скрыть маршрут</Text>
-      </Pressable>
+      </MotionPressable>
     </View>
   );
 }

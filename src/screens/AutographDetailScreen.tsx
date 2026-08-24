@@ -2,7 +2,7 @@ import { NavigationProp } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   HEADLINER_TOP_TRACKS_PREVIEW,
@@ -11,6 +11,8 @@ import {
 } from '../components/HeadlinerTeaserCard';
 import { AutographHeroCard } from '../components/LiveArtistCard';
 import { SectionHeader } from '../components/SectionHeader';
+import { MotionPressable } from '../components/MotionPressable';
+import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useNow } from '../hooks/useNow';
@@ -59,7 +61,7 @@ export function AutographDetailScreen({ navigation, route }: Props) {
   if (!session) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.empty}>Сессия не найдена</Text>
+        <ScreenTitle style={styles.empty}>Сессия не найдена</ScreenTitle>
       </SafeAreaView>
     );
   }
@@ -86,17 +88,17 @@ export function AutographDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Назад"
           accessibilityHint="Вернуться к списку автограф-сессий"
           onPress={() => navigation.goBack()}
           hitSlop={12}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={styles.iconButton}
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Pressable
+        </MotionPressable>
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel={
             isFavorite
@@ -104,12 +106,13 @@ export function AutographDetailScreen({ navigation, route }: Props) {
               : 'Добавить автограф-сессию в избранное'
           }
           accessibilityState={{ selected: isFavorite }}
+          aria-pressed={isFavorite}
           onPress={() => toggleAutographFavorite(session.id)}
           hitSlop={12}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={styles.iconButton}
         >
           <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={22} color={colors.star} />
-        </Pressable>
+        </MotionPressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -124,16 +127,17 @@ export function AutographDetailScreen({ navigation, route }: Props) {
               onPress={openHeadliner}
             />
           ) : null}
-          <Pressable
+          <MotionPressable
             accessibilityRole="button"
             accessibilityState={{ selected: isFavorite }}
+            aria-pressed={isFavorite}
             onPress={() => toggleAutographFavorite(session.id)}
-            style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
+            style={styles.favoriteButton}
           >
             <Text style={styles.favoriteButtonText}>
               {isFavorite ? 'В МОЁМ РАСПИСАНИИ' : 'ДОБАВИТЬ В МОЁ РАСПИСАНИЕ'}
             </Text>
-          </Pressable>
+          </MotionPressable>
         </View>
 
         {headliner && topTracks.length ? (
@@ -190,9 +194,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     letterSpacing: 0.4,
-  },
-  pressed: {
-    opacity: 0.9,
   },
   empty: {
     ...typography.body,

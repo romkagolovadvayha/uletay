@@ -34,6 +34,7 @@ export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'd
             key={category.id}
             accessibilityRole="button"
             accessibilityState={{ selected: isActive }}
+            aria-pressed={isActive}
             onPress={() => onSelect(category.id)}
             style={[
               styles.pill,
@@ -68,11 +69,14 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   pill: {
+    flexShrink: 1,
     minHeight: 44,
     borderRadius: radius.pill,
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pillDefault: {
     borderColor: colors.primary,

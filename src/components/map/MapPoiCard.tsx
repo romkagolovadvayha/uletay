@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../PrimaryButton';
 import { ExternalLink } from '../ExternalLink';
+import { MotionPressable } from '../MotionPressable';
 import { colors } from '../../theme/colors';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
@@ -143,9 +144,9 @@ export function MapPoiCard({
       <Text style={styles.routeHint}>По дорогам и тропинкам площадки</Text>
       {routeError ? <Text style={styles.routeError}>{routeError}</Text> : null}
       {onOpenLink ? (
-        <Pressable accessibilityRole="button" onPress={onOpenLink} style={styles.linkBtn}>
+        <MotionPressable accessibilityRole="button" onPress={onOpenLink} style={styles.linkBtn}>
           <Text style={styles.linkText}>Подробнее</Text>
-        </Pressable>
+        </MotionPressable>
       ) : null}
     </View>
   );

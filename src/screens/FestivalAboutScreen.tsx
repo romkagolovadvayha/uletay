@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { ExternalLink } from '../components/ExternalLink';
 import { WebFestivalGuide } from '../components/WebFestivalGuide';
+import { MotionPressable } from '../components/MotionPressable';
 import { FESTIVAL_CONTACTS_URL, FESTIVAL_WEBSITE, LEGAL_OPERATOR } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
 import type { MoreStackParamList, RootTabParamList } from '../navigation/types';
@@ -32,14 +33,14 @@ export function FestivalAboutScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
+          style={styles.backRow}
         >
           <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
           <Text style={styles.backLabel}>Назад</Text>
-        </Pressable>
+        </MotionPressable>
 
         <ScreenTitle style={styles.title}>О ФЕСТИВАЛЕ</ScreenTitle>
         <Text style={styles.lead}>
@@ -82,14 +83,14 @@ export function FestivalAboutScreen({ navigation }: Props) {
             <Text style={styles.linkText}>Контакты и поддержка</Text>
             <Ionicons name="open-outline" size={18} color={colors.primary} />
           </ExternalLink>
-          <Pressable
+          <MotionPressable
             accessibilityRole="button"
             onPress={() => navigation.navigate('Legal')}
-            style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
+            style={styles.linkRow}
           >
             <Text style={styles.linkText}>Политика конфиденциальности</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-          </Pressable>
+          </MotionPressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -178,8 +179,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
     paddingRight: spacing.sm,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

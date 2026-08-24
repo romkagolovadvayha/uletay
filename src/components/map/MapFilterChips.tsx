@@ -1,11 +1,12 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { ViewStyle } from 'react-native';
 import type { MapFilterId, MapPoisGeoJson, MapZonesGeoJson } from '../../types/map';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { MotionPressable } from '../MotionPressable';
 import {
   getActivePoiCategories,
   POI_CATEGORY_LABELS,
@@ -90,15 +91,16 @@ export function MapFilterChips({ pois, value, onChange, embedded = false }: Prop
         {filters.map((filter) => {
           const active = filter.id === value;
           return (
-            <Pressable
+            <MotionPressable
               key={filter.id}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
+              aria-pressed={active}
               onPress={() => onChange(filter.id)}
               style={[styles.chip, active && styles.chipActive]}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>{filter.label}</Text>
-            </Pressable>
+            </MotionPressable>
           );
         })}
       </ScrollView>

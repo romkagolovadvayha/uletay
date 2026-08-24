@@ -7,12 +7,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MotionPressable } from './MotionPressable';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -42,17 +42,18 @@ function FilterSelect({ value, options, onChange, accessibilityLabel, style }: F
 
   return (
     <>
-      <Pressable
+      <MotionPressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
+        aria-expanded={open}
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.select, style, pressed && styles.pressed]}
+        style={[styles.select, style]}
       >
         <Text style={styles.selectLabel} numberOfLines={1}>
           {selected?.label ?? value}
         </Text>
         <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
-      </Pressable>
+      </MotionPressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View
@@ -75,17 +76,17 @@ function FilterSelect({ value, options, onChange, accessibilityLabel, style }: F
             {options.map((option) => {
               const isActive = option.id === value;
               return (
-                <Pressable
+                <MotionPressable
                   key={option.id}
                   accessibilityRole="button"
+                  aria-pressed={isActive}
                   onPress={() => {
                     onChange(option.id);
                     setOpen(false);
                   }}
-                  style={({ pressed }) => [
+                  style={[
                     styles.menuItem,
                     isActive && styles.menuItemActive,
-                    pressed && styles.pressed,
                   ]}
                 >
                   <Text
@@ -97,7 +98,7 @@ function FilterSelect({ value, options, onChange, accessibilityLabel, style }: F
                   {isActive ? (
                     <Ionicons name="checkmark" size={16} color={colors.primary} />
                   ) : null}
-                </Pressable>
+                </MotionPressable>
               );
             })}
           </ScrollView>
@@ -126,16 +127,14 @@ export function HeadlinerFilterBar({
   sortMode,
   onSortModeChange,
 }: Props) {
-  const { width } = useWindowDimensions();
-  const isCompact = width < 480;
   const sortOptions = useMemo(
     () => HEADLINER_SORT_OPTIONS.map((option) => ({ id: option.id, label: option.label })),
     [],
   );
 
   return (
-    <View style={[styles.row, isCompact && styles.rowCompact]}>
-      <View style={[styles.searchWrap, isCompact && styles.searchWrapCompact]}>
+    <View style={styles.row}>
+      <View style={styles.searchWrap}>
         <Ionicons name="search" size={16} color={colors.textMuted} style={styles.searchIcon} />
         <TextInput
           accessibilityLabel="Поиск хэдлайнера"
@@ -155,7 +154,7 @@ export function HeadlinerFilterBar({
         value={selectedYear}
         options={yearOptions}
         onChange={onYearChange}
-        style={[styles.yearSelect, isCompact && styles.selectCompact]}
+        style={styles.yearSelect}
       />
 
       <FilterSelect
@@ -163,7 +162,7 @@ export function HeadlinerFilterBar({
         value={sortMode}
         options={sortOptions}
         onChange={(id) => onSortModeChange(id as HeadlinerSortMode)}
-        style={[styles.sortSelect, isCompact && styles.selectCompact]}
+        style={styles.sortSelect}
       />
     </View>
   );
@@ -176,9 +175,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingBottom: spacing.md,
   },
-  rowCompact: {
-    flexWrap: 'wrap',
-  },
   searchWrap: {
     flex: 1,
     minWidth: 0,
@@ -189,10 +185,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     paddingHorizontal: spacing.sm,
-    height: 48,
-  },
-  searchWrapCompact: {
-    flexBasis: '100%',
+    height: 44,
   },
   searchIcon: {
     marginRight: spacing.xs,
@@ -227,10 +220,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 96,
     maxWidth: 148,
-  },
-  selectCompact: {
-    flex: 1,
-    maxWidth: undefined,
   },
   selectLabel: {
     ...typography.caption,
@@ -282,8 +271,5 @@ const styles = StyleSheet.create({
   menuItemLabelActive: {
     ...appFont('semiBold'),
     color: colors.primary,
-  },
-  pressed: {
-    opacity: 0.75,
   },
 });

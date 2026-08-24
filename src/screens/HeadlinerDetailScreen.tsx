@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeadlinerCard } from '../components/HeadlinerCard';
+import { MotionPressable } from '../components/MotionPressable';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { YandexMusicLink } from '../components/YandexMusicLink';
 import { useAppData } from '../context/DataContext';
@@ -93,10 +94,15 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.emptyWrap}>
-          <Text style={styles.emptyText}>Хэдлайнер не найден</Text>
-          <Pressable accessibilityRole="button" onPress={() => navigation.goBack()}>
+          <ScreenTitle style={styles.emptyText}>Хэдлайнер не найден</ScreenTitle>
+          <MotionPressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => navigation.goBack()}
+            style={styles.emptyBackButton}
+          >
             <Text style={styles.backLink}>Назад</Text>
-          </Pressable>
+          </MotionPressable>
         </View>
       </SafeAreaView>
     );
@@ -105,14 +111,14 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
+          style={styles.backRow}
         >
           <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
           <Text style={styles.backLabel}>Назад</Text>
-        </Pressable>
+        </MotionPressable>
 
         <HeadlinerCard headliner={headliner} large />
         <ScreenTitle style={styles.name}>{headliner.name.toUpperCase()}</ScreenTitle>
@@ -166,14 +172,14 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
             <Text style={styles.sectionTitle}>Похожие артисты</Text>
             <View style={styles.similarRow}>
               {similarHeadliners.map((artist) => (
-                <Pressable
+                <MotionPressable
                   key={artist.id}
                   accessibilityRole="button"
                   onPress={() => navigation.navigate('HeadlinerDetail', { headlinerId: artist.id })}
-                  style={({ pressed }) => [styles.similarPill, pressed && styles.pressed]}
+                  style={styles.similarPill}
                 >
                   <Text style={styles.similarText}>{artist.name}</Text>
-                </Pressable>
+                </MotionPressable>
               ))}
             </View>
           </View>
@@ -368,12 +374,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
+  emptyBackButton: {
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   backLink: {
     ...appFont('semiBold'),
     color: colors.primary,
     fontSize: 15,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

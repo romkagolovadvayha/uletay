@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -10,6 +10,7 @@ import { CompetitionLabel } from './CompetitionLabel';
 import { LiveBadge } from './LiveBadge';
 import { FavoriteStar } from './ScheduleListItem';
 import { SoonBadge } from './SoonBadge';
+import { MotionPressable } from './MotionPressable';
 
 type Props = {
   performance: SchedulePerformance;
@@ -41,10 +42,10 @@ export function ScheduleGridCard({
     : undefined;
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.card,
         {
           top,
@@ -54,7 +55,6 @@ export function ScheduleGridCard({
         },
         isLive && styles.cardLive,
         isUpcoming && styles.cardUpcoming,
-        pressed && styles.pressed,
       ]}
     >
       <View style={styles.cardBody}>
@@ -79,7 +79,7 @@ export function ScheduleGridCard({
           </View>
         ) : null}
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -103,9 +103,6 @@ const styles = StyleSheet.create({
   cardUpcoming: {
     backgroundColor: 'rgba(255, 193, 7, 0.08)',
     borderColor: 'rgba(255, 193, 7, 0.28)',
-  },
-  pressed: {
-    opacity: 0.88,
   },
   cardBody: {
     gap: 2,

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Headliner } from '../types';
 import type { HeadlinerLastFmTrack } from '../types/lastfm';
 import { colors } from '../theme/colors';
@@ -12,6 +12,7 @@ import { formatHeadlinerYears } from '../utils/headlinerHelpers';
 import { formatLastFmCount, formatTrackDuration } from '../utils/lastfmFormat';
 import { resolveTrackYandexArtist } from '../utils/yandexMusic';
 import { HeadlinerThumbnail } from './HeadlinerCard';
+import { MotionPressable } from './MotionPressable';
 import { SectionHeader } from './SectionHeader';
 import { YandexMusicLink } from './YandexMusicLink';
 
@@ -33,11 +34,11 @@ export function HeadlinerTeaserCard({ headliner, allHeadliners, onPress }: Tease
   const hasStats = Boolean(listeners || playcount);
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       accessibilityLabel={`Открыть карточку хэдлайнера ${headliner.name}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.teaserCard, pressed && styles.pressed]}
+      style={styles.teaserCard}
     >
       <HeadlinerThumbnail headliner={headliner} />
       <View style={styles.teaserMain}>
@@ -68,7 +69,7 @@ export function HeadlinerTeaserCard({ headliner, allHeadliners, onPress }: Tease
           ) : null}
         </View>
       ) : null}
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -116,13 +117,13 @@ export function HeadlinerTopTracksPreview({
         );
       })}
       {onOpenHeadliner ? (
-        <Text
+        <MotionPressable
           accessibilityRole="link"
+          hitSlop={12}
           onPress={onOpenHeadliner}
-          style={styles.headlinerLink}
         >
-          Все треки и профиль {headliner.name}
-        </Text>
+          <Text style={styles.headlinerLink}>Все треки и профиль {headliner.name}</Text>
+        </MotionPressable>
       ) : null}
     </View>
   );
@@ -240,8 +241,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: spacing.xs,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

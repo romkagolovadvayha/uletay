@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { createElement } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { createElement, useState } from 'react';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useNotificationSettings } from '../context/NotificationSettingsContext';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { startWebNotificationPermissionRequest, NotificationPermissionStatus } from '../utils/favoriteNotifications';
+import { MotionPressable } from './MotionPressable';
 
 function getDisabledSubtitle(permission: NotificationPermissionStatus): string {
   if (permission === 'unsupported') {
@@ -35,13 +37,21 @@ type EnableButtonProps = {
 };
 
 function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
+  const [webPressed, setWebPressed] = useState(false);
+  const reduceMotion = useReducedMotion();
+
   if (Platform.OS === 'web') {
     return createElement(
       'button',
       {
         type: 'button',
         disabled: disabled || busy,
+        onPointerDown: () => setWebPressed(true),
+        onPointerUp: () => setWebPressed(false),
+        onPointerLeave: () => setWebPressed(false),
+        onPointerCancel: () => setWebPressed(false),
         onClick: (event: MouseEvent) => {
+          setWebPressed(false);
           event.preventDefault();
           if (disabled || busy) {
             return;
@@ -68,6 +78,10 @@ function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          transform: webPressed && !reduceMotion && !disabled && !busy ? 'scale(0.97)' : 'scale(1)',
+          transition: reduceMotion
+            ? 'none'
+            : 'transform 120ms cubic-bezier(0.23, 1, 0.32, 1)',
         },
       },
       busy
@@ -77,14 +91,13 @@ function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
   }
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       disabled={disabled || busy}
       onPress={() => onEnable(undefined)}
-      style={({ pressed }) => [
+      style={[
         styles.enableButton,
         (disabled || busy) && styles.enableButtonDisabled,
-        pressed && !busy && styles.pressed,
       ]}
     >
       {busy ? (
@@ -92,7 +105,7 @@ function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
       ) : (
         <Text style={styles.enableLabel}>Включить уведомления</Text>
       )}
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -116,15 +129,15 @@ export function FavoriteNotificationsCard() {
             <Text style={styles.subtitle}>{getEnabledSubtitle()}</Text>
           </View>
         </View>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           disabled={busy}
           onPress={() => void disableNotifications()}
-          style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
+          style={styles.linkButton}
         >
           {busy ? <ActivityIndicator size="small" color={colors.textSecondary} /> : null}
           <Text style={styles.linkText}>Отключить</Text>
-        </Pressable>
+        </MotionPressable>
         {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
       </View>
     );
@@ -210,8 +223,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     textDecorationLine: 'underline',
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

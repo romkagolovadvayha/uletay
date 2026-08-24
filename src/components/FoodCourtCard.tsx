@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { FoodCourtVendor } from '../types';
 import { getFoodCourtPriceLabel } from '../utils/foodCourtHelpers';
 import { getRemoteImageSource, getRemoteListImageSource } from '../utils/imageSource';
@@ -10,6 +10,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { MotionPressable } from './MotionPressable';
 
 type Props = {
   vendor: FoodCourtVendor;
@@ -77,10 +78,10 @@ export function FoodCourtCard({ vendor, onPress, large }: Props) {
   }
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={styles.card}
     >
       <FoodCourtThumbnail vendor={vendor} />
       <View style={styles.content}>
@@ -95,7 +96,7 @@ export function FoodCourtCard({ vendor, onPress, large }: Props) {
           <Text style={styles.distance}>{vendor.distance}</Text>
         </View>
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -112,9 +113,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  pressed: {
-    opacity: 0.9,
   },
   thumb: {
     alignItems: 'center',

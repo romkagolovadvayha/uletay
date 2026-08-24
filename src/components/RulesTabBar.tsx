@@ -1,6 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  useReducedMotion,
+  withTiming,
+} from 'react-native-reanimated';
 import { MotionPressable } from './MotionPressable';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -18,9 +25,38 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+const REDUCED_MENU_ENTER = FadeIn.duration(140).easing(EASE_OUT);
+const REDUCED_MENU_EXIT = FadeOut.duration(100).easing(EASE_OUT);
+const MENU_ENTER = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 0, transform: [{ scale: 0.97 }] },
+    animations: {
+      opacity: withTiming(1, { duration: 160, easing: EASE_OUT }),
+      transform: [
+        { scale: withTiming(1, { duration: 160, easing: EASE_OUT }) },
+      ],
+    },
+  };
+};
+const MENU_EXIT = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 1, transform: [{ scale: 1 }] },
+    animations: {
+      opacity: withTiming(0, { duration: 120, easing: EASE_OUT }),
+      transform: [
+        { scale: withTiming(0.97, { duration: 120, easing: EASE_OUT }) },
+      ],
+    },
+  };
+};
+
 export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
   const [availableWidth, setAvailableWidth] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   const visibleCount = useMemo(() => {
     if (availableWidth <= 0) return Math.min(2, tabs.length);
@@ -72,6 +108,7 @@ export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
               key={tab.id}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
+              aria-pressed={isActive}
               onPress={() => selectTab(tab.id)}
               style={[styles.pill, isActive && styles.pillActive]}
             >
@@ -87,6 +124,8 @@ export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
             accessibilityRole="button"
             accessibilityLabel="Ещё разделы"
             accessibilityState={{ expanded: moreOpen, selected: selectedInOverflow }}
+            aria-expanded={moreOpen}
+            aria-pressed={selectedInOverflow}
             onPress={() => setMoreOpen((open) => !open)}
             style={[styles.pill, styles.moreButton, selectedInOverflow && styles.pillActive]}
           >
@@ -101,19 +140,24 @@ export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
       </View>
 
       {moreOpen && overflowTabs.length > 0 ? (
-        <View accessibilityRole="menu" style={styles.menu}>
+        <Animated.View
+          accessibilityRole="menu"
+          entering={reduceMotion ? REDUCED_MENU_ENTER : MENU_ENTER}
+          exiting={reduceMotion ? REDUCED_MENU_EXIT : MENU_EXIT}
+          style={styles.menu}
+        >
           {overflowTabs.map((tab) => {
             const isActive = tab.id === selectedId;
             return (
-              <Pressable
+              <MotionPressable
                 key={tab.id}
                 accessibilityRole="menuitem"
                 accessibilityState={{ selected: isActive }}
+                aria-selected={isActive}
                 onPress={() => selectTab(tab.id)}
-                style={({ pressed }) => [
+                style={[
                   styles.menuItem,
                   isActive && styles.menuItemActive,
-                  pressed && styles.menuItemPressed,
                 ]}
               >
                 <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
@@ -122,10 +166,10 @@ export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
                 {isActive ? (
                   <Ionicons name="checkmark" size={18} color={colors.primaryText} />
                 ) : null}
-              </Pressable>
+              </MotionPressable>
             );
           })}
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -186,6 +230,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderStrong,
     backgroundColor: colors.surfaceElevated,
+    transformOrigin: 'top right',
     zIndex: 30,
     boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
   },
@@ -201,9 +246,6 @@ const styles = StyleSheet.create({
   },
   menuItemActive: {
     backgroundColor: colors.text,
-  },
-  menuItemPressed: {
-    opacity: 0.82,
   },
   menuLabel: {
     ...typography.body,

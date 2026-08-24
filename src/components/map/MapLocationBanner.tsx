@@ -1,11 +1,12 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import type { LocationStatus } from '../../hooks/useUserLocation';
+import { MotionPressable } from '../MotionPressable';
 
 type Props = {
   status: LocationStatus;
@@ -28,9 +29,9 @@ export function MapLocationBanner({
         <Text style={styles.text}>
           Карта работает без геолокации. Чтобы показать вас на карте, разрешите доступ в настройках браузера или телефона.
         </Text>
-        <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
+        <MotionPressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
           <Text style={styles.btnText}>Проверить снова</Text>
-        </Pressable>
+        </MotionPressable>
       </View>
     );
   }
@@ -39,9 +40,9 @@ export function MapLocationBanner({
     return (
       <View style={bannerStyle}>
         <Text style={styles.text}>Покажем, где вы находитесь, и проложим путь до нужного места.</Text>
-        <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
+        <MotionPressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
           <Text style={styles.btnText}>Показать моё место</Text>
-        </Pressable>
+        </MotionPressable>
       </View>
     );
   }
@@ -66,9 +67,9 @@ export function MapLocationBanner({
     return (
       <View style={[...bannerStyle, styles.info]}>
         <Text style={styles.text}>Геолокация недоступна — включите GPS в настройках телефона</Text>
-        <Pressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
+        <MotionPressable accessibilityRole="button" onPress={onRequestPermission} style={styles.btn}>
           <Text style={styles.btnText}>Повторить</Text>
-        </Pressable>
+        </MotionPressable>
       </View>
     );
   }

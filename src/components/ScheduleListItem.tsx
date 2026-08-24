@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { GestureResponderEvent, StyleSheet, Text, View } from 'react-native';
 import { SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -9,6 +9,7 @@ import { formatDayMonthLabel, formatStartsIn, formatTimeRange, parseDateTime } f
 import { CompetitionLabel } from './CompetitionLabel';
 import { LiveBadge } from './LiveBadge';
 import { PerformanceMetaDivider, PerformanceTimeDateRow, performanceTimeWeightStyle } from './PerformanceTimeDateRow';
+import { MotionPressable } from './MotionPressable';
 import { SoonBadge } from './SoonBadge';
 import { StageDot } from './StageDot';
 
@@ -43,10 +44,11 @@ export function FavoriteStar({
   };
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="imagebutton"
       accessibilityLabel={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
       onPress={handlePress}
+      disabled={!onToggleFavorite}
       hitSlop={10}
     >
       <Ionicons
@@ -54,7 +56,7 @@ export function FavoriteStar({
         size={size}
         color={colors.star}
       />
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -68,9 +70,10 @@ export function ScheduleTimelineItem({
   onPress?: () => void;
 }) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       onPress={onPress}
+      disabled={!onPress}
       style={[styles.timelineRow, isLive && styles.timelineLive]}
     >
       <Text style={[styles.timelineTime, isLive && styles.timelineTimeLive]}>{performance.startTime}</Text>
@@ -83,7 +86,7 @@ export function ScheduleTimelineItem({
           {performance.isCompetition ? <CompetitionLabel /> : null}
         </View>
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -107,9 +110,10 @@ export function ScheduleListItem({
   const startsIn = isUpcoming ? formatStartsIn(parseDateTime(performance.date, performance.startTime), now) : null;
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole={onPress ? 'button' : undefined}
       onPress={onPress}
+      disabled={!onPress}
       style={[styles.row, isLive && styles.liveRow, isUpcoming && styles.upcomingRow]}
     >
       <StageDot stageId={performance.stageId} />
@@ -128,7 +132,7 @@ export function ScheduleListItem({
         {isLive ? <LiveBadge compact /> : isUpcoming ? <SoonBadge compact /> : null}
         <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} />
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -141,10 +145,11 @@ type NextProps = {
 
 export function NextUpItem({ performance, isFavorite, onToggleFavorite, onPress }: NextProps) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole={onPress ? 'button' : undefined}
+      disabled={!onPress}
       onPress={onPress}
-      style={({ pressed }) => [styles.nextRow, pressed && styles.nextRowPressed]}
+      style={styles.nextRow}
     >
       <View style={styles.nextBody}>
         <PerformanceTimeDateRow
@@ -165,7 +170,7 @@ export function NextUpItem({ performance, isFavorite, onToggleFavorite, onPress 
       <View style={styles.nextFavorite}>
         <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={22} />
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -280,9 +285,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-  },
-  nextRowPressed: {
-    opacity: 0.88,
   },
   nextBody: {
     flex: 1,

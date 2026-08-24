@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { ScreenTitle } from '../components/ScreenTitle';
+import { MotionPressable } from '../components/MotionPressable';
 import { PRIVACY_POLICY_URL } from '../constants/legal';
 import { AppTimeMode, useDemoMode } from '../context/DemoModeContext';
 import { useAppData } from '../context/DataContext';
@@ -26,11 +27,12 @@ type ModeOptionProps = {
 
 function ModeOption({ title, subtitle, selected, onPress }: ModeOptionProps) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityState={{ checked: selected }}
+      aria-checked={selected}
       onPress={onPress}
-      style={({ pressed }) => [styles.modeOption, selected && styles.modeOptionSelected, pressed && styles.pressed]}
+      style={[styles.modeOption, selected && styles.modeOptionSelected]}
     >
       <View style={styles.modeTextWrap}>
         <Text style={[styles.modeTitle, selected && styles.modeTitleSelected]}>{title}</Text>
@@ -41,7 +43,7 @@ function ModeOption({ title, subtitle, selected, onPress }: ModeOptionProps) {
         size={22}
         color={selected ? colors.primary : colors.textMuted}
       />
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -54,10 +56,10 @@ type SettingsLinkProps = {
 
 function SettingsLink({ icon, title, subtitle, onPress }: SettingsLinkProps) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.settingsLink, pressed && styles.pressed]}
+      style={styles.settingsLink}
     >
       <Ionicons name={icon} size={22} color={colors.primary} />
       <View style={styles.modeTextWrap}>
@@ -65,7 +67,7 @@ function SettingsLink({ icon, title, subtitle, onPress }: SettingsLinkProps) {
         <Text style={styles.modeSubtitle}>{subtitle}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -122,15 +124,15 @@ export function SettingsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Назад"
           onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
+          style={styles.backRow}
         >
           <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
           <Text style={styles.backLabel}>Назад</Text>
-        </Pressable>
+        </MotionPressable>
 
         <ScreenTitle style={styles.title}>НАСТРОЙКИ</ScreenTitle>
 
@@ -277,8 +279,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     paddingHorizontal: spacing.xs,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

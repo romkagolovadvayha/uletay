@@ -27,6 +27,7 @@ import { installExternalLinkRel } from './src/utils/installExternalLinkRel';
 import { installWebMainLandmark } from './src/utils/webMainLandmark';
 import { installWebOffline } from './src/utils/installWebOffline';
 import { installWebPreventInputZoom } from './src/utils/webPreventInputZoom';
+import { installWebScrollbarStyles } from './src/utils/webScrollbarStyles';
 import { trackWebPageView } from './src/utils/webAnalytics';
 
 const navigationTheme = {
@@ -108,9 +109,11 @@ export default function App() {
     installWebMainLandmark();
     installWebOffline();
     const disposeZoom = installWebPreventInputZoom();
+    const disposeScrollbars = installWebScrollbarStyles();
     const disposeExternalRel = installExternalLinkRel();
     return () => {
       disposeZoom();
+      disposeScrollbars();
       disposeExternalRel();
     };
   }, []);

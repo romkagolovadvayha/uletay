@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useAppData } from '../context/DataContext';
 import { AutographSession, SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
@@ -25,6 +25,7 @@ import { CompetitionLabel } from './CompetitionLabel';
 import { LiveBadge } from './LiveBadge';
 import { PerformanceTimeDateRow, performanceTimeWeightStyle } from './PerformanceTimeDateRow';
 import { SoonBadge } from './SoonBadge';
+import { MotionPressable } from './MotionPressable';
 
 type CardProps = {
   performance: SchedulePerformance;
@@ -47,15 +48,14 @@ export function LiveArtistCard({ performance, stageName, status, onPress, now = 
     : null;
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.card,
         isLive && styles.cardLive,
         isSoon && styles.cardSoon,
         style,
-        pressed && styles.pressed,
       ]}
     >
       <ArtistImage imageUrl={imageUrl} artist={artist} style={styles.thumbnail} />
@@ -79,7 +79,7 @@ export function LiveArtistCard({ performance, stageName, status, onPress, now = 
       <View style={styles.badgeWrap}>
         {isLive ? <LiveBadge compact /> : isSoon ? <SoonBadge compact countdown={startsIn ?? undefined} /> : null}
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -198,9 +198,6 @@ const styles = StyleSheet.create({
   },
   cardSoon: {
     borderColor: 'rgba(245, 197, 24, 0.35)',
-  },
-  pressed: {
-    opacity: 0.94,
   },
   thumbnail: {
     width: 76,

@@ -1,13 +1,14 @@
 import React from 'react';
 import {
   Platform,
-  Pressable,
   StyleProp,
   StyleSheet,
   ViewStyle,
   type PressableStateCallbackType,
 } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { EXTERNAL_LINK_REL, openExternalUrl } from '../utils/openExternalUrl';
+import { MotionPressable } from './MotionPressable';
 
 function toWebLinkStyle(style: StyleProp<ViewStyle>): React.CSSProperties {
   const flat = StyleSheet.flatten(style) ?? {};
@@ -60,8 +61,12 @@ export function ExternalLink({
   hitSlop,
   onPress,
 }: Props) {
+  const [pointerPressed, setPointerPressed] = React.useState(false);
+  const reduceMotion = useReducedMotion();
+
   if (Platform.OS === 'web') {
-    const flatStyle = typeof style === 'function' ? style({ pressed: false }) : style;
+    const flatStyle =
+      typeof style === 'function' ? style({ pressed: pointerPressed }) : style;
 
     return (
       <a
@@ -73,7 +78,17 @@ export function ExternalLink({
           event.stopPropagation();
           onPress?.();
         }}
-        style={toWebLinkStyle(flatStyle)}
+        style={{
+          ...toWebLinkStyle(flatStyle),
+          transform: pointerPressed && !reduceMotion ? 'scale(0.97)' : 'scale(1)',
+          transition: reduceMotion
+            ? 'none'
+            : 'transform 120ms cubic-bezier(0.23, 1, 0.32, 1)',
+        }}
+        onPointerDown={() => setPointerPressed(true)}
+        onPointerUp={() => setPointerPressed(false)}
+        onPointerCancel={() => setPointerPressed(false)}
+        onPointerLeave={() => setPointerPressed(false)}
       >
         {children}
       </a>
@@ -81,7 +96,7 @@ export function ExternalLink({
   }
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="link"
       accessibilityLabel={accessibilityLabel}
       hitSlop={hitSlop}
@@ -92,6 +107,6 @@ export function ExternalLink({
       style={style}
     >
       {children}
-    </Pressable>
+    </MotionPressable>
   );
 }

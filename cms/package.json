@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start -p 3000",
     "db:install": "tsx scripts/install.ts",
     "db:migrate": "tsx scripts/migrate.ts",
@@ -56,11 +56,11 @@
     "bcryptjs": "^3.0.2",
     "iron-session": "^8.0.4",
     "mysql2": "^3.14.1",
-    "next": "^15.3.3",
+    "next": "^16.3.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "sharp": "^0.34.5",
-    "undici": "^7.28.0",
+    "sharp": "^0.35.3",
+    "undici": "^7.29.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {

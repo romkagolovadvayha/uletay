@@ -2,7 +2,16 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { Suspense, useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  type SharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { AutographSessionRow } from '../components/AutographSessionRow';
@@ -10,6 +19,7 @@ import { FestivalLogoImage } from '../components/FestivalLogoImage';
 import { SemanticHeading } from '../components/SemanticHeading';
 import { HomeHeadlinersWidget } from '../components/HomeHeadlinersWidget';
 import { LiveArtistCard } from '../components/LiveArtistCard';
+import { MotionPressable } from '../components/MotionPressable';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionHeader } from '../components/SectionHeader';
 import { WebFestivalGuide } from '../components/WebFestivalGuide';
@@ -52,11 +62,16 @@ const LazyHeroBackgroundVideo = React.lazy(() =>
 );
 
 type HeroParallaxBackgroundProps = {
-  translateY: Animated.AnimatedInterpolation<number>;
+  scrollY: SharedValue<number>;
+  reduceMotion: boolean;
   allowVideo: boolean;
 };
 
-function HeroParallaxBackground({ translateY, allowVideo }: HeroParallaxBackgroundProps) {
+function HeroParallaxBackground({
+  scrollY,
+  reduceMotion,
+  allowVideo,
+}: HeroParallaxBackgroundProps) {
   const [heroPosterReady, setHeroPosterReady] = useState(Platform.OS !== 'web');
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   // Native: load as soon as allowed. Web: wait for poster so LCP stays on the image.
@@ -66,15 +81,25 @@ function HeroParallaxBackground({ translateY, allowVideo }: HeroParallaxBackgrou
     setHeroVideoReady(true);
   }, []);
 
+  const parallaxStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: reduceMotion
+          ? 0
+          : interpolate(
+              scrollY.get(),
+              [0, HERO_BACKGROUND_HEIGHT],
+              [0, -HERO_BACKGROUND_HEIGHT * PARALLAX_FACTOR],
+              Extrapolation.CLAMP,
+            ),
+      },
+    ],
+  }));
+
   return (
     <Animated.View
       pointerEvents="none"
-      style={[
-        styles.parallaxBackground,
-        {
-          transform: [{ translateY }],
-        },
-      ]}
+      style={[styles.parallaxBackground, parallaxStyle]}
     >
       <View style={styles.parallaxVideoCrop}>
         <View style={styles.parallaxVideoLayer}>
@@ -116,25 +141,11 @@ export function FestivalHomeScreen({ navigation }: Props) {
   const autographPrimaries = usePrimaryAutographSessions(3);
   const { isAutographFavorite, toggleAutographFavorite } = useFavorites();
   const allowHeroVideo = useDeferredHeroVideo();
-  const scrollY = useMemo(() => new Animated.Value(0), []);
-
-  const backgroundTranslateY = useMemo(
-    () =>
-      scrollY.interpolate({
-        inputRange: [0, HERO_BACKGROUND_HEIGHT],
-        outputRange: [0, -HERO_BACKGROUND_HEIGHT * PARALLAX_FACTOR],
-        extrapolate: 'clamp',
-      }),
-    [scrollY],
-  );
-
-  const onScroll = useMemo(
-    () =>
-      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-        useNativeDriver: Platform.OS !== 'web',
-      }),
-    [scrollY],
-  );
+  const scrollY = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.set(event.contentOffset.y);
+  });
 
   const festivalStart = useMemo(
     () => parseDateTime(data.festival.startDate, '12:00'),
@@ -200,7 +211,11 @@ export function FestivalHomeScreen({ navigation }: Props) {
   if (isInitialLoading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <HeroParallaxBackground translateY={backgroundTranslateY} allowVideo={false} />
+        <HeroParallaxBackground
+          scrollY={scrollY}
+          reduceMotion={reduceMotion}
+          allowVideo={false}
+        />
         <View style={styles.homeLoader}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.homeLoaderText}>Загружаем данные фестиваля…</Text>
@@ -211,7 +226,11 @@ export function FestivalHomeScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <HeroParallaxBackground translateY={backgroundTranslateY} allowVideo={allowHeroVideo} />
+      <HeroParallaxBackground
+        scrollY={scrollY}
+        reduceMotion={reduceMotion}
+        allowVideo={allowHeroVideo}
+      />
 
       <Animated.ScrollView
         contentContainerStyle={[
@@ -234,13 +253,13 @@ export function FestivalHomeScreen({ navigation }: Props) {
                   : 'Не удалось загрузить данные с сервера. Проверьте сеть и нажмите «Обновить».'}
               </Text>
             </View>
-            <Pressable
+            <MotionPressable
               accessibilityRole="button"
               onPress={() => void refreshData(true)}
               style={styles.offlineRetryButton}
             >
               <Text style={styles.offlineRetry}>Обновить</Text>
-            </Pressable>
+            </MotionPressable>
           </View>
         ) : null}
         <View style={[styles.heroStack, festivalPhase === 'after' && styles.heroStackCompact]}>

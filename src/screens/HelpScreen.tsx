@@ -4,7 +4,6 @@ import * as Linking from 'expo-linking';
 import React, { useMemo, useState } from 'react';
 import {
   Modal,
-  Pressable,
   ScrollView,
   Share,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { MotionPressable } from '../components/MotionPressable';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { LEGAL_OPERATOR } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
@@ -136,21 +136,21 @@ export function HelpScreen({ navigation }: Props) {
             </View>
           </View>
           <View style={styles.twoActions}>
-            <Pressable
+            <MotionPressable
               accessibilityRole="button"
               onPress={() => coordinatesText ? setCoordinatesVisible(true) : void requestPermission()}
               style={styles.secondaryButton}
             >
               <Text style={styles.secondaryButtonText}>{coordinatesText ? 'Показать' : 'Определить'}</Text>
-            </Pressable>
-            <Pressable
+            </MotionPressable>
+            <MotionPressable
               accessibilityRole="button"
               disabled={!coordinatesText}
               onPress={() => void Share.share({ message: `Мои координаты на фестивале «Улетай»: ${coordinatesText}` })}
               style={[styles.secondaryButton, !coordinatesText && styles.disabled]}
             >
               <Text style={styles.secondaryButtonText}>Отправить</Text>
-            </Pressable>
+            </MotionPressable>
           </View>
         </View>
 
@@ -160,12 +160,12 @@ export function HelpScreen({ navigation }: Props) {
             {LEGAL_OPERATOR.name} · {LEGAL_OPERATOR.phoneLabels[0]} · {LEGAL_OPERATOR.email}
           </Text>
           <View style={styles.twoActions}>
-            <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`tel:${LEGAL_OPERATOR.phones[0]}`)} style={styles.secondaryButton}>
+            <MotionPressable accessibilityRole="button" onPress={() => void Linking.openURL(`tel:${LEGAL_OPERATOR.phones[0]}`)} style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Позвонить</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`mailto:${LEGAL_OPERATOR.email}`)} style={styles.secondaryButton}>
+            </MotionPressable>
+            <MotionPressable accessibilityRole="button" onPress={() => void Linking.openURL(`mailto:${LEGAL_OPERATOR.email}`)} style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Написать</Text>
-            </Pressable>
+            </MotionPressable>
           </View>
         </View>
 
@@ -174,9 +174,10 @@ export function HelpScreen({ navigation }: Props) {
           {OFFLINE_INSTRUCTIONS.map((item, index) => {
             const open = openInstruction === index;
             return (
-              <Pressable
+              <MotionPressable
                 accessibilityRole="button"
                 accessibilityState={{ expanded: open }}
+                aria-expanded={open}
                 key={item.title}
                 onPress={() => setOpenInstruction(open ? null : index)}
                 style={styles.instruction}
@@ -186,7 +187,7 @@ export function HelpScreen({ navigation }: Props) {
                   <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
                 </View>
                 {open ? <Text style={styles.instructionBody}>{item.body}</Text> : null}
-              </Pressable>
+              </MotionPressable>
             );
           })}
         </View>
@@ -232,9 +233,9 @@ function HelpCard({
         </View>
       </View>
       {action ? (
-        <Pressable accessibilityRole="button" onPress={onAction} style={styles.secondaryButton}>
+        <MotionPressable accessibilityRole="button" onPress={onAction} style={styles.secondaryButton}>
           <Text style={styles.secondaryButtonText}>{action}</Text>
-        </Pressable>
+        </MotionPressable>
       ) : null}
     </View>
   );

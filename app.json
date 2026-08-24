@@ -4,7 +4,7 @@
     "slug": "romkadvayha",
     "scheme": "uletay",
     "owner": "romkadvayhas-team",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -19,6 +19,7 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
+        "CADisableMinimumFrameDurationOnPhone": true,
         "NSLocationWhenInUseUsageDescription": "Приложению нужен доступ к геолокации, чтобы показать ваше положение на карте площадки фестиваля «Улетай». Координаты используются только на устройстве и не передаются на сервер.",
         "NSUserNotificationsUsageDescription": "Приложению нужны уведомления, чтобы напоминать о начале избранных выступлений и автограф-сессий, которые вы добавили в расписание."
       }

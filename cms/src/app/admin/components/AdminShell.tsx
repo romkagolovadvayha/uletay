@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import type { AdminTab } from '@/types';
 import { AdminIcon } from './AdminIcon';
 
@@ -74,31 +77,46 @@ const groups: {
 
 export function AdminShell({ activeTab, children, logoutAction }: Props) {
   const meta = pageMeta[activeTab];
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const labelYandexLinks = () => {
+      document.querySelectorAll<HTMLAnchorElement>('a[href*="yandex.ru/maps"]').forEach((link) => {
+        if (!link.getAttribute('aria-label') && !link.textContent?.trim()) {
+          link.setAttribute('aria-label', 'Открыть карту в Яндекс Картах');
+        }
+      });
+    };
+    const observer = new MutationObserver(labelYandexLinks);
+    observer.observe(document.body, { childList: true, subtree: true });
+    labelYandexLinks();
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="admin-shell">
-      <input
-        aria-label="Открыть меню"
-        className="admin-sidebar-toggle visually-hidden"
-        id="admin-sidebar-toggle"
-        type="checkbox"
+      <button
+        aria-label="Закрыть меню"
+        className={menuOpen ? 'admin-sidebar-overlay is-open' : 'admin-sidebar-overlay'}
+        onClick={() => setMenuOpen(false)}
+        type="button"
       />
-      <label aria-hidden="true" className="admin-sidebar-overlay" htmlFor="admin-sidebar-toggle" />
 
-      <aside className="admin-sidebar">
+      <aside className={menuOpen ? 'admin-sidebar is-open' : 'admin-sidebar'} id="admin-sidebar">
         <div className="admin-brand">
           <div className="admin-brand-mark">У</div>
           <div>
             <strong>УЛЕТАЙ</strong>
             <span>Панель управления</span>
           </div>
-          <label
-            aria-hidden="true"
+          <button
+            aria-label="Закрыть меню"
             className="admin-sidebar-close"
-            htmlFor="admin-sidebar-toggle"
+            onClick={() => setMenuOpen(false)}
+            type="button"
           >
             <AdminIcon name="close" />
-          </label>
+          </button>
         </div>
 
         <nav className="admin-nav" aria-label="Разделы админки">
@@ -111,6 +129,7 @@ export function AdminShell({ activeTab, children, logoutAction }: Props) {
                   className={activeTab === item.key ? 'admin-nav-link active' : 'admin-nav-link'}
                   href={`/admin?tab=${item.key}`}
                   key={item.key}
+                  onClick={() => setMenuOpen(false)}
                 >
                   <AdminIcon name={item.icon} />
                   <span>{item.label}</span>
@@ -139,13 +158,16 @@ export function AdminShell({ activeTab, children, logoutAction }: Props) {
 
       <div className="admin-workspace">
         <header className="admin-topbar">
-          <label
-            aria-hidden="true"
+          <button
+            aria-controls="admin-sidebar"
+            aria-expanded={menuOpen}
+            aria-label="Открыть меню"
             className="admin-menu-button"
-            htmlFor="admin-sidebar-toggle"
+            onClick={() => setMenuOpen(true)}
+            type="button"
           >
             <AdminIcon name="menu" />
-          </label>
+          </button>
           <div className="admin-page-heading">
             <div className="admin-breadcrumbs">
               <span>Админка</span>

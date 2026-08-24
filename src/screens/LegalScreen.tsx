@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ExternalLink } from '../components/ExternalLink';
 import { ScreenTitle } from '../components/ScreenTitle';
+import { MotionPressable } from '../components/MotionPressable';
 import {
   FESTIVAL_CONTACTS_URL,
   FESTIVAL_VK_URL,
@@ -30,10 +31,10 @@ type ContactRowProps = {
 
 function ContactRow({ icon, label, value, onPress }: ContactRowProps) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.contactRow, pressed && styles.pressed]}
+      style={styles.contactRow}
     >
       <Ionicons name={icon} size={20} color={colors.primary} />
       <View style={styles.contactTextWrap}>
@@ -41,7 +42,7 @@ function ContactRow({ icon, label, value, onPress }: ContactRowProps) {
         <Text style={styles.contactValue}>{value}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -75,14 +76,14 @@ export function LegalScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
+          style={styles.backRow}
         >
           <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
           <Text style={styles.backLabel}>Назад</Text>
-        </Pressable>
+        </MotionPressable>
 
         <ScreenTitle style={styles.title}>ПРАВОВАЯ ИНФОРМАЦИЯ</ScreenTitle>
 
@@ -289,8 +290,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     flex: 1,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

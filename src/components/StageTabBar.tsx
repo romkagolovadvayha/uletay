@@ -1,10 +1,11 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { Stage, StageId } from '../types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { MotionPressable } from './MotionPressable';
 
 type Props = {
   stages: Stage[];
@@ -18,14 +19,14 @@ export function StageTabBar({ stages, selectedStageId, onSelect }: Props) {
       {stages.map((stage) => {
         const isActive = stage.id === selectedStageId;
         return (
-          <Pressable
+          <MotionPressable
             key={stage.id}
             accessibilityRole="button"
             onPress={() => onSelect(stage.id)}
             style={[styles.tab, isActive && styles.activeTab]}
           >
             <Text style={[styles.label, isActive && styles.activeLabel]}>{stage.shortName}</Text>
-          </Pressable>
+          </MotionPressable>
         );
       })}
     </ScrollView>

@@ -1,7 +1,7 @@
 import { NavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LiveHeroCard } from './LiveArtistCard';
 import {
@@ -11,6 +11,7 @@ import {
 } from './HeadlinerTeaserCard';
 import { NextUpItem } from './ScheduleListItem';
 import { PrimaryButton } from './PrimaryButton';
+import { MotionPressable } from './MotionPressable';
 import { SectionHeader } from './SectionHeader';
 import { useAppData } from '../context/DataContext';
 import { useNow } from '../hooks/useNow';
@@ -114,15 +115,15 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
             onPress={openHeadliner}
           />
         ) : null}
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           onPress={() => toggleFavorite(performance.id)}
-          style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
+          style={styles.favoriteButton}
         >
           <Text style={styles.favoriteButtonText}>
             {performanceIsFavorite ? 'В ИЗБРАННОМ' : 'ДОБАВИТЬ В ИЗБРАННОЕ'}
           </Text>
-        </Pressable>
+        </MotionPressable>
         <PrimaryButton
           label="СМОТРЕТЬ РАСПИСАНИЕ"
           onPress={() => openScheduleMainFromStack(navigation)}
@@ -176,9 +177,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     letterSpacing: 0.4,
-  },
-  pressed: {
-    opacity: 0.9,
   },
   nextHeader: {},
   noMore: {

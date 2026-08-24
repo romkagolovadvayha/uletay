@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Platform, StyleSheet, type ViewStyle } from 'react-native';
 
 const HERO_VIDEO_ASPECT_RATIO = 16 / 9;
@@ -15,6 +15,7 @@ type HeroBackgroundVideoProps = {
 };
 
 export function HeroBackgroundVideo({ onReady }: HeroBackgroundVideoProps) {
+  const shouldPlayRef = useRef(false);
   const heroPlayer = useVideoPlayer(HERO_VIDEO_SOURCE, (player) => {
     player.loop = true;
     player.muted = true;
@@ -26,6 +27,10 @@ export function HeroBackgroundVideo({ onReady }: HeroBackgroundVideoProps) {
   useEffect(() => {
     const playingListener = heroPlayer.addListener('playingChange', ({ isPlaying }) => {
       if (isPlaying) {
+        if (!shouldPlayRef.current) {
+          heroPlayer.pause();
+          return;
+        }
         onReady();
       }
     });
@@ -36,12 +41,20 @@ export function HeroBackgroundVideo({ onReady }: HeroBackgroundVideoProps) {
 
   useFocusEffect(
     useCallback(() => {
+      shouldPlayRef.current = true;
       try {
         heroPlayer.play();
       } catch {
         // Player may already be released during tab transitions.
       }
       return () => {
+        shouldPlayRef.current = false;
+        // On web, pausing while HTMLMediaElement.play() is still pending creates
+        // an unhandled AbortError inside expo-video. If playback has not started,
+        // the playingChange listener above pauses it immediately after it resolves.
+        if (Platform.OS === 'web' && !heroPlayer.playing) {
+          return;
+        }
         try {
           heroPlayer.pause();
         } catch {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { DeferredIonicons } from '../DeferredIonicons';
+import { MotionPressable } from '../MotionPressable';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
@@ -83,16 +84,17 @@ function RouteButton({ icon, label, primary, disabled, onPress }: {
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
+      aria-disabled={disabled}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.routeButton, primary && styles.routeButtonPrimary, disabled && styles.disabled, pressed && styles.pressed]}
+      style={[styles.routeButton, primary && styles.routeButtonPrimary, disabled && styles.disabled]}
     >
       <DeferredIonicons name={icon} size={20} color={primary ? colors.background : colors.primary} />
       <Text style={[styles.routeButtonText, primary && styles.routeButtonTextPrimary]}>{label}</Text>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -121,9 +123,9 @@ export function MapDirectionsSheet({ center, location, onClose }: Props) {
           <Text style={styles.title}>Как добраться</Text>
           <Text style={styles.location}>{location}</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Закрыть" onPress={onClose} style={styles.close}>
+        <MotionPressable accessibilityRole="button" accessibilityLabel="Закрыть" onPress={onClose} style={styles.close}>
           <DeferredIonicons name="close" size={22} color={colors.textSecondary} />
-        </Pressable>
+        </MotionPressable>
       </View>
       <Text style={styles.description}>
         {locating
@@ -165,6 +167,5 @@ const styles = StyleSheet.create({
   routeButtonText: { ...appFont('semiBold'), color: colors.text, fontSize: 13, textAlign: 'center' },
   routeButtonTextPrimary: { color: colors.background },
   secondaryRow: { flexDirection: 'row', gap: spacing.sm },
-  pressed: { opacity: 0.86 },
   disabled: { opacity: 0.5 },
 });

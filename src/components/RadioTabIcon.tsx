@@ -1,14 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
 import { useRadioPlayer } from '../context/RadioPlayerContext';
 import { DeferredIonicons } from './DeferredIonicons';
 
@@ -17,48 +8,28 @@ type Props = {
   size?: number;
 };
 
-const BAR_DELAYS = [0, 120, 60, 180] as const;
+const BAR_SCALES = [0.55, 1, 0.72, 0.88] as const;
 
 function EqualizerBar({
   color,
-  delay,
+  scale,
   maxHeight,
   width,
 }: {
   color: string;
-  delay: number;
+  scale: number;
   maxHeight: number;
   width: number;
 }) {
-  const scale = useSharedValue(0.35);
-
-  useEffect(() => {
-    scale.value = withDelay(
-      delay,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 320, easing: Easing.inOut(Easing.quad) }),
-          withTiming(0.3, { duration: 320, easing: Easing.inOut(Easing.quad) }),
-        ),
-        -1,
-        false,
-      ),
-    );
-  }, [delay, scale]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    height: maxHeight * scale.value,
-  }));
-
   return (
-    <Animated.View
+    <View
       style={[
         styles.bar,
         {
           width,
+          height: Math.max(3, maxHeight * scale),
           backgroundColor: color,
         },
-        animatedStyle,
       ]}
     />
   );
@@ -76,11 +47,11 @@ export function RadioTabIcon({ color, size = 22 }: Props) {
 
   return (
     <View style={[styles.equalizer, { width: size, height: size, gap }]}>
-      {BAR_DELAYS.map((delay) => (
+      {BAR_SCALES.map((scale, index) => (
         <EqualizerBar
-          key={delay}
+          key={index}
           color={color}
-          delay={delay}
+          scale={scale}
           maxHeight={size}
           width={barWidth}
         />

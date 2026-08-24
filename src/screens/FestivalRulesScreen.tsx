@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ExternalLink } from '../components/ExternalLink';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RulesTabBar } from '../components/RulesTabBar';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { SemanticHeading } from '../components/SemanticHeading';
+import { MotionPressable } from '../components/MotionPressable';
 import { useAppData } from '../context/DataContext';
 import { MoreStackParamList } from '../navigation/types';
 import { FestivalRulesBlock } from '../types';
@@ -63,16 +64,16 @@ export function FestivalRulesScreen({ navigation }: Props) {
 
   const header = (
     <View style={styles.header}>
-      <Pressable
+      <MotionPressable
         accessibilityRole="button"
         accessibilityLabel="Назад"
         accessibilityHint="Вернуться в раздел «Ещё»"
         onPress={() => navigation.goBack()}
-        style={({ pressed }) => [styles.backRow, pressed && styles.pressed]}
+        style={styles.backRow}
       >
         <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
         <Text style={styles.backLabel}>Назад</Text>
-      </Pressable>
+      </MotionPressable>
       <ScreenTitle style={styles.title}>ПРАВИЛА И БЫТ</ScreenTitle>
       <Text style={styles.lead}>
         Правила посещения и бытовая информация для {data.festival.name} {data.festival.year},
@@ -219,8 +220,5 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     fontSize: 14,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

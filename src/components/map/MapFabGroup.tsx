@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { mapColors } from '../../theme/map';
 import { spacing } from '../../theme/spacing';
+import { MotionPressable } from '../MotionPressable';
 import { typography } from '../../theme/typography';
 
 type FabProps = {
@@ -14,18 +15,14 @@ type FabProps = {
 
 function MapFab({ icon, label, onPress, active }: FabProps) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.fab,
-        active && styles.fabActive,
-        pressed && styles.fabPressed,
-      ]}
+      style={[styles.fab, active && styles.fabActive]}
     >
       <Ionicons name={icon} size={22} color={active ? '#000' : '#FFF'} />
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -56,15 +53,15 @@ export function MapFabGroup({
         <MapFab icon="bookmark-outline" label="Машина и палатка" onPress={onSavedPlaces} />
       ) : null}
       {onDirections ? (
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Как добраться до фестиваля"
           onPress={onDirections}
-          style={({ pressed }) => [styles.directions, pressed && styles.fabPressed]}
+          style={styles.directions}
         >
           <Ionicons name="navigate-outline" size={20} color="#000" />
           <Text style={styles.directionsLabel}>Как добраться</Text>
-        </Pressable>
+        </MotionPressable>
       ) : null}
     </View>
   );
@@ -90,9 +87,6 @@ const styles = StyleSheet.create({
   },
   fabActive: {
     backgroundColor: mapColors.chipActive,
-  },
-  fabPressed: {
-    transform: [{ scale: 0.94 }],
   },
   directions: {
     minHeight: 48,
