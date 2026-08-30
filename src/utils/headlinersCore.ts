@@ -1,17 +1,7 @@
 import type { AppData, AutographSession, Headliner, SchedulePerformance } from '../types';
+import { headlinerImageTints } from '../theme/palettes';
 
-const IMAGE_TINTS = [
-  '#4A1C1C',
-  '#3D2E14',
-  '#1E3A4A',
-  '#2A1F3D',
-  '#1A1A1A',
-  '#3A1414',
-  '#243024',
-  '#3A3018',
-  '#2E2438',
-  '#1F2D3A',
-];
+const IMAGE_TINTS = headlinerImageTints;
 
 function normalizeArtistKey(name: string): string {
   return name

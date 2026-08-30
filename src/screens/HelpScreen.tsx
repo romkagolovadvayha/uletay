@@ -94,7 +94,7 @@ export function HelpScreen({ navigation }: Props) {
         <View style={styles.emergency}>
           <View style={styles.row}>
             <View style={[styles.icon, styles.iconEmergency]}>
-              <Ionicons name="call" size={24} color="#FFF" />
+              <Ionicons name="call" size={24} color={colors.text} />
             </View>
             <View style={styles.flex}>
               <Text style={styles.cardTitle}>Экстренная служба 112</Text>
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   screenTitle: { ...typography.screenTitle, color: colors.text, marginTop: spacing.xs },
   lead: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm },
   card: { padding: spacing.lg, borderRadius: radius.xl, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, gap: spacing.md },
-  emergency: { padding: spacing.lg, borderRadius: radius.xl, backgroundColor: '#27100F', borderWidth: 1, borderColor: colors.live, gap: spacing.md },
+  emergency: { padding: spacing.lg, borderRadius: radius.xl, backgroundColor: colors.emergencySurface, borderWidth: 1, borderColor: colors.live, gap: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1, gap: spacing.xs },
   icon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceMuted },

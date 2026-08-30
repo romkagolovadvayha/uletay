@@ -10,6 +10,8 @@ export const fonts = {
   black: 'Montserrat_700Bold',
 } as const;
 
+export const webFontFamily = "'Montserrat', 'Segoe UI', system-ui, sans-serif";
+
 export type FontKey = keyof typeof fonts;
 
 function font(key: FontKey): Pick<TextStyle, 'fontFamily'> {

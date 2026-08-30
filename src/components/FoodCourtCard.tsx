@@ -60,7 +60,7 @@ function FoodCourtThumbnail({ vendor, large }: { vendor: FoodCourtVendor; large?
 
   return (
     <LinearGradient
-      colors={[vendor.imageTint, '#141414']}
+      colors={[vendor.imageTint, colors.fallbackGradientEnd]}
       style={[styles.thumb, { width: size, height: size, borderRadius: large ? radius.xl : radius.md }]}
     >
       <Ionicons name={getCategoryIcon(vendor.category)} size={large ? 48 : 28} color={colors.primary} />

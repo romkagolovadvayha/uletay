@@ -392,7 +392,11 @@ export function FestivalMapScreen({ route }: Props) {
             </MapErrorBoundary>
             {!mapLoaded && !mapUnavailable ? (
               <View style={styles.mapLoading} pointerEvents="none">
-                <ActivityIndicator size="large" color={colors.primary} />
+                <ActivityIndicator
+                  size="large"
+                  color={colors.primary}
+                  accessibilityLabel="Загружаем карту"
+                />
                 <Text style={styles.mapLoadingText}>Загружаем карту…</Text>
               </View>
             ) : null}

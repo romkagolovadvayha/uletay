@@ -3,7 +3,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { FestivalMapViewProps } from './types';
 import { resolveMediaUrl } from '../../config/api';
 import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
+import { colors } from '../../theme/colors';
 import { mapColors } from '../../theme/map';
+import { motion } from '../../theme/motion';
+import { shadows } from '../../theme/shadows';
 import type { MapPoiCategory, MapPoiProperties, MapZoneProperties } from '../../types/map';
 import { filterPoiFeatures, filterZoneFeatures } from '../../utils/map/layerStyles';
 import { pathFeatureStyle, zoneFeatureStyle } from '../../utils/map/featureStyles';
@@ -21,7 +24,7 @@ import { ensureZoneLabelFont, zoneLabelCssRules } from '../../utils/map/zoneLabe
 import { useLatestRef } from '../../hooks/useLatestRef';
 
 const STYLE_ID = 'fest-yandex-map-styles';
-const MAP_CAMERA_DURATION_MS = 280;
+const MAP_CAMERA_DURATION_MS = motion.mapCameraDurationMs;
 
 function mapCameraDuration(): number {
   return typeof window !== 'undefined' &&
@@ -49,7 +52,7 @@ function ensureMapStyles() {
       height: 16px;
       border-radius: 50%;
       background: ${mapColors.userDot};
-      border: 2px solid #fff;
+      border: 2px solid ${colors.text};
       box-sizing: border-box;
       transform: translate(-50%, -50%);
     }
@@ -61,24 +64,20 @@ function ensureMapStyles() {
       align-items: center;
       justify-content: center;
       border-radius: 18px;
-      background: #1C1C1E;
-      color: #FFC107;
-      border: 2px solid rgba(255,255,255,.22);
+      background: ${mapColors.fabBg};
+      color: ${colors.primary};
+      border: 2px solid ${mapColors.markerBorder};
       box-sizing: border-box;
       transform: translate(-50%, -50%);
-      transition:
-        transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
-        background-color 160ms ease,
-        color 160ms ease,
-        border-color 160ms ease;
+      transition: ${motion.selectionTransitionCss};
       font: 800 11px/1 system-ui, sans-serif;
-      box-shadow: 0 3px 10px rgba(0,0,0,.35);
+      box-shadow: ${shadows.mapMarker};
       cursor: pointer;
     }
     .fest-poi-marker--selected {
-      background: #FFC107;
-      color: #000;
-      border-color: #fff;
+      background: ${colors.primary};
+      color: ${colors.primaryText};
+      border-color: ${colors.text};
       transform: translate(-50%, -50%) scale(1.12);
     }
     ${zoneLabelCssRules('fest')}
@@ -737,7 +736,7 @@ export function FestivalMapView({
 const styles = StyleSheet.create({
   fill: { flex: 1, minHeight: 0 },
   error: {
-    color: '#fff',
+    color: colors.text,
     textAlign: 'center',
     padding: 16,
   },

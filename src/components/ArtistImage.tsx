@@ -74,13 +74,13 @@ function ArtistImageResolved({
 
   return (
     <LinearGradient
-      colors={['#2A2A2C', '#141414']}
+      colors={[colors.fallbackGradientStart, colors.fallbackGradientEnd]}
       style={[styles.placeholder, style as StyleProp<ViewStyle>]}
     >
       <DeferredIonicons
         name="musical-notes"
         size={iconSize}
-        color={variant === 'hero' ? 'rgba(255, 193, 7, 0.45)' : colors.primary}
+        color={variant === 'hero' ? colors.primarySubtle : colors.primary}
       />
     </LinearGradient>
   );

@@ -1,3 +1,7 @@
+import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/shadows';
+import { webFontFamily } from '../../theme/typography';
+
 export const ZONE_LABEL_FONT_LINK_ID = 'uletay-zone-label-font';
 
 export const ZONE_LABEL_FONT_HREF =
@@ -25,12 +29,12 @@ export function zoneLabelCssRules(prefix: 'fest' | 'admin'): string {
       pointer-events: none;
     }
     ${text} {
-      font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+      font-family: ${webFontFamily};
       font-weight: 600;
       font-style: normal;
       font-synthesis: none;
       letter-spacing: 0.02em;
-      color: #ffffff;
+      color: ${colors.text};
       text-align: center;
       line-height: 1.2;
       max-width: 100%;
@@ -41,9 +45,7 @@ export function zoneLabelCssRules(prefix: 'fest' | 'admin'): string {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: optimizeLegibility;
-      text-shadow:
-        0 0 1px rgba(0, 0, 0, 0.95),
-        0 1px 2px rgba(0, 0, 0, 0.8);
+      text-shadow: ${shadows.mapZoneLabel};
     }
   `;
 }

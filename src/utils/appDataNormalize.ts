@@ -4,12 +4,9 @@ import { capPerformanceEndTime } from './performanceTime';
 import { getDefaultMapData } from '../data/festivalMapSeed';
 import { syncAppHeadliners } from './headlinersCore';
 import { withOperationalPois } from './map/poiData';
+import { stageColors } from '../theme/palettes';
 
-export const defaultStageColors: Record<Stage['id'], string> = {
-  south: '#F5C518',
-  west: '#34C759',
-  'ren-tv': '#FF5520',
-};
+export const defaultStageColors: Record<Stage['id'], string> = stageColors;
 
 export function withDefaultStages(stages: Stage[]): Stage[] {
   return stages.map((stage) => ({

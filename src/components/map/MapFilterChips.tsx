@@ -73,6 +73,7 @@ export function MapFilterChips({ pois, value, onChange, embedded = false }: Prop
     <View style={[styles.wrap, embedded && styles.wrapEmbedded]}>
       <ScrollView
         horizontal
+        accessibilityRole="radiogroup"
         accessibilityLabel="Категории карты"
         accessibilityHint="Прокрутите по горизонтали, чтобы увидеть остальные категории"
         showsHorizontalScrollIndicator={false}
@@ -93,9 +94,9 @@ export function MapFilterChips({ pois, value, onChange, embedded = false }: Prop
           return (
             <MotionPressable
               key={filter.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              aria-pressed={active}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: active }}
+              aria-checked={active}
               onPress={() => onChange(filter.id)}
               style={[styles.chip, active && styles.chipActive]}
             >

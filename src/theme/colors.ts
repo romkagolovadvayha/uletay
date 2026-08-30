@@ -1,3 +1,4 @@
+/* ds-allow-hardcode:start -- Central semantic color token definitions. */
 export const colors = {
   background: '#000000',
   surface: '#1C1C1E',
@@ -9,10 +10,12 @@ export const colors = {
   primaryText: '#000000',
   text: '#FFFFFF',
   textSecondary: '#AEAEB2',
-  textMuted: '#636366',
+  textMuted: '#8E8E93',
   border: 'rgba(255, 255, 255, 0.08)',
   borderStrong: '#2C2C2E',
   live: '#FF3B30',
+  liveSurface: '#C62828',
+  emergencySurface: '#27100F',
   liveGlow: 'rgba(255, 59, 48, 0.28)',
   tabInactive: '#8E8E93',
   tabActive: '#FFC107',
@@ -27,6 +30,14 @@ export const colors = {
   pillInactive: '#1C1C1E',
   schedulePerformanceLabel: '#B8A56E',
   scheduleAutographLabel: '#B88B7D',
+  fallbackGradientStart: '#2A2A2C',
+  fallbackGradientEnd: '#141414',
+  fallbackGradientDeep: '#111111',
+  primarySubtle: 'rgba(255, 193, 7, 0.45)',
+  scrollbarTrack: 'rgba(255, 255, 255, 0.06)',
+  scrollbarThumb: 'rgba(255, 193, 7, 0.76)',
+  scrollbarThumbActive: '#FFD54A',
 } as const;
+/* ds-allow-hardcode:end */
 
 export type ColorName = keyof typeof colors;

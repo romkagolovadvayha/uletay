@@ -1,4 +1,6 @@
 import type { MapPathProperties, MapZoneProperties } from '../../types/map';
+import { colors } from '../../theme/colors';
+import { mapColors } from '../../theme/map';
 
 function hexWithAlpha(hex: string, alpha: number): string {
   const normalized = hex.replace('#', '');
@@ -17,7 +19,7 @@ function strokeLine(width: number, color: string, dash?: number[]) {
 export function zoneFeatureStyle(props: MapZoneProperties, selected = false) {
   const dash = props.zoneType === 'fence' ? [4, 4] : undefined;
   const strokeWidth = selected ? Math.max(props.strokeWidth ?? 1, 3) : (props.strokeWidth ?? 1);
-  const strokeColor = selected ? '#FFC107' : (props.strokeColor ?? '#ffffff');
+  const strokeColor = selected ? colors.primary : (props.strokeColor ?? colors.text);
   return {
     fill: hexWithAlpha(props.fillColor, selected ? Math.min(props.fillOpacity + 0.15, 0.95) : props.fillOpacity),
     stroke: [strokeLine(strokeWidth, strokeColor, dash)],
@@ -31,12 +33,12 @@ export function pathFeatureStyle(props: MapPathProperties) {
     NonNullable<MapPathProperties['pathKind']>,
     { color: string; width: number; dash?: number[] }
   > = {
-    road: { color: '#5a5a5e', width: 6 },
-    walkway: { color: '#8e8e93', width: 3, dash: [2, 3] },
-    fence: { color: '#FF3B30', width: 2, dash: [4, 4] },
+    road: { color: mapColors.pathRoad, width: 6 },
+    walkway: { color: mapColors.routeExternal, width: 3, dash: [2, 3] },
+    fence: { color: colors.live, width: 2, dash: [4, 4] },
   };
   const s = props.closed
-    ? { color: '#FF9F0A', width: 4, dash: [2, 2] }
+    ? { color: colors.competition, width: 4, dash: [2, 2] }
     : styles[kind];
   return {
     stroke: [strokeLine(s.width, s.color, s.dash)],

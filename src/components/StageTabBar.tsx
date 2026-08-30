@@ -15,13 +15,21 @@ type Props = {
 
 export function StageTabBar({ stages, selectedStageId, onSelect }: Props) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
+    <ScrollView
+      horizontal
+      accessibilityRole="tablist"
+      accessibilityLabel="Сцены"
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
       {stages.map((stage) => {
         const isActive = stage.id === selectedStageId;
         return (
           <MotionPressable
             key={stage.id}
-            accessibilityRole="button"
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isActive }}
+            aria-selected={isActive}
             onPress={() => onSelect(stage.id)}
             style={[styles.tab, isActive && styles.activeTab]}
           >

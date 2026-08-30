@@ -65,7 +65,7 @@ export function PlaylistScreen() {
   const trackTitle = nowPlaying?.title?.trim() || '';
   const trackArtist = (matchedHeadliner?.name || nowPlaying?.artist || '').trim();
   const displayArtist = trackArtist || 'Улетай радио';
-  const displayTitle = trackTitle || (isBuffering ? 'Подключаемся к эфиру…' : 'Прямой эфир');
+  const displayTitle = trackTitle || (isBuffering ? 'Подключаемся к эфиру…' : 'Музыка фестиваля');
   const documentTitle = trackTitle && trackArtist ? `${trackTitle} — ${trackArtist}` : null;
   const updatedAt = formatUpdatedAt(lastUpdatedAt);
   const artworkSize = Math.min(isWide ? 280 : width - spacing.xxxl * 2, 280);
@@ -147,7 +147,10 @@ export function PlaylistScreen() {
                   alt={`${displayArtist} — ${displayTitle}`}
                 />
               ) : (
-                <LinearGradient colors={['#2C2C2E', '#111111']} style={styles.artworkFallback}>
+                <LinearGradient
+                  colors={[colors.surfaceMuted, colors.fallbackGradientDeep]}
+                  style={styles.artworkFallback}
+                >
                   <Ionicons name="radio-outline" size={54} color={colors.primary} />
                 </LinearGradient>
               )}
@@ -196,7 +199,10 @@ export function PlaylistScreen() {
                   style={styles.playButton}
                 >
                   {isBuffering && !isPlaying ? (
-                    <ActivityIndicator color={colors.primaryText} />
+                    <ActivityIndicator
+                      color={colors.primaryText}
+                      accessibilityLabel="Подключаемся к радио"
+                    />
                   ) : (
                     <Ionicons
                       name={isPlaying ? 'pause' : 'play'}
@@ -260,7 +266,11 @@ export function PlaylistScreen() {
                 style={styles.refreshButton}
               >
                 {isMetadataLoading ? (
-                  <ActivityIndicator size="small" color={colors.textSecondary} />
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.textSecondary}
+                    accessibilityLabel="Обновляем информацию о треке"
+                  />
                 ) : (
                   <Ionicons name="refresh-outline" size={17} color={colors.textSecondary} />
                 )}

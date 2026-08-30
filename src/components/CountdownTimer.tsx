@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   liveBadge: {
-    backgroundColor: colors.live,
+    backgroundColor: colors.liveSurface,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

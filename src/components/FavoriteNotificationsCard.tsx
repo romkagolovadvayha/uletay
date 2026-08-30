@@ -4,6 +4,7 @@ import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-nativ
 import { useReducedMotion } from 'react-native-reanimated';
 import { useNotificationSettings } from '../context/NotificationSettingsContext';
 import { colors } from '../theme/colors';
+import { motion } from '../theme/motion';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
@@ -81,11 +82,15 @@ function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
           transform: webPressed && !reduceMotion && !disabled && !busy ? 'scale(0.97)' : 'scale(1)',
           transition: reduceMotion
             ? 'none'
-            : 'transform 120ms cubic-bezier(0.23, 1, 0.32, 1)',
+            : motion.pressTransitionCss,
         },
       },
       busy
-        ? createElement(ActivityIndicator, { size: 'small', color: colors.primaryText })
+        ? createElement(ActivityIndicator, {
+            size: 'small',
+            color: colors.primaryText,
+            accessibilityLabel: 'Включаем уведомления',
+          })
         : 'Включить уведомления',
     );
   }
@@ -101,7 +106,11 @@ function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={colors.primaryText} />
+        <ActivityIndicator
+          size="small"
+          color={colors.primaryText}
+          accessibilityLabel="Включаем уведомления"
+        />
       ) : (
         <Text style={styles.enableLabel}>Включить уведомления</Text>
       )}
@@ -135,7 +144,13 @@ export function FavoriteNotificationsCard() {
           onPress={() => void disableNotifications()}
           style={styles.linkButton}
         >
-          {busy ? <ActivityIndicator size="small" color={colors.textSecondary} /> : null}
+          {busy ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.textSecondary}
+              accessibilityLabel="Отключаем уведомления"
+            />
+          ) : null}
           <Text style={styles.linkText}>Отключить</Text>
         </MotionPressable>
         {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}

@@ -1,3 +1,8 @@
+import { colors } from '../../theme/colors';
+import { mapColors } from '../../theme/map';
+import { motion } from '../../theme/motion';
+import { shadows } from '../../theme/shadows';
+
 /** Inline HTML for native WebView — same Yandex JS API 3.0 as web. */
 export function buildNativeYandexMapHtml(
   apiKey: string,
@@ -14,7 +19,7 @@ export function buildNativeYandexMapHtml(
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
-    html, body, #map { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+    html, body, #map { margin: 0; width: 100%; height: 100%; background: ${colors.background}; overflow: hidden; }
     .fest-scheme-overlay {
       opacity: var(--fest-scheme-opacity, 0.85);
       transform: rotate(var(--fest-scheme-rotation, 0deg));
@@ -29,27 +34,27 @@ export function buildNativeYandexMapHtml(
     }
     .fest-user-marker {
       width: 16px; height: 16px; border-radius: 50%;
-      background: #0A84FF; border: 2px solid #fff;
+      background: ${mapColors.userDot}; border: 2px solid ${colors.text};
       box-sizing: border-box; transform: translate(-50%, -50%);
     }
     .fest-poi-marker {
       min-width: 36px; height: 36px; padding: 0 7px;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 18px; background: #1C1C1E; color: #FFC107;
-      border: 2px solid rgba(255,255,255,.22); box-sizing: border-box;
+      border-radius: 18px; background: ${mapColors.fabBg}; color: ${colors.primary};
+      border: 2px solid ${mapColors.markerBorder}; box-sizing: border-box;
       transform: translate(-50%, -50%);
-      transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+      transition: ${motion.selectionTransitionCss};
       font: 800 11px/1 system-ui, sans-serif; letter-spacing: .1px;
-      box-shadow: 0 3px 10px rgba(0,0,0,.35);
+      box-shadow: ${shadows.mapMarker};
     }
     .fest-poi-marker--selected {
-      background: #FFC107; color: #000; border-color: #fff;
+      background: ${colors.primary}; color: ${colors.primaryText}; border-color: ${colors.text};
       transform: translate(-50%, -50%) scale(1.12);
     }
     .fest-zone-label {
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font: 700 12px/1.15 system-ui, sans-serif;
-      text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+      color: ${colors.text}; font: 700 12px/1.15 system-ui, sans-serif;
+      text-align: center; text-shadow: ${shadows.mapZoneLabel};
       pointer-events: none; box-sizing: border-box;
       transform: translate(-50%, -50%);
     }
@@ -66,7 +71,7 @@ export function buildNativeYandexMapHtml(
   function cameraDuration() {
     return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
       ? 0
-      : 280;
+      : ${motion.mapCameraDurationMs};
   }
 
   function post(msg) {
@@ -93,10 +98,10 @@ export function buildNativeYandexMapHtml(
   function zoneStyle(props, selected) {
     var dash = props.zoneType === 'fence' ? [4, 4] : undefined;
     var strokeWidth = selected ? Math.max(props.strokeWidth || 1, 3) : (props.strokeWidth || 1);
-    var strokeColor = selected ? '#FFC107' : (props.strokeColor || '#ffffff');
+    var strokeColor = selected ? '${colors.primary}' : (props.strokeColor || '${colors.text}');
     var fillOpacity = selected ? Math.min((props.fillOpacity || 0.4) + 0.15, 0.95) : (props.fillOpacity || 0.4);
     return {
-      fill: hexWithAlpha(props.fillColor || '#888888', fillOpacity),
+      fill: hexWithAlpha(props.fillColor || '${mapColors.zoneFallback}', fillOpacity),
       stroke: [strokeLine(strokeWidth, strokeColor, dash)],
       simplificationRate: 0
     };
@@ -105,12 +110,12 @@ export function buildNativeYandexMapHtml(
   function pathStyle(props) {
     var kind = (props && props.pathKind) || 'road';
     if (props && props.closed) {
-      return { stroke: [strokeLine(4, '#FF9F0A', [2, 2])], simplificationRate: 0 };
+      return { stroke: [strokeLine(4, '${colors.competition}', [2, 2])], simplificationRate: 0 };
     }
     var styles = {
-      road: { color: '#5a5a5e', width: 6 },
-      walkway: { color: '#8e8e93', width: 3, dash: [2, 3] },
-      fence: { color: '#FF3B30', width: 2, dash: [4, 4] }
+      road: { color: '${mapColors.pathRoad}', width: 6 },
+      walkway: { color: '${mapColors.routeExternal}', width: 3, dash: [2, 3] },
+      fence: { color: '${colors.live}', width: 2, dash: [4, 4] }
     };
     var s = styles[kind] || styles.road;
     return { stroke: [strokeLine(s.width, s.color, s.dash)], simplificationRate: 0 };
@@ -318,7 +323,7 @@ export function buildNativeYandexMapHtml(
         style: {
           stroke: [strokeLine(
             seg.kind === 'external' ? 4 : 6,
-            seg.kind === 'external' ? '#8E8E93' : '#FFC107',
+            seg.kind === 'external' ? '${mapColors.routeExternal}' : '${mapColors.routeInternal}',
             seg.kind === 'external' ? [2, 2] : undefined
           )],
           simplificationRate: 0

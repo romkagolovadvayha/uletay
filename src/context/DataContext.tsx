@@ -224,7 +224,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   if (!isHydrated) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+          accessibilityLabel="Загружаем данные фестиваля"
+        />
       </View>
     );
   }

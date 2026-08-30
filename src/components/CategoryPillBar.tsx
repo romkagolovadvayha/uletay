@@ -22,6 +22,8 @@ type Props = {
 export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'default' }: Props) {
   return (
     <CenteredHorizontalScroll
+      accessibilityRole="radiogroup"
+      accessibilityLabel="Категории"
       contentContainerStyle={styles.container}
       rowStyle={[styles.row, variant === 'food' && styles.rowFood]}
     >
@@ -32,9 +34,9 @@ export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'd
         return (
           <MotionPressable
             key={category.id}
-            accessibilityRole="button"
-            accessibilityState={{ selected: isActive }}
-            aria-pressed={isActive}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: isActive }}
+            aria-checked={isActive}
             onPress={() => onSelect(category.id)}
             style={[
               styles.pill,

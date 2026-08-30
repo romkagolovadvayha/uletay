@@ -7,11 +7,10 @@ import type {
 } from 'react-native';
 import { Platform, Pressable } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
+import { motion } from '../theme/motion';
 import { webKeyboardActivationProps } from '../utils/webKeyboardActivation';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const PRESS_DURATION_MS = 120;
-const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)' as const;
 
 type Props = Omit<PressableProps, 'style'> & {
   style?:
@@ -36,7 +35,7 @@ function isPointerPress(
 
 export function MotionPressable({
   style,
-  pressedScale = 0.97,
+  pressedScale = motion.pressScale,
   onPressIn,
   onPressOut,
   onPress,
@@ -72,8 +71,8 @@ export function MotionPressable({
         {
           transform: [{ scale: pressed && !reduceMotion ? pressedScale : 1 }],
           transitionProperty: 'transform',
-          transitionDuration: reduceMotion ? 0 : PRESS_DURATION_MS,
-          transitionTimingFunction: EASE_OUT,
+          transitionDuration: reduceMotion ? 0 : motion.pressDurationMs,
+          transitionTimingFunction: motion.pressEasingCss,
         },
       ]}
     >

@@ -16,7 +16,11 @@ type Props = {
 
 export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: Props) {
   return (
-    <View style={styles.container}>
+    <View
+      accessibilityRole="tablist"
+      accessibilityLabel="Дни фестиваля"
+      style={styles.container}
+    >
       <View style={styles.row}>
         {dates.map((date) => {
           const isActive = date === selectedDate;
@@ -26,9 +30,9 @@ export function DateTabBar({ dates, selectedDate, onSelect, variant = 'red' }: P
           return (
             <MotionPressable
               key={date}
-              accessibilityRole="button"
+              accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
-              aria-pressed={isActive}
+              aria-selected={isActive}
               onPress={() => onSelect(date)}
               style={[
                 styles.tab,
@@ -73,7 +77,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   tabRedActive: {
-    backgroundColor: colors.live,
+    backgroundColor: colors.liveSurface,
   },
   tabYellowActive: {
     backgroundColor: colors.primary,
@@ -102,7 +106,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   weekdayActive: {
-    color: 'rgba(255, 255, 255, 0.72)',
+    color: colors.text,
   },
   textActive: {
     color: colors.text,

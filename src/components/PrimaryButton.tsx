@@ -46,7 +46,10 @@ export function PrimaryButton({
       style={[styles.button, isDisabled && styles.disabled, style]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.primaryText} />
+        <ActivityIndicator
+          color={colors.primaryText}
+          accessibilityLabel={`${label}: выполняется`}
+        />
       ) : (
         <Text style={[styles.label, textStyle]}>{label}</Text>
       )}

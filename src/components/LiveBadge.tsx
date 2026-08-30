@@ -18,7 +18,7 @@ export function LiveBadge({ compact }: Props) {
 
 const styles = StyleSheet.create({
   badge: {
-    backgroundColor: colors.live,
+    backgroundColor: colors.liveSurface,
     borderRadius: radius.sm - 2,
     paddingHorizontal: 9,
     paddingVertical: 4,

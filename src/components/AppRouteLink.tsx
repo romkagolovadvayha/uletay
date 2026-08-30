@@ -6,6 +6,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
+import { motion } from '../theme/motion';
 import { MotionPressable } from './MotionPressable';
 
 type Props = {
@@ -60,7 +61,7 @@ export function AppRouteLink({
           transform: pointerPressed && !reduceMotion ? 'scale(0.97)' : 'scale(1)',
           transition: reduceMotion
             ? 'none'
-            : 'transform 120ms cubic-bezier(0.23, 1, 0.32, 1)',
+            : motion.pressTransitionCss,
         }}
         onPointerDown={() => setPointerPressed(true)}
         onPointerUp={() => setPointerPressed(false)}

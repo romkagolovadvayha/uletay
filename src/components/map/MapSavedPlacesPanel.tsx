@@ -72,7 +72,7 @@ export function MapSavedPlacesPanel({
               {marker ? (
                 <>
                   <MotionPressable accessibilityRole="button" onPress={() => onRoute(marker)} style={[styles.action, styles.actionPrimary]}>
-                    <Ionicons name="navigate" size={16} color="#000" />
+                    <Ionicons name="navigate" size={16} color={colors.primaryText} />
                     <Text style={styles.actionPrimaryText}>Маршрут</Text>
                   </MotionPressable>
                   <MotionPressable accessibilityRole="button" onPress={() => onRemove(kind)} style={styles.action}>
@@ -113,6 +113,6 @@ const styles = StyleSheet.create({
   action: { minHeight: 44, flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs },
   actionPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
   actionText: { ...typography.button, color: colors.text },
-  actionPrimaryText: { ...typography.button, color: '#000' },
+  actionPrimaryText: { ...typography.button, color: colors.primaryText },
   disabled: { opacity: 0.45 },
 });

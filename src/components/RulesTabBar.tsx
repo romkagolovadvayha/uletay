@@ -11,6 +11,7 @@ import Animated, {
 import { MotionPressable } from './MotionPressable';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
+import { shadows } from '../theme/shadows';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceElevated,
     transformOrigin: 'top right',
     zIndex: 30,
-    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+    boxShadow: shadows.floatingMenu,
   },
   menuItem: {
     minHeight: 46,

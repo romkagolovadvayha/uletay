@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import { colors } from '../theme/colors';
+import { webUi } from '../theme/web';
 
 const STYLE_ID = 'uletay-web-input-zoom-fix';
 
@@ -16,16 +18,20 @@ export function installWebPreventInputZoom(): () => void {
       input,
       textarea,
       select {
-        font-size: 16px !important;
-        outline: none !important;
-        box-shadow: none !important;
+        font-size: ${webUi.minimumInputFontSize} !important;
       }
 
-      input:focus,
-      textarea:focus,
-      select:focus {
-        outline: none !important;
-        box-shadow: none !important;
+      a:focus-visible,
+      button:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible,
+      select:focus-visible,
+      [role="button"]:focus-visible,
+      [role="link"]:focus-visible,
+      [role="radio"]:focus-visible,
+      [role="tab"]:focus-visible {
+        outline: ${webUi.focusOutline} ${colors.primary} !important;
+        outline-offset: ${webUi.focusOutlineOffset} !important;
       }
     `;
     document.head.appendChild(style);

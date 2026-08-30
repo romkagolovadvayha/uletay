@@ -217,7 +217,11 @@ export function FestivalHomeScreen({ navigation }: Props) {
           allowVideo={false}
         />
         <View style={styles.homeLoader}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator
+            size="large"
+            color={colors.primary}
+            accessibilityLabel="Загружаем данные фестиваля"
+          />
           <Text style={styles.homeLoaderText}>Загружаем данные фестиваля…</Text>
         </View>
       </SafeAreaView>

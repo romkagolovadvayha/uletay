@@ -3,6 +3,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  type AccessibilityRole,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -11,9 +12,17 @@ type Props = {
   children: React.ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
   rowStyle?: StyleProp<ViewStyle>;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityLabel?: string;
 };
 
-export function CenteredHorizontalScroll({ children, contentContainerStyle, rowStyle }: Props) {
+export function CenteredHorizontalScroll({
+  children,
+  contentContainerStyle,
+  rowStyle,
+  accessibilityRole,
+  accessibilityLabel,
+}: Props) {
   const [viewportWidth, setViewportWidth] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
   const fitsWithoutScroll = viewportWidth > 0 && contentWidth > 0 && contentWidth <= viewportWidth;
@@ -21,6 +30,8 @@ export function CenteredHorizontalScroll({ children, contentContainerStyle, rowS
   return (
     <ScrollView
       horizontal
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
       showsHorizontalScrollIndicator={false}
       onLayout={(event) => setViewportWidth(event.nativeEvent.layout.width)}
       contentContainerStyle={[

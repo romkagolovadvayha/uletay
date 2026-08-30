@@ -4,6 +4,7 @@ import { GestureResponderEvent, StyleSheet, Text, View } from 'react-native';
 import { SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
+import { shadows } from '../theme/shadows';
 import { typography } from '../theme/typography';
 import { formatDayMonthLabel, formatStartsIn, formatTimeRange, parseDateTime } from '../utils/scheduleHelpers';
 import { CompetitionLabel } from './CompetitionLabel';
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.screen,
     paddingHorizontal: spacing.screen,
     borderLeftWidth: 0,
-    boxShadow: '0 0 10px rgba(255, 59, 48, 0.2)',
+    boxShadow: shadows.liveTimeline,
   },
   timelineTime: {
     width: 52,

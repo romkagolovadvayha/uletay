@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { mapColors } from '../../theme/map';
+import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/shadows';
 import { spacing } from '../../theme/spacing';
 import { MotionPressable } from '../MotionPressable';
 import { typography } from '../../theme/typography';
@@ -21,7 +23,11 @@ function MapFab({ icon, label, onPress, active }: FabProps) {
       onPress={onPress}
       style={[styles.fab, active && styles.fabActive]}
     >
-      <Ionicons name={icon} size={22} color={active ? '#000' : '#FFF'} />
+      <Ionicons
+        name={icon}
+        size={22}
+        color={active ? colors.primaryText : colors.text}
+      />
     </MotionPressable>
   );
 }
@@ -59,7 +65,7 @@ export function MapFabGroup({
           onPress={onDirections}
           style={styles.directions}
         >
-          <Ionicons name="navigate-outline" size={20} color="#000" />
+          <Ionicons name="navigate-outline" size={20} color={colors.primaryText} />
           <Text style={styles.directionsLabel}>Как добраться</Text>
         </MotionPressable>
       ) : null}
@@ -99,10 +105,10 @@ const styles = StyleSheet.create({
     backgroundColor: mapColors.chipActive,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.72)',
-    boxShadow: '0 4px 14px rgba(0,0,0,0.34)',
+    boxShadow: shadows.mapDirections,
   },
   directionsLabel: {
     ...typography.button,
-    color: '#000',
+    color: colors.primaryText,
   },
 });

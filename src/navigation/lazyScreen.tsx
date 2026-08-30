@@ -14,7 +14,11 @@ const styles = StyleSheet.create({
 function ScreenFallback() {
   return (
     <View style={styles.fallback}>
-      <ActivityIndicator size="large" color={colors.primary} />
+      <ActivityIndicator
+        size="large"
+        color={colors.primary}
+        accessibilityLabel="Загружаем экран"
+      />
     </View>
   );
 }

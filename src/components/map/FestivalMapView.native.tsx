@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors } from '../../theme/colors';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { resolveMediaUrl } from '../../config/api';
 import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
@@ -233,9 +234,9 @@ export function FestivalMapView({
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: '#000' },
+  fill: { flex: 1, backgroundColor: colors.background },
   error: {
-    color: '#fff',
+    color: colors.text,
     textAlign: 'center',
     padding: 16,
   },

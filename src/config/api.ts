@@ -1,12 +1,7 @@
 import { Platform } from 'react-native';
 import { AppData, Stage, StageId } from '../types';
+import { stageColors } from '../theme/palettes';
 import { isLoopbackUrl, resolveWebApiBaseUrl } from './web-api-base-url';
-
-const DEFAULT_COLORS: Record<StageId, string> = {
-  south: '#F5C518',
-  west: '#34C759',
-  'ren-tv': '#FF5520',
-};
 
 const PRODUCTION_API_BASE_URL = 'https://uletayapp.ru/api';
 
@@ -69,7 +64,7 @@ export function resolveMediaUrl(path?: string | null): string | undefined {
 
 export function getStageColor(stageId: StageId, stages?: Stage[]): string {
   const fromData = stages?.find((stage) => stage.id === stageId)?.color;
-  return fromData ?? DEFAULT_COLORS[stageId] ?? DEFAULT_COLORS.south;
+  return fromData ?? stageColors[stageId] ?? stageColors.south;
 }
 
 export type CachedAppData = {

@@ -1,4 +1,5 @@
 import { Stage, SchedulePerformance } from '../types';
+import { stageColors } from '../theme/palettes';
 
 /** Minimal festival stub until API loads. No offline schedule seed. */
 export const festivalInfo = {
@@ -12,9 +13,9 @@ export const festivalInfo = {
 };
 
 export const stages: Stage[] = [
-  { id: 'ren-tv', name: 'СЦЕНА РЕН ТВ', shortName: 'РЕН ТВ', color: '#FF5520' },
-  { id: 'south', name: 'ЮЖНАЯ СЦЕНА', shortName: 'Южная', color: '#F5C518' },
-  { id: 'west', name: 'ЗАПАДНАЯ СЦЕНА', shortName: 'Западная', color: '#34C759' },
+  { id: 'ren-tv', name: 'СЦЕНА РЕН ТВ', shortName: 'РЕН ТВ', color: stageColors['ren-tv'] },
+  { id: 'south', name: 'ЮЖНАЯ СЦЕНА', shortName: 'Южная', color: stageColors.south },
+  { id: 'west', name: 'ЗАПАДНАЯ СЦЕНА', shortName: 'Западная', color: stageColors.west },
 ];
 
 export const schedulePerformances: SchedulePerformance[] = [];

@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { colors } from '../theme/colors';
+import { webUi } from '../theme/web';
 
 const STYLE_ID = 'uletay-web-scrollbars';
 
@@ -16,12 +17,12 @@ export function installWebScrollbarStyles(): () => void {
     style.textContent = `
       * {
         scrollbar-width: thin;
-        scrollbar-color: rgba(255, 193, 7, 0.76) rgba(255, 255, 255, 0.06);
+        scrollbar-color: ${colors.scrollbarThumb} ${colors.scrollbarTrack};
       }
 
       *::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
+        width: ${webUi.scrollbarSize};
+        height: ${webUi.scrollbarSize};
       }
 
       *::-webkit-scrollbar-button {
@@ -31,16 +32,16 @@ export function installWebScrollbarStyles(): () => void {
       }
 
       *::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.06);
-        border-radius: 999px;
+        background: ${colors.scrollbarTrack};
+        border-radius: ${webUi.scrollbarTrackRadius};
       }
 
       *::-webkit-scrollbar-thumb {
-        min-width: 32px;
-        min-height: 32px;
-        border: 2px solid transparent;
-        border-radius: 999px;
-        background: rgba(255, 193, 7, 0.76);
+        min-width: ${webUi.scrollbarThumbMinSize};
+        min-height: ${webUi.scrollbarThumbMinSize};
+        border: ${webUi.scrollbarThumbBorder};
+        border-radius: ${webUi.scrollbarThumbRadius};
+        background: ${colors.scrollbarThumb};
         background-clip: padding-box;
       }
 
@@ -49,7 +50,7 @@ export function installWebScrollbarStyles(): () => void {
       }
 
       *::-webkit-scrollbar-thumb:active {
-        background-color: #ffd54a;
+        background-color: ${colors.scrollbarThumbActive};
       }
 
       *::-webkit-scrollbar-corner {

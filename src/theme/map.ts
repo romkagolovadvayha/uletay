@@ -1,3 +1,4 @@
+/* ds-allow-hardcode:start -- Central map color token definitions. */
 export const mapColors = {
   userDot: '#0A84FF',
   userAccuracy: 'rgba(10, 132, 255, 0.18)',
@@ -13,4 +14,8 @@ export const mapColors = {
   chipTextActive: '#000000',
   chipTextInactive: '#FFFFFF',
   handle: 'rgba(255, 255, 255, 0.28)',
+  pathRoad: '#5A5A5E',
+  markerBorder: 'rgba(255, 255, 255, 0.22)',
+  zoneFallback: '#888888',
 } as const;
+/* ds-allow-hardcode:end */
