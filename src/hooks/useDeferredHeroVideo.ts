@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Platform } from 'react-native';
+import { AccessibilityInfo, AppState, Platform } from 'react-native';
 
 type NetworkInformationWithSaveData = {
   effectiveType?: string;
@@ -50,20 +50,32 @@ export function useDeferredHeroVideo(): boolean {
   useEffect(() => {
     if (Platform.OS !== 'web') {
       let active = true;
-      void AccessibilityInfo.isReduceMotionEnabled().then((reducedMotion) => {
+      let reducedMotionEnabled = false;
+
+      const syncNativePolicy = () => {
         if (active) {
-          setAllowed(!reducedMotion);
+          setAllowed(AppState.currentState === 'active' && !reducedMotionEnabled);
         }
+      };
+
+      void AccessibilityInfo.isReduceMotionEnabled().then((reducedMotion) => {
+        reducedMotionEnabled = reducedMotion;
+        syncNativePolicy();
       });
 
-      const subscription = AccessibilityInfo.addEventListener(
+      const reduceMotionSubscription = AccessibilityInfo.addEventListener(
         'reduceMotionChanged',
-        (reducedMotion) => setAllowed(!reducedMotion),
+        (reducedMotion) => {
+          reducedMotionEnabled = reducedMotion;
+          syncNativePolicy();
+        },
       );
+      const appStateSubscription = AppState.addEventListener('change', syncNativePolicy);
 
       return () => {
         active = false;
-        subscription.remove();
+        reduceMotionSubscription.remove();
+        appStateSubscription.remove();
       };
     }
 
