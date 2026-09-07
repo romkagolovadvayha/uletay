@@ -102,8 +102,8 @@ if [[ -z "$VAPID_SUBJECT" ]]; then
 fi
 VAPID_SUBJECT="${VAPID_SUBJECT:-mailto:admin@${DOMAIN}}"
 
-if [[ -z "$RUSTORE_PUSH_PROJECT_ID" || -z "$RUSTORE_PUSH_SERVICE_TOKEN" ]]; then
-  echo "RUSTORE_PUSH_PROJECT_ID and RUSTORE_PUSH_SERVICE_TOKEN are required"
+if [[ -z "$RUSTORE_PUSH_PROJECT_ID" ]]; then
+  echo "RUSTORE_PUSH_PROJECT_ID is required"
   exit 1
 fi
 

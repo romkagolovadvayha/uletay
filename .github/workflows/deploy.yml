@@ -71,8 +71,7 @@ jobs:
           for name in \
             DOMAIN LE_EMAIL SSH_HOST SSH_USER SSH_KNOWN_HOSTS \
             DB_HOST DB_NAME DB_USER DB_PASS ADMIN_PASSWORD SESSION_SECRET \
-            EXPO_PUBLIC_YANDEX_MAPS_API_KEY RUSTORE_PUSH_PROJECT_ID \
-            RUSTORE_PUSH_SERVICE_TOKEN; do
+            EXPO_PUBLIC_YANDEX_MAPS_API_KEY RUSTORE_PUSH_PROJECT_ID; do
             require "$name"
           done
 
