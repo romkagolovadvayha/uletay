@@ -26,6 +26,7 @@ expo-env.d.ts
 *.mobileprovision
 google-service-account.json
 firebase-service-account-uletay-9335f.json
+credentials/
 
 # Metro
 .metro-health-check*

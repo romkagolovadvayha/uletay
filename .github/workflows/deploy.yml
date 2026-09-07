@@ -48,6 +48,8 @@ jobs:
       VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
       VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || secrets.VAPID_SUBJECT }}
       EXPO_PUSH_ACCESS_TOKEN: ${{ secrets.EXPO_PUSH_ACCESS_TOKEN }}
+      RUSTORE_PUSH_PROJECT_ID: ${{ vars.RUSTORE_PUSH_PROJECT_ID }}
+      RUSTORE_PUSH_SERVICE_TOKEN: ${{ secrets.RUSTORE_PUSH_SERVICE_TOKEN }}
 
     steps:
       - name: Checkout
@@ -69,7 +71,8 @@ jobs:
           for name in \
             DOMAIN LE_EMAIL SSH_HOST SSH_USER SSH_KNOWN_HOSTS \
             DB_HOST DB_NAME DB_USER DB_PASS ADMIN_PASSWORD SESSION_SECRET \
-            EXPO_PUBLIC_YANDEX_MAPS_API_KEY; do
+            EXPO_PUBLIC_YANDEX_MAPS_API_KEY RUSTORE_PUSH_PROJECT_ID \
+            RUSTORE_PUSH_SERVICE_TOKEN; do
             require "$name"
           done
 
@@ -195,6 +198,8 @@ jobs:
               "$VAPID_PRIVATE_KEY" \
               "$VAPID_SUBJECT" \
               "$EXPO_PUSH_ACCESS_TOKEN" \
+              "$RUSTORE_PUSH_PROJECT_ID" \
+              "$RUSTORE_PUSH_SERVICE_TOKEN" \
               "$GITHUB_SHA"
           } | ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \

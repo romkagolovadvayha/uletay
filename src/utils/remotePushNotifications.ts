@@ -3,8 +3,15 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { API_BASE_URL } from '../config/api';
+import {
+  addRuStorePushTokenListener,
+  deleteRuStorePushToken,
+  getRuStorePushToken,
+  isRuStorePushBuild,
+} from './rustorePushNotifications';
 
 const EXPO_PUSH_TOKEN_KEY = '@uletay_expo_push_token';
+const RUSTORE_PUSH_TOKEN_KEY = '@uletay_rustore_push_token';
 const PUSH_SUBSCRIPTION_URL = `${API_BASE_URL}/push/subscribe`;
 
 type WebPushServerConfig = {
@@ -85,7 +92,7 @@ async function registerWebPush(favoriteKeys?: string[]): Promise<void> {
   });
 }
 
-async function registerNativePush(): Promise<void> {
+async function ensureAndroidPushChannel(): Promise<void> {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('broadcasts', {
       name: 'Новости фестиваля',
@@ -94,6 +101,45 @@ async function registerNativePush(): Promise<void> {
       sound: 'default',
       vibrationPattern: [0, 250, 200, 250],
     });
+  }
+}
+
+async function unregisterStoredToken(
+  storageKey: string,
+  provider: 'expo' | 'rustore',
+): Promise<void> {
+  const token = await AsyncStorage.getItem(storageKey);
+  if (!token) {
+    return;
+  }
+  await postJson('DELETE', { provider, token });
+  await AsyncStorage.removeItem(storageKey);
+}
+
+async function registerRuStorePushToken(token: string): Promise<void> {
+  await postJson('POST', {
+    platform: 'android',
+    provider: 'rustore',
+    token,
+  });
+  await AsyncStorage.setItem(RUSTORE_PUSH_TOKEN_KEY, token);
+}
+
+async function registerRuStorePush(): Promise<void> {
+  await ensureAndroidPushChannel();
+  if (Constants.appOwnership === 'expo') {
+    throw new Error(
+      'RuStore Push недоступен в Expo Go. Установите production-сборку приложения.',
+    );
+  }
+  const token = await getRuStorePushToken();
+  await registerRuStorePushToken(token);
+  await unregisterStoredToken(EXPO_PUSH_TOKEN_KEY, 'expo').catch(() => undefined);
+}
+
+async function registerExpoPush(): Promise<void> {
+  await ensureAndroidPushChannel();
+  if (Platform.OS === 'android') {
     if (Constants.appOwnership === 'expo') {
       throw new Error(
         'В Expo Go удалённые push на Android недоступны. ' +
@@ -130,9 +176,11 @@ async function registerNativePush(): Promise<void> {
   }
   await postJson('POST', {
     platform: Platform.OS,
+    provider: 'expo',
     token,
   });
   await AsyncStorage.setItem(EXPO_PUSH_TOKEN_KEY, token);
+  await unregisterStoredToken(RUSTORE_PUSH_TOKEN_KEY, 'rustore').catch(() => undefined);
 }
 
 export async function syncRemotePushSubscription(): Promise<void> {
@@ -140,7 +188,11 @@ export async function syncRemotePushSubscription(): Promise<void> {
     await registerWebPush();
     return;
   }
-  await registerNativePush();
+  if (isRuStorePushBuild()) {
+    await registerRuStorePush();
+    return;
+  }
+  await registerExpoPush();
 }
 
 export async function syncWebPushFavorites(favoriteKeys: string[]): Promise<void> {
@@ -154,8 +206,15 @@ export function addRemotePushTokenRefreshListener(): { remove: () => void } | nu
   if (Platform.OS === 'web') {
     return null;
   }
+  if (isRuStorePushBuild()) {
+    return addRuStorePushTokenListener((token) => {
+      void registerRuStorePushToken(token).catch(() => {
+        // Повторная синхронизация произойдёт при следующем запуске приложения.
+      });
+    });
+  }
   return Notifications.addPushTokenListener(() => {
-    void registerNativePush().catch(() => {
+    void registerExpoPush().catch(() => {
       // Повторная синхронизация произойдёт при следующем запуске приложения.
     });
   });
@@ -179,13 +238,15 @@ export async function unregisterRemotePushSubscription(): Promise<void> {
     return;
   }
 
-  const token = await AsyncStorage.getItem(EXPO_PUSH_TOKEN_KEY);
-  if (!token) {
-    return;
+  const results = await Promise.allSettled([
+    unregisterStoredToken(EXPO_PUSH_TOKEN_KEY, 'expo'),
+    unregisterStoredToken(RUSTORE_PUSH_TOKEN_KEY, 'rustore'),
+  ]);
+  if (isRuStorePushBuild()) {
+    await deleteRuStorePushToken().catch(() => undefined);
   }
-  try {
-    await postJson('DELETE', { token });
-  } finally {
-    await AsyncStorage.removeItem(EXPO_PUSH_TOKEN_KEY);
+  const failure = results.find((result) => result.status === 'rejected');
+  if (failure?.status === 'rejected') {
+    throw failure.reason;
   }
 }

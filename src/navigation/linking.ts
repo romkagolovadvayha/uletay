@@ -9,6 +9,10 @@ import { Platform } from 'react-native';
 import type { RootTabParamList } from './types';
 import { getSafePushPath } from '../utils/pushNavigation';
 import {
+  addRuStorePushOpenedListener,
+  getInitialRuStorePushPath,
+} from '../utils/rustorePushNotifications';
+import {
   decodeSeoRouteParam,
   encodeSeoRouteId,
 } from '../seo/seoRouteUtils';
@@ -88,11 +92,12 @@ export const linking: LinkingOptions<RootTabParamList> = {
     }
     const response = Notifications.getLastNotificationResponse();
     const path = getSafePushPath(response?.notification.request.content.data?.url);
-    if (!path) {
-      return null;
+    if (path) {
+      Notifications.clearLastNotificationResponse();
+      return Linking.createURL(path);
     }
-    Notifications.clearLastNotificationResponse();
-    return Linking.createURL(path);
+    const rustorePath = await getInitialRuStorePushPath();
+    return rustorePath ? Linking.createURL(rustorePath) : null;
   },
   subscribe(listener) {
     const linkingSubscription = Linking.addEventListener('url', ({ url }) => listener(url));
@@ -105,10 +110,14 @@ export const linking: LinkingOptions<RootTabParamList> = {
               listener(Linking.createURL(path));
             }
           });
+    const rustoreSubscription = addRuStorePushOpenedListener((path) => {
+      listener(Linking.createURL(path));
+    });
 
     return () => {
       linkingSubscription.remove();
       notificationSubscription?.remove();
+      rustoreSubscription?.remove();
     };
   },
   config: {

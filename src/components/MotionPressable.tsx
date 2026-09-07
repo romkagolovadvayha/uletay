@@ -6,11 +6,13 @@ import type {
   ViewStyle,
 } from 'react-native';
 import { Platform, Pressable } from 'react-native';
-import Animated, { useReducedMotion } from 'react-native-reanimated';
+import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 import { motion } from '../theme/motion';
 import { webKeyboardActivationProps } from '../utils/webKeyboardActivation';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+// Reanimated's native CSS parser requires an easing object for custom curves.
+const PRESS_EASING = cubicBezier(...motion.pressBezier);
 
 type Props = Omit<PressableProps, 'style'> & {
   style?:
@@ -72,7 +74,7 @@ export function MotionPressable({
           transform: [{ scale: pressed && !reduceMotion ? pressedScale : 1 }],
           transitionProperty: 'transform',
           transitionDuration: reduceMotion ? 0 : motion.pressDurationMs,
-          transitionTimingFunction: motion.pressEasingCss,
+          transitionTimingFunction: PRESS_EASING,
         },
       ]}
     >

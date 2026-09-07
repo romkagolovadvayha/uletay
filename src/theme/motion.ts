@@ -2,7 +2,7 @@
 export const motion = {
   pressScale: 0.97,
   pressDurationMs: 120,
-  pressEasingCss: 'cubic-bezier(0.23, 1, 0.32, 1)',
+  pressBezier: [0.23, 1, 0.32, 1],
   pressTransitionCss: 'transform 120ms cubic-bezier(0.23, 1, 0.32, 1)',
   selectionDurationMs: 160,
   selectionTransitionCss:

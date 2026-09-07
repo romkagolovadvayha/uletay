@@ -35,7 +35,8 @@
     "rustore": {
       "extends": "production",
       "env": {
-        "RUSTORE_BUILD": "1"
+        "RUSTORE_BUILD": "1",
+        "RUSTORE_PUSH_PROJECT_ID": "aaukrz3gRAr3K29Vvb8WbeTsxn3wccEq"
       },
       "android": {
         "buildType": "apk"

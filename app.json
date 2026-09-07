@@ -4,7 +4,7 @@
     "slug": "romkadvayha",
     "scheme": "uletay",
     "owner": "romkadvayhas-team",
-    "version": "1.0.7",
+    "version": "1.0.11",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -89,7 +89,16 @@
           "supportsBackgroundPlayback": false
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

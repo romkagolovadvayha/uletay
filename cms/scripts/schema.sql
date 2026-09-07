@@ -41,6 +41,19 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   KEY idx_push_active_platform (active, platform)
 );
 
+CREATE TABLE IF NOT EXISTS push_rustore_subscriptions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  push_token TEXT NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  user_agent VARCHAR(255) NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  last_seen_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_push_rustore_token_hash (token_hash),
+  KEY idx_push_rustore_active (active)
+);
+
 CREATE TABLE IF NOT EXISTS push_broadcasts (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(120) NOT NULL,

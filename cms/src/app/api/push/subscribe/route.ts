@@ -3,6 +3,7 @@ import { jsonResponse, optionsResponse } from '@/lib/api-response';
 import { config } from '@/lib/config';
 import {
   registerExpoPushToken,
+  registerRuStorePushToken,
   registerWebPushSubscription,
   unregisterPushSubscription,
 } from '@/lib/push';
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       platform?: 'ios' | 'android' | 'web';
       token?: string;
+      provider?: 'expo' | 'rustore';
       subscription?: {
         endpoint?: string;
         keys?: { p256dh?: string; auth?: string };
@@ -38,6 +40,8 @@ export async function POST(request: NextRequest) {
 
     if (body.platform === 'web' && body.subscription) {
       await registerWebPushSubscription(body.subscription, userAgent, body.favoriteKeys);
+    } else if (body.platform === 'android' && body.provider === 'rustore' && body.token) {
+      await registerRuStorePushToken(body.token, userAgent);
     } else if ((body.platform === 'ios' || body.platform === 'android') && body.token) {
       await registerExpoPushToken(body.token, body.platform, userAgent);
     } else {
@@ -52,7 +56,11 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const body = (await request.json()) as { token?: string; endpoint?: string };
+    const body = (await request.json()) as {
+      token?: string;
+      endpoint?: string;
+      provider?: 'expo' | 'rustore';
+    };
     await unregisterPushSubscription(body);
     return jsonResponse({ ok: true });
   } catch {

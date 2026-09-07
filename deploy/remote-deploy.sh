@@ -22,7 +22,8 @@ if [[ "${1:-}" == "--env-stdin" ]]; then
     NEXT_PUBLIC_YANDEX_MAPS_API_KEY \
     LASTFM_API_KEY LASTFM_PROXY_URL \
     VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
-    EXPO_PUSH_ACCESS_TOKEN RELEASE_SHA; do
+    EXPO_PUSH_ACCESS_TOKEN RUSTORE_PUSH_PROJECT_ID RUSTORE_PUSH_SERVICE_TOKEN \
+    RELEASE_SHA; do
     read_nul_env "$name"
   done
   shift
@@ -79,6 +80,8 @@ VAPID_PUBLIC_KEY="${VAPID_PUBLIC_KEY:-}"
 VAPID_PRIVATE_KEY="${VAPID_PRIVATE_KEY:-}"
 VAPID_SUBJECT="${VAPID_SUBJECT:-}"
 EXPO_PUSH_ACCESS_TOKEN="${EXPO_PUSH_ACCESS_TOKEN:-}"
+RUSTORE_PUSH_PROJECT_ID="${RUSTORE_PUSH_PROJECT_ID:-}"
+RUSTORE_PUSH_SERVICE_TOKEN="${RUSTORE_PUSH_SERVICE_TOKEN:-}"
 if [[ -z "$VAPID_PUBLIC_KEY" ]]; then
   VAPID_PUBLIC_KEY="$(read_existing_env VAPID_PUBLIC_KEY)"
 fi
@@ -88,10 +91,21 @@ fi
 if [[ -z "$EXPO_PUSH_ACCESS_TOKEN" ]]; then
   EXPO_PUSH_ACCESS_TOKEN="$(read_existing_env EXPO_PUSH_ACCESS_TOKEN)"
 fi
+if [[ -z "$RUSTORE_PUSH_PROJECT_ID" ]]; then
+  RUSTORE_PUSH_PROJECT_ID="$(read_existing_env RUSTORE_PUSH_PROJECT_ID)"
+fi
+if [[ -z "$RUSTORE_PUSH_SERVICE_TOKEN" ]]; then
+  RUSTORE_PUSH_SERVICE_TOKEN="$(read_existing_env RUSTORE_PUSH_SERVICE_TOKEN)"
+fi
 if [[ -z "$VAPID_SUBJECT" ]]; then
   VAPID_SUBJECT="$(read_existing_env VAPID_SUBJECT)"
 fi
 VAPID_SUBJECT="${VAPID_SUBJECT:-mailto:admin@${DOMAIN}}"
+
+if [[ -z "$RUSTORE_PUSH_PROJECT_ID" || -z "$RUSTORE_PUSH_SERVICE_TOKEN" ]]; then
+  echo "RUSTORE_PUSH_PROJECT_ID and RUSTORE_PUSH_SERVICE_TOKEN are required"
+  exit 1
+fi
 
 if [[ -z "$VAPID_PUBLIC_KEY" || -z "$VAPID_PRIVATE_KEY" ]]; then
   VAPID_PAIR=$(node -e "const c=require('crypto');const {privateKey}=c.generateKeyPairSync('ec',{namedCurve:'prime256v1'});const j=privateKey.export({format:'jwk'});const b=v=>Buffer.from(v,'base64url');console.log(Buffer.concat([Buffer.from([4]),b(j.x),b(j.y)]).toString('base64url'));console.log(j.d)")
@@ -166,6 +180,8 @@ write_env VAPID_PUBLIC_KEY "$VAPID_PUBLIC_KEY"
 write_env VAPID_PRIVATE_KEY "$VAPID_PRIVATE_KEY"
 write_env VAPID_SUBJECT "$VAPID_SUBJECT"
 write_env EXPO_PUSH_ACCESS_TOKEN "$EXPO_PUSH_ACCESS_TOKEN"
+write_env RUSTORE_PUSH_PROJECT_ID "$RUSTORE_PUSH_PROJECT_ID"
+write_env RUSTORE_PUSH_SERVICE_TOKEN "$RUSTORE_PUSH_SERVICE_TOKEN"
 
 chmod 600 "$ENV_TMP"
 mv -f "$ENV_TMP" "$DEPLOY_PATH/cms/.env"

@@ -7,12 +7,41 @@ module.exports = ({ config }) => {
   const googleServicesFile =
     process.env.GOOGLE_SERVICES_FILE || defaultGoogleServicesFile;
   const isRuStoreBuild = process.env.RUSTORE_BUILD === '1';
+  const rustorePushProjectId = String(
+    process.env.RUSTORE_PUSH_PROJECT_ID || '',
+  ).trim();
   const hasGoogleServicesFile = existsSync(
     path.resolve(__dirname, googleServicesFile),
   );
 
+  if (isRuStoreBuild && !rustorePushProjectId) {
+    throw new Error(
+      'RUSTORE_PUSH_PROJECT_ID is required when RUSTORE_BUILD=1',
+    );
+  }
+
   return {
     ...config,
+    plugins: [
+      ...(config.plugins || []),
+      ...(isRuStoreBuild
+        ? [
+            [
+              './plugins/with-rustore-push',
+              {
+                projectId: rustorePushProjectId,
+                channelId: 'broadcasts',
+              },
+            ],
+          ]
+        : []),
+    ],
+    extra: {
+      ...(config.extra || {}),
+      ...(isRuStoreBuild
+        ? { rustorePushProjectId }
+        : {}),
+    },
     android: {
       ...config.android,
       ...(isRuStoreBuild

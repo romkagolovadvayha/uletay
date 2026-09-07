@@ -26,4 +26,6 @@ export const config = {
   vapidPrivateKey: env('VAPID_PRIVATE_KEY'),
   vapidSubject: env('VAPID_SUBJECT', 'mailto:admin@uletay.ru'),
   expoPushAccessToken: env('EXPO_PUSH_ACCESS_TOKEN'),
+  rustorePushProjectId: env('RUSTORE_PUSH_PROJECT_ID'),
+  rustorePushServiceToken: env('RUSTORE_PUSH_SERVICE_TOKEN'),
 };
