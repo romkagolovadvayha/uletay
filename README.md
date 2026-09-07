@@ -233,7 +233,7 @@ API, указанного в `EXPO_PUBLIC_API_URL`; если API недосту�
 TypeScript, web-export и EAS Build не проверяют выполнение нативных анимаций.
 
 ```bash
-npm run test:android-startup -- --serial emulator-5580 --apk tmp/releases/uletay-1.0.9-rustore-v23.apk --out tmp/android-startup
+npm run test:android-startup -- --serial emulator-5580 --apk tmp/releases/uletay-1.0.11-rustore-v28.apk --out tmp/android-startup
 ```
 
 `--serial` обязателен: укажите идентификатор тестового устройства из `adb devices`.

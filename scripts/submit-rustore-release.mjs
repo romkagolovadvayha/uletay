@@ -5,9 +5,9 @@ import { createPrivateKey, sign } from 'node:crypto';
 const API_ORIGIN = 'https://public-api.rustore.ru';
 const PACKAGE_NAME = 'ru.uletay.app';
 const DEFAULT_WHATS_NEW =
-  'Исправили аварийное закрытие при запуске на Android 15, обновили интерфейс и улучшили доступность приложения.';
+  'Исправили аварийное закрытие на Android 15, включили оптимизацию release-сборки и добавили поддержку уведомлений RuStore.';
 const DEFAULT_MODERATOR_NOTE =
-  'Исправлен вылет 1.0.8: Reanimated получал неподдерживаемую CSS-строку. В 1.0.9 используется cubicBezier. APK проверен на Android 15, включая запуск без сети. Вход не нужен.';
+  'В версии 1.0.11 (code 28) исправлен вылет 1.0.8: Reanimated получал неподдерживаемую CSS-строку, теперь используется cubicBezier. Подключён RuStore Push SDK 6.9.1. Release-сборка оптимизирована R8 и shrinkResources, targetSdk 36. Вход не нужен.';
 
 function getArgument(name, fallback) {
   const index = process.argv.indexOf(`--${name}`);
