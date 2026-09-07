@@ -7,7 +7,7 @@ const PACKAGE_NAME = 'ru.uletay.app';
 const DEFAULT_WHATS_NEW =
   'Исправили аварийное закрытие на Android 15, включили оптимизацию release-сборки и добавили поддержку уведомлений RuStore.';
 const DEFAULT_MODERATOR_NOTE =
-  'В версии 1.0.11 (code 28) исправлен вылет 1.0.8: Reanimated получал неподдерживаемую CSS-строку, теперь используется cubicBezier. Подключён RuStore Push SDK 6.9.1. Release-сборка оптимизирована R8 и shrinkResources, targetSdk 36. Вход не нужен.';
+  '1.0.11 (code 28): исправлен вылет Android 15 из-за Reanimated; используется cubicBezier. Добавлены RuStore Push SDK 6.9.1 и R8/shrinkResources. targetSdk 36. Вход не нужен.';
 
 function getArgument(name, fallback) {
   const index = process.argv.indexOf(`--${name}`);
