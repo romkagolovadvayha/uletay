@@ -468,7 +468,7 @@ export function buildNativeYandexMapHtml(
       map = new ymaps3.YMap(document.getElementById('map'), {
         location: { center: [center.lng, center.lat], zoom: zoom },
         showScaleInCopyrights: true,
-        behaviors: ['drag', 'pinchZoom', 'dblClick']
+        behaviors: ['drag', 'pinchZoom', 'pinchRotate', 'dblClick']
       }, [
         new ymaps3.YMapDefaultSchemeLayer({ theme: 'dark' }),
         new ymaps3.YMapDefaultFeaturesLayer({})

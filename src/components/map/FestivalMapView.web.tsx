@@ -289,7 +289,7 @@ export function FestivalMapView({
               zoom: config.defaultZoom,
             },
             showScaleInCopyrights: true,
-            behaviors: ['drag', 'scrollZoom', 'pinchZoom', 'dblClick'],
+            behaviors: ['drag', 'scrollZoom', 'pinchZoom', 'pinchRotate', 'dblClick'],
           },
           [new YMapDefaultSchemeLayer({ theme: 'dark' }), new YMapDefaultFeaturesLayer({})],
         );
