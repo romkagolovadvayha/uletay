@@ -1,5 +1,6 @@
 import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -26,6 +27,7 @@ import { useUserMapMarkers } from '../hooks/useUserMapMarkers';
 import { ROAD_ENTRANCE } from '../data/festivalMap';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { mapColors } from '../theme/map';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import type {
@@ -518,7 +520,7 @@ export function FestivalMapScreen({ route }: Props) {
             {tracedPlan && !popupVisible ? (
               <MotionPressable accessibilityRole="button" accessibilityLabel="О карте и условные обозначения"
                 style={styles.mapInfoButton} onPress={() => { dismissPopup(); setMapInfoVisible(true); }}>
-                <Text style={styles.mapInfoLabel}>Схема 2026 · {(data.mapZones?.features.length ?? 0) + (data.mapPois?.features.filter(p => !p.properties.sourceZoneId).length ?? 0)} мест · ⓘ</Text>
+                <Ionicons name="information-circle-outline" size={25} color={colors.text} />
               </MotionPressable>
             ) : null}
             {routeError && !selectedZone && !selectedPoi && !routing ? (
@@ -711,8 +713,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm, zIndex: 100,
   },
   search: { marginHorizontal: spacing.screen },
-  mapInfoButton: { position:'absolute', left:spacing.screen, bottom:96, minHeight:44, paddingHorizontal:spacing.md,
-    borderRadius:16, backgroundColor:colors.surface, justifyContent:'center' },
+  mapInfoButton: { position:'absolute', left:spacing.screen, bottom:96, width:48, height:48,
+    borderRadius:24, backgroundColor:mapColors.fabBg, borderWidth:1, borderColor:mapColors.fabBorder,
+    alignItems:'center', justifyContent:'center' },
   mapInfoLabel: { ...typography.caption, color:colors.text },
   mapInfoContent: { maxHeight:360 },
   mapInfoDescription: { ...typography.body, color:colors.textSecondary, marginVertical:spacing.sm },
