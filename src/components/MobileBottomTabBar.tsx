@@ -1,6 +1,6 @@
 import { BottomTabBarHeightCallbackContext, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { CommonActions } from '@react-navigation/native';
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVisibleMainTabRoutes } from '../navigation/mainTabRoutes';
@@ -9,6 +9,7 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { resolveAndroidBottomInset } from '../utils/safeArea';
 import { webKeyboardActivationProps } from '../utils/webKeyboardActivation';
+import { TabSpotlight } from './TabSpotlight';
 
 /** Equal inner padding above/below tab items (safe-area added separately below). */
 export const TAB_BAR_INNER_PADDING = 8;
@@ -39,6 +40,7 @@ export function MobileBottomTabBar({
   const onHeightChange = useContext(BottomTabBarHeightCallbackContext);
   const safeInsets = useSafeAreaInsets();
   const bottomInset = resolveAndroidBottomInset(insets.bottom, safeInsets.bottom);
+  const [barWidth, setBarWidth] = useState(0);
   const mainTabRoutes = useVisibleMainTabRoutes();
   const focusedOptions = descriptors[state.routes[state.index]?.key ?? '']?.options;
   const activeColor = focusedOptions?.tabBarActiveTintColor ?? colors.tabActive;
@@ -52,11 +54,16 @@ export function MobileBottomTabBar({
       }),
     [mainTabRoutes, state.routes],
   );
-  const activeRouteIsVisible = visibleRoutes.some(
+  const focusedVisibleIndex = visibleRoutes.findIndex(
     (route) => route.key === state.routes[state.index]?.key,
   );
+  const activeVisibleIndex =
+    focusedVisibleIndex >= 0
+      ? focusedVisibleIndex
+      : visibleRoutes.findIndex((route) => route.name === 'MoreTab');
 
   const handleLayout = (event: LayoutChangeEvent) => {
+    setBarWidth(event.nativeEvent.layout.width);
     onHeightChange?.(event.nativeEvent.layout.height);
   };
 
@@ -71,11 +78,17 @@ export function MobileBottomTabBar({
         },
       ]}
     >
+      {barWidth > 0 && activeVisibleIndex >= 0 ? (
+        <TabSpotlight
+          activeIndex={activeVisibleIndex}
+          tabCount={visibleRoutes.length}
+          width={barWidth}
+          height={TAB_BAR_INNER_PADDING + ITEM_CONTENT_HEIGHT}
+        />
+      ) : null}
       <View accessibilityRole="tablist" style={styles.row}>
-        {visibleRoutes.map((route) => {
-          const index = state.routes.findIndex((item) => item.key === route.key);
-          const focused =
-            index === state.index || (route.name === 'MoreTab' && !activeRouteIsVisible);
+        {visibleRoutes.map((route, visibleIndex) => {
+          const focused = visibleIndex === activeVisibleIndex;
           const { options } = descriptors[route.key];
           const color = focused ? activeColor : inactiveColor;
           const label =
@@ -131,7 +144,6 @@ export function MobileBottomTabBar({
                 style={styles.item}
               >
                 <View style={styles.iconSlot}>
-                  {focused ? <View style={styles.activeGlow} /> : null}
                   {icon}
                 </View>
                 <Text style={[styles.label, { color }]} numberOfLines={1} ellipsizeMode="clip">
@@ -202,14 +214,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     borderRadius: 12,
-  },
-  activeGlow: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(255, 207, 36, 0.14)',
   },
   label: {
     ...typography.tabLabel,

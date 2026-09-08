@@ -19,6 +19,7 @@ export const colors = {
   liveGlow: 'rgba(255, 59, 48, 0.28)',
   tabInactive: '#8E8E93',
   tabActive: '#FFC107',
+  tabLightCore: '#FFF2AE',
   countdownDivider: 'rgba(255, 255, 255, 0.12)',
   overlay: 'rgba(0, 0, 0, 0.45)',
   overlayStrong: 'rgba(0, 0, 0, 0.75)',
