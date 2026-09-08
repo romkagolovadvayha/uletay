@@ -593,17 +593,19 @@ export function FestivalMapScreen({ route }: Props) {
             </ScrollView>
           ) : mapInfoVisible ? (
             <ScrollView style={styles.mapInfoContent}>
-              <Text style={styles.mapErrorTitle}>Места на карте</Text>
+              <Text style={styles.mapInfoTitle}>Места на карте</Text>
               <MotionPressable accessibilityRole="button" accessibilityLabel="Обновить объекты карты" disabled={dataRefreshing}
-                style={styles.mapInfoCategory} onPress={() => { void refreshData(true); }}>
+                style={[styles.mapInfoCategory, styles.mapInfoRefreshButton]} onPress={() => { void refreshData(true); }}>
                 <Text style={styles.mapInfoLabel}>{dataRefreshing ? 'Обновляем…' : 'Обновить объекты карты'}</Text>
               </MotionPressable>
-              {dataError ? <Text accessibilityRole="alert" style={styles.mapInfoDescription}>{dataError}</Text> : null}
-              <Text style={styles.mapInfoDescription}>Объекты нанесены по схеме фестиваля 2026 года. Расположение ориентировочное; схема не подтверждает планировку следующего фестиваля.</Text>
-              <Text style={styles.mapInfoDescription}>Зелёный — палатки · песочный — парковки и торговля · оранжевый — «Комфорт» · голубой — вода, душ и туалеты · красный пунктир — забор.</Text>
-              <Text style={styles.mapInfoDescription}>Подписи зон размещены внутри их границ. Значок автомобиля с номером обозначает въезд, стрелка в проёме — вход или выход. Небольшой значок с числом открывает список близких сервисов.</Text>
-              <Text style={styles.mapInfoDescription}>В автокемпинге нанесены официальные номера 1–296 по схеме выбора билетов 2027 года. Выберите диапазон и нажмите на нужную ячейку; цвет ячейки не показывает актуальную занятость.</Text>
-              <Text style={styles.mapInfoDescription}>Нажмите на объект или найдите его по названию. Маршруты учитывают дороги, проходы и ограждения; без геолокации путь начинается от главного входа.</Text>
+              <View style={styles.mapInfoDescriptions}>
+                {dataError ? <Text accessibilityRole="alert" style={styles.mapInfoDescription}>{dataError}</Text> : null}
+                <Text style={styles.mapInfoDescription}>Объекты нанесены по схеме фестиваля 2026 года. Расположение ориентировочное; схема не подтверждает планировку следующего фестиваля.</Text>
+                <Text style={styles.mapInfoDescription}>Зелёный — палатки · песочный — парковки и торговля · оранжевый — «Комфорт» · голубой — вода, душ и туалеты · красный пунктир — забор.</Text>
+                <Text style={styles.mapInfoDescription}>Подписи зон размещены внутри их границ. Значок автомобиля с номером обозначает въезд, стрелка в проёме — вход или выход. Небольшой значок с числом открывает список близких сервисов.</Text>
+                <Text style={styles.mapInfoDescription}>В автокемпинге нанесены официальные номера 1–296 по схеме выбора билетов 2027 года. Выберите диапазон и нажмите на нужную ячейку; цвет ячейки не показывает актуальную занятость.</Text>
+                <Text style={styles.mapInfoDescription}>Нажмите на объект или найдите его по названию. Маршруты учитывают дороги, проходы и ограждения; без геолокации путь начинается от главного входа.</Text>
+              </View>
               <View style={styles.mapInfoCategories}>
                 {availableFilters.map(item => (
                   <MotionPressable key={item.id} accessibilityRole="button" accessibilityLabel={`Показать: ${item.label}`}
@@ -716,10 +718,13 @@ const styles = StyleSheet.create({
   mapInfoButton: { position:'absolute', left:spacing.screen, bottom:96, width:48, height:48,
     borderRadius:24, backgroundColor:mapColors.fabBg, borderWidth:1, borderColor:mapColors.fabBorder,
     alignItems:'center', justifyContent:'center' },
+  mapInfoTitle: { ...typography.screenTitle, color:colors.text, textAlign:'center', marginBottom:spacing.md },
   mapInfoLabel: { ...typography.caption, color:colors.text },
   mapInfoContent: { maxHeight:360 },
-  mapInfoDescription: { ...typography.body, color:colors.textSecondary, marginVertical:spacing.sm },
-  mapInfoCategories: { flexDirection:'row', flexWrap:'wrap', gap:spacing.sm, paddingBottom:spacing.md },
+  mapInfoRefreshButton: { marginBottom:spacing.lg },
+  mapInfoDescriptions: { gap:spacing.md },
+  mapInfoDescription: { ...typography.body, color:colors.textSecondary, lineHeight:20 },
+  mapInfoCategories: { flexDirection:'row', flexWrap:'wrap', gap:spacing.sm, paddingBottom:spacing.md, marginTop:spacing.xl },
   mapInfoCategory: { minHeight:44, paddingHorizontal:spacing.md, justifyContent:'center', borderRadius:16, backgroundColor:colors.surfaceMuted },
   routeFailure: { position:'absolute', bottom:150, left:spacing.screen, right:80, backgroundColor:colors.surface,
     borderRadius:16, padding:spacing.md },
