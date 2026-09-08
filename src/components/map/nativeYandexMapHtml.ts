@@ -2,6 +2,7 @@ import { colors } from '../../theme/colors';
 import { mapColors } from '../../theme/map';
 import { motion } from '../../theme/motion';
 import { shadows } from '../../theme/shadows';
+import { clusterMapPlaces, createMapPlaceElement, mapPlaceMarkerCss } from '../../utils/map/placeMarkers';
 
 /** Inline HTML for native WebView — same Yandex JS API 3.0 as web. */
 export function buildNativeYandexMapHtml(
@@ -19,6 +20,7 @@ export function buildNativeYandexMapHtml(
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
+    ${mapPlaceMarkerCss}
     html, body, #map { margin: 0; width: 100%; height: 100%; background: ${colors.background}; overflow: hidden; }
     .fest-scheme-overlay {
       opacity: var(--fest-scheme-opacity, 0.85);
@@ -68,6 +70,7 @@ export function buildNativeYandexMapHtml(
   <div id="map"></div>
   <script>
 (function () {
+  var groupPlaces = ${clusterMapPlaces.toString()};
   function cameraDuration() {
     return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
       ? 0
@@ -141,6 +144,9 @@ export function buildNativeYandexMapHtml(
   var YMapImageOverlay = null;
   var ready = false;
   var pendingState = null;
+  var currentState = null;
+  var cameraTarget = null;
+  var markerPointerUntil = 0;
   var pendingCmds = [];
   var zoneItems = [];
   var zoneImages = [];
@@ -164,6 +170,29 @@ export function buildNativeYandexMapHtml(
       try { map.removeChild(items[i]); } catch (e) {}
     }
     items.length = 0;
+  }
+
+  function drawPlaceMarkers(state) {
+    removeAll(poiMarkers);
+    groupPlaces(state.placeMarkers || [], mapZoom).forEach(function (group) {
+      var place = group.places[0];
+      var clustered = group.places.length > 1;
+      var el = (${createMapPlaceElement.toString()})(group, mapZoom);
+      el.addEventListener('pointerdown', function () { markerPointerUntil = Date.now() + 1000; });
+      el.addEventListener('pointerup', function () { markerPointerUntil = Date.now() + 500; });
+      el.addEventListener('pointercancel', function () { markerPointerUntil = 0; });
+      el.addEventListener('click', function (event) {
+        markerPointerUntil = Date.now() + 500;
+        event.stopPropagation();
+        if (clustered) post({ type: 'placesPress', places: group.places });
+        else if (place.kind === 'zone') post({ type: 'zonePress', zoneId: place.id });
+        else post({ type: 'poiPress', poiId: place.id });
+      });
+      var marker = new ymaps3.YMapMarker({ id: 'place-' + place.kind + '-' + place.id,
+        source: FEST_MARKER, coordinates: group.coordinates, zIndex: LAYER_Z.markers + (place.selected ? 20 : 0) }, el);
+      map.addChild(marker);
+      poiMarkers.push(marker);
+    });
   }
 
   function metersPerDegLng(lat) {
@@ -212,6 +241,7 @@ export function buildNativeYandexMapHtml(
   }
 
   function applyState(state) {
+    currentState = state;
     if (!ready || !map || !ymaps3) {
       pendingState = state;
       return;
@@ -225,6 +255,7 @@ export function buildNativeYandexMapHtml(
     for (var pi = 0; pi < paths.length; pi++) {
       var pf = paths[pi];
       if (!pf.geometry || pf.geometry.type !== 'LineString') continue;
+      if (pf.properties && pf.properties.routingOnly) continue;
       var pItem = new ymaps3.YMapFeature({
         id: 'path-' + pi,
         source: FEST_PATH,
@@ -270,7 +301,7 @@ export function buildNativeYandexMapHtml(
       var zItem = new ymaps3.YMapFeature({
         id: 'zone-' + (zp.id || zi),
         source: FEST_ZONE,
-        geometry: zf.geometry,
+        geometry: zp.geometryParts && zp.geometryParts.length ? { type: 'MultiPolygon', coordinates: [zf.geometry.coordinates].concat(zp.geometryParts.map(function (p) { return p.coordinates; })) } : zf.geometry,
         style: zoneStyle(zp, selected),
         properties: { zoneId: zp.id }
       });
@@ -294,21 +325,6 @@ export function buildNativeYandexMapHtml(
         zoneImages.push(img);
       }
 
-      var showLabel = zp.showLabel === true || (zp.showLabel !== false && ['building','toilet','shower','water','service','comfort','trade','stage_area','custom'].indexOf(zp.zoneType) >= 0);
-      if (showLabel && mapZoom >= 15) {
-        var label = document.createElement('div');
-        label.className = 'fest-zone-label';
-        label.textContent = (zp.name && String(zp.name).trim()) || zp.zoneType || 'Зона';
-        var labelRot = zp.labelRotation != null ? zp.labelRotation : layout.rotation;
-        label.style.transform = 'translate(-50%, -50%) rotate(' + labelRot + 'deg)';
-        var marker = new ymaps3.YMapMarker({
-          source: FEST_MARKER,
-          coordinates: [layout.center.lng, layout.center.lat],
-          zIndex: LAYER_Z.zoneLabels
-        }, label);
-        map.addChild(marker);
-        zoneLabels.push(marker);
-      }
     }
 
     removeAll(routeItems);
@@ -333,26 +349,7 @@ export function buildNativeYandexMapHtml(
       routeItems.push(rItem);
     }
 
-    removeAll(poiMarkers);
-    var pois = state.pois || [];
-    for (var oi = 0; oi < pois.length; oi++) {
-      var poi = pois[oi];
-      if (!poi.geometry || poi.geometry.type !== 'Point') continue;
-      var pp = poi.properties || {};
-      var poiEl = document.createElement('div');
-      poiEl.className = 'fest-poi-marker' + (pp.id === selectedPoiId ? ' fest-poi-marker--selected' : '');
-      poiEl.textContent = poiGlyph(pp.category);
-      poiEl.setAttribute('aria-label', pp.name || 'Место');
-      var poiMarker = new ymaps3.YMapMarker({
-        id: 'poi-' + (pp.id || oi),
-        source: FEST_MARKER,
-        coordinates: poi.geometry.coordinates,
-        zIndex: LAYER_Z.markers + (pp.id === selectedPoiId ? 20 : 0),
-        properties: { poiId: pp.id }
-      }, poiEl);
-      map.addChild(poiMarker);
-      poiMarkers.push(poiMarker);
-    }
+    drawPlaceMarkers(state);
 
     removeAll(savedMarkers);
     var saved = state.userMarkers || [];
@@ -415,8 +412,16 @@ export function buildNativeYandexMapHtml(
       pendingCmds.push(cmd);
       return;
     }
-    if (cmd.type === 'flyTo') {
+    if (cmd.type === 'zoomBy') {
+      var active = cameraTarget && cameraTarget.until > Date.now() ? cameraTarget : null;
+      var nextZoom = Math.max(12, Math.min(21, (active ? active.zoom : mapZoom) + cmd.delta));
+      var target = { zoom: nextZoom, duration: cameraDuration() };
+      if (active && active.center) target.center = active.center;
+      cameraTarget = { center: active && active.center, zoom: nextZoom, until: Date.now() + cameraDuration() + 80 };
+      map.update({ location: target });
+    } else if (cmd.type === 'flyTo') {
       locationSynced = true;
+      cameraTarget = { center: [cmd.lng, cmd.lat], zoom: cmd.zoom != null ? cmd.zoom : 16, until: Date.now() + cameraDuration() + 80 };
       map.update({
         location: {
           center: [cmd.lng, cmd.lat],
@@ -425,6 +430,7 @@ export function buildNativeYandexMapHtml(
         }
       });
     } else if (cmd.type === 'fitRoute' && cmd.coordinates && cmd.coordinates.length) {
+      cameraTarget = null;
       var minLng = cmd.coordinates[0][0], maxLng = cmd.coordinates[0][0];
       var minLat = cmd.coordinates[0][1], maxLat = cmd.coordinates[0][1];
       for (var i = 0; i < cmd.coordinates.length; i++) {
@@ -487,10 +493,13 @@ export function buildNativeYandexMapHtml(
         layer: 'any',
         onUpdate: function (event) {
           if (event && event.location && typeof event.location.zoom === 'number') {
+            var previousZoom = Math.round(mapZoom * 4);
             mapZoom = event.location.zoom;
+            if (ready && currentState && previousZoom !== Math.round(mapZoom * 4)) drawPlaceMarkers(currentState);
           }
         },
         onClick: function (object, event) {
+          if (Date.now() < markerPointerUntil) return;
           var poiId = object && object.entity && object.entity.properties && object.entity.properties.poiId;
           if (!poiId && object && object.entity && object.entity.id && String(object.entity.id).indexOf('poi-') === 0) {
             poiId = String(object.entity.id).slice(4);

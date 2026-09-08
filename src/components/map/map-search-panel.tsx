@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  ScrollView,
   View,
   type StyleProp,
   type ViewStyle,
@@ -37,7 +38,7 @@ type Props = {
 };
 
 function normalize(value: string) {
-  return value.trim().toLocaleLowerCase('ru');
+  return value.trim().toLocaleLowerCase('ru').replace(/ё/g, 'е');
 }
 
 export function MapSearchPanel({
@@ -64,6 +65,7 @@ export function MapSearchPanel({
       }));
     const poiResults: Result[] = (pois?.features ?? [])
       .filter((poi) => normalize(`${poi.properties.name} ${poi.properties.description ?? ''}`).includes(normalizedQuery))
+      .filter((poi) => !poi.properties.sourceZoneId || !zones?.features.some(z => z.properties.id === poi.properties.sourceZoneId))
       .map((poi) => ({
         kind: 'poi',
         id: poi.properties.id,
@@ -72,7 +74,7 @@ export function MapSearchPanel({
         item: poi,
       }));
 
-    return [...zoneResults, ...poiResults].slice(0, 8);
+    return [...zoneResults, ...poiResults].sort((a, b) => Number(!normalize(a.name).startsWith(normalizedQuery)) - Number(!normalize(b.name).startsWith(normalizedQuery)));
   }, [normalizedQuery, pois?.features, zones?.features]);
 
   const select = (result: Result) => {
@@ -93,6 +95,8 @@ export function MapSearchPanel({
           onChangeText={setQuery}
           autoCorrect={false}
           returnKeyType="search"
+          onSubmitEditing={() => { if (results.length) select(results[0]); }}
+          onKeyPress={(event) => { if (event.nativeEvent.key === 'Escape') setQuery(''); }}
           style={styles.input}
         />
         {query ? (
@@ -109,12 +113,13 @@ export function MapSearchPanel({
       </View>
 
       {normalizedQuery.length >= 2 ? (
-        <View style={styles.results}>
+        <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" accessibilityLabel="Результаты поиска по карте">
           {results.length ? (
             results.map((result) => (
               <MotionPressable
                 key={`${result.kind}-${result.id}`}
                 accessibilityRole="button"
+                accessibilityLabel={result.name}
                 onPress={() => select(result)}
                 style={styles.result}
               >
@@ -128,7 +133,7 @@ export function MapSearchPanel({
           ) : (
             <Text style={styles.empty}>Ничего не найдено</Text>
           )}
-        </View>
+        </ScrollView>
       ) : null}
     </View>
   );
@@ -163,6 +168,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   results: {
+    maxHeight: 260,
     marginTop: spacing.xs,
     overflow: 'hidden',
     backgroundColor: colors.surfaceElevated,

@@ -50,6 +50,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontWeight: '600',
+    paddingRight: 44,
   },
   meta: {
     ...typography.caption,

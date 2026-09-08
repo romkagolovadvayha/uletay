@@ -10,6 +10,7 @@ import { filterPoiFeatures, filterZoneFeatures } from '../../utils/map/layerStyl
 import { overlayToYandexLayoutBounds } from '../../utils/map/overlayGeoref';
 import { buildNativeYandexMapHtml } from './nativeYandexMapHtml';
 import type { FestivalMapViewProps } from './types';
+import { buildMapPlaceMarkers, type MapPlaceMarker } from '../../utils/map/placeMarkers';
 
 const MAP_BASE_URL = 'https://uletayapp.ru/';
 
@@ -18,6 +19,7 @@ type BridgeMessage =
   | { type: 'error'; message?: string }
   | { type: 'zonePress'; zoneId: string }
   | { type: 'poiPress'; poiId: string }
+  | { type: 'placesPress'; places: MapPlaceMarker[] }
   | { type: 'mapPress'; coordinate?: { lat: number; lng: number } };
 
 export function FestivalMapView({
@@ -34,6 +36,7 @@ export function FestivalMapView({
   followUser,
   onZonePress,
   onPoiPress,
+  onPlacesPress,
   onMapPress,
   onMapCoordinatePress,
   onMapReady,
@@ -44,6 +47,7 @@ export function FestivalMapView({
   const bridgeReadyRef = useRef(false);
   const onZonePressRef = useLatestRef(onZonePress);
   const onPoiPressRef = useLatestRef(onPoiPress);
+  const onPlacesPressRef = useLatestRef(onPlacesPress);
   const onMapPressRef = useLatestRef(onMapPress);
   const onMapCoordinatePressRef = useLatestRef(onMapCoordinatePress);
   const zonesRef = useLatestRef(zones);
@@ -74,6 +78,8 @@ export function FestivalMapView({
     const overlay = config.adminOverlay;
     const overlayUrl = overlay ? resolveMediaUrl(overlay.imageUrl) : undefined;
     return {
+      filter,
+      placeMarkers: buildMapPlaceMarkers(filteredZones, filteredPois, selectedZoneId, selectedPoiId),
       center: config.center,
       defaultZoom: config.defaultZoom,
       selectedZoneId: selectedZoneId ?? null,
@@ -109,6 +115,7 @@ export function FestivalMapView({
       })),
     };
   }, [
+    filter,
     config.adminOverlay,
     config.center,
     config.defaultZoom,
@@ -139,6 +146,9 @@ export function FestivalMapView({
 
   useEffect(() => {
     onMapReady?.({
+      zoomBy: (delta) => {
+        inject(`window.__festCmd && window.__festCmd(${JSON.stringify({ type: 'zoomBy', delta })})`);
+      },
       flyTo: (lat, lng, zoom = config.defaultZoom) => {
         inject(
           `window.__festCmd && window.__festCmd(${JSON.stringify({ type: 'flyTo', lat, lng, zoom })})`,
@@ -195,6 +205,11 @@ export function FestivalMapView({
       } else {
         onMapPressRef.current?.();
       }
+    }
+
+    if (msg.type === 'placesPress') {
+      onPlacesPressRef.current?.(msg.places);
+      return;
     }
   };
 

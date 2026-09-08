@@ -159,6 +159,14 @@ export type MapZoneType =
   | 'custom';
 
 export interface MapZoneProperties {
+  /** Unadjusted source geometry retained for repeatable landscape fitting. */
+  schematicGeometry?: GeoJSON.Polygon;
+  /** Remaining parts of an area divided by a road; share its identity and caption. */
+  geometryParts?: GeoJSON.Polygon[];
+  parentZoneId?: string;
+  markerLabel?: string;
+  layoutRings?: [number, number][][];
+  accessPoint?: LatLng;
   id: string;
   name: string;
   zoneType: MapZoneType;
@@ -190,6 +198,7 @@ export type MapPathProperties = {
   id: string;
   name?: string;
   pathKind?: 'road' | 'walkway' | 'fence';
+  routingOnly?: boolean;
   closed?: boolean;
 };
 

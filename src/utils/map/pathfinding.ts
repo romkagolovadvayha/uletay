@@ -12,6 +12,7 @@ import {
   type FenceZones,
 } from './fenceRouting';
 import { haversineMeters, coordToLatLng } from './geo';
+import { splitPathJunctions } from './pathJunctions';
 
 type GraphNode = {
   id: string;
@@ -115,7 +116,7 @@ function routableFeatures(paths?: MapPathsGeoJson) {
 export function buildGraph(paths: MapPathsGeoJson | undefined, mergeM: number = MERGE_STEPS_M[0]) {
   const nodes = new Map<string, GraphNode>();
   const adjacency = new Map<string, GraphEdge[]>();
-  const features = routableFeatures(paths);
+  const features = splitPathJunctions(routableFeatures(paths), mergeM);
 
   for (let featureIndex = 0; featureIndex < features.length; featureIndex += 1) {
     const coords = features[featureIndex].geometry.coordinates;
@@ -477,15 +478,20 @@ async function tryGraphRouteAsync(
   const { nodes, adjacency, features } = buildGraph(paths, mergeM);
   if (nodes.size === 0) return null;
 
-  const startSnap = nearestPointOnPaths(paths, start);
-  const endSnap = nearestPointOnPaths(paths, end);
+  const connectedPaths: MapPathsGeoJson = { type: 'FeatureCollection', features };
+  const startSnap = nearestPointOnPaths(connectedPaths, start);
+  const endSnap = nearestPointOnPaths(connectedPaths, end);
   if (!startSnap || !endSnap) return null;
 
   const startId = attachSnapToGraph(nodes, adjacency, startSnap, mergeM);
   const endId = attachSnapToGraph(nodes, adjacency, endSnap, mergeM);
 
+  if (startSnap.featureIndex === endSnap.featureIndex && startSnap.segmentIndex === endSnap.segmentIndex) {
+    return composeRouteAsync(start, startSnap, [[startSnap.lng, startSnap.lat], [endSnap.lng, endSnap.lat]], endSnap, end, ctx);
+  }
+
   const drawnCoords = runAStar(nodes, adjacency, features, startId, endId, end);
-  if (!drawnCoords || drawnCoords.length < 2) return null;
+  if (!drawnCoords) return null;
   if (routeCrossesFenceZones(drawnCoords, ctx.fenceZones)) return null;
 
   return composeRouteAsync(start, startSnap, drawnCoords, endSnap, end, ctx);
@@ -501,8 +507,9 @@ export async function tryBridgedRouteAsync(
   const { nodes, adjacency, features } = buildGraph(paths, mergeM);
   if (nodes.size === 0) return null;
 
-  const startSnap = nearestPointOnPaths(paths, start);
-  const endSnap = nearestPointOnPaths(paths, end);
+  const connectedPaths: MapPathsGeoJson = { type: 'FeatureCollection', features };
+  const startSnap = nearestPointOnPaths(connectedPaths, start);
+  const endSnap = nearestPointOnPaths(connectedPaths, end);
   if (!startSnap || !endSnap) return null;
 
   const startId = attachSnapToGraph(nodes, adjacency, startSnap, mergeM);

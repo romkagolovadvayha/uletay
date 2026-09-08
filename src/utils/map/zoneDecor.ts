@@ -38,7 +38,7 @@ export function shouldShowZoneLabelAtZoom(zoom: number, layout: ZoneRectLayout):
 function fitLabelFontSize(text: string, innerW: number, innerH: number): number {
   if (innerW <= 0 || innerH <= 0) return 0;
   const len = Math.max(1, text.length);
-  let fontSize = Math.min(innerH * 0.36, innerW * 0.19);
+  let fontSize = Math.min(20, innerH * 0.36, innerW * 0.19);
 
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const charW = fontSize * 0.6;

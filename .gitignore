@@ -65,3 +65,5 @@ scripts/fest-artist-sync-report.json
 # Local build and QA scratch files
 /tmp/
 .seo-cache/
+/artifacts/map-audit/*.json
+/artifacts/map-audit/*.png

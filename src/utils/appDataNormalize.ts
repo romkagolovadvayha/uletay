@@ -1,5 +1,6 @@
 import { AppData, FestivalInfo, Stage } from '../types';
 import { festivalRules } from '../data/festivalRules';
+import { TICKET_VENDOR_URL } from '../constants/legal';
 import { capPerformanceEndTime } from './performanceTime';
 import { getDefaultMapData } from '../data/festivalMapSeed';
 import { syncAppHeadliners } from './headlinersCore';
@@ -43,7 +44,17 @@ export function normalizeAppData(data: AppData): AppData {
       menu: item.menu?.length ? item.menu : undefined,
     })),
     headliners: Array.isArray(data.headliners) ? data.headliners : [],
-    rules: Array.isArray(data.rules) && data.rules.length ? data.rules : festivalRules,
+    rules: (Array.isArray(data.rules) && data.rules.length ? data.rules : festivalRules).map(
+      (tab) => ({
+        ...tab,
+        blocks: tab.blocks.map((block) =>
+          // Cached and CMS rules may still point to a previous festival's tickets.
+          block.link && /^https?:\/\/(?:www\.)?drivegrup\.ru\/ticket\/ylet\d*\/?(?:[?#].*)?$/i.test(block.link.url)
+            ? { ...block, link: { ...block.link, url: TICKET_VENDOR_URL } }
+            : block,
+        ),
+      }),
+    ),
     festivalMap: data.festivalMap ?? mapDefaults.festivalMap,
     mapZones,
     mapPaths: data.mapPaths ?? mapDefaults.mapPaths,

@@ -8,6 +8,7 @@ import { spacing } from '../../theme/spacing';
 import { appFont, typography } from '../../theme/typography';
 import type { LatLng } from '../../types/map';
 import { openExternalUrl } from '../../utils/openExternalUrl';
+import { buildGoogleMapsRouteUrl, buildYandexRouteUrl } from '../../utils/map/geo';
 
 type Props = {
   center: LatLng;
@@ -33,13 +34,8 @@ function getWebLocation(): Promise<LatLng | null> {
   });
 }
 
-function yandexWebRoute(center: LatLng, origin: LatLng | null) {
-  const from = origin ? destination(origin) : '';
-  return `https://yandex.ru/maps/?mode=routes&rtext=${from}~${destination(center)}&rtt=auto`;
-}
-
 function openYandexWebRoute(center: LatLng, origin: LatLng | null) {
-  openExternalUrl(yandexWebRoute(center, origin));
+  openExternalUrl(buildYandexRouteUrl(origin, center));
 }
 
 async function openYandexNavigator(center: LatLng, origin: LatLng | null) {
@@ -52,7 +48,7 @@ async function openYandexNavigator(center: LatLng, origin: LatLng | null) {
     await Linking.openURL(appUrl);
     return;
   }
-  openExternalUrl(yandexWebRoute(center, null));
+  openExternalUrl(buildYandexRouteUrl(null, center));
 }
 
 function openYandexMaps(center: LatLng, origin: LatLng | null) {
@@ -60,7 +56,7 @@ function openYandexMaps(center: LatLng, origin: LatLng | null) {
     openYandexWebRoute(center, origin);
     return;
   }
-  openExternalUrl(yandexWebRoute(center, null));
+  openExternalUrl(buildYandexRouteUrl(null, center));
 }
 
 function openSystemMaps(center: LatLng, label: string) {
@@ -73,7 +69,7 @@ function openSystemMaps(center: LatLng, label: string) {
     openExternalUrl(`geo:${point}?q=${point}(${encodeURIComponent(label)})`);
     return;
   }
-  openExternalUrl(`https://www.google.com/maps/dir/?api=1&destination=${point}`);
+  openExternalUrl(buildGoogleMapsRouteUrl(center));
 }
 
 function RouteButton({ icon, label, primary, disabled, onPress }: {
@@ -123,7 +119,13 @@ export function MapDirectionsSheet({ center, location, onClose }: Props) {
           <Text style={styles.title}>Как добраться</Text>
           <Text style={styles.location}>{location}</Text>
         </View>
-        <MotionPressable accessibilityRole="button" accessibilityLabel="Закрыть" onPress={onClose} style={styles.close}>
+        <MotionPressable
+          accessibilityRole="button"
+          accessibilityLabel="Закрыть"
+          onPress={onClose}
+          hitSlop={8}
+          style={styles.close}
+        >
           <DeferredIonicons name="close" size={22} color={colors.textSecondary} />
         </MotionPressable>
       </View>

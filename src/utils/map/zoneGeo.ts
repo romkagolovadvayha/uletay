@@ -10,13 +10,20 @@ export function polygonCentroid(ring: [number, number][]): LatLng {
     lng += x;
     lat += y;
   }
-  const count = ring.length;
+  // GeoJSON repeats the first vertex; it must not bias the center.
+  const closed = ring.length > 1 && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1];
+  if (closed) {
+    lng -= ring[0][0];
+    lat -= ring[0][1];
+  }
+  const count = closed ? ring.length - 1 : ring.length;
   return { lat: lat / count, lng: lng / count };
 }
 
 export function zoneTargetPoint(
   feature: GeoJSON.Feature<GeoJSON.Polygon, import('../../types/map').MapZoneProperties>,
 ): LatLng {
+  if (feature.properties.accessPoint) return feature.properties.accessPoint;
   const layoutCenter = feature.properties?.layout?.center;
   if (layoutCenter) {
     return layoutCenter;

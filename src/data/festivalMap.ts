@@ -7,9 +7,9 @@ import type {
 } from '../types/map';
 
 /** Главная дорога (Ижевск ↔ Гольяны), въезд с запада */
-export const ROAD_ENTRANCE = { lat: 56.606401, lng: 53.6192 };
+export const ROAD_ENTRANCE = { lat: 56.60849981900743, lng: 53.618766846512976 };
 /** Центр палаточного городка по схеме YLETAY 2026 */
-export const FESTIVAL_CENTER = { lat: 56.606975, lng: 53.622461 };
+export const FESTIVAL_CENTER = { lat: 56.609196, lng: 53.624016 };
 
 export const defaultZoneStyles: Record<
   MapZoneType,

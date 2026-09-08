@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { ExternalLink } from '../components/ExternalLink';
 import { AutographSessionRow } from '../components/AutographSessionRow';
 import { FestivalLogoImage } from '../components/FestivalLogoImage';
 import { SemanticHeading } from '../components/SemanticHeading';
@@ -23,6 +24,7 @@ import { MotionPressable } from '../components/MotionPressable';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionHeader } from '../components/SectionHeader';
 import { WebFestivalGuide } from '../components/WebFestivalGuide';
+import { TICKET_VENDOR_URL } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
 import {
   usePrimaryAutographSessions,
@@ -74,8 +76,8 @@ function HeroParallaxBackground({
 }: HeroParallaxBackgroundProps) {
   const [heroPosterReady, setHeroPosterReady] = useState(Platform.OS !== 'web');
   const [heroVideoReady, setHeroVideoReady] = useState(false);
-  // Native: load as soon as allowed. Web: wait for poster so LCP stays on the image.
-  const shouldLoadHeroVideo = allowVideo && (Platform.OS !== 'web' || heroPosterReady);
+  // The video is web-only and waits for the poster so the image remains the LCP element.
+  const shouldLoadHeroVideo = Platform.OS === 'web' && allowVideo && heroPosterReady;
 
   const onHeroVideoReady = useCallback(() => {
     setHeroVideoReady(true);
@@ -283,6 +285,15 @@ export function FestivalHomeScreen({ navigation }: Props) {
                 festivalEndDate={data.festival.endDate}
                 performances={data.schedule}
               />
+              {festivalPhase === 'before' ? (
+                <ExternalLink
+                  href={TICKET_VENDOR_URL}
+                  accessibilityLabel="Купить билет"
+                  style={styles.ticketButton}
+                >
+                  <Text style={styles.ticketButtonLabel}>Купить билет</Text>
+                </ExternalLink>
+              ) : null}
             </View>
           ) : null}
 
@@ -516,7 +527,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
-    minHeight: 340,
+    minHeight: 280,
     gap: spacing.sm,
   },
   heroContentCompact: {
@@ -547,6 +558,20 @@ const styles = StyleSheet.create({
   overlaySection: {
     paddingHorizontal: spacing.screen,
     marginBottom: spacing.section,
+  },
+  ticketButton: {
+    marginTop: spacing.xxl,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 17,
+    paddingHorizontal: spacing.xl,
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ticketButtonLabel: {
+    ...typography.button,
+    color: colors.primaryText,
   },
   section: {
     paddingHorizontal: spacing.screen,

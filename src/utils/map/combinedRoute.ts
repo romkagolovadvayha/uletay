@@ -19,25 +19,46 @@ function poiCoord(poi: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>): LatLng
   return { lat, lng };
 }
 
-function entranceTargets(pois?: MapPoisGeoJson): LatLng[] {
-  const fromPois = (pois?.features ?? [])
-    .filter((f) => f.properties.category === 'entrance' || f.properties.category === 'parking')
-    .map(poiCoord);
-  return fromPois.length > 0 ? fromPois : [ROAD_ENTRANCE];
+type EntranceTarget = { name: string; point: LatLng };
+type RoutableEntrance = EntranceTarget & {
+  internal: NonNullable<Awaited<ReturnType<typeof findInternalPathAsync>>>;
+};
+
+function entranceTargets(pois?: MapPoisGeoJson): EntranceTarget[] {
+  const open = (pois?.features ?? []).filter(f => f.properties.status !== 'closed');
+  const entrances = open.filter(f => f.properties.category === 'entrance');
+  const fromPois = (entrances.length ? entrances : open.filter(f => f.properties.category === 'parking'))
+    .map(feature => ({ name: feature.properties.name, point: poiCoord(feature) }));
+  return fromPois.length > 0
+    ? fromPois
+    : [{ name: 'Главный вход', point: ROAD_ENTRANCE }];
 }
 
-function nearestTarget(from: LatLng, targets: LatLng[]): LatLng {
-  if (targets.length === 0) return from;
+function nearestEntrance<T extends EntranceTarget>(from: LatLng, targets: T[]): T | null {
+  if (targets.length === 0) return null;
   let best = targets[0];
   let bestDist = Infinity;
   for (const t of targets) {
-    const d = haversineMeters(from, t);
+    const d = haversineMeters(from, t.point);
     if (d < bestDist) {
       bestDist = d;
       best = t;
     }
   }
   return best;
+}
+
+async function routableEntrances(
+  entrances: EntranceTarget[],
+  target: LatLng,
+  paths?: MapPathsGeoJson,
+  zones?: MapZonesGeoJson,
+): Promise<RoutableEntrance[]> {
+  const candidates = await Promise.all(entrances.map(async (entrance) => ({
+    ...entrance,
+    internal: await findInternalPathAsync(paths, entrance.point, target, zones),
+  })));
+  return candidates.filter((candidate): candidate is RoutableEntrance => candidate.internal !== null);
 }
 
 export async function buildCombinedRouteToTarget(options: {
@@ -51,31 +72,32 @@ export async function buildCombinedRouteToTarget(options: {
 }): Promise<CombinedRoute | null> {
   const target = options.target;
   const segments: RouteSegment[] = [];
+  let internalOriginName: string | null = null;
   const inside =
     options.userLocation &&
     isInsideTerritory(options.userLocation, options.mapConfig);
 
   if (options.userLocation && !inside) {
-    const entrance = nearestTarget(options.userLocation, entranceTargets(options.mapPois));
-    const external = await fetchDrivingRoute(options.userLocation, entrance);
+    const candidates = await routableEntrances(
+      entranceTargets(options.mapPois),
+      target,
+      options.mapPaths,
+      options.mapZones,
+    );
+    const entrance = nearestEntrance(options.userLocation, candidates);
+    if (!entrance) return null;
+    const external = await fetchDrivingRoute(options.userLocation, entrance.point);
     segments.push({
       kind: 'external',
       coordinates: external.coordinates,
       distanceMeters: external.distanceMeters,
       durationSeconds: external.durationSeconds,
     });
-
-    const internalStart = {
-      lat: entrance.lat,
-      lng: entrance.lng,
-    };
-    const internal = await findInternalPathAsync(options.mapPaths, internalStart, target, options.mapZones);
-    if (!internal) return null;
     segments.push({
       kind: 'internal',
-      coordinates: internal.coordinates,
-      distanceMeters: internal.distanceMeters,
-      durationSeconds: internal.durationSeconds,
+      coordinates: entrance.internal.coordinates,
+      distanceMeters: entrance.internal.distanceMeters,
+      durationSeconds: entrance.internal.durationSeconds,
     });
   } else if (options.userLocation) {
     const internal = await findInternalPathAsync(options.mapPaths, options.userLocation, target, options.mapZones);
@@ -88,14 +110,14 @@ export async function buildCombinedRouteToTarget(options: {
     });
   } else {
     const entrances = entranceTargets(options.mapPois);
-    const start = entrances[0] ?? target;
-    const internal = await findInternalPathAsync(options.mapPaths, start, target, options.mapZones);
-    if (!internal) return null;
+    const [entrance] = await routableEntrances(entrances, target, options.mapPaths, options.mapZones);
+    if (!entrance) return null;
+    internalOriginName = entrance.name;
     segments.push({
       kind: 'internal',
-      coordinates: internal.coordinates,
-      distanceMeters: internal.distanceMeters,
-      durationSeconds: internal.durationSeconds,
+      coordinates: entrance.internal.coordinates,
+      distanceMeters: entrance.internal.distanceMeters,
+      durationSeconds: entrance.internal.durationSeconds,
     });
   }
 
@@ -109,11 +131,13 @@ export async function buildCombinedRouteToTarget(options: {
 
   let summary = '';
   if (externalSeg && internalSeg) {
-    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до въезда (${formatDuration(externalSeg.durationSeconds)}), затем ${formatDistance(internalSeg.distanceMeters)} пешком до ${options.targetName} (${formatDuration(internalSeg.durationSeconds)})`;
+    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до въезда (${formatDuration(externalSeg.durationSeconds)}), затем ${formatDistance(internalSeg.distanceMeters)} пешком до объекта «${options.targetName}» (${formatDuration(internalSeg.durationSeconds)})`;
   } else if (externalSeg) {
-    summary = `${formatDistance(externalSeg.distanceMeters)} на машине до ${options.targetName} (${formatDuration(externalSeg.durationSeconds)})`;
+    summary = `На машине → ${options.targetName}`;
   } else if (internalSeg) {
-    summary = `${formatDistance(internalSeg.distanceMeters)} пешком до ${options.targetName} (${formatDuration(internalSeg.durationSeconds)})`;
+    summary = options.userLocation
+      ? `Пешком → ${options.targetName}`
+      : `От входа «${internalOriginName ?? 'Главный вход'}» → ${options.targetName}`;
   }
 
   return {

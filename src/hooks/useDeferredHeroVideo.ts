@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, AppState, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 type NetworkInformationWithSaveData = {
   effectiveType?: string;
@@ -41,42 +41,15 @@ function shouldAvoidWebVideo(
 }
 
 /**
- * Keep the poster as the web LCP element. The video is mounted only after the
- * first user interaction, which closes the browser's LCP observation window.
+ * Keep the poster as the web LCP element, then mount the video after hydration.
+ * Native apps keep the static poster and never mount the video player.
  */
 export function useDeferredHeroVideo(): boolean {
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
-      let active = true;
-      let reducedMotionEnabled = false;
-
-      const syncNativePolicy = () => {
-        if (active) {
-          setAllowed(AppState.currentState === 'active' && !reducedMotionEnabled);
-        }
-      };
-
-      void AccessibilityInfo.isReduceMotionEnabled().then((reducedMotion) => {
-        reducedMotionEnabled = reducedMotion;
-        syncNativePolicy();
-      });
-
-      const reduceMotionSubscription = AccessibilityInfo.addEventListener(
-        'reduceMotionChanged',
-        (reducedMotion) => {
-          reducedMotionEnabled = reducedMotion;
-          syncNativePolicy();
-        },
-      );
-      const appStateSubscription = AppState.addEventListener('change', syncNativePolicy);
-
-      return () => {
-        active = false;
-        reduceMotionSubscription.remove();
-        appStateSubscription.remove();
-      };
+      return;
     }
 
     if (typeof window === 'undefined') {
@@ -85,33 +58,16 @@ export function useDeferredHeroVideo(): boolean {
 
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const connection = getNetworkInformation();
-    let userInteracted = false;
 
     const syncPolicy = () => {
-      setAllowed(userInteracted && !shouldAvoidWebVideo(reducedMotionQuery, connection));
-    };
-    const onInteraction = () => {
-      userInteracted = true;
-      syncPolicy();
+      setAllowed(!shouldAvoidWebVideo(reducedMotionQuery, connection));
     };
 
-    const interactionEvents: (keyof WindowEventMap)[] = [
-      'pointerdown',
-      'touchstart',
-      'keydown',
-      'scroll',
-    ];
-    interactionEvents.forEach((eventName) => {
-      window.addEventListener(eventName, onInteraction, { passive: true });
-    });
     reducedMotionQuery.addEventListener('change', syncPolicy);
     connection?.addEventListener?.('change', syncPolicy);
     syncPolicy();
 
     return () => {
-      interactionEvents.forEach((eventName) => {
-        window.removeEventListener(eventName, onInteraction);
-      });
       reducedMotionQuery.removeEventListener('change', syncPolicy);
       connection?.removeEventListener?.('change', syncPolicy);
     };

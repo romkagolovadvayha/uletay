@@ -2,7 +2,7 @@ import { SITE_URL } from '../seo/site';
 
 export const FESTIVAL_WEBSITE = 'https://uletayfest.ru';
 export const FESTIVAL_CONTACTS_URL = `${FESTIVAL_WEBSITE}/contacty`;
-export const TICKET_VENDOR_URL = 'https://drivegrup.ru/ticket/ylet2';
+export const TICKET_VENDOR_URL = 'https://drivegrup.ru/ticket/ylet3';
 export const FESTIVAL_VK_URL = 'https://vk.com/im/convo/-10571147';
 
 export const LEGAL_OPERATOR = {

@@ -2,7 +2,7 @@ import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FestivalMapView } from '../components/map/FestivalMapView';
 import { ScreenTitle } from '../components/ScreenTitle';
@@ -12,6 +12,7 @@ import { MapFabGroup } from '../components/map/MapFabGroup';
 import { MapDirectionsButton } from '../components/map/MapDirectionsButton';
 import { MapDirectionsSheet } from '../components/map/MapDirectionsSheet';
 import { MapFilterChips } from '../components/map/MapFilterChips';
+import { MapSearchPanel } from '../components/map/map-search-panel';
 import { MapLocationBanner } from '../components/map/MapLocationBanner';
 import { MapMotionConfig } from '../components/map/MapMotionConfig';
 import { MapPoiPopup } from '../components/map/MapPoiPopup';
@@ -22,6 +23,7 @@ import { MapZoneCard } from '../components/map/MapZoneCard';
 import { useAppData } from '../context/DataContext';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useUserMapMarkers } from '../hooks/useUserMapMarkers';
+import { ROAD_ENTRANCE } from '../data/festivalMap';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -30,19 +32,35 @@ import type {
   CombinedRoute,
   MapFilterId,
   MapPoiProperties,
-  MapPoiCategory,
   MapZoneProperties,
   UserMapMarkerKind,
 } from '../types/map';
 import { allRouteCoordinates, buildCombinedRouteToTarget } from '../utils/map/combinedRoute';
 import { isInsideTerritory } from '../utils/map/geo';
-import { getActivePoiCategories } from '../utils/map/layerStyles';
-import { nearestPois, poiCoordinate } from '../utils/map/poiData';
+import { getMapFilters } from '../utils/map/layerStyles';
+import { poiCoordinate } from '../utils/map/poiData';
 import { zoneTargetPoint } from '../utils/map/zoneGeo';
+import type { MapPlaceMarker } from '../utils/map/placeMarkers';
+import { zoneImageLayout } from '../utils/map/zoneFillImage';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'MapTab'>;
 type ZoneFeature = GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>;
 type PoiFeature = GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>;
+
+const AUTOCAMP_NUMBER_GROUPS = [
+  { key: 'all', label: 'Все места', start: 1, end: 296 },
+  ...Array.from({ length: 12 }, (_, index) => ({
+    key: String(index * 20 + 1),
+    label: `${index * 20 + 1}–${index * 20 + 20}`,
+    start: index * 20 + 1,
+    end: index * 20 + 20,
+  })),
+  { key: '241', label: '241–246', start: 241, end: 246 },
+  { key: '247', label: '247–266', start: 247, end: 266 },
+  { key: '267', label: '267–296', start: 267, end: 296 },
+] as const;
+
+type AutocampNumberGroup = (typeof AUTOCAMP_NUMBER_GROUPS)[number];
 
 type MapErrorBoundaryProps = {
   children: React.ReactNode;
@@ -78,7 +96,7 @@ type Props = {
 };
 
 export function FestivalMapScreen({ route }: Props) {
-  const { data } = useAppData();
+  const { data, refreshData, isLoading: dataRefreshing, error: dataError } = useAppData();
   const mapConfig = data.festivalMap;
   // The map is useful without precise location. Ask only after the user taps locate.
   const { location, status, requestPermission } = useUserLocation(false);
@@ -87,6 +105,7 @@ export function FestivalMapScreen({ route }: Props) {
   const { markers, saveMarker, removeMarker } = useUserMapMarkers();
 
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
+  const [autocampGroupKey, setAutocampGroupKey] = useState('all');
   const [followUser, setFollowUser] = useState(false);
   const [pickedZoneId, setPickedZoneId] = useState<string | null>(null);
   const [pickedPoiId, setPickedPoiId] = useState<string | null>(null);
@@ -97,24 +116,27 @@ export function FestivalMapScreen({ route }: Props) {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapLoadError, setMapLoadError] = useState(false);
   const [mapRenderError, setMapRenderError] = useState(false);
+  const [mapAttempt, setMapAttempt] = useState(0);
   const [mapErrorDetail, setMapErrorDetail] = useState<string | null>(null);
   const [locationRequested, setLocationRequested] = useState(false);
   const [directionsVisible, setDirectionsVisible] = useState(false);
+  const [mapInfoVisible, setMapInfoVisible] = useState(false);
+  const [nearbyPlaces, setNearbyPlaces] = useState<MapPlaceMarker[]>([]);
   const [savedPlacesVisible, setSavedPlacesVisible] = useState(false);
   const [placingMarkerKind, setPlacingMarkerKind] = useState<UserMapMarkerKind | null>(null);
 
   const selectedZoneId = pickedZoneId;
 
-  const activePoiCategories = useMemo(
-    () => getActivePoiCategories(data.mapPois?.features ?? []),
-    [data.mapPois],
+  const availableFilters = useMemo(
+    () => getMapFilters(data.mapZones, data.mapPois),
+    [data.mapZones, data.mapPois],
   );
   const filter = useMemo((): MapFilterId => {
     if (filterChoice === 'all') return 'all';
-    return activePoiCategories.includes(filterChoice as MapPoiCategory)
-      ? (filterChoice as MapPoiCategory)
+    return availableFilters.some(item => item.id === filterChoice)
+      ? filterChoice
       : 'all';
-  }, [filterChoice, activePoiCategories]);
+  }, [filterChoice, availableFilters]);
 
   const selectedZone = useMemo(() => {
     if (!selectedZoneId) return null;
@@ -129,11 +151,22 @@ export function FestivalMapScreen({ route }: Props) {
       | undefined) ?? null;
   }, [data.mapPois, pickedPoiId]);
 
+  const festivalArrivalTarget = useMemo(() => {
+    const preferred = data.mapPois?.features.find(
+      (item) => item.properties.id === 'plan-2026-entry-1',
+    ) ?? data.mapPois?.features.find(
+      (item) => item.properties.category === 'entrance' && item.properties.status !== 'closed',
+    );
+    if (!preferred) return ROAD_ENTRANCE;
+    const [lng, lat] = preferred.geometry.coordinates;
+    return preferred.properties.accessPoint ?? { lat, lng };
+  }, [data.mapPois]);
+
   const mapSelectedZoneId =
     highlightZoneId ?? pickedZoneId ?? selectedPoi?.properties.sourceZoneId ?? null;
 
   const popupVisible = Boolean(
-    directionsVisible || savedPlacesVisible || pickedZoneId || pickedPoiId || activeRoute || routing,
+    nearbyPlaces.length || mapInfoVisible || directionsVisible || savedPlacesVisible || pickedZoneId || pickedPoiId || activeRoute || routing,
   );
 
   const outsideTerritory = useMemo(() => {
@@ -142,6 +175,8 @@ export function FestivalMapScreen({ route }: Props) {
   }, [location, mapConfig]);
 
   const dismissPopup = useCallback(() => {
+    setNearbyPlaces([]);
+    setMapInfoVisible(false);
     setDirectionsVisible(false);
     setPickedZoneId(null);
     setPickedPoiId(null);
@@ -154,6 +189,9 @@ export function FestivalMapScreen({ route }: Props) {
   useFocusEffect(
     useCallback(() => {
       return () => {
+        setNearbyPlaces([]);
+        setMapInfoVisible(false);
+        setDirectionsVisible(false);
         setPickedZoneId(null);
         setPickedPoiId(null);
         setHighlightZoneId(null);
@@ -196,8 +234,11 @@ export function FestivalMapScreen({ route }: Props) {
 
   useEffect(() => {
     if (selectedZone) {
-      const target = zoneTargetPoint(selectedZone);
-      mapApi.current?.flyTo(target.lat, target.lng, 18);
+      const layout = zoneImageLayout(selectedZone);
+      const size = Math.max(layout.widthMeters, layout.heightMeters, 1);
+      const scale = 156543.03392 * Math.cos(layout.center.lat * Math.PI / 180);
+      const zoom = Math.max(13, Math.min(selectedZone.properties.parentZoneId ? 20 : 18, Math.log2(scale * 240 / size)));
+      mapApi.current?.flyTo(layout.center.lat, layout.center.lng, zoom);
     }
   }, [selectedZone]);
 
@@ -234,6 +275,12 @@ export function FestivalMapScreen({ route }: Props) {
         if (Platform.OS !== 'web') {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
+      } catch {
+        setRouteError('Не удалось построить маршрут. Попробуйте ещё раз.');
+        if (restoreZoneId) {
+          setPickedZoneId(restoreZoneId);
+          setHighlightZoneId(null);
+        }
       } finally {
         setRouting(false);
       }
@@ -244,16 +291,11 @@ export function FestivalMapScreen({ route }: Props) {
   const handleZoneRoute = useCallback(async () => {
     if (!selectedZone) return;
 
-    if (location && mapConfig && !isInsideTerritory(location, mapConfig)) {
-      setRouteError('Вы находитесь не на фестивале');
-      return;
-    }
-
     const zoneId = selectedZone.properties.id;
     setHighlightZoneId(zoneId);
     setPickedZoneId(null);
     await runRoute(zoneTargetPoint(selectedZone), selectedZone.properties.name, zoneId);
-  }, [selectedZone, runRoute, location, mapConfig]);
+  }, [selectedZone, runRoute]);
 
   const handlePoiRoute = useCallback(async () => {
     if (!selectedPoi) return;
@@ -278,24 +320,29 @@ export function FestivalMapScreen({ route }: Props) {
     return () => clearTimeout(timer);
   }, [data.mapPois, route.params?.poiId, route.params?.routeTo, runRoute]);
 
+  const focusAutocampGroup = useCallback((group: AutocampNumberGroup) => {
+    dismissPopup();
+    setAutocampGroupKey(group.key);
+    const cells = data.mapZones?.features.filter(zone => zone.properties.parentZoneId === 'plan-2026-autocamp' &&
+      (group.key === 'all' || (zone.properties.bookingNumber != null &&
+        zone.properties.bookingNumber >= group.start && zone.properties.bookingNumber <= group.end))) ?? [];
+    if (!cells.length) return;
+    const points = cells.flatMap(zone => zone.geometry.coordinates[0]);
+    const lng = (Math.min(...points.map(p => p[0])) + Math.max(...points.map(p => p[0]))) / 2;
+    const lat = (Math.min(...points.map(p => p[1])) + Math.max(...points.map(p => p[1]))) / 2;
+    setFollowUser(false);
+    mapApi.current?.flyTo(lat, lng, group.key === 'all' ? 16.6 : 19);
+  }, [data.mapZones, dismissPopup]);
+
   const handleFilterChange = useCallback(
     (next: MapFilterId) => {
+      dismissPopup();
       setFilterChoice(next);
-      setActiveRoute(null);
-      setPickedZoneId(null);
-      if (next === 'all') {
-        setPickedPoiId(null);
-        return;
+      if (next === 'autocamp') {
+        focusAutocampGroup(AUTOCAMP_NUMBER_GROUPS[0]);
       }
-      const origin = location ?? mapConfig?.center;
-      const candidates =
-        origin && activePoiCategories.includes(next as MapPoiCategory)
-          ? nearestPois(data.mapPois, next as MapPoiCategory, origin, 3)
-          : [];
-      const first = candidates[0];
-      if (first) setPickedPoiId(first.properties.id);
     },
-    [activePoiCategories, data.mapPois, location, mapConfig?.center],
+    [dismissPopup, focusAutocampGroup],
   );
 
   const saveAtCurrentLocation = useCallback(
@@ -323,6 +370,7 @@ export function FestivalMapScreen({ route }: Props) {
   }
 
   const mapUnavailable = mapLoadError || mapRenderError;
+  const tracedPlan = data.mapZones?.features.some(zone => zone.properties.id.startsWith('plan-2026-'));
 
   return (
     <MapMotionConfig>
@@ -331,6 +379,7 @@ export function FestivalMapScreen({ route }: Props) {
           <ScreenTitle style={styles.visuallyHiddenTitle}>Карта фестиваля</ScreenTitle>
           <View style={styles.mapLayer}>
             <MapErrorBoundary
+              key={mapAttempt}
               onError={(message) => {
                 setMapRenderError(true);
                 setMapErrorDetail(message ?? null);
@@ -339,9 +388,7 @@ export function FestivalMapScreen({ route }: Props) {
               <FestivalMapView
                 config={mapConfig}
                 zones={data.mapZones}
-                // Operational POIs stay available for search and routing, but
-                // the visitor map uses the existing polygons as its visual language.
-                pois={undefined}
+                pois={data.mapPois}
                 paths={data.mapPaths}
                 userLocation={location}
                 userMarkers={markers}
@@ -351,6 +398,8 @@ export function FestivalMapScreen({ route }: Props) {
                 filter={filter}
                 followUser={followUser}
                 onZonePress={(zone) => {
+                  setNearbyPlaces([]);
+                  setMapInfoVisible(false);
                   setDirectionsVisible(false);
                   setRouteError(null);
                   setActiveRoute(null);
@@ -359,6 +408,8 @@ export function FestivalMapScreen({ route }: Props) {
                   setPickedPoiId(null);
                 }}
                 onPoiPress={(poi) => {
+                  setNearbyPlaces([]);
+                  setMapInfoVisible(false);
                   setDirectionsVisible(false);
                   setSavedPlacesVisible(false);
                   setRouteError(null);
@@ -366,6 +417,7 @@ export function FestivalMapScreen({ route }: Props) {
                   setPickedZoneId(null);
                   setPickedPoiId(poi.properties.id);
                 }}
+                onPlacesPress={(places) => { dismissPopup(); setNearbyPlaces(places); }}
                 onZoneRoute={handleZoneRoute}
                 routing={routing}
                 onMapPress={dismissPopup}
@@ -407,16 +459,73 @@ export function FestivalMapScreen({ route }: Props) {
                   {mapErrorDetail ??
                     'Проверьте подключение к интернету и попробуйте снова.'}
                 </Text>
+                <MotionPressable accessibilityRole="button" accessibilityLabel="Повторить загрузку карты"
+                  style={styles.mapInfoCategory} onPress={() => {
+                    setMapLoaded(false);
+                    setMapLoadError(false);
+                    setMapRenderError(false);
+                    setMapErrorDetail(null);
+                    setMapAttempt(value => value + 1);
+                  }}>
+                  <Text style={styles.mapInfoLabel}>Повторить загрузку</Text>
+                </MotionPressable>
               </View>
             ) : null}
           </View>
           <View style={styles.mapOverlay} pointerEvents="box-none">
+            <View style={styles.mapToolbar} pointerEvents="box-none">
+            <MapSearchPanel
+              style={styles.search}
+              zones={data.mapZones}
+              pois={data.mapPois}
+              onSelectZone={(zone) => {
+                dismissPopup();
+                setFilterChoice('all');
+                setPickedZoneId(zone.properties.id);
+              }}
+              onSelectPoi={(poi) => {
+                dismissPopup();
+                setFilterChoice('all');
+                setPickedPoiId(poi.properties.id);
+              }}
+            />
             <MapFilterChips
+              embedded
               zones={data.mapZones}
               pois={data.mapPois}
               value={filter}
               onChange={handleFilterChange}
             />
+            {filter === 'autocamp' ? (
+              <View style={styles.autocampNavigation}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.autocampRows} accessibilityLabel="Диапазоны номеров мест автокемпинга">
+                  {AUTOCAMP_NUMBER_GROUPS.map(group => (
+                    <MotionPressable key={group.key} accessibilityRole="button"
+                      accessibilityLabel={group.key === 'all' ? 'Показать все места автокемпинга' : `Показать места ${group.label}`}
+                      accessibilityState={{ selected: group.key === autocampGroupKey }} onPress={() => focusAutocampGroup(group)}
+                      style={[styles.autocampRow, group.key === autocampGroupKey && styles.autocampRowActive]}>
+                      <Text style={[styles.autocampRowText, group.key === autocampGroupKey && styles.autocampRowActiveText]}>{group.label}</Text>
+                    </MotionPressable>
+                  ))}
+                </ScrollView>
+                <Text style={styles.autocampHint}>Официальные номера 1–296 · Нажмите на место, чтобы открыть</Text>
+              </View>
+            ) : null}
+            {locationRequested || outsideTerritory ? (
+              <MapLocationBanner embedded status={status} outsideTerritory={outsideTerritory} onRequestPermission={requestPermission} />
+            ) : null}
+            </View>
+            {tracedPlan && !popupVisible ? (
+              <MotionPressable accessibilityRole="button" accessibilityLabel="О карте и условные обозначения"
+                style={styles.mapInfoButton} onPress={() => { dismissPopup(); setMapInfoVisible(true); }}>
+                <Text style={styles.mapInfoLabel}>Схема 2026 · {(data.mapZones?.features.length ?? 0) + (data.mapPois?.features.filter(p => !p.properties.sourceZoneId).length ?? 0)} мест · ⓘ</Text>
+              </MotionPressable>
+            ) : null}
+            {routeError && !selectedZone && !selectedPoi && !routing ? (
+              <View style={styles.routeFailure} accessibilityLiveRegion="polite">
+                <Text style={styles.mapInfoLabel}>{routeError}</Text>
+              </View>
+            ) : null}
             {placingMarkerKind ? (
               <View style={styles.placingBanner}>
                 <Text style={styles.placingText}>
@@ -432,17 +541,13 @@ export function FestivalMapScreen({ route }: Props) {
                 </MotionPressable>
               </View>
             ) : null}
-            {locationRequested || outsideTerritory ? (
-              <MapLocationBanner
-                status={status}
-                outsideTerritory={outsideTerritory}
-                onRequestPermission={requestPermission}
-              />
-            ) : null}
             <MapFabGroup
+              onZoomIn={() => mapApi.current?.zoomBy?.(1)}
+              onZoomOut={() => mapApi.current?.zoomBy?.(-1)}
               onLocate={handleLocate}
               onFestival={handleFestivalCenter}
               onSavedPlaces={() => {
+                setMapInfoVisible(false);
                 setDirectionsVisible(false);
                 setPickedPoiId(null);
                 setPickedZoneId(null);
@@ -464,11 +569,52 @@ export function FestivalMapScreen({ route }: Props) {
           </View>
         </View>
 
-        <MapPoiPopup visible={popupVisible} onClose={dismissPopup}>
-          {directionsVisible ? (
+        <MapPoiPopup
+          visible={popupVisible}
+          onClose={dismissPopup}
+          showCloseButton={!directionsVisible}
+        >
+          {nearbyPlaces.length ? (
+            <ScrollView style={styles.mapInfoContent}>
+              <Text style={[styles.mapErrorTitle, { paddingRight: 44 }]}>Места рядом · {nearbyPlaces.length}</Text>
+              {nearbyPlaces.map(place => (
+                <MotionPressable key={`${place.kind}:${place.id}`} accessibilityRole="button" accessibilityLabel={place.name}
+                  style={styles.nearbyPlace} onPress={() => {
+                    dismissPopup();
+                    if (place.kind === 'zone') setPickedZoneId(place.id);
+                    else setPickedPoiId(place.id);
+                  }}>
+                  <Text style={[styles.nearbyGlyph, { color: place.color }]}>{place.glyph}</Text>
+                  <Text style={styles.nearbyName}>{place.name}</Text>
+                </MotionPressable>
+              ))}
+            </ScrollView>
+          ) : mapInfoVisible ? (
+            <ScrollView style={styles.mapInfoContent}>
+              <Text style={styles.mapErrorTitle}>Места на карте</Text>
+              <MotionPressable accessibilityRole="button" accessibilityLabel="Обновить объекты карты" disabled={dataRefreshing}
+                style={styles.mapInfoCategory} onPress={() => { void refreshData(true); }}>
+                <Text style={styles.mapInfoLabel}>{dataRefreshing ? 'Обновляем…' : 'Обновить объекты карты'}</Text>
+              </MotionPressable>
+              {dataError ? <Text accessibilityRole="alert" style={styles.mapInfoDescription}>{dataError}</Text> : null}
+              <Text style={styles.mapInfoDescription}>Объекты нанесены по схеме фестиваля 2026 года. Расположение ориентировочное; схема не подтверждает планировку следующего фестиваля.</Text>
+              <Text style={styles.mapInfoDescription}>Зелёный — палатки · песочный — парковки и торговля · оранжевый — «Комфорт» · голубой — вода, душ и туалеты · красный пунктир — забор.</Text>
+              <Text style={styles.mapInfoDescription}>Подписи зон размещены внутри их границ. Значок автомобиля с номером обозначает въезд, стрелка в проёме — вход или выход. Небольшой значок с числом открывает список близких сервисов.</Text>
+              <Text style={styles.mapInfoDescription}>В автокемпинге нанесены официальные номера 1–296 по схеме выбора билетов 2027 года. Выберите диапазон и нажмите на нужную ячейку; цвет ячейки не показывает актуальную занятость.</Text>
+              <Text style={styles.mapInfoDescription}>Нажмите на объект или найдите его по названию. Маршруты учитывают дороги, проходы и ограждения; без геолокации путь начинается от главного входа.</Text>
+              <View style={styles.mapInfoCategories}>
+                {availableFilters.map(item => (
+                  <MotionPressable key={item.id} accessibilityRole="button" accessibilityLabel={`Показать: ${item.label}`}
+                    style={styles.mapInfoCategory} onPress={() => handleFilterChange(item.id)}>
+                    <Text style={styles.mapInfoLabel}>{item.label}</Text>
+                  </MotionPressable>
+                ))}
+              </View>
+            </ScrollView>
+          ) : directionsVisible ? (
             <MapDirectionsSheet
-              center={mapConfig.center}
-              location={data.festival.locationShort || data.festival.location}
+              center={festivalArrivalTarget}
+              location={`${data.festival.locationShort || data.festival.location} · Въезд №1`}
               onClose={dismissPopup}
             />
           ) : savedPlacesVisible ? (
@@ -525,6 +671,16 @@ export function FestivalMapScreen({ route }: Props) {
 }
 
 const styles = StyleSheet.create({
+  autocampNavigation: { marginHorizontal: 16, borderRadius: 10, backgroundColor: '#202124F2', overflow: 'hidden' },
+  autocampRows: { padding: 6, gap: 5 },
+  autocampRow: { minHeight: 36, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 6 },
+  autocampRowActive: { backgroundColor: colors.primary },
+  autocampRowText: { color: '#DDD9CA', fontSize: 12, fontWeight: '600' },
+  autocampRowActiveText: { color: '#181818' },
+  autocampHint: { color: '#B8B5AA', fontSize: 10, paddingHorizontal: 12, paddingBottom: 8 },
+  nearbyPlace: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  nearbyGlyph: { width: 36, textAlign: 'center', fontSize: 13, fontWeight: '700' },
+  nearbyName: { ...typography.body, color: colors.text, flex: 1 },
   safe: {
     flex: 1,
     backgroundColor: colors.background,
@@ -550,6 +706,20 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 10,
   },
+  mapToolbar: {
+    position: 'absolute', top: spacing.sm, left: 0, right: 0,
+    gap: spacing.sm, zIndex: 100,
+  },
+  search: { marginHorizontal: spacing.screen },
+  mapInfoButton: { position:'absolute', left:spacing.screen, bottom:96, minHeight:44, paddingHorizontal:spacing.md,
+    borderRadius:16, backgroundColor:colors.surface, justifyContent:'center' },
+  mapInfoLabel: { ...typography.caption, color:colors.text },
+  mapInfoContent: { maxHeight:360 },
+  mapInfoDescription: { ...typography.body, color:colors.textSecondary, marginVertical:spacing.sm },
+  mapInfoCategories: { flexDirection:'row', flexWrap:'wrap', gap:spacing.sm, paddingBottom:spacing.md },
+  mapInfoCategory: { minHeight:44, paddingHorizontal:spacing.md, justifyContent:'center', borderRadius:16, backgroundColor:colors.surfaceMuted },
+  routeFailure: { position:'absolute', bottom:150, left:spacing.screen, right:80, backgroundColor:colors.surface,
+    borderRadius:16, padding:spacing.md },
   empty: {
     ...typography.body,
     color: colors.textSecondary,
@@ -610,7 +780,7 @@ const styles = StyleSheet.create({
   },
   placingBanner: {
     position: 'absolute',
-    top: 64,
+    top: 124,
     left: spacing.screen,
     right: spacing.screen,
     padding: spacing.md,

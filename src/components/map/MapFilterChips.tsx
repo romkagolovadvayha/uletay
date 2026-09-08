@@ -8,8 +8,7 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { MotionPressable } from '../MotionPressable';
 import {
-  getActivePoiCategories,
-  POI_CATEGORY_LABELS,
+  getMapFilters,
 } from '../../utils/map/layerStyles';
 
 type Props = {
@@ -38,7 +37,7 @@ const endFadeGradientStyle = Platform.select<ViewStyle & { backgroundImage?: str
   },
 });
 
-export function MapFilterChips({ pois, value, onChange, embedded = false }: Props) {
+export function MapFilterChips({ zones, pois, value, onChange, embedded = false }: Props) {
   const scrollMetrics = useRef<ScrollMetrics>({
     viewportWidth: 0,
     contentWidth: 0,
@@ -47,15 +46,8 @@ export function MapFilterChips({ pois, value, onChange, embedded = false }: Prop
   const [showEndFade, setShowEndFade] = useState(false);
 
   const filters = useMemo(() => {
-    const categories = getActivePoiCategories(pois?.features ?? []);
-    return [
-      { id: 'all' as const, label: 'Всё' },
-      ...categories.map((category) => ({
-        id: category as MapFilterId,
-        label: POI_CATEGORY_LABELS[category],
-      })),
-    ];
-  }, [pois?.features]);
+    return getMapFilters(zones, pois);
+  }, [pois, zones]);
 
   const updateScrollMetrics = useCallback((next: Partial<ScrollMetrics>) => {
     const metrics = { ...scrollMetrics.current, ...next };

@@ -1,9 +1,13 @@
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import path from 'node:path';
 
 const root = path.resolve(process.env.DIST_DIR ?? 'dist');
 const port = Number(process.env.PORT ?? 4174);
+const apiOrigin = process.env.PREVIEW_API_ORIGIN ? new URL(process.env.PREVIEW_API_ORIGIN) : null;
+if (apiOrigin && (apiOrigin.protocol !== 'http:' || !['localhost','127.0.0.1','[::1]'].includes(apiOrigin.hostname))) {
+  throw new Error('PREVIEW_API_ORIGIN must point to a local HTTP development server.');
+}
 const productionCsp = process.env.PREVIEW_PRODUCTION_CSP === '1'
   ? readFileSync(path.resolve('deploy/nginx.security-headers.conf'), 'utf8')
       .match(/add_header Content-Security-Policy "([^"]+)"/)?.[1]
@@ -28,6 +32,17 @@ const mime = {
 
 const server = createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
+  if (apiOrigin && pathname.startsWith('/api/')) {
+    const upstream = httpRequest(new URL(request.url, apiOrigin), {
+      method: request.method, headers: {...request.headers, host:apiOrigin.host},
+    }, (result) => {
+      response.writeHead(result.statusCode ?? 502, {...result.headers, 'cache-control':'no-store'});
+      result.pipe(response);
+    });
+    upstream.on('error', () => response.writeHead(502).end('Local API unavailable'));
+    request.pipe(upstream);
+    return;
+  }
   let target = path.resolve(root, `.${pathname}`);
   if (!target.startsWith(root)) {
     response.writeHead(403).end('Forbidden');

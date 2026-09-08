@@ -33,6 +33,8 @@ function MapFab({ icon, label, onPress, active }: FabProps) {
 }
 
 type Props = {
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
   onLocate: () => void;
   onFestival?: () => void;
   onDirections?: () => void;
@@ -42,15 +44,19 @@ type Props = {
 };
 
 export function MapFabGroup({
+  onZoomIn,
+  onZoomOut,
   onLocate,
   onFestival,
   onDirections,
   onSavedPlaces,
   followUser,
-  bottomOffset = 160,
+  bottomOffset = 96,
 }: Props) {
   return (
     <View style={[styles.col, { bottom: bottomOffset }]}>
+      {onZoomIn ? <MapFab icon="add" label="Приблизить карту" onPress={onZoomIn} /> : null}
+      {onZoomOut ? <MapFab icon="remove" label="Отдалить карту" onPress={onZoomOut} /> : null}
       <MapFab icon="locate" label="Моё местоположение" onPress={onLocate} active={followUser} />
       {onFestival ? (
         <MapFab icon="flag-outline" label="Центр фестиваля" onPress={onFestival} />

@@ -8,6 +8,8 @@
     "start": "next start -p 3000",
     "db:install": "tsx scripts/install.ts",
     "db:migrate": "tsx scripts/migrate.ts",
+    "map:preview-patch": "node scripts/patch-festival-map.mjs",
+    "map:patch-local": "node scripts/patch-festival-map.mjs --apply-local",
     "import:fest-images": "tsx scripts/import-fest-images.ts",
     "foodcourt:sync-db": "node scripts/patch-foodcourt-db.mjs",
     "foodcourt:reset-db": "node scripts/patch-foodcourt-db.mjs --force",

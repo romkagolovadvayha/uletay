@@ -36,6 +36,18 @@ export type MapZoneType =
   | 'custom';
 
 export interface MapZoneProperties {
+  /** Unadjusted source geometry retained for repeatable landscape fitting. */
+  schematicGeometry?: GeoJSON.Polygon;
+  /** Remaining parts of an area divided by a road; share its identity and caption. */
+  geometryParts?: GeoJSON.Polygon[];
+  /** A numbered pitch inside a larger zone. */
+  parentZoneId?: string;
+  markerLabel?: string;
+  /** Official number and visual block from the festival ticket selector. */
+  bookingNumber?: number;
+  bookingGroup?: string;
+  /** Visual rows from the source plan; never part of the routing graph. */
+  layoutRings?: [number, number][][];
   id: string;
   name: string;
   zoneType: MapZoneType;
@@ -44,6 +56,8 @@ export interface MapZoneProperties {
   strokeColor?: string;
   strokeWidth?: number;
   description?: string;
+  /** Visitor entrance; kept separate from the polygon's visual center. */
+  accessPoint?: LatLng;
   extrusionHeight?: number;
   /** Подпись на карте (по умолчанию — для зданий и сервисных объектов) */
   showLabel?: boolean;
@@ -66,6 +80,8 @@ export type MapPathProperties = {
   id: string;
   name?: string;
   pathKind?: 'road' | 'walkway' | 'fence';
+  /** Participates in routing but stays hidden until an active route uses it. */
+  routingOnly?: boolean;
   /** Temporarily removes the segment from visitor routing without deleting it. */
   closed?: boolean;
 };

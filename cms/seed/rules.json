@@ -11,7 +11,7 @@
         ],
         "link": {
           "label": "Купить билеты",
-          "url": "https://drivegrup.ru/ticket/ylet2"
+          "url": "https://drivegrup.ru/ticket/ylet3"
         }
       },
       {
@@ -90,7 +90,7 @@
       {
         "link": {
           "label": "Купить место в гостинице",
-          "url": "https://drivegrup.ru/ticket/ylet2"
+          "url": "https://drivegrup.ru/ticket/ylet3"
         }
       }
     ]
@@ -130,7 +130,7 @@
       {
         "link": {
           "label": "Купить место в лагере «Комфорт»",
-          "url": "https://drivegrup.ru/ticket/ylet2"
+          "url": "https://drivegrup.ru/ticket/ylet3"
         }
       }
     ]
@@ -154,7 +154,7 @@
       {
         "link": {
           "label": "Купить место в автокемпинге",
-          "url": "https://drivegrup.ru/ticket/ylet2"
+          "url": "https://drivegrup.ru/ticket/ylet3"
         }
       }
     ]
@@ -173,7 +173,7 @@
       {
         "link": {
           "label": "Купить парковочный талон",
-          "url": "https://drivegrup.ru/ticket/ylet2"
+          "url": "https://drivegrup.ru/ticket/ylet3"
         }
       }
     ]

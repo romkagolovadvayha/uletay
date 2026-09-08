@@ -59,9 +59,13 @@ export function coordToLatLng(coord: [number, number]): LatLng {
 export function buildYandexRouteUrl(from: LatLng | null | undefined, to: LatLng): string {
   const dest = `${to.lat},${to.lng}`;
   if (from) {
-    return `https://yandex.ru/maps/?rtext=${from.lat},${from.lng}~${dest}&rtt=auto`;
+    return `https://yandex.ru/maps/?mode=routes&rtext=${from.lat},${from.lng}~${dest}&rtt=auto`;
   }
-  return `https://yandex.ru/maps/?rtext=~${dest}&rtt=auto`;
+  return `https://yandex.ru/maps/?mode=routes&rtext=~${dest}&rtt=auto`;
+}
+
+export function buildGoogleMapsRouteUrl(to: LatLng): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${to.lat},${to.lng}`;
 }
 
 export function openYandexNavigation(

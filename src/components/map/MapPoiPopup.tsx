@@ -2,7 +2,6 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo } from 'react';
 import {
   Platform,
-  Pressable,
   StyleSheet,
   View,
 } from 'react-native';
@@ -18,17 +17,18 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
+import { MotionPressable } from '../MotionPressable';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { resolveAndroidBottomInset } from '../../utils/safeArea';
 import { useMapMotion } from './MapMotionConfig';
-import { webKeyboardActivationProps } from '../../utils/webKeyboardActivation';
 
 type Props = {
   visible: boolean;
   children: React.ReactNode;
   onClose?: () => void;
+  showCloseButton?: boolean;
 };
 
 const SHEET_OFFSET = 24;
@@ -48,7 +48,7 @@ function rubberband(overshoot: number, dimension: number, constant = 0.55) {
   );
 }
 
-export function MapPoiPopup({ visible, children, onClose }: Props) {
+export function MapPoiPopup({ visible, children, onClose, showCloseButton = true }: Props) {
   const insets = useSafeAreaInsets();
   const { reduceMotion } = useMapMotion();
   const progress = useSharedValue(visible ? 1 : 0);
@@ -166,9 +166,12 @@ export function MapPoiPopup({ visible, children, onClose }: Props) {
           { paddingBottom: resolveAndroidBottomInset(insets.bottom) + spacing.md },
         ]}
       >
-        <View style={styles.handleWrap}>
+        <View
+          pointerEvents={Platform.OS === 'web' ? 'box-none' : 'auto'}
+          style={styles.handleWrap}
+        >
           {Platform.OS === 'web' ? (
-            <View style={styles.handleTouch}>
+            <View pointerEvents="none" style={styles.handleTouch}>
               <View style={styles.handle} />
             </View>
           ) : (
@@ -178,9 +181,8 @@ export function MapPoiPopup({ visible, children, onClose }: Props) {
               </View>
             </GestureDetector>
           )}
-          {onClose ? (
-            <Pressable
-              {...webKeyboardActivationProps(onClose)}
+          {onClose && showCloseButton ? (
+            <MotionPressable
               accessibilityRole="button"
               accessibilityLabel="Закрыть карточку"
               onPress={onClose}
@@ -188,7 +190,7 @@ export function MapPoiPopup({ visible, children, onClose }: Props) {
               style={styles.close}
             >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
-            </Pressable>
+            </MotionPressable>
           ) : null}
         </View>
         <View style={styles.content}>{children}</View>

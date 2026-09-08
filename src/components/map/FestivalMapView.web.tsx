@@ -7,23 +7,18 @@ import { colors } from '../../theme/colors';
 import { mapColors } from '../../theme/map';
 import { motion } from '../../theme/motion';
 import { shadows } from '../../theme/shadows';
-import type { MapPoiCategory, MapPoiProperties, MapZoneProperties } from '../../types/map';
+import type { MapPoiProperties, MapZoneProperties } from '../../types/map';
 import { filterPoiFeatures, filterZoneFeatures } from '../../utils/map/layerStyles';
 import { pathFeatureStyle, zoneFeatureStyle } from '../../utils/map/featureStyles';
 import { overlayToYandexLayoutBounds } from '../../utils/map/overlayGeoref';
 import { loadYandexMaps } from '../../utils/map/yandexMapsLoader';
-import { shouldShowZoneLabel, zoneLabelText } from '../../utils/map/zoneDisplay';
-import {
-  applyZoneLabelBoxStyle,
-  createZoneLabelElements,
-  zoneFillImageRotation,
-  zoneLabelRotation,
-} from '../../utils/map/zoneDecor';
+import { zoneFillImageRotation } from '../../utils/map/zoneDecor';
+import { buildMapPlaceMarkers, clusterMapPlaces, createMapPlaceElement, mapPlaceMarkerCss } from '../../utils/map/placeMarkers';
 import { zoneFillImageBounds, zoneImageLayout } from '../../utils/map/zoneFillImage';
 import { ensureZoneLabelFont, zoneLabelCssRules } from '../../utils/map/zoneLabelCss';
 import { useLatestRef } from '../../hooks/useLatestRef';
 
-const STYLE_ID = 'fest-yandex-map-styles';
+const STYLE_ID = 'fest-yandex-map-styles-v3';
 const MAP_CAMERA_DURATION_MS = motion.mapCameraDurationMs;
 
 function mapCameraDuration(): number {
@@ -81,6 +76,7 @@ function ensureMapStyles() {
       transform: translate(-50%, -50%) scale(1.12);
     }
     ${zoneLabelCssRules('fest')}
+    ${mapPlaceMarkerCss}
     .fest-zone-fill-image {
       opacity: var(--fest-zone-fill-opacity, 0.92);
       transform: rotate(var(--fest-zone-fill-rotation, 0deg));
@@ -173,22 +169,6 @@ function zoneStyle(feature: GeoJSON.Feature, selected: boolean) {
   return zoneFeatureStyle((feature.properties ?? {}) as MapZoneProperties, selected);
 }
 
-function poiGlyph(category: MapPoiCategory) {
-  return {
-    stage: '♪',
-    foodcourt: 'ЕДА',
-    toilet: 'WC',
-    shower: 'ДУШ',
-    water: 'H₂O',
-    medical: '+',
-    security: 'ЩИТ',
-    info: 'i',
-    entrance: 'ВХОД',
-    parking: 'P',
-    custom: '•',
-  }[category];
-}
-
 export function FestivalMapView({
   config,
   zones,
@@ -203,6 +183,7 @@ export function FestivalMapView({
   followUser,
   onZonePress,
   onPoiPress,
+  onPlacesPress,
   onMapPress,
   onMapCoordinatePress,
   onMapReady,
@@ -229,16 +210,11 @@ export function FestivalMapView({
   const schemeOverlayRef = useRef<YandexMapEntity | null>(null);
   const listenerRef = useRef<YandexMapEntity | null>(null);
   const bundleRef = useRef<Awaited<ReturnType<typeof loadYandexMaps>> | null>(null);
-  const zoneLabelDecorRef = useRef<
-    {
-      box: HTMLDivElement;
-      textEl: HTMLSpanElement;
-      layout: ReturnType<typeof zoneImageLayout>;
-      labelRotation: number;
-    }[]
-  >([]);
   const mapZoomRef = useRef(config.defaultZoom);
-  const refreshZoneLabelSizesRef = useRef<() => void>(() => {});
+  const markerPointerUntilRef = useRef(0);
+  const cameraTargetRef = useRef<{ center?: [number, number]; zoom: number; until: number } | null>(null);
+  const [markerZoom, setMarkerZoom] = useState(config.defaultZoom);
+  const onPlacesPressRef = useLatestRef(onPlacesPress);
 
   useEffect(() => {
     if (!YANDEX_MAPS_API_KEY) {
@@ -254,26 +230,15 @@ export function FestivalMapView({
       ),
     [pois, filter],
   );
+  const placeGroups = useMemo(() => clusterMapPlaces(
+    buildMapPlaceMarkers(filteredZones, filteredPois, selectedZoneId, selectedPoiId), markerZoom,
+  ), [filteredZones, filteredPois, selectedZoneId, selectedPoiId, markerZoom]);
   const zonesByIdRef = useRef(
     new Map<string, GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>>(),
   );
   const poisByIdRef = useRef(
     new Map<string, GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>>(),
   );
-
-  useEffect(() => {
-    refreshZoneLabelSizesRef.current = () => {
-      for (const item of zoneLabelDecorRef.current) {
-        applyZoneLabelBoxStyle(
-          item.box,
-          item.textEl,
-          item.layout,
-          item.labelRotation,
-          mapZoomRef.current,
-        );
-      }
-    };
-  });
 
   const overlayUrl = useMemo(
     () => resolveMediaUrl(config.adminOverlay?.imageUrl),
@@ -337,10 +302,11 @@ export function FestivalMapView({
             const zoom = event?.location?.zoom;
             if (typeof zoom === 'number') {
               mapZoomRef.current = zoom;
-              refreshZoneLabelSizesRef.current();
+              setMarkerZoom(Math.round(zoom * 4) / 4);
             }
           },
           onClick: (object: YandexDomEventObject, event?: { coordinates?: [number, number] }) => {
+            if (Date.now() < markerPointerUntilRef.current) return;
             let poi = object?.entity?.properties?.__poi as
               | GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>
               | undefined;
@@ -382,7 +348,16 @@ export function FestivalMapView({
         onMapLoaded?.();
 
         onMapReady?.({
+          zoomBy: (delta) => {
+            const pending = cameraTargetRef.current;
+            const active = pending && pending.until > Date.now() ? pending : null;
+            const duration = mapCameraDuration();
+            const zoom = Math.max(12, Math.min(21, (active?.zoom ?? mapZoomRef.current) + delta));
+            cameraTargetRef.current = { center: active?.center, zoom, until: Date.now() + duration + 80 };
+            map.update?.({ location: { ...(active?.center ? { center: active.center } : {}), zoom, duration } });
+          },
           flyTo: (lat, lng, zoom = config.defaultZoom) => {
+            cameraTargetRef.current = { center: [lng, lat], zoom, until: Date.now() + mapCameraDuration() + 80 };
             map.update?.({
               location: {
                 center: [lng, lat],
@@ -392,6 +367,7 @@ export function FestivalMapView({
             });
           },
           fitRoute: (coordinates) => {
+            cameraTargetRef.current = null;
             if (!coordinates.length) return;
             let minLng = coordinates[0][0];
             let maxLng = coordinates[0][0];
@@ -510,7 +486,7 @@ export function FestivalMapView({
       const item = new bundle.ymaps3.YMapFeature({
         id: `zone-${feature.properties.id ?? index}`,
         source: FEST_ZONE_SOURCE,
-        geometry: feature.geometry,
+        geometry: feature.properties.geometryParts?.length ? { type: 'MultiPolygon', coordinates: [feature.geometry.coordinates, ...feature.properties.geometryParts.map(p => p.coordinates)] } : feature.geometry,
         style: zoneStyle(feature, isSelected),
         properties: { __zone: feature },
       });
@@ -526,7 +502,6 @@ export function FestivalMapView({
 
     removeAll(map, zoneImageRefs.current);
     removeAll(map, zoneLabelRefs.current);
-    zoneLabelDecorRef.current = [];
 
     const styleRules: string[] = [];
     filteredZones.forEach((feature) => {
@@ -552,22 +527,6 @@ export function FestivalMapView({
         zoneImageRefs.current.push(overlay);
       }
 
-      if (shouldShowZoneLabel(props)) {
-        const labelRotation = zoneLabelRotation(props, layout);
-        const { box, textEl } = createZoneLabelElements(zoneLabelText(props));
-        applyZoneLabelBoxStyle(box, textEl, layout, labelRotation, mapZoomRef.current);
-        zoneLabelDecorRef.current.push({ box, textEl, layout, labelRotation });
-        const marker = new bundle.ymaps3.YMapMarker(
-          {
-            source: FEST_MARKER_SOURCE,
-            coordinates: [layout.center.lng, layout.center.lat],
-            zIndex: LAYER_Z.zoneLabels,
-          },
-          box,
-        );
-        map.addChild(marker);
-        zoneLabelRefs.current.push(marker);
-      }
     });
 
     const styleId = 'fest-zone-fill-dynamic';
@@ -588,6 +547,7 @@ export function FestivalMapView({
     removeAll(map, pathFeaturesRef.current);
     paths?.features.forEach((feature, index) => {
       if (feature.geometry.type !== 'LineString') return;
+      if (feature.properties?.routingOnly) return;
       const item = new bundle.ymaps3.YMapFeature({
         id: `path-${index}`,
         source: FEST_PATH_SOURCE,
@@ -633,22 +593,34 @@ export function FestivalMapView({
 
     removeAll(map, poiMarkerRefs.current);
     poisByIdRef.current.clear();
-    filteredPois.forEach((poi, index) => {
-      if (poi.geometry.type !== 'Point') return;
-      poisByIdRef.current.set(poi.properties.id, poi);
-      const selected = poi.properties.id === selectedPoiId;
-      const el = document.createElement('button');
-      el.type = 'button';
-      el.className = `fest-poi-marker${selected ? ' fest-poi-marker--selected' : ''}`;
-      el.textContent = poiGlyph(poi.properties.category) ?? '•';
-      el.setAttribute('aria-label', poi.properties.name);
+    filteredPois.forEach(poi => poisByIdRef.current.set(poi.properties.id, poi));
+    placeGroups.forEach((group) => {
+      const place = group.places[0];
+      const clustered = group.places.length > 1;
+      const selected = place.selected;
+      const el = createMapPlaceElement(group, markerZoom);
+      el.addEventListener('pointerdown', () => { markerPointerUntilRef.current = Date.now() + 1000; });
+      el.addEventListener('pointerup', () => { markerPointerUntilRef.current = Date.now() + 500; });
+      el.addEventListener('pointercancel', () => { markerPointerUntilRef.current = 0; });
+      el.addEventListener('click', (event) => {
+        markerPointerUntilRef.current = Date.now() + 500;
+        event.stopPropagation();
+        if (clustered) {
+          onPlacesPressRef.current?.(group.places);
+        } else if (place.kind === 'zone') {
+          const zone = zonesByIdRef.current.get(place.id);
+          if (zone) onZonePressRef.current(zone);
+        } else {
+          const poi = poisByIdRef.current.get(place.id);
+          if (poi) onPoiPressRef.current(poi);
+        }
+      });
       const marker = new bundle.ymaps3.YMapMarker(
         {
-          id: `poi-${poi.properties.id ?? index}`,
+          id: `place-${place.kind}-${place.id}`,
           source: FEST_MARKER_SOURCE,
-          coordinates: poi.geometry.coordinates,
+          coordinates: group.coordinates,
           zIndex: LAYER_Z.markers + (selected ? 20 : 0),
-          properties: { __poi: poi },
         },
         el,
       );
@@ -672,7 +644,7 @@ export function FestivalMapView({
       map.addChild(marker);
       poiMarkerRefs.current.push(marker);
     });
-  }, [filteredPois, mapReady, selectedPoiId, userMarkers]);
+  }, [filteredPois, placeGroups, filter, markerZoom, mapReady, userMarkers, onPoiPressRef, onZonePressRef, onPlacesPressRef]);
 
   useEffect(() => {
     const map = mapRef.current;

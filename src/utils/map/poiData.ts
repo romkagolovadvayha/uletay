@@ -12,8 +12,8 @@ import { zoneTargetPoint } from './zoneGeo';
 type PoiFeature = GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>;
 type ZoneFeature = GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>;
 
-const SERVICE_MEDICAL_RE = /мед|скорая|первая помощь|doctor|medical/i;
-const SERVICE_SECURITY_RE = /охран|безопас|полици|security/i;
+const SERVICE_MEDICAL_RE = /мед|скорая|перв\S* помощ|doctor|medical/i;
+const SERVICE_SECURITY_RE = /охран|безопас|полици|мчс|security/i;
 
 function stageIdForName(name: string): string | undefined {
   const normalized = name.toLocaleLowerCase('ru-RU');
@@ -43,6 +43,11 @@ export function zonePoiCategory(zone: ZoneFeature): MapPoiCategory | null {
       if (SERVICE_MEDICAL_RE.test(name)) return 'medical';
       if (SERVICE_SECURITY_RE.test(name)) return 'security';
       return 'info';
+    case 'building':
+    case 'custom':
+    case 'camping':
+    case 'comfort':
+      return 'custom';
     default:
       return null;
   }
@@ -85,11 +90,10 @@ export function withOperationalPois(
   const explicitIds = new Set(explicit.map((feature) => feature.properties.id));
   const explicitZoneIds = new Set(
     explicit
-      .map((feature) =>
+      .map((feature) => feature.properties.sourceZoneId ?? (
         feature.properties.id.startsWith('zone-poi:')
           ? feature.properties.id.slice('zone-poi:'.length)
-          : null,
-      )
+          : null))
       .filter((value): value is string => Boolean(value)),
   );
 

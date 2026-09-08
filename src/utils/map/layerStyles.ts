@@ -67,9 +67,16 @@ export function filterZoneFeatures(
   const zoneTypes = POI_CATEGORY_ORDER.includes(filter as MapPoiCategory)
     ? poiCategoryToZoneTypes(filter as MapPoiCategory)
     : [filter as MapZoneType];
-  return features.filter(
-    (f) => zoneTypes.includes(f.properties.zoneType) || f.properties.zoneType === 'fence',
-  );
+  return features.filter((f) => {
+    if (f.properties.zoneType === 'fence') return true;
+    if (['medical', 'security', 'info'].includes(filter)) {
+      if (f.properties.zoneType !== 'service') return false;
+      const medical = /мед|скорая|перв\S* помощ/i.test(f.properties.name);
+      const security = /охран|полици|безопас|мчс/i.test(f.properties.name);
+      return filter === 'medical' ? medical : filter === 'security' ? security : !medical && !security;
+    }
+    return zoneTypes.includes(f.properties.zoneType);
+  });
 }
 
 export function getZoneIconName(
@@ -105,7 +112,7 @@ export function getZoneIconName(
 }
 
 export const POI_CATEGORY_LABELS: Record<MapPoiCategory, string> = {
-  stage: 'Сцена',
+  stage: 'Сцены',
   foodcourt: 'Фудкорт',
   toilet: 'Туалеты',
   shower: 'Душ',
@@ -113,7 +120,7 @@ export const POI_CATEGORY_LABELS: Record<MapPoiCategory, string> = {
   medical: 'Медпункт',
   security: 'Охрана',
   info: 'Инфо',
-  entrance: 'Въезд',
+  entrance: 'Входы',
   parking: 'Парковка',
   custom: 'Другое',
 };
@@ -234,7 +241,9 @@ function poiCategoryToZoneTypes(category: MapPoiCategory): MapZoneType[] {
     case 'info':
       return ['service'];
     case 'parking':
-      return ['parking', 'autocamp'];
+      return ['parking'];
+    case 'custom':
+      return ['building', 'custom', 'camping', 'comfort'];
     default:
       return [];
   }
@@ -242,3 +251,24 @@ function poiCategoryToZoneTypes(category: MapPoiCategory): MapZoneType[] {
 
 export const MAP_CAMERA_2D = { pitch: 0, bearing: 0 };
 export const MAP_CAMERA_3D = { pitch: 55, bearing: 0 };
+
+/** A single source for the chips and screen's filter validation. */
+export function getMapFilters(
+  zones: import('../../types/map').MapZonesGeoJson | undefined,
+  pois: import('../../types/map').MapPoisGeoJson | undefined,
+): { id: import('../../types/map').MapFilterId; label: string }[] {
+  const categories = getActivePoiCategories(pois?.features ?? []);
+  const zoneTypes = getActiveZoneTypes(zones?.features ?? []);
+  const covered = new Set(categories.filter(c => c !== 'custom').flatMap(poiCategoryToZoneTypes));
+  const filters: { id: import('../../types/map').MapFilterId; label: string }[] = [
+    { id: 'all', label: 'Всё' },
+    ...categories.filter(c => c !== 'custom').map(id => ({ id, label: POI_CATEGORY_LABELS[id] })),
+    ...zoneTypes.filter(t => !covered.has(t)).map(id => ({ id, label: ZONE_TYPE_LABELS[id] })),
+    ...(!zoneTypes.includes('custom') && categories.includes('custom') ? [{ id: 'custom' as const, label: 'Другое' }] : []),
+  ];
+  const priority: string[] = ['all', 'autocamp', 'parking', 'stage', 'camping', 'entrance'];
+  return filters.sort((a, b) => {
+    const aIndex = priority.indexOf(a.id), bIndex = priority.indexOf(b.id);
+    return (aIndex < 0 ? priority.length : aIndex) - (bIndex < 0 ? priority.length : bIndex);
+  });
+}

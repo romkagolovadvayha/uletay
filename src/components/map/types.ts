@@ -10,6 +10,7 @@ import type {
   UserMapMarker,
   UserLocationState,
 } from '../../types/map';
+import type { MapPlaceMarker } from '../../utils/map/placeMarkers';
 
 export type FestivalMapViewProps = {
   config: FestivalMapConfig;
@@ -25,6 +26,7 @@ export type FestivalMapViewProps = {
   followUser: boolean;
   onZonePress: (zone: GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>) => void;
   onPoiPress: (poi: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>) => void;
+  onPlacesPress?: (places: MapPlaceMarker[]) => void;
   onMapPress?: () => void;
   onMapCoordinatePress?: (coordinate: { lat: number; lng: number }) => void;
   onZoneRoute?: () => void;
@@ -35,6 +37,7 @@ export type FestivalMapViewProps = {
 };
 
 export type FestivalMapApi = {
+  zoomBy?: (delta: number) => void;
   flyTo: (lat: number, lng: number, zoom?: number) => void;
   fitRoute: (coordinates: [number, number][]) => void;
 };
