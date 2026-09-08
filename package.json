@@ -14,7 +14,7 @@
     "@turf/boolean-point-in-polygon": "^7.3.5",
     "@turf/helpers": "^7.3.5",
     "@turf/nearest-point-on-line": "^7.3.5",
-    "expo": "~57.0.20",
+    "expo": "~57.0.21",
     "expo-asset": "~57.0.3",
     "expo-audio": "~57.0.4",
     "expo-build-properties": "~57.0.17",
@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^16.3.2",
+    "@react-native/metro-config": "^0.86.3",
     "@types/geojson": "^7946.0.16",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "^57.0.1",
