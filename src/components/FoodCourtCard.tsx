@@ -21,11 +21,11 @@ type Props = {
 function getCategoryIcon(category: FoodCourtVendor['category']): keyof typeof Ionicons.glyphMap {
   switch (category) {
     case 'drinks':
-      return 'cafe-outline';
+      return 'cafe';
     case 'desserts':
-      return 'ice-cream-outline';
+      return 'ice-cream';
     default:
-      return 'restaurant-outline';
+      return 'restaurant';
   }
 }
 

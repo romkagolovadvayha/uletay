@@ -211,7 +211,7 @@ export function MoreMenuSheet() {
     ...(headlinersInMore
       ? [
           {
-            icon: 'mic-outline' as const,
+            icon: 'mic' as const,
             label: 'Хэдлайнеры',
             onPress: () => {
               close();
@@ -223,7 +223,7 @@ export function MoreMenuSheet() {
     ...(festivalActive && content.hasAutographs
       ? [
           {
-            icon: 'ticket-outline' as const,
+            icon: 'ticket' as const,
             label: 'Автографы',
             onPress: () => {
               close();
@@ -234,7 +234,7 @@ export function MoreMenuSheet() {
       : []),
     ...(festivalActive && data.festival.startDate && data.festival.endDate
       ? [{
-          icon: 'restaurant-outline' as const,
+          icon: 'restaurant' as const,
           label: 'Еда и напитки',
           onPress: () => {
             close();
@@ -243,7 +243,7 @@ export function MoreMenuSheet() {
         }]
       : []),
     {
-      icon: 'settings-outline',
+      icon: 'settings',
       label: 'Настройки',
       onPress: () => {
         close();
@@ -251,7 +251,7 @@ export function MoreMenuSheet() {
       },
     },
     {
-      icon: 'document-text-outline',
+      icon: 'document-text',
       label: 'Правила и быт',
       onPress: () => {
         close();
@@ -259,7 +259,7 @@ export function MoreMenuSheet() {
       },
     },
     {
-      icon: 'information-circle-outline',
+      icon: 'information-circle',
       label: 'О фестивале',
       onPress: () => {
         close();
@@ -267,7 +267,7 @@ export function MoreMenuSheet() {
       },
     },
     {
-      icon: 'medical-outline',
+      icon: 'medical',
       label: 'Экстренная помощь',
       onPress: () => {
         close();
@@ -275,7 +275,7 @@ export function MoreMenuSheet() {
       },
     },
     {
-      icon: 'help-circle-outline',
+      icon: 'help-circle',
       label: 'Юридическая информация',
       onPress: () => {
         close();

@@ -520,7 +520,7 @@ export function FestivalMapScreen({ route }: Props) {
             {tracedPlan && !popupVisible ? (
               <MotionPressable accessibilityRole="button" accessibilityLabel="О карте и условные обозначения"
                 style={styles.mapInfoButton} onPress={() => { dismissPopup(); setMapInfoVisible(true); }}>
-                <Ionicons name="information-circle-outline" size={25} color={colors.text} />
+                <Ionicons name="information-circle" size={25} color={colors.text} />
               </MotionPressable>
             ) : null}
             {routeError && !selectedZone && !selectedPoi && !routing ? (

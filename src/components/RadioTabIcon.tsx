@@ -39,7 +39,7 @@ export function RadioTabIcon({ color, size = 22 }: Props) {
   const { isPlaying } = useRadioPlayer();
 
   if (!isPlaying) {
-    return <DeferredIonicons name="radio-outline" size={size} color={color} />;
+    return <DeferredIonicons name="radio" size={size} color={color} />;
   }
 
   const barWidth = Math.max(2, Math.round(size * 0.14));

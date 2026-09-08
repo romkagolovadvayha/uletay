@@ -77,11 +77,11 @@ export function FestivalAboutScreen({ navigation }: Props) {
         <View style={styles.linksSection}>
           <ExternalLink href={FESTIVAL_WEBSITE} style={styles.linkRow}>
             <Text style={styles.linkText}>Официальный сайт фестиваля</Text>
-            <Ionicons name="open-outline" size={18} color={colors.primary} />
+            <Ionicons name="open" size={18} color={colors.primary} />
           </ExternalLink>
           <ExternalLink href={FESTIVAL_CONTACTS_URL} style={styles.linkRow}>
             <Text style={styles.linkText}>Контакты и поддержка</Text>
-            <Ionicons name="open-outline" size={18} color={colors.primary} />
+            <Ionicons name="open" size={18} color={colors.primary} />
           </ExternalLink>
           <MotionPressable
             accessibilityRole="button"

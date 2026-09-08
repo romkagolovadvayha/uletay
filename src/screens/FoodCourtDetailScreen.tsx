@@ -82,7 +82,7 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
         <Text style={styles.price}>{vendor.priceFrom.replace('от ', '')}</Text>
 
         <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={16} color={colors.text} />
+          <Ionicons name="location" size={16} color={colors.text} />
           <Text style={styles.locationText}>{vendor.location}</Text>
         </View>
         {mapPoi ? (
@@ -94,7 +94,7 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
             }}
             style={styles.mapButton}
           >
-            <Ionicons name="map-outline" size={19} color={colors.primaryText} />
+            <Ionicons name="map" size={19} color={colors.primaryText} />
             <Text style={styles.mapButtonText}>Показать на карте</Text>
           </MotionPressable>
         ) : null}

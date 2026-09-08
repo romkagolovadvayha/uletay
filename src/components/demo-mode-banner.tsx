@@ -20,7 +20,7 @@ export function DemoModeBanner() {
       style={styles.safeArea}
     >
       <View style={styles.banner}>
-        <Ionicons name="flask-outline" size={15} color={colors.primaryText} />
+        <Ionicons name="flask" size={15} color={colors.primaryText} />
         <Text numberOfLines={1} style={styles.label}>
           ДЕМО-РЕЖИМ · ДАННЫЕ ВЫМЫШЛЕНЫ
         </Text>

@@ -138,8 +138,8 @@ export function MapDirectionsSheet({ center, location, onClose }: Props) {
       </Text>
       <RouteButton icon="navigate" label="Проложить в Яндекс Навигаторе" primary disabled={locating} onPress={() => void openYandexNavigator(center, routeOrigin ?? null)} />
       <View style={styles.secondaryRow}>
-        <RouteButton icon="map-outline" label="Яндекс Карты" disabled={locating} onPress={() => openYandexMaps(center, routeOrigin ?? null)} />
-        <RouteButton icon="apps-outline" label="Другие карты" onPress={() => openSystemMaps(center, location)} />
+        <RouteButton icon="map" label="Яндекс Карты" disabled={locating} onPress={() => openYandexMaps(center, routeOrigin ?? null)} />
+        <RouteButton icon="apps" label="Другие карты" onPress={() => openSystemMaps(center, location)} />
       </View>
     </View>
   );

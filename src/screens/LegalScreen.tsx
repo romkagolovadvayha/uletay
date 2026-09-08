@@ -103,7 +103,7 @@ export function LegalScreen({ navigation }: Props) {
         <Text style={styles.sectionLabel}>Контакты и ссылки</Text>
         <View style={styles.section}>
           <ContactRow
-            icon="mail-outline"
+            icon="mail"
             label="Email"
             value={LEGAL_OPERATOR.email}
             onPress={() => openExternalUrl(`mailto:${LEGAL_OPERATOR.email}`)}
@@ -111,7 +111,7 @@ export function LegalScreen({ navigation }: Props) {
           {LEGAL_OPERATOR.phones.map((phone, index) => (
             <ContactRow
               key={phone}
-              icon="call-outline"
+              icon="call"
               label="Телефон"
               value={LEGAL_OPERATOR.phoneLabels[index]}
               onPress={() => void Linking.openURL(`tel:${phone}`)}
@@ -119,7 +119,7 @@ export function LegalScreen({ navigation }: Props) {
           ))}
           <ExternalLink href={FESTIVAL_WEBSITE} style={styles.contactLinkWrap}>
             <View style={styles.contactRow}>
-              <Ionicons name="globe-outline" size={18} color={colors.primary} />
+              <Ionicons name="globe" size={18} color={colors.primary} />
               <View style={styles.contactTextWrap}>
                 <Text style={styles.contactLabel}>Сайт</Text>
                 <Text style={styles.contactValue}>uletayfest.ru</Text>
@@ -129,7 +129,7 @@ export function LegalScreen({ navigation }: Props) {
           </ExternalLink>
           <ExternalLink href={FESTIVAL_CONTACTS_URL} style={styles.contactLinkWrap}>
             <View style={styles.contactRow}>
-              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />
+              <Ionicons name="chatbubble-ellipses" size={18} color={colors.primary} />
               <View style={styles.contactTextWrap}>
                 <Text style={styles.contactLabel}>Контакты</Text>
                 <Text style={styles.contactValue}>uletayfest.ru/contacty</Text>

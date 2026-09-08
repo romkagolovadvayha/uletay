@@ -19,9 +19,9 @@ type Props = {
 };
 
 const QUICK_LINKS = [
-  { href: '/schedule', label: 'Расписание', icon: 'calendar-outline', key: 'schedule' },
-  { href: '/map', label: 'Карта', icon: 'map-outline', key: 'map' },
-  { href: '/rules', label: 'Правила', icon: 'document-text-outline', key: 'rules' },
+  { href: '/schedule', label: 'Расписание', icon: 'calendar', key: 'schedule' },
+  { href: '/map', label: 'Карта', icon: 'map', key: 'map' },
+  { href: '/rules', label: 'Правила', icon: 'document-text', key: 'rules' },
 ] as const;
 
 export function WebFestivalGuide({

@@ -15,7 +15,7 @@ export function MapDirectionsButton({ onPress }: { onPress: () => void }) {
       onPress={onPress}
       style={styles.button}
     >
-      <DeferredIonicons name="navigate-outline" size={20} color={colors.background} />
+      <DeferredIonicons name="navigate" size={20} color={colors.background} />
       <Text style={styles.text}>КАК ДОБРАТЬСЯ</Text>
     </MotionPressable>
   );

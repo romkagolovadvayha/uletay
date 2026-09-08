@@ -158,7 +158,7 @@ export function SettingsScreen({ navigation }: Props) {
         <Text style={styles.sectionLabel}>Данные</Text>
         <View style={styles.section}>
           <SettingsLink
-            icon="refresh-outline"
+            icon="refresh"
             title={clearingCache ? 'Сброс…' : 'Сбросить кэш'}
             subtitle="Если расписание или артисты не подгружаются — сбросит офлайн-кэш"
             onPress={clearingCache ? () => undefined : handleClearCachePress}
@@ -168,13 +168,13 @@ export function SettingsScreen({ navigation }: Props) {
         <Text style={styles.sectionLabel}>Правовая информация</Text>
         <View style={styles.section}>
           <SettingsLink
-            icon="shield-checkmark-outline"
+            icon="shield-checkmark"
             title="Конфиденциальность и поддержка"
             subtitle="Политика, соглашение, контакты организатора"
             onPress={() => navigation.navigate('Legal')}
           />
           <SettingsLink
-            icon="document-text-outline"
+            icon="document-text"
             title="Правила фестиваля"
             subtitle="Правила посещения, безопасность и бытовая информация"
             onPress={() => navigation.navigate('FestivalRules')}

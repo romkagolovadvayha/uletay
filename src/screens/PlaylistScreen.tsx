@@ -151,7 +151,7 @@ export function PlaylistScreen() {
                   colors={[colors.surfaceMuted, colors.fallbackGradientDeep]}
                   style={styles.artworkFallback}
                 >
-                  <Ionicons name="radio-outline" size={54} color={colors.primary} />
+                  <Ionicons name="radio" size={54} color={colors.primary} />
                 </LinearGradient>
               )}
             </View>
@@ -173,7 +173,7 @@ export function PlaylistScreen() {
 
               {error ? (
                 <View accessibilityRole="alert" style={styles.errorCard}>
-                  <Ionicons name="cloud-offline-outline" size={20} color={colors.live} />
+                  <Ionicons name="cloud-offline" size={20} color={colors.live} />
                   <View style={styles.errorCopy}>
                     <Text selectable style={styles.errorText}>
                       {error}
@@ -222,13 +222,13 @@ export function PlaylistScreen() {
                   <Ionicons name={isFavorite(nowPlaying) ? 'heart' : 'heart-outline'} size={23} color={colors.primary} />
                 </MotionPressable>
                 <MotionPressable accessibilityRole="button" accessibilityLabel="Поделиться треком" disabled={!nowPlaying?.raw} onPress={() => shareTrack()} style={styles.roundAction}>
-                  <Ionicons name="share-outline" size={23} color={colors.text} />
+                  <Ionicons name="share" size={23} color={colors.text} />
                 </MotionPressable>
               </View>
 
               {nowPlaying?.raw ? (
                 <MotionPressable onPress={() => openMusic()} style={styles.musicLink}>
-                  <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
+                  <Ionicons name="musical-notes" size={18} color={colors.primary} />
                   <Text style={styles.musicLinkText}>Найти трек в Яндекс Музыке</Text>
                 </MotionPressable>
               ) : null}
@@ -272,7 +272,7 @@ export function PlaylistScreen() {
                     accessibilityLabel="Обновляем информацию о треке"
                   />
                 ) : (
-                  <Ionicons name="refresh-outline" size={17} color={colors.textSecondary} />
+                  <Ionicons name="refresh" size={17} color={colors.textSecondary} />
                 )}
                 <Text style={styles.refreshText}>Обновить информацию</Text>
               </MotionPressable>
@@ -302,7 +302,7 @@ export function PlaylistScreen() {
                     <Text style={styles.trackRowArtist} numberOfLines={1}>{track.artist || 'Улетай радио'}</Text>
                   </View>
                   <MotionPressable accessibilityLabel="Найти трек" onPress={() => openMusic(track)} style={styles.smallAction}>
-                    <Ionicons name="search-outline" size={19} color={colors.textSecondary} />
+                    <Ionicons name="search" size={19} color={colors.textSecondary} />
                   </MotionPressable>
                   <MotionPressable accessibilityLabel="Добавить в избранное" onPress={() => toggleFavorite(track)} style={styles.smallAction}>
                     <Ionicons name={isFavorite(track) ? 'heart' : 'heart-outline'} size={19} color={colors.primary} />
@@ -350,7 +350,7 @@ export function PlaylistScreen() {
                     onPress={() => openMusic(track)}
                     style={styles.smallAction}
                   >
-                    <Ionicons name="search-outline" size={19} color={colors.textSecondary} />
+                    <Ionicons name="search" size={19} color={colors.textSecondary} />
                   </MotionPressable>
                   <MotionPressable
                     accessibilityRole="button"
@@ -358,7 +358,7 @@ export function PlaylistScreen() {
                     onPress={() => shareTrack(track)}
                     style={styles.smallAction}
                   >
-                    <Ionicons name="share-outline" size={19} color={colors.textSecondary} />
+                    <Ionicons name="share" size={19} color={colors.textSecondary} />
                   </MotionPressable>
                   <MotionPressable
                     accessibilityRole="button"
@@ -366,7 +366,7 @@ export function PlaylistScreen() {
                     onPress={() => toggleFavorite(track)}
                     style={styles.smallAction}
                   >
-                    <Ionicons name="heart-dislike-outline" size={20} color={colors.primary} />
+                    <Ionicons name="heart-dislike" size={20} color={colors.primary} />
                   </MotionPressable>
                 </View>
                 ))

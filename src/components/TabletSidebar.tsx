@@ -66,7 +66,7 @@ function SidebarItem({ icon, iconNode, label, active, onPress }: SidebarItemProp
     >
       {iconNode ?? (
         <DeferredIonicons
-          name={icon ?? 'ellipse-outline'}
+          name={icon ?? 'ellipse'}
           size={22}
           color={color}
         />
@@ -131,7 +131,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       ? [
           {
             key: 'headliners',
-            icon: 'mic-outline' as const,
+            icon: 'mic' as const,
             label: 'Хэдлайнеры',
             isActive:
               moreNestedRoute === 'HeadlinersMain' || moreNestedRoute === 'HeadlinerDetail',
@@ -143,7 +143,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       ? [
           {
             key: 'autographs',
-            icon: 'ticket-outline' as const,
+            icon: 'ticket' as const,
             label: 'Автографы',
             isActive: currentTabName === 'Autographs',
             onPress: () => openAutographsMain(tabNavigation),
@@ -154,7 +154,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       ? [
           {
             key: 'food-court',
-            icon: 'restaurant-outline' as const,
+            icon: 'restaurant' as const,
             label: 'Фудкорт',
             isActive: moreNestedRoute === 'FoodCourtMain' || moreNestedRoute === 'FoodCourtDetail',
             onPress: () => tabNavigation.navigate('MoreTab', { screen: 'FoodCourtMain' }),
@@ -163,28 +163,28 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       : []),
     {
       key: 'help',
-      icon: 'medical-outline',
+      icon: 'medical',
       label: 'Экстренная помощь',
       isActive: currentTabName === 'HelpTab',
       onPress: () => tabNavigation.navigate('HelpTab'),
     },
     {
       key: 'settings',
-      icon: 'settings-outline',
+      icon: 'settings',
       label: 'Настройки',
       isActive: moreNestedRoute === 'Settings' || moreNestedRoute === 'Legal',
       onPress: () => tabNavigation.navigate('MoreTab', { screen: 'Settings' }),
     },
     {
       key: 'rules',
-      icon: 'document-text-outline',
+      icon: 'document-text',
       label: 'Правила и быт',
       isActive: moreNestedRoute === 'FestivalRules',
       onPress: () => tabNavigation.navigate('MoreTab', { screen: 'FestivalRules' }),
     },
     {
       key: 'about',
-      icon: 'information-circle-outline',
+      icon: 'information-circle',
       label: 'О фестивале',
       isActive: moreNestedRoute === 'FestivalAbout',
       onPress: () => tabNavigation.navigate('MoreTab', { screen: 'FestivalAbout' }),
@@ -219,15 +219,15 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
               : (options.title ?? route.name);
 
           const tabIcons: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
-            HomeTab: 'home-outline',
-            MapTab: 'map-outline',
-            HelpTab: 'medical-outline',
-            ScheduleTab: 'calendar-outline',
-            Autographs: 'ticket-outline',
-            FavoritesTab: 'star-outline',
-            PlaylistTab: 'radio-outline',
-            HeadlinersTab: 'mic-outline',
-            MoreTab: 'reorder-three-outline',
+            HomeTab: 'home',
+            MapTab: 'map',
+            HelpTab: 'medical',
+            ScheduleTab: 'calendar',
+            Autographs: 'ticket',
+            FavoritesTab: 'star',
+            PlaylistTab: 'radio',
+            HeadlinersTab: 'mic',
+            MoreTab: 'reorder-three',
           };
           const resolvedIcon = tabIcons[routeName];
           const active = currentTabName === routeName;

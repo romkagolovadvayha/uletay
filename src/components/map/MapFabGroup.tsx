@@ -59,10 +59,10 @@ export function MapFabGroup({
       {onZoomOut ? <MapFab icon="remove" label="Отдалить карту" onPress={onZoomOut} /> : null}
       <MapFab icon="locate" label="Моё местоположение" onPress={onLocate} active={followUser} />
       {onFestival ? (
-        <MapFab icon="flag-outline" label="Центр фестиваля" onPress={onFestival} />
+        <MapFab icon="flag" label="Центр фестиваля" onPress={onFestival} />
       ) : null}
       {onSavedPlaces ? (
-        <MapFab icon="bookmark-outline" label="Машина и палатка" onPress={onSavedPlaces} />
+        <MapFab icon="bookmark" label="Машина и палатка" onPress={onSavedPlaces} />
       ) : null}
       {onDirections ? (
         <MotionPressable
@@ -71,7 +71,7 @@ export function MapFabGroup({
           onPress={onDirections}
           style={styles.directions}
         >
-          <Ionicons name="navigate-outline" size={20} color={colors.primaryText} />
+          <Ionicons name="navigate" size={20} color={colors.primaryText} />
           <Text style={styles.directionsLabel}>Как добраться</Text>
         </MotionPressable>
       ) : null}
