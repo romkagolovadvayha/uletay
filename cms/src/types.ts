@@ -250,6 +250,7 @@ export type MapPoisGeoJson = GeoJSON.FeatureCollection<
 >;
 
 export interface AppData {
+  mapDataVersion?: string;
   festival: FestivalInfo;
   stages: Stage[];
   schedule: SchedulePerformance[];

@@ -131,6 +131,7 @@ export type {
 } from './map';
 
 export interface AppData {
+  mapDataVersion?: string;
   festival: FestivalInfo;
   stages: Stage[];
   schedule: SchedulePerformance[];

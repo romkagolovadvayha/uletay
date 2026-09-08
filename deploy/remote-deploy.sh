@@ -225,6 +225,9 @@ source "$DEPLOY_PATH/cms/.env"
 set +a
 # Schema only — do not re-seed app_content (preserves uploaded images and admin edits)
 npm run db:migrate
+# Apply each versioned map seed once. The migration preserves all non-map CMS
+# content and writes a full backup before replacing the map collections.
+npm run map:migrate-production
 bash "$DEPLOY_PATH/deploy/setup-push-reminders-cron.sh"
 
 # Create 160×160 *-list.webp siblings only — never overwrites originals.
