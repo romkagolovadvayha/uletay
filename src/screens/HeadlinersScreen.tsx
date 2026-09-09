@@ -6,6 +6,7 @@ import { HeadlinerCard } from '../components/HeadlinerCard';
 import { HeadlinerFilterBar } from '../components/HeadlinerFilterBar';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
+import { useIsDesktopWeb } from '../hooks/useIsDesktopWeb';
 import { HeadlinersStackParamList, MoreStackParamList } from '../navigation/types';
 import {
   buildHeadlinerYearCategories,
@@ -18,7 +19,7 @@ import {
 import { colors } from '../theme/colors';
 import { screenHeaderStyle } from '../theme/layout';
 import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import { appFont, typography } from '../theme/typography';
 
 type Props = NativeStackScreenProps<
   HeadlinersStackParamList | MoreStackParamList,
@@ -27,6 +28,7 @@ type Props = NativeStackScreenProps<
 
 export function HeadlinersScreen({ navigation }: Props) {
   const { data } = useAppData();
+  const isDesktop = useIsDesktopWeb();
   const years = useMemo(
     () => getSelectableHeadlinerYears(data.headliners, data.festival.year),
     [data.festival.year, data.headliners],
@@ -66,11 +68,15 @@ export function HeadlinersScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <ScreenTitle style={styles.title}>ХЭДЛАЙНЕРЫ</ScreenTitle>
+      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+        {isDesktop ? <Text style={styles.desktopKicker}>АРХИВ ФЕСТИВАЛЯ / ИМЕНА</Text> : null}
+        <ScreenTitle style={[styles.title, isDesktop ? styles.titleDesktop : {}]}>ХЭДЛАЙНЕРЫ</ScreenTitle>
+        {isDesktop ? (
+          <Text style={styles.desktopLead}>Музыканты, которые уже выходили на сцены «Улетая».</Text>
+        ) : null}
       </View>
 
-      <View style={styles.filtersWrap}>
+      <View style={[styles.filtersWrap, isDesktop && styles.filtersWrapDesktop]}>
         <HeadlinerFilterBar
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
@@ -83,9 +89,12 @@ export function HeadlinersScreen({ navigation }: Props) {
       </View>
 
       <FlatList
+        key={isDesktop ? 'desktop-headliners' : 'mobile-headliners'}
         data={items}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.content}
+        numColumns={isDesktop ? 3 : 1}
+        columnWrapperStyle={isDesktop ? styles.columns : undefined}
+        contentContainerStyle={[styles.content, isDesktop && styles.contentDesktop]}
         showsVerticalScrollIndicator={false}
         initialNumToRender={8}
         maxToRenderPerBatch={8}
@@ -94,6 +103,7 @@ export function HeadlinersScreen({ navigation }: Props) {
           <HeadlinerCard
             headliner={headliner}
             allHeadliners={data.headliners}
+            desktopTile={isDesktop}
             onPress={() => navigation.navigate('HeadlinerDetail', { headlinerId: headliner.id })}
           />
         )}
@@ -127,12 +137,47 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: screenHeaderStyle,
+  headerDesktop: {
+    width: '100%',
+    maxWidth: 1280,
+    alignSelf: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 42,
+    paddingBottom: 26,
+  },
   title: {
     ...typography.screenTitle,
     color: colors.text,
   },
+  titleDesktop: {
+    ...appFont('black'),
+    fontSize: 46,
+    lineHeight: 50,
+    letterSpacing: -1.8,
+  },
+  desktopKicker: {
+    ...appFont('bold'),
+    color: colors.primary,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    marginBottom: 10,
+  },
+  desktopLead: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 9,
+  },
   filtersWrap: {
     paddingHorizontal: spacing.screen,
+  },
+  filtersWrapDesktop: {
+    width: '100%',
+    maxWidth: 1280,
+    alignSelf: 'center',
+    paddingHorizontal: 32,
+    marginBottom: 24,
   },
   content: {
     paddingHorizontal: spacing.screen,
@@ -147,6 +192,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 15,
     textAlign: 'center',
+  },
+  contentDesktop: {
+    width: '100%',
+    maxWidth: 1280,
+    alignSelf: 'center',
+    paddingHorizontal: 32,
+    paddingBottom: 48,
+  },
+  columns: {
+    gap: 18,
   },
   previousHeader: {
     paddingVertical: spacing.xl,

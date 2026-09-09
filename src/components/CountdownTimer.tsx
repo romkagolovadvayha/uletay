@@ -17,6 +17,7 @@ type Props = {
   festivalStartDate: string;
   festivalEndDate: string;
   performances: SchedulePerformance[];
+  compact?: boolean;
 };
 
 function pad(value: number) {
@@ -28,6 +29,7 @@ export function CountdownTimer({
   festivalStartDate,
   festivalEndDate,
   performances,
+  compact = false,
 }: Props) {
   const now = useNow(1000);
 
@@ -70,15 +72,17 @@ export function CountdownTimer({
 
   return (
     <View>
-      <Text style={styles.title}>ДО ФЕСТИВАЛЯ</Text>
+      <Text style={[styles.title, compact && styles.titleCompact]}>ДО ФЕСТИВАЛЯ</Text>
       <View style={styles.row}>
         {items.map((item, index) => (
           <React.Fragment key={item.label}>
             <View style={styles.cell}>
-              <Text style={styles.value}>{item.value}</Text>
-              <Text style={styles.label}>{item.label}</Text>
+              <Text style={[styles.value, compact && styles.valueCompact]}>{item.value}</Text>
+              <Text style={[styles.label, compact && styles.labelCompact]}>{item.label}</Text>
             </View>
-            {index < items.length - 1 ? <View style={styles.divider} /> : null}
+            {index < items.length - 1 ? (
+              <View style={[styles.divider, compact && styles.dividerCompact]} />
+            ) : null}
           </React.Fragment>
         ))}
       </View>
@@ -93,6 +97,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.md + 2,
   },
+  titleCompact: {
+    fontSize: 10,
+    letterSpacing: 1.2,
+    marginBottom: 10,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -106,14 +115,26 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
+  valueCompact: {
+    fontSize: 24,
+    letterSpacing: -0.3,
+    marginBottom: 2,
+  },
   label: {
     ...typography.countdownLabel,
     color: colors.textSecondary,
+  },
+  labelCompact: {
+    fontSize: 9,
+    letterSpacing: 0.45,
   },
   divider: {
     width: 1,
     height: 40,
     backgroundColor: colors.countdownDivider,
+  },
+  dividerCompact: {
+    height: 27,
   },
   liveContainer: {
     alignItems: 'center',

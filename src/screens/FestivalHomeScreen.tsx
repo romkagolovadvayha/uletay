@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { DesktopFestivalHome } from '../components/DesktopFestivalHome';
 import { ExternalLink } from '../components/ExternalLink';
 import { AutographSessionRow } from '../components/AutographSessionRow';
 import { FestivalLogoImage } from '../components/FestivalLogoImage';
@@ -33,6 +34,7 @@ import {
 import { useFavorites } from '../hooks/useFavorites';
 import { useDeferredHeroVideo } from '../hooks/useDeferredHeroVideo';
 import { useNow } from '../hooks/useNow';
+import { useIsDesktopWeb } from '../hooks/useIsDesktopWeb';
 import { RootTabParamList } from '../navigation/types';
 import { openHeadlinerDetail, openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
@@ -136,7 +138,7 @@ function HeroParallaxBackground({
   );
 }
 
-export function FestivalHomeScreen({ navigation }: Props) {
+function FestivalHomeMobile({ navigation }: Props) {
   const { data, dataSource, error, isInitialLoading, lastFetchedAt, refreshData } = useAppData();
   const now = useNow(1000);
   const stagePrimaries = useStagePrimaryPerformances();
@@ -418,6 +420,16 @@ export function FestivalHomeScreen({ navigation }: Props) {
       </Animated.ScrollView>
     </SafeAreaView>
   );
+}
+
+export function FestivalHomeScreen(props: Props) {
+  const isDesktopWeb = useIsDesktopWeb();
+
+  if (isDesktopWeb) {
+    return <DesktopFestivalHome {...props} />;
+  }
+
+  return <FestivalHomeMobile {...props} />;
 }
 
 const styles = StyleSheet.create({
