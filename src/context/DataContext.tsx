@@ -90,7 +90,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(initialData.fetchedAt);
 
   const applyCachedData = useCallback((cached: CachedAppData) => {
-    setData(normalizeAppData(cached.data));
+    setData((current) => current.revision && current.revision === cached.data.revision ? current : cached.data);
     setDataSource('cache');
     setLastFetchedAt(cached.fetchedAt);
     setIsInitialLoading(false);
@@ -105,7 +105,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [applyCachedData]);
 
   const applyFreshData = useCallback((fresh: CachedAppData) => {
-    setData(normalizeAppData(fresh.data));
+    setData((current) => current.revision && current.revision === fresh.data.revision ? current : fresh.data);
     setDataSource('remote');
     setLastFetchedAt(fresh.fetchedAt);
     setIsInitialLoading(false);
@@ -120,9 +120,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (result.status === 'not-needed') {
-        applyCachedData(result.cached);
-        // Cache is still within the refresh window — no need to keep a stale error banner.
-        setError(null);
+        // The hydrated snapshot is already displayed; preserve its object identity.
         return;
       }
 

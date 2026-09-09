@@ -1,5 +1,6 @@
 'use client';
 
+import { ContentRevision } from './ContentRevision';
 import { useMemo, useState } from 'react';
 import type {
   FestivalMapConfig,
@@ -187,7 +188,8 @@ export function MapOperationsEditor({
       <form action={saveAction}>
         <input type="hidden" name="mapPois" value={JSON.stringify(collection)} />
         <button type="submit" className="btn-primary">Сохранить точки карты</button>
-      </form>
+      <ContentRevision />
+</form>
     </section>
   );
 }

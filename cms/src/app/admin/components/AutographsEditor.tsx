@@ -1,3 +1,4 @@
+import { ContentRevision } from './ContentRevision';
 import Link from 'next/link';
 import {
   deleteAutographAction,
@@ -86,6 +87,7 @@ export function AutographsEditor({ items, stages, headliners, editId, stageFilte
 
       {editId ? (
         <form action={upsertAutographAction} className="panel">
+<ContentRevision />
           <div className="panel-heading">
             <div>
               <h2>{isNew ? 'Новая автограф-сессия' : `Редактирование: ${editing?.artist ?? ''}`}</h2>

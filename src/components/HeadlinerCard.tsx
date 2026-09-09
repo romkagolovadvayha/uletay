@@ -73,7 +73,7 @@ export function HeadlinerCard({ headliner, allHeadliners, onPress, large }: Prop
       <HeadlinerThumbnail headliner={headliner} />
       <View style={styles.content}>
         <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={styles.name} numberOfLines={2}>
             {headliner.name.toUpperCase()}
           </Text>
           {alternateNames.length ? (
@@ -115,8 +115,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     flexShrink: 1,
     minWidth: 0,
   },
@@ -124,9 +124,10 @@ const styles = StyleSheet.create({
     ...typography.artistName,
     color: colors.text,
     fontSize: 14,
-    flexShrink: 0,
+    flexShrink: 1,
   },
   nameSeparator: {
+    display: 'none',
     color: colors.textMuted,
     fontSize: 12,
     lineHeight: 14,

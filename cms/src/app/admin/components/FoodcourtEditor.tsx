@@ -1,3 +1,4 @@
+import { ContentRevision } from './ContentRevision';
 import Link from 'next/link';
 import { upsertFoodcourtAction } from '../actions';
 import { AdminImageUpload } from './AdminImageUpload';
@@ -63,6 +64,7 @@ export function FoodcourtEditor({ items, editId, categoryFilter }: Props) {
 
       {editId ? (
         <form action={upsertFoodcourtAction} className="panel" encType="multipart/form-data">
+<ContentRevision />
           <div className="panel-heading">
             <div>
               <h2>{isNew ? 'Новая точка' : `Редактирование: ${editing?.name ?? ''}`}</h2>

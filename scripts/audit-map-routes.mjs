@@ -17,6 +17,7 @@ await build({
   },
   bundle: true,
   platform: 'node',
+  define: { __DEV__: 'false' },
   format: 'cjs',
   outfile: output,
   plugins: [{

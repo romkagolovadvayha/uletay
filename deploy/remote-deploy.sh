@@ -47,6 +47,8 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 SESSION_SECRET="${SESSION_SECRET:-}"
 CMS_PORT="${CMS_PORT:-3000}"
 RELEASE_SHA="${RELEASE_SHA:-manual}"
+CMS_PROCESS_NAME="${CMS_PROCESS_NAME:-uletay-cms}"
+SHARED_ROOT="${SHARED_ROOT:-$DEPLOY_PATH}"
 
 read_existing_env() {
   local key="$1"
@@ -169,10 +171,12 @@ write_env ADMIN_PASSWORD "$ADMIN_PASSWORD"
 write_env SESSION_SECRET "$SESSION_SECRET"
 write_env CORS_ORIGIN "https://${DOMAIN}"
 write_env BASE_PATH ""
-write_env UPLOAD_DIR "${DEPLOY_PATH}/uploads"
+write_env UPLOAD_DIR "${SHARED_ROOT}/uploads"
 write_env REPO_ASSETS_DIR "${DEPLOY_PATH}/assets"
 write_env PORT "$CMS_PORT"
 write_env NODE_ENV "production"
+write_env TRUST_PROXY "1"
+write_env RELEASE_SHA "$RELEASE_SHA"
 write_env NEXT_PUBLIC_YANDEX_MAPS_API_KEY "${NEXT_PUBLIC_YANDEX_MAPS_API_KEY:-}"
 write_env LASTFM_API_KEY "$LASTFM_API_KEY"
 write_env LASTFM_PROXY_URL "$LASTFM_PROXY_URL"
@@ -228,7 +232,6 @@ npm run db:migrate
 # Apply each versioned map seed once. The migration preserves all non-map CMS
 # content and writes a full backup before replacing the map collections.
 npm run map:migrate-production
-bash "$DEPLOY_PATH/deploy/setup-push-reminders-cron.sh"
 
 # Create 160×160 *-list.webp siblings only — never overwrites originals.
 echo "Generating list image variants (siblings only)..."
@@ -269,16 +272,12 @@ if [ ! -f "$CMS_SERVER" ]; then
   exit 1
 fi
 
-if "$PM2_BIN" describe uletay-cms >/dev/null 2>&1; then
-  "$PM2_BIN" restart uletay-cms --update-env
+if "$PM2_BIN" describe "$CMS_PROCESS_NAME" >/dev/null 2>&1; then
+  "$PM2_BIN" restart "$CMS_PROCESS_NAME" --update-env
 else
-  "$PM2_BIN" start "$CMS_SERVER" --name uletay-cms --cwd "$DEPLOY_PATH/cms" --update-env
+  "$PM2_BIN" start "$CMS_SERVER" --name "$CMS_PROCESS_NAME" --cwd "$DEPLOY_PATH/cms" --update-env
 fi
 "$PM2_BIN" save || true
-
-# shellcheck source=nginx-ssl-setup.sh
-source "$DEPLOY_PATH/deploy/nginx-ssl-setup.sh"
-setup_https_nginx "$DEPLOY_PATH"
 
 echo "Verifying local endpoints..."
 FONT_FILE=$(find "$DEPLOY_PATH/dist/assets" -name 'Ionicons*.ttf' 2>/dev/null | head -1)
@@ -298,20 +297,22 @@ for _ in $(seq 1 20); do
   fi
   sleep 1
 done
-rm -f "$CMS_CHECK"
-
 if [ "$cms_ok" -ne 1 ]; then
   echo "CMS is not responding on port ${CMS_PORT}"
-  "$PM2_BIN" logs uletay-cms --lines 40 --nostream 2>/dev/null || true
+  "$PM2_BIN" logs "$CMS_PROCESS_NAME" --lines 40 --nostream 2>/dev/null || true
   exit 1
 fi
+
+node -e 'const fs=require("node:fs");const live=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const seed=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));if(live.mapDataVersion!==seed.mapDataVersion)throw new Error("Candidate map version mismatch");for(const key of ["mapZones","mapPaths","mapPois"])if(live[key]?.features?.length!==seed[key]?.features?.length)throw new Error(key+" count mismatch")' \
+  "$CMS_CHECK" "$DEPLOY_PATH/cms/seed/content.json"
+rm -f "$CMS_CHECK"
 
 PUSH_CONFIG=$(curl -fsS --max-time 5 "http://127.0.0.1:${CMS_PORT}/api/push/subscribe")
 if ! printf '%s' "$PUSH_CONFIG" | grep -q '"webPushSupported":true'; then
   echo "Web Push configuration check failed"
   exit 1
 fi
-if [ ! -f "$DEPLOY_PATH/dist/push-sw.js" ] || [ ! -f "$DEPLOY_PATH/dist/manifest.webmanifest" ]; then
+if [ ! -f "$DEPLOY_PATH/dist/sw.js" ] || [ ! -f "$DEPLOY_PATH/dist/push-sw.js" ] || [ ! -f "$DEPLOY_PATH/dist/manifest.webmanifest" ]; then
   echo "Web Push static files are missing from dist"
   exit 1
 fi
@@ -327,7 +328,12 @@ else
   fi
 fi
 
+# Activate only after the candidate API and static assets passed local checks.
+# shellcheck source=nginx-ssl-setup.sh
+source "$DEPLOY_PATH/deploy/nginx-ssl-setup.sh"
+setup_https_nginx "$DEPLOY_PATH"
 verify_https
+bash "$DEPLOY_PATH/deploy/setup-push-reminders-cron.sh"
 
 printf '%s\n' "$RELEASE_SHA" > "$DEPLOY_PATH/.deploy-version"
 

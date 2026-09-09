@@ -1,3 +1,4 @@
+import { saveContentSnapshot } from './save-content-snapshot.mjs';
 import mysql from 'mysql2/promise';
 import { foodcourtVendors } from './foodcourt-data.mjs';
 import { getDbConfig } from './load-db-env.mjs';
@@ -48,9 +49,7 @@ async function main() {
 
   if (forceReplace) {
     content.foodcourt = foodcourtVendors;
-    await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
-      JSON.stringify(content),
-    ]);
+    await saveContentSnapshot(pool, row.content, content);
     await pool.end();
     console.log(`Replaced DB foodcourt with seed: ${foodcourtVendors.length} vendors`);
     return;
@@ -59,9 +58,7 @@ async function main() {
   const { merged, added, preserved } = mergeFoodcourt(existing, foodcourtVendors);
   content.foodcourt = merged;
 
-  await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
-    JSON.stringify(content),
-  ]);
+  await saveContentSnapshot(pool, row.content, content);
   await pool.end();
   console.log(
     `Merged foodcourt: kept ${preserved} existing, added ${added} new from seed (${merged.length} total)`,

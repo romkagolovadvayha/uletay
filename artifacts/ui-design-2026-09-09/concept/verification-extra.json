@@ -1,0 +1,51 @@
+{
+  "views": [
+    {
+      "width": 320,
+      "route": "home",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "route": "schedule",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "route": "map",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "route": "cms",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "home",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "schedule",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "map",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "cms",
+      "overflow": false
+    }
+  ],
+  "checks": [
+    "Day and stage filters combine, including empty state",
+    "System reduced motion cannot be overridden by the demo toggle",
+    "Keyboard map selection and selected destination route",
+    "Current mobile More sheet captured"
+  ],
+  "errors": []
+}

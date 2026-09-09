@@ -1,6 +1,7 @@
 /**
  * One-time patch: set exact 2022 headliner year tags from poster lineup.
  */
+import { saveContentSnapshot } from './save-content-snapshot.mjs';
 import mysql from 'mysql2/promise';
 import { headliners2022 } from './headliners-2022-data.mjs';
 import {
@@ -119,9 +120,7 @@ async function main() {
   }
 
   content.headliners = merged;
-  await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
-    JSON.stringify(content),
-  ]);
+  await saveContentSnapshot(pool, row.content, content);
   await pool.end();
   console.log(`Headliners ${FESTIVAL_YEAR} patch saved to app_content`);
 }

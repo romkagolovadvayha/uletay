@@ -1,3 +1,4 @@
+import { ContentRevision } from './ContentRevision';
 import Link from 'next/link';
 import { upsertHeadlinerAction } from '../actions';
 import { AdminImageUpload } from './AdminImageUpload';
@@ -36,6 +37,7 @@ export function HeadlinersEditor({ items, editId }: Props) {
 
       {editId ? (
         <form action={upsertHeadlinerAction} className="panel" encType="multipart/form-data">
+<ContentRevision />
           <div className="panel-heading">
             <div>
               <h2>{isNew ? 'Новый хэдлайнер' : `Редактирование: ${editing?.name ?? ''}`}</h2>

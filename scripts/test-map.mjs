@@ -10,7 +10,7 @@ const output = path.resolve('tmp/map-test-runtime.cjs');
 await fs.mkdir(path.dirname(output), {recursive:true});
 // Only the platform link adapter is stubbed; geometry, routing and filters are real.
 await build({stdin:{contents:`export * from './src/utils/map/pathfinding'; export * from './src/utils/map/combinedRoute'; export * from './src/utils/map/geo'; export * from './src/utils/map/zoneGeo'; export * from './src/utils/map/poiData'; export * from './src/utils/map/layerStyles'; export * from './src/utils/map/fenceRouting'; export * from './src/utils/map/placeMarkers'; export * from './src/components/map/nativeYandexMapHtml';`,resolveDir:process.cwd()},
-  bundle:true,platform:'node',format:'cjs',outfile:output,
+  bundle:true,platform:'node',format:'cjs',outfile:output,define:{__DEV__:'false'},
   plugins:[{name:'platform-link-adapter',setup(b){b.onResolve({filter:/^react-native$/},()=>({path:'platform',namespace:'test'}));
     b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:`export const Platform={OS:'web'}; export const Linking={openURL(){throw Error('Unexpected navigation in geometry test')}};` }));}}]});
 const {buildCombinedRouteToTarget,buildGoogleMapsRouteUrl,buildYandexRouteUrl,findInternalPathAsync,zoneTargetPoint,withOperationalPois,getMapFilters,filterZoneFeatures,routeCrossesFencePaths,extractFencePaths,buildMapPlaceMarkers,clusterMapPlaces,buildNativeYandexMapHtml} = await import(pathToFileURL(output).href);

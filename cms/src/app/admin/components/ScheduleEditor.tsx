@@ -1,3 +1,4 @@
+import { ContentRevision } from './ContentRevision';
 import Link from 'next/link';
 import {
   deleteScheduleAction,
@@ -87,6 +88,7 @@ export function ScheduleEditor({ items, stages, headliners, editId, stageFilter,
 
       {editId ? (
         <form action={upsertScheduleAction} className="panel">
+<ContentRevision />
           <div className="panel-heading">
             <div>
               <h2>{isNew ? 'Новое выступление' : `Редактирование: ${editing?.artist ?? ''}`}</h2>

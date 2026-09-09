@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { jsonResponse, optionsResponse } from '@/lib/api-response';
 import { config } from '@/lib/config';
+import { readRequestJson, RequestJsonError } from '@/lib/request-json';
+import { consumeRateLimit, RateLimitError, requestSource } from '@/lib/rate-limit';
 import {
   registerExpoPushToken,
   registerRuStorePushToken,
@@ -26,7 +28,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as {
+    consumeRateLimit('push-subscribe', requestSource(request.headers), 60, 60_000);
+    const body = (await readRequestJson(request, 32_768)) as {
       platform?: 'ios' | 'android' | 'web';
       token?: string;
       provider?: 'expo' | 'rustore';
@@ -49,21 +52,34 @@ export async function POST(request: NextRequest) {
     }
     return jsonResponse({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Subscription error';
-    return jsonResponse({ error: message }, 400);
+    if (error instanceof RequestJsonError) return jsonResponse({ error: error.message }, error.status);
+    if (error instanceof RateLimitError) {
+      const response = jsonResponse({ error: error.message }, 429);
+      response.headers.set('Retry-After', String(error.retryAfter));
+      return response;
+    }
+    console.error('Subscription registration failed', error);
+    return jsonResponse({ error: 'Invalid subscription payload' }, 400);
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const body = (await request.json()) as {
+    consumeRateLimit('push-unsubscribe', requestSource(request.headers), 60, 60_000);
+    const body = (await readRequestJson(request, 8_192)) as {
       token?: string;
       endpoint?: string;
       provider?: 'expo' | 'rustore';
     };
     await unregisterPushSubscription(body);
     return jsonResponse({ ok: true });
-  } catch {
+  } catch (error) {
+    if (error instanceof RequestJsonError) return jsonResponse({ error: error.message }, error.status);
+    if (error instanceof RateLimitError) {
+      const response = jsonResponse({ error: error.message }, 429);
+      response.headers.set('Retry-After', String(error.retryAfter));
+      return response;
+    }
     return jsonResponse({ error: 'Unsubscribe error' }, 400);
   }
 }

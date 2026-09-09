@@ -6,7 +6,7 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
-  const hasError = params.error === '1';
+  const hasError = params.error === '1' || params.error === 'rate';
 
   return (
     <div className="auth-page">
@@ -19,7 +19,7 @@ export default async function LoginPage({
           </div>
         </div>
         {hasError ? (
-          <p className="admin-notice admin-notice--error">Неверный логин или пароль</p>
+          <p className="admin-notice admin-notice--error">{params.error === 'rate' ? 'Слишком много попыток входа. Повторите через 15 минут.' : 'Неверный логин или пароль'}</p>
         ) : null}
         <label>
           Логин

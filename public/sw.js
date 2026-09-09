@@ -1,9 +1,9 @@
 /* Offline shell + API cache. Bump CACHE_VERSION on every deploy that must invalidate clients. */
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const SHELL_CACHE = `uletay-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `uletay-data-${CACHE_VERSION}`;
 const APP_SHELL = ['/', '/api/data'];
-const IS_LOOPBACK = ['localhost', '127.0.0.1', '::1'].includes(self.location.hostname);
+const IS_LOOPBACK = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(self.location.hostname);
 
 self.addEventListener('install', (event) => {
   if (IS_LOOPBACK) {
@@ -32,7 +32,7 @@ self.addEventListener('activate', (event) => {
 
       await Promise.all(
         keys
-          .filter((key) => key !== SHELL_CACHE && key !== DATA_CACHE)
+          .filter((key) => key.startsWith('uletay-') && key !== SHELL_CACHE && key !== DATA_CACHE)
           .map((key) => caches.delete(key)),
       );
       await self.clients.claim();
@@ -46,7 +46,7 @@ self.addEventListener('message', (event) => {
   }
   if (event.data?.type === 'CLEAR_CACHES') {
     event.waitUntil(
-      caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))),
+      caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('uletay-')).map((key) => caches.delete(key)))),
     );
   }
 });
@@ -125,4 +125,77 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/_expo/')) {
     event.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
   }
+});
+
+/* global self, clients */
+
+const SAFE_PATHS = [
+  /^\/$/,
+  /^\/map(?:\/[^/?#]+)?$/,
+  /^\/schedule(?:\/(?:live|full)(?:\/[^/?#]+)?)?$/,
+  /^\/autographs(?:\/[^/?#]+)?$/,
+  /^\/favorites$/,
+  /^\/playlist$/,
+  /^\/headliners(?:\/[^/?#]+)?$/,
+  /^\/foodcourt(?:\/[^/?#]+)?$/,
+  /^\/(?:about|rules|settings|legal)$/,
+];
+
+function safeTarget(value) {
+  try {
+    const url = new URL(typeof value === 'string' ? value : '/', self.location.origin);
+    const decodedPath = decodeURIComponent(url.pathname);
+    if (url.origin === self.location.origin && SAFE_PATHS.some((pattern) => pattern.test(decodedPath))) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    // Invalid values intentionally fall back to the home screen.
+  }
+  return '/';
+}
+
+
+
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { body: event.data ? event.data.text() : '' };
+  }
+  const title = typeof payload.title === 'string' && payload.title ? payload.title : 'УЛЕТАЙ';
+  const body = typeof payload.body === 'string' ? payload.body : '';
+  const url = safeTarget(payload.url);
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { url },
+      tag: payload.tag || undefined,
+      renotify: Boolean(payload.tag),
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(safeTarget(event.notification.data?.url), self.location.origin);
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windowClients) => {
+      for (const client of windowClients) {
+        if (new URL(client.url).origin !== self.location.origin) {
+          continue;
+        }
+        await client.focus();
+        if ('navigate' in client) {
+          await client.navigate(target.href);
+        }
+        return;
+      }
+      await clients.openWindow(target.href);
+    }),
+  );
 });

@@ -6,7 +6,8 @@ export interface SessionData {
 }
 
 export const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_SECRET || 'dev-secret-change-me-min-32-chars-long!!',
+  password: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-secret-change-me-min-32-chars-long!!'),
+  ttl: 7 * 24 * 60 * 60,
   cookieName: 'uletay_admin',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
@@ -17,6 +18,9 @@ export const sessionOptions: SessionOptions = {
 };
 
 export async function getSession() {
+  if (String(sessionOptions.password).length < 32) {
+    throw new Error('SESSION_SECRET must contain at least 32 characters');
+  }
   return getIronSession<SessionData>(await cookies(), sessionOptions);
 }
 

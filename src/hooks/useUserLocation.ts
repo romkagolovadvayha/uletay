@@ -99,6 +99,7 @@ export function useUserLocation(enabled = true) {
   const [status, setStatus] = useState<LocationStatus>(enabled ? 'loading' : 'prompt');
   const [reduceMotion, setReduceMotion] = useState(false);
   const watchRef = useRef<Location.LocationSubscription | null>(null);
+  const generationRef = useRef(0);
   const statusRef = useRef<LocationStatus>('loading');
 
   const setStatusSafe = useCallback((next: LocationStatus) => {
@@ -119,10 +120,10 @@ export function useUserLocation(enabled = true) {
     watchRef.current = null;
   }, []);
 
-  const refreshPosition = useCallback(async () => {
+  const refreshPosition = useCallback(async (generation: number) => {
     try {
       const last = await Location.getLastKnownPositionAsync();
-      if (last) {
+      if (last && generation === generationRef.current) {
         setLocation(toLocationState(last));
       }
     } catch {
@@ -136,37 +137,42 @@ export function useUserLocation(enabled = true) {
         }),
         POSITION_TIMEOUT_MS,
       );
-      setLocation(toLocationState(current));
+      if (generation === generationRef.current) setLocation(toLocationState(current));
     } catch {
       // GPS fix can be slow; watchPositionAsync may still update later.
     }
   }, []);
 
-  const startWatch = useCallback(async () => {
+  const startWatch = useCallback(async (generation: number) => {
+    if (generation !== generationRef.current) return;
     stopWatch();
     try {
-      watchRef.current = await Location.watchPositionAsync(
+      const subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
           timeInterval: 4000,
           distanceInterval: 5,
         },
         (update) => {
-          setLocation(toLocationState(update));
+          if (generation === generationRef.current) setLocation(toLocationState(update));
         },
       );
+      if (generation !== generationRef.current) subscription.remove();
+      else watchRef.current = subscription;
     } catch {
       // watchPosition can fail on web without a fresh user gesture.
     }
   }, [stopWatch]);
 
-  const activateGranted = useCallback(async () => {
+  const activateGranted = useCallback(async (generation: number) => {
+    if (generation !== generationRef.current) return;
     setStatusSafe('granted');
-    await refreshPosition();
-    await startWatch();
+    await refreshPosition(generation);
+    await startWatch(generation);
   }, [refreshPosition, setStatusSafe, startWatch]);
 
   const requestPermission = useCallback(async () => {
+    const generation = generationRef.current;
     try {
       const servicesEnabled = await Location.hasServicesEnabledAsync();
       if (!servicesEnabled) {
@@ -188,13 +194,13 @@ export function useUserLocation(enabled = true) {
         return false;
       }
 
-      await activateGranted();
+      await activateGranted(generation);
       return true;
     } catch {
       if (Platform.OS === 'web') {
         const probe = await probeWebLocationAccess();
         if (probe === 'granted') {
-          await activateGranted();
+          await activateGranted(generation);
           return true;
         }
         if (probe === 'denied') {
@@ -208,6 +214,7 @@ export function useUserLocation(enabled = true) {
   }, [activateGranted, setStatusSafe]);
 
   useEffect(() => {
+    const generation = ++generationRef.current;
     if (!enabled) {
       stopWatch();
       return;
@@ -233,7 +240,7 @@ export function useUserLocation(enabled = true) {
         }
 
         if (permission === 'granted') {
-          await activateGranted();
+          await activateGranted(generation);
           return;
         }
 
@@ -250,7 +257,7 @@ export function useUserLocation(enabled = true) {
           const probe = await probeWebLocationAccess();
           if (cancelled) return;
           if (probe === 'granted') {
-            await activateGranted();
+            await activateGranted(generation);
             return;
           }
           if (probe === 'denied') {
@@ -265,6 +272,7 @@ export function useUserLocation(enabled = true) {
 
     return () => {
       cancelled = true;
+      generationRef.current = generation + 1;
       stopWatch();
     };
   }, [activateGranted, enabled, setStatusSafe, stopWatch]);

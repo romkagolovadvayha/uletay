@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111211">
+  <title>УЛЕТАЙ — В ритме поля / дизайн-концепт</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="concept-bar">
+    <span><b>КОНЦЕПТ / 02</b><span class="lab-detail"> Улетай · демонстрационные данные</span></span>
+    <div class="lab-tools">
+      <label class="sr-only" for="phase">Период фестиваля</label>
+      <select id="phase"><option value="before">До фестиваля</option><option value="live">На фестивале</option></select>
+      <button id="motion" aria-pressed="false" title="Уменьшить движение">Motion <span>on</span></button>
+      <button id="cms-mode">CMS ↗</button>
+    </div>
+  </div>
+  <div id="shell">
+    <aside class="sidebar">
+      <a href="#home" class="wordmark" aria-label="Улетай — главная">УЛЕТАЙ<span>↗</span></a>
+      <span class="edition">7—11 июля / 2027</span>
+      <nav aria-label="Главная навигация" id="desktop-nav"></nav>
+      <div class="sidebar-bottom"><button class="radio-mini" data-action="radio"><span class="radio-icon">◉</span><span>Включить настроение<small>Улетай радио</small></span><span>↗</span></button><a class="help-link" href="#help">⊕ Помощь на площадке</a><span class="sidebar-foot">Удмуртия. Лагуново.<br>Музыка. Люди. Свобода.</span></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><a href="#home" class="mobile-wordmark">УЛЕТАЙ↗</a><div class="location-label"><span class="dot"></span> ЛАГУНОВО, УДМУРТИЯ <span class="weather">/ 7—11 ИЮЛЯ</span></div><button class="status-button" data-action="offline"><span class="status-dot"></span> Офлайн-пакет <span>↗</span></button></header>
+      <main id="main" tabindex="-1"></main>
+      <footer class="app-footer"><span>Встретимся у сцены.</span><a href="#about">О фестивале ↗</a></footer>
+    </div>
+    <nav class="bottom-nav" aria-label="Главная навигация" id="mobile-nav"></nav>
+  </div>
+  <div id="admin-root" hidden></div>
+  <dialog id="detail-dialog" aria-labelledby="dialog-title"><button class="dialog-close icon-button" aria-label="Закрыть">✕</button><div id="dialog-content"></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

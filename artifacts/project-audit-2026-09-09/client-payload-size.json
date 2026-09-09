@@ -1,0 +1,6 @@
+{
+  "source": "getClientAppData() using local cms/seed/content.json and mocked database",
+  "bytes": 848376,
+  "gzip": 159390,
+  "brotli": 119694
+}

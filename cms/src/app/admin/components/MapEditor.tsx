@@ -1,3 +1,4 @@
+import { ContentRevision } from './ContentRevision';
 import {
   removeMapSchemeAction,
   saveMapConfigAction,
@@ -68,6 +69,7 @@ export function MapEditor({ data }: Props) {
       />
 
       <form action={saveMapConfigAction} className="panel">
+<ContentRevision />
         <h2>Настройки карты</h2>
         <div className="grid">
           <label>
@@ -114,6 +116,7 @@ export function MapEditor({ data }: Props) {
       <details className="panel">
         <summary>GeoJSON (расширенный режим)</summary>
         <form action={saveMapGeoJsonAction} className="panel-inner">
+<ContentRevision />
           <p className="hint">
             Ручное редактирование FeatureCollection. Координаты: [lng, lat]. Предпочтительно — редактор выше.
           </p>

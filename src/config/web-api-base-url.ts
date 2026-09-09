@@ -3,14 +3,14 @@ const EXPO_DEV_PORTS = new Set(['8081', '8082', '19006', '19000']);
 export function isLoopbackUrl(value: string): boolean {
   try {
     const hostname = new URL(value).hostname;
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    return isLoopbackHostname(hostname);
   } catch {
     return false;
   }
 }
 
 export function isLoopbackHostname(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  return ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname);
 }
 
 type WebApiBaseUrlOptions = {

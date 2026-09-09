@@ -12,8 +12,8 @@ export const config = {
   dbUser: env('DB_USER', 'root'),
   dbPass: env('DB_PASS'),
   adminUser: env('ADMIN_USER', 'admin'),
-  adminPassword: env('ADMIN_PASSWORD', 'uletay2026'),
-  sessionSecret: env('SESSION_SECRET', 'dev-secret-change-me'),
+  adminPassword: env('ADMIN_PASSWORD'),
+  sessionSecret: env('SESSION_SECRET'),
   corsOrigin: env('CORS_ORIGIN', '*'),
   basePath,
   uploadDir: (() => {

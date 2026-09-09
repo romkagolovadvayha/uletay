@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useContentRevision } from './ContentRevision';
 import { useRef, useState, useTransition } from 'react';
 import { deleteFoodcourtAction, reorderFoodcourtAction } from '../actions';
 import { DeleteButton } from './DeleteButton';
@@ -20,6 +22,8 @@ type Props = {
 };
 
 export function FoodcourtSortableTable({ items, sortable }: Props) {
+  const revision = useContentRevision();
+  const router = useRouter();
   const [rows, setRows] = useState(items);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -31,8 +35,9 @@ export function FoodcourtSortableTable({ items, sortable }: Props) {
     setRows(nextRows);
     setStatus('saving');
     startTransition(async () => {
-      const result = await reorderFoodcourtAction(nextRows.map((row) => row.id));
+      const result = await reorderFoodcourtAction(nextRows.map((row) => row.id), revision);
       setStatus(result.ok ? 'idle' : 'error');
+      if (result.ok) router.refresh();
     });
   }
 

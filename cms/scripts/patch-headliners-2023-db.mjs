@@ -3,6 +3,7 @@
  * - Adds missing artists for 2023
  * - Removes 2023 from artists not on the 2023 poster
  */
+import { saveContentSnapshot } from './save-content-snapshot.mjs';
 import mysql from 'mysql2/promise';
 import { headliners2023 } from './headliners-2023-data.mjs';
 import {
@@ -122,9 +123,7 @@ async function main() {
   }
 
   content.headliners = merged;
-  await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
-    JSON.stringify(content),
-  ]);
+  await saveContentSnapshot(pool, row.content, content);
   await pool.end();
   console.log('Headliners 2023 patch saved to app_content');
 }

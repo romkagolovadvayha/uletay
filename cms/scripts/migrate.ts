@@ -1,6 +1,7 @@
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import mysql from 'mysql2/promise';
+import { schemaForDatabase } from './database-schema';
 
 async function main() {
   const dbHost = process.env.DB_HOST || '127.0.0.1';
@@ -16,7 +17,7 @@ async function main() {
     multipleStatements: true,
   });
 
-  const schema = await readFile(path.join(__dirname, 'schema.sql'), 'utf8');
+  const schema = await schemaForDatabase(dbName);
   await root.query(schema);
   await root.end();
 

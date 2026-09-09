@@ -25,7 +25,7 @@ export function HomeHeadlinersWidget({
   limit = 5,
   title,
   moreLabel = 'ВСЕ ХЭДЛАЙНЕРЫ',
-  hint = 'Анонсированные артисты фестиваля',
+  hint,
   onPressHeadliner,
   onPressAll,
 }: Props) {
@@ -43,7 +43,9 @@ export function HomeHeadlinersWidget({
     return null;
   }
 
-  const sectionTitle = title ?? (year != null ? `ХЭДЛАЙНЕРЫ ${year}` : 'ХЭДЛАЙНЕРЫ');
+  const archive = year != null && year < data.festival.year;
+  const sectionTitle = title ?? (archive ? `АРХИВ ФЕСТИВАЛЯ ${year}` : year != null ? `ХЭДЛАЙНЕРЫ ${year}` : 'ХЭДЛАЙНЕРЫ');
+  const sectionHint = hint ?? (archive ? `Лайнап ${data.festival.year} ещё не объявлен` : 'Анонсированные артисты фестиваля');
 
   return (
     <View style={styles.wrap}>
@@ -57,7 +59,7 @@ export function HomeHeadlinersWidget({
         />
       ))}
       <PrimaryButton label={moreLabel} onPress={onPressAll} />
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {sectionHint ? <Text style={styles.hint}>{sectionHint}</Text> : null}
     </View>
   );
 }

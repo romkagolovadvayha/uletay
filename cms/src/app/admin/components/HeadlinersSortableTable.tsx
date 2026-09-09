@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useContentRevision } from './ContentRevision';
 import { useRef, useState, useTransition } from 'react';
 import { deleteHeadlinerAction, reorderHeadlinersAction } from '../actions';
 import { DeleteButton } from './DeleteButton';
@@ -14,6 +16,8 @@ type Props = {
 };
 
 export function HeadlinersSortableTable({ items }: Props) {
+  const revision = useContentRevision();
+  const router = useRouter();
   const [rows, setRows] = useState(items);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -25,8 +29,9 @@ export function HeadlinersSortableTable({ items }: Props) {
     setRows(nextRows);
     setStatus('saving');
     startTransition(async () => {
-      const result = await reorderHeadlinersAction(nextRows.map((row) => row.id));
+      const result = await reorderHeadlinersAction(nextRows.map((row) => row.id), revision);
       setStatus(result.ok ? 'idle' : 'error');
+      if (result.ok) router.refresh();
     });
   }
 

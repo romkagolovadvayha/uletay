@@ -1,3 +1,4 @@
+import { saveContentSnapshot } from './save-content-snapshot.mjs';
 import mysql from 'mysql2/promise';
 import { sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
 import { resolveAndMergeLastFmForHeadliner } from '../src/lib/headliner-lastfm-sync';
@@ -136,9 +137,7 @@ async function main() {
     headliners: mergeHeadlinerChanges(synced.headliners, headliners),
   });
 
-  await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
-    JSON.stringify(nextContent),
-  ]);
+  await saveContentSnapshot(pool, row.content, nextContent);
   await pool.end();
   console.log('Saved Last.fm profiles to app_content');
 }

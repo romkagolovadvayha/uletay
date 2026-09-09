@@ -1,0 +1,520 @@
+{
+  "audit": {
+    "app": {
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 19,
+        "high": 7,
+        "critical": 0,
+        "total": 26
+      },
+      "advisories": [
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "moderate",
+          "title": "xmldom: XML fragment injection via invalid EntityReference.nodeName during requireWellFormed serialization",
+          "url": "https://github.com/advisories/GHSA-6gmq-8vp8-gcm6",
+          "range": ">=0.9.0 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "moderate",
+          "title": "xmldom: XML fragment injection via invalid EntityReference.nodeName during requireWellFormed serialization",
+          "url": "https://github.com/advisories/GHSA-6gmq-8vp8-gcm6",
+          "range": ">=0.7.0 <=0.8.14"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: HTML raw-text closing-tag case mismatch causes output amplification",
+          "url": "https://github.com/advisories/GHSA-6mj3-qw4j-hgrw",
+          "range": ">=0.9.0-beta.1 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom PI grammar regex ReDoS: quadratic backtracking on unterminated processing instructions",
+          "url": "https://github.com/advisories/GHSA-g53g-w8rj-fmg7",
+          "range": ">=0.9.0-beta.9 <=0.9.10"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Element name injection via createElement() bypasses requireWellFormed",
+          "url": "https://github.com/advisories/GHSA-w2rr-34g9-rvrj",
+          "range": ">=0.7.0 <=0.8.13"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Element name injection via createElement() bypasses requireWellFormed",
+          "url": "https://github.com/advisories/GHSA-w2rr-34g9-rvrj",
+          "range": ">=0.9.0 <=0.9.10"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Attribute name injection via setAttribute() bypasses requireWellFormed",
+          "url": "https://github.com/advisories/GHSA-4w3w-2rp5-g8jm",
+          "range": ">=0.7.0 <=0.8.13"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Attribute name injection via setAttribute() bypasses requireWellFormed",
+          "url": "https://github.com/advisories/GHSA-4w3w-2rp5-g8jm",
+          "range": ">=0.9.0 <=0.9.10"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Processing Instruction Target Injection Bypasses requireWellFormed",
+          "url": "https://github.com/advisories/GHSA-c7q8-3ch8-vqpv",
+          "range": ">=0.9.0 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Processing Instruction Target Injection Bypasses requireWellFormed",
+          "url": "https://github.com/advisories/GHSA-c7q8-3ch8-vqpv",
+          "range": ">=0.7.0 <=0.8.14"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: DocType `name` Injection Bypasses requireWellFormed",
+          "url": "https://github.com/advisories/GHSA-27p8-2357-5qqv",
+          "range": ">=0.9.0 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: DocType `name` Injection Bypasses requireWellFormed",
+          "url": "https://github.com/advisories/GHSA-27p8-2357-5qqv",
+          "range": ">=0.7.0 <=0.8.14"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Creation-time XML Name/QName validation is bypassable via an embedded line terminator, allowing injection on the default serialization path",
+          "url": "https://github.com/advisories/GHSA-3px3-54cx-rmw9",
+          "range": ">=0.9.0 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: requireWellFormed DocType publicId/systemId validation is bypassable via an embedded line terminator",
+          "url": "https://github.com/advisories/GHSA-vr34-hp96-76pp",
+          "range": ">=0.9.10 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "moderate",
+          "title": "xmldom: Parser silently accepts a not-well-formed end tag whose name is followed by a line break and trailing content",
+          "url": "https://github.com/advisories/GHSA-6h8r-xr42-gp59",
+          "range": ">=0.9.0 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "moderate",
+          "title": "xmldom: Parser silently accepts a not-well-formed end tag whose name is followed by a line break and trailing content",
+          "url": "https://github.com/advisories/GHSA-6h8r-xr42-gp59",
+          "range": ">=0.7.0 <=0.8.14"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Quadratic-time attribute deduplication",
+          "url": "https://github.com/advisories/GHSA-8344-3jmq-59r6",
+          "range": ">=0.9.0 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Quadratic-time attribute deduplication",
+          "url": "https://github.com/advisories/GHSA-8344-3jmq-59r6",
+          "range": ">=0.7.0 <=0.8.14"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: End-tag Whitespace-Trim Regex ReDoS — quadratic backtracking in the 0.8.x end-tag parser",
+          "url": "https://github.com/advisories/GHSA-x4fp-j954-r2f4",
+          "range": ">=0.7.0 <=0.8.14"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Quadratic-memory consumption",
+          "url": "https://github.com/advisories/GHSA-965w-775f-mr7g",
+          "range": ">=0.9.0 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Quadratic-memory consumption",
+          "url": "https://github.com/advisories/GHSA-965w-775f-mr7g",
+          "range": ">=0.7.0 <=0.8.14"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Quadratic-time parsing via the malformed-input recovery path — `parseElementStartPart` re-scan and `normalize()` adjacent-text merge",
+          "url": "https://github.com/advisories/GHSA-93r5-fhx6-vmg9",
+          "range": ">=0.9.0 <=0.9.11"
+        },
+        {
+          "name": "@xmldom/xmldom",
+          "severity": "high",
+          "title": "xmldom: Quadratic-time parsing via the malformed-input recovery path — `parseElementStartPart` re-scan and `normalize()` adjacent-text merge",
+          "url": "https://github.com/advisories/GHSA-93r5-fhx6-vmg9",
+          "range": ">=0.7.0 <=0.8.14"
+        },
+        {
+          "name": "baseline-browser-mapping",
+          "severity": "moderate",
+          "title": "baseline-browser-mapping process termination on invalid input causes denial of service",
+          "url": "https://github.com/advisories/GHSA-w5vr-8v7q-w6rv",
+          "range": ">=2.0.0 <2.11.0"
+        },
+        {
+          "name": "browserslist",
+          "severity": "high",
+          "title": "Browserslist: Unbounded memory growth (no cache eviction) via distinct query results, leading to eventual OOM",
+          "url": "https://github.com/advisories/GHSA-c83g-rgw3-j3cx",
+          "range": "<=4.28.6"
+        },
+        {
+          "name": "browserslist",
+          "severity": "high",
+          "title": "Browserslist: Uncaught crash / prototype write via untrusted browserslist-stats.json custom stats (normalizeStats)",
+          "url": "https://github.com/advisories/GHSA-73wf-gq98-2v4g",
+          "range": "<=4.28.6"
+        },
+        {
+          "name": "decode-uri-component",
+          "severity": "moderate",
+          "title": "decode-uri-component: Denial of service via exponential decoding of malformed percent-encoded input",
+          "url": "https://github.com/advisories/GHSA-vcc3-ghjq-m6fr",
+          "range": "<=0.4.2"
+        },
+        {
+          "name": "image-size",
+          "severity": "high",
+          "title": "image-size: ICNS parser allows denial of service through an infinite loop",
+          "url": "https://github.com/advisories/GHSA-w3rx-r6r6-pgpr",
+          "range": "<=2.0.2"
+        },
+        {
+          "name": "image-size",
+          "severity": "high",
+          "title": "image-size: JXL and HEIF parsers allow denial of service through infinite loops",
+          "url": "https://github.com/advisories/GHSA-5p2g-fcmc-qvqq",
+          "range": "<=2.0.2"
+        },
+        {
+          "name": "js-yaml",
+          "severity": "high",
+          "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources",
+          "url": "https://github.com/advisories/GHSA-2883-xcg3-v3hh",
+          "range": ">=4.0.0 <4.3.2"
+        },
+        {
+          "name": "uuid",
+          "severity": "moderate",
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+          "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "range": "<11.1.1"
+        }
+      ]
+    },
+    "cms": {
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 1,
+        "high": 1,
+        "critical": 1,
+        "total": 3
+      },
+      "advisories": [
+        {
+          "name": "mysql2",
+          "severity": "moderate",
+          "title": "MySQL2: Unbounded zlib inflate in compressed MySQL protocol handler allows decompression-bomb DoS",
+          "url": "https://github.com/advisories/GHSA-rgwj-5xj2-c3m3",
+          "range": "<=3.23.0"
+        },
+        {
+          "name": "next",
+          "severity": "critical",
+          "title": "Next.js: Unauthenticated Remote Code Execution on windows-hosted servers",
+          "url": "https://github.com/advisories/GHSA-p293-qw3h-jr36",
+          "range": ">=16.0.0 <16.3.3"
+        },
+        {
+          "name": "next",
+          "severity": "critical",
+          "title": "Next.js: Unauthenticated Remote Code Execution in Image Optimization API when AVIF files are used",
+          "url": "https://github.com/advisories/GHSA-2xp9-vwfh-vxw4",
+          "range": ">=16.0.0 <16.3.3"
+        },
+        {
+          "name": "sharp",
+          "severity": "high",
+          "title": "sharp: Vulnerabilities in libheif: GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545",
+          "url": "https://github.com/advisories/GHSA-rgj7-g3m4-5g8c",
+          "range": "<0.35.4"
+        }
+      ]
+    }
+  },
+  "payloads": {
+    "seedFile": {
+      "bytes": 1586604,
+      "gzip": 183433,
+      "brotli": 131220
+    },
+    "compactAllData": {
+      "bytes": 848376,
+      "gzip": 159491,
+      "brotli": 119783
+    },
+    "sections": [
+      {
+        "key": "mapZones",
+        "bytes": 376630,
+        "gzip": 48600,
+        "brotli": 35130,
+        "count": 380
+      },
+      {
+        "key": "headliners",
+        "bytes": 362157,
+        "gzip": 89293,
+        "brotli": 67566,
+        "count": 240
+      },
+      {
+        "key": "foodcourt",
+        "bytes": 49617,
+        "gzip": 9893,
+        "brotli": 8345,
+        "count": 31
+      },
+      {
+        "key": "schedule",
+        "bytes": 23475,
+        "gzip": 4782,
+        "brotli": 4015,
+        "count": 119
+      },
+      {
+        "key": "mapPaths",
+        "bytes": 18645,
+        "gzip": 4491,
+        "brotli": 3639,
+        "count": 54
+      },
+      {
+        "key": "autographs",
+        "bytes": 13550,
+        "gzip": 2474,
+        "brotli": 2015,
+        "count": 55
+      },
+      {
+        "key": "mapPois",
+        "bytes": 3298,
+        "gzip": 1051,
+        "brotli": 823,
+        "count": 9
+      },
+      {
+        "key": "festival",
+        "bytes": 347,
+        "gzip": 273,
+        "brotli": 226
+      },
+      {
+        "key": "stages",
+        "bytes": 282,
+        "gzip": 178,
+        "brotli": 158,
+        "count": 3
+      },
+      {
+        "key": "festivalMap",
+        "bytes": 206,
+        "gzip": 160,
+        "brotli": 135
+      },
+      {
+        "key": "mapDataVersion",
+        "bytes": 14,
+        "gzip": 34,
+        "brotli": 18
+      },
+      {
+        "key": "rules",
+        "bytes": 2,
+        "gzip": 22,
+        "brotli": 6,
+        "count": 0
+      }
+    ]
+  },
+  "bundles": [
+    {
+      "file": "index-ee7e8f131166ba9e481fd17f25e2f818.js",
+      "bytes": 2171454,
+      "gzip": 496824,
+      "brotli": 393069
+    },
+    {
+      "file": "FestivalMapScreen-37d33503f5f7c75f71fc5f489997bc13.js",
+      "bytes": 152336,
+      "gzip": 39187,
+      "brotli": 33089
+    },
+    {
+      "file": "__common-ae5950146d65fb2ee0b1474788477b49.js",
+      "bytes": 66557,
+      "gzip": 17139,
+      "brotli": 14384
+    },
+    {
+      "file": "RadioAudioEngine-218b3021999db966f75ad57ab5026e42.js",
+      "bytes": 32047,
+      "gzip": 8395,
+      "brotli": 7471
+    },
+    {
+      "file": "LegalScreen-fc876bc3afb5d796f4ccb961d90d5d80.js",
+      "bytes": 20024,
+      "gzip": 3784,
+      "brotli": 3310
+    },
+    {
+      "file": "PlaylistScreen-d21bdfc6da6c9893237eab88dbf5944e.js",
+      "bytes": 19450,
+      "gzip": 4538,
+      "brotli": 3938
+    },
+    {
+      "file": "SettingsScreen-709297827017b75c1c901d33861984e7.js",
+      "bytes": 16338,
+      "gzip": 4148,
+      "brotli": 3585
+    },
+    {
+      "file": "HelpScreen-9ac47f80e93d2dc29927af9120fe1c3c.js",
+      "bytes": 15111,
+      "gzip": 3540,
+      "brotli": 3097
+    },
+    {
+      "file": "HeroBackgroundVideo-f22a3da4f266aad9d1f8531aba999e5c.js",
+      "bytes": 12609,
+      "gzip": 3933,
+      "brotli": 3505
+    },
+    {
+      "file": "MoreMenuSheet-9974b7e0254108e3fd9a7a2b72781c83.js",
+      "bytes": 11111,
+      "gzip": 3692,
+      "brotli": 3223
+    },
+    {
+      "file": "FestivalRulesScreen-b821aa45c648e6909c7faed9919921b0.js",
+      "bytes": 10570,
+      "gzip": 3149,
+      "brotli": 2808
+    },
+    {
+      "file": "__expo-metro-runtime-e61693ae33497368646febbbae1b21fe.js",
+      "bytes": 10157,
+      "gzip": 3925,
+      "brotli": 3565
+    },
+    {
+      "file": "HeadlinerDetailScreen-da7333359c97b106d1988258964c584d.js",
+      "bytes": 8786,
+      "gzip": 2251,
+      "brotli": 2007
+    },
+    {
+      "file": "HeadlinersScreen-7bdd5cf3d3501b822b9fa706080d63a7.js",
+      "bytes": 8685,
+      "gzip": 2730,
+      "brotli": 2371
+    },
+    {
+      "file": "FoodCourtDetailScreen-871e91c991b54810a83d5b9952ca80b9.js",
+      "bytes": 6672,
+      "gzip": 1907,
+      "brotli": 1665
+    },
+    {
+      "file": "MyScheduleScreen-e8aa9a3ae8f407aa5b7a52b37a79ee7e.js",
+      "bytes": 6130,
+      "gzip": 1899,
+      "brotli": 1667
+    },
+    {
+      "file": "FestivalAboutScreen-d428af6d3e43fc0a15b40e72f284ccf9.js",
+      "bytes": 5830,
+      "gzip": 1760,
+      "brotli": 1484
+    },
+    {
+      "file": "LiveDetailScreen-cbfa0d80d3f32387fa333ab630106357.js",
+      "bytes": 5602,
+      "gzip": 2001,
+      "brotli": 1738
+    },
+    {
+      "file": "AutographDetailScreen-380021ff72db7028d69e76516d0f4ead.js",
+      "bytes": 4955,
+      "gzip": 1800,
+      "brotli": 1571
+    },
+    {
+      "file": "FavoriteNotificationHost-53bb7ad963fb4bafea8192f3cd6153bc.js",
+      "bytes": 4286,
+      "gzip": 1768,
+      "brotli": 1563
+    },
+    {
+      "file": "AutographsScreen-835a3f525e28415d22405f5ace022426.js",
+      "bytes": 3897,
+      "gzip": 1507,
+      "brotli": 1313
+    },
+    {
+      "file": "FoodCourtScreen-9df244b376e6404a87296e877f957f0c.js",
+      "bytes": 1895,
+      "gzip": 927,
+      "brotli": 780
+    },
+    {
+      "file": "MorePlaceholderScreen-6d0be90874828814f06fe4eb4ba9f043.js",
+      "bytes": 600,
+      "gzip": 407,
+      "brotli": 337
+    },
+    {
+      "file": "FullScheduleScreen-ef0581634f7b5930438e880a8024d783.js",
+      "bytes": 225,
+      "gzip": 195,
+      "brotli": 166
+    },
+    {
+      "file": "ScheduleMainScreen-3c5e71d6986f85d066bdbf77f114655e.js",
+      "bytes": 225,
+      "gzip": 193,
+      "brotli": 157
+    }
+  ]
+}

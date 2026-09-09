@@ -4010,6 +4010,7 @@
     },
     {
       "id": "fc-soloveva",
+      "imageTint": "#3A3018",
       "name": "ИП Соловьева",
       "legalName": "ИП Соловьева",
       "category": "hot",

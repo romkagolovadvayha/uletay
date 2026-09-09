@@ -3,9 +3,15 @@ import { Platform } from 'react-native';
 const RELOAD_FLAG = 'uletay_sw_reloaded';
 const LOCAL_CLEANUP_RELOAD_FLAG = 'uletay_local_sw_cleanup_reloaded';
 const APP_CACHE_PREFIX = 'uletay-';
+let installed = false;
 
 function isLoopbackHostname(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  return ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname);
+}
+
+function afterPageLoad(callback: () => void): void {
+  if (document.readyState === 'complete') callback();
+  else window.addEventListener('load', callback, { once: true });
 }
 
 function reloadOnceForNewWorker(): void {
@@ -56,18 +62,19 @@ async function disableLocalServiceWorker(): Promise<void> {
 
 export function installWebOffline(): void {
   if (
-    Platform.OS !== 'web' ||
+    installed || Platform.OS !== 'web' ||
     typeof window === 'undefined' ||
     typeof navigator === 'undefined' ||
     !('serviceWorker' in navigator)
   ) {
     return;
   }
+  installed = true;
 
   if (isLoopbackHostname(window.location.hostname)) {
-    window.addEventListener('load', () => {
+    afterPageLoad(() => {
       void disableLocalServiceWorker();
-    }, { once: true });
+    });
     return;
   }
 
@@ -75,7 +82,7 @@ export function installWebOffline(): void {
     return;
   }
 
-  window.addEventListener('load', () => {
+  afterPageLoad(() => {
     void (async () => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
@@ -123,5 +130,5 @@ export function installWebOffline(): void {
         // AsyncStorage remains the fallback when service workers are unavailable.
       }
     })();
-  }, { once: true });
+  });
 }

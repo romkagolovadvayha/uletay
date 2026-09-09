@@ -99,13 +99,14 @@ await productionWorker.dispatchLifecycle('install');
 await productionWorker.dispatchLifecycle('activate');
 const productionState = productionWorker.getState();
 
-assert.deepEqual(productionState.openedCaches, ['uletay-shell-v4']);
+assert.deepEqual(productionState.openedCaches, ['uletay-shell-v5']);
 assert.deepEqual(productionState.deletedCaches, [
   'uletay-shell-v2',
   'uletay-data-v2',
-  'unrelated-cache',
 ]);
 assert.equal(productionState.claimed, 1);
 assert.equal(productionState.unregistered, 0);
+assert.equal(productionWorker.handlers.has('push'), true);
+assert.equal(productionWorker.handlers.has('notificationclick'), true);
 
 console.log('Service worker: local cleanup and production offline cache behavior OK');

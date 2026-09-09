@@ -2,6 +2,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import mysql from 'mysql2/promise';
 import { hashPassword } from '../src/lib/auth';
+import { schemaForDatabase } from './database-schema';
 
 async function main() {
   const dbHost = process.env.DB_HOST || '127.0.0.1';
@@ -9,7 +10,8 @@ async function main() {
   const dbUser = process.env.DB_USER || 'root';
   const dbPass = process.env.DB_PASS || '';
   const adminUser = process.env.ADMIN_USER || 'admin';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'uletay2026';
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword || adminPassword.length < 12) throw new Error('ADMIN_PASSWORD must contain at least 12 characters');
   const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || '../uploads');
 
   const root = await mysql.createConnection({
@@ -19,7 +21,7 @@ async function main() {
     multipleStatements: true,
   });
 
-  const schema = await readFile(path.join(__dirname, 'schema.sql'), 'utf8');
+  const schema = await schemaForDatabase(dbName);
   await root.query(schema);
   await root.end();
 
@@ -48,13 +50,14 @@ async function main() {
      ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash)`,
     [adminUser, passwordHash],
   );
+  await pool.query('DELETE FROM admin_sessions WHERE user_id IN (SELECT id FROM admin_users WHERE username = ?)', [adminUser]);
 
   await mkdir(path.join(uploadDir, 'images'), { recursive: true });
   await pool.end();
 
   console.log('OK');
   console.log(`Database: ${dbName}`);
-  console.log(`Admin: ${adminUser} / ${adminPassword}`);
+  console.log(`Admin: ${adminUser} (password configured)`);
   console.log('API: /api/data');
   console.log('Admin: /admin');
 }

@@ -1,43 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getClientAppData, saveAppData, validateAppData } from '@/lib/app-data';
+import { AppDataConflictError, AppDataValidationError, getClientAppData, saveAppData, validateAppData } from '@/lib/app-data';
 import { verifyBearerToken } from '@/lib/auth';
 import { corsHeaders, jsonResponse, optionsResponse } from '@/lib/api-response';
+import { readRequestJson, RequestJsonError } from '@/lib/request-json';
 
 export async function OPTIONS() {
   return optionsResponse();
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const data = await getClientAppData();
+    const etag = `"${data.revision}"`;
+    if (request.headers.get('if-none-match') === etag) {
+      return new NextResponse(null, { status: 304, headers: { ...corsHeaders(), ETag: etag, 'Cache-Control': 'no-cache' } });
+    }
     return NextResponse.json(data, {
       status: 200,
       headers: {
         ...corsHeaders(),
+        ETag: etag,
         'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Server error';
-    return jsonResponse({ error: message }, 500);
+    console.error('GET /api/data failed', error);
+    return jsonResponse({ error: 'Не удалось загрузить данные' }, 500);
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const authorized = await verifyBearerToken(request.headers.get('authorization'));
-  if (!authorized) {
-    return jsonResponse({ error: 'Unauthorized' }, 401);
-  }
-
   try {
-    const body = await request.json();
+    const authorized = await verifyBearerToken(request.headers.get('authorization'));
+    if (!authorized) return jsonResponse({ error: 'Unauthorized' }, 401);
+    const body = await readRequestJson(request, 16 * 1024 * 1024);
     if (!validateAppData(body)) {
       return jsonResponse({ error: 'Invalid payload' }, 400);
     }
     await saveAppData(body);
-    return jsonResponse({ ok: true });
+    return jsonResponse({ ok: true, revision: body.revision });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Server error';
-    return jsonResponse({ error: message }, 500);
+    if (error instanceof RequestJsonError) return jsonResponse({ error: error.message }, error.status);
+    if (error instanceof AppDataConflictError) return jsonResponse({ error: error.message }, 409);
+    if (error instanceof AppDataValidationError) return jsonResponse({ error: error.message }, 400);
+    console.error('PUT /api/data failed', error);
+    return jsonResponse({ error: 'Не удалось сохранить данные' }, 500);
   }
 }

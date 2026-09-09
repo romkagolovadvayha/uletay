@@ -1,5 +1,6 @@
 'use client';
 
+import { ContentRevision } from './ContentRevision';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { overlayToYandexLayoutBounds } from '@/lib/map-overlay-georef';
 import {
@@ -357,7 +358,8 @@ export function MapOverlayEditor({
           <button type="submit" className="btn-secondary">
             Загрузить
           </button>
-        </form>
+        <ContentRevision />
+</form>
 
         {imageUrl ? (
           <>
@@ -373,7 +375,8 @@ export function MapOverlayEditor({
               <button type="submit" className="link-button danger">
                 Удалить схему
               </button>
-            </form>
+            <ContentRevision />
+</form>
           </>
         ) : null}
       </div>
@@ -517,7 +520,8 @@ export function MapOverlayEditor({
           <button type="submit" className="btn-primary">
             Сохранить привязку
           </button>
-        </form>
+        <ContentRevision />
+</form>
       ) : (
         <p className="hint">Схема ещё не загружена. Выберите PNG/JPEG файл.</p>
       )}

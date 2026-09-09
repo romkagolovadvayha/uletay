@@ -44,7 +44,12 @@ const context = {
   },
 };
 
+context.importScripts = (url) => {
+  assert.equal(url, '/sw.js');
+  runInNewContext(readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8'), context);
+};
 runInNewContext(readFileSync(new URL('../public/push-sw.js', import.meta.url), 'utf8'), context);
+assert.equal(handlers.has('fetch'), true, 'legacy push registration also retains offline handling');
 
 async function dispatch(type, event) {
   let pending = Promise.resolve();

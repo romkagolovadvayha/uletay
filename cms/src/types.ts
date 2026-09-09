@@ -250,6 +250,8 @@ export type MapPoisGeoJson = GeoJSON.FeatureCollection<
 >;
 
 export interface AppData {
+  /** Opaque version of the stored content; required when saving a snapshot. */
+  revision?: string;
   mapDataVersion?: string;
   festival: FestivalInfo;
   stages: Stage[];

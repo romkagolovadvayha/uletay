@@ -1,0 +1,109 @@
+{
+  "views": [
+    {
+      "name": "home-desktop",
+      "overflow": false
+    },
+    {
+      "name": "schedule-desktop",
+      "overflow": false
+    },
+    {
+      "name": "artist-dialog-desktop",
+      "overflow": false
+    },
+    {
+      "name": "map-desktop",
+      "overflow": false
+    },
+    {
+      "name": "cms-desktop",
+      "overflow": false
+    },
+    {
+      "name": "cms-edit-desktop",
+      "overflow": false
+    },
+    {
+      "name": "home-390",
+      "overflow": false
+    },
+    {
+      "name": "schedule-390",
+      "overflow": false
+    },
+    {
+      "name": "plan-390",
+      "overflow": false
+    },
+    {
+      "name": "artists-390",
+      "overflow": false
+    },
+    {
+      "name": "map-390",
+      "overflow": false
+    },
+    {
+      "name": "more-390",
+      "overflow": false
+    },
+    {
+      "name": "food-390",
+      "overflow": false
+    },
+    {
+      "name": "rules-390",
+      "overflow": false
+    },
+    {
+      "name": "settings-390",
+      "overflow": false
+    },
+    {
+      "name": "help-390",
+      "overflow": false
+    },
+    {
+      "name": "radio-390",
+      "overflow": false
+    },
+    {
+      "name": "home-768",
+      "overflow": false
+    },
+    {
+      "name": "schedule-768",
+      "overflow": false
+    },
+    {
+      "name": "home-1280",
+      "overflow": false
+    },
+    {
+      "name": "schedule-1280",
+      "overflow": false
+    },
+    {
+      "name": "home-live-390",
+      "overflow": false
+    },
+    {
+      "name": "offline-390",
+      "overflow": false
+    },
+    {
+      "name": "cms-390",
+      "overflow": false
+    }
+  ],
+  "errors": [],
+  "interactions": [
+    "favorite persists between screens",
+    "stage filter",
+    "artist search and keyboard dismissal",
+    "map selection and route",
+    "CMS validation, live preview and local draft save",
+    "motion enabled and manual reduced-motion stop"
+  ]
+}

@@ -50,6 +50,7 @@ jobs:
       EXPO_PUSH_ACCESS_TOKEN: ${{ secrets.EXPO_PUSH_ACCESS_TOKEN }}
       RUSTORE_PUSH_PROJECT_ID: ${{ vars.RUSTORE_PUSH_PROJECT_ID }}
       RUSTORE_PUSH_SERVICE_TOKEN: ${{ secrets.RUSTORE_PUSH_SERVICE_TOKEN }}
+      RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
       - name: Checkout
@@ -128,9 +129,16 @@ jobs:
           npx expo install --check
           npm run lint
           npm run typecheck
+          npm run test:audit-fixes
+          npm run test:sw
+          npm run test:api-url
+          npm run test:map
+          npm run test:map:layout
+          npm run test:map:routing
           npm run test:push-reminders --prefix cms
           test -f deploy/setup-push-reminders-cron.sh
-          bash -n deploy/*.sh
+          for script in deploy/*.sh scripts/test-release-deploy.sh; do bash -n "$script"; done
+          bash scripts/test-release-deploy.sh
 
       - name: Build and verify web app
         run: |
@@ -163,19 +171,22 @@ jobs:
       - name: Sync release files to server
         run: |
           RSYNC_SSH="ssh -i $DEPLOY_KEY_FILE -p $SSH_PORT -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
-          TARGET="${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}"
+          TARGET="${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/releases/${RELEASE_ID}"
+
+          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "${SSH_USER}@${SSH_HOST}" "test ! -e '${DEPLOY_PATH}/releases/${RELEASE_ID}' && mkdir -p '${DEPLOY_PATH}/releases/${RELEASE_ID}'"
 
           rsync -az --delete --delete-delay --delay-updates --relative -e "$RSYNC_SSH" \
             --filter 'protect /cms/.env' \
             --exclude '/cms/.env' \
             --exclude '/cms/node_modules/***' \
             --exclude '/cms/.next/cache/***' \
-            ./dist/ ./assets/ ./cms/ ./deploy/ "$TARGET/"
+            ./dist/ ./assets/ ./cms/ ./deploy/ ./shared/ "$TARGET/"
 
       - name: Configure server and activate release
         shell: bash
         run: |
-          printf -v REMOTE_SCRIPT '%q' "${DEPLOY_PATH}/deploy/remote-deploy.sh"
+          printf -v REMOTE_SCRIPT '%q' "${DEPLOY_PATH}/releases/${RELEASE_ID}/deploy/release-deploy.sh"
 
           {
             printf '%s\0' \
@@ -199,7 +210,8 @@ jobs:
               "$EXPO_PUSH_ACCESS_TOKEN" \
               "$RUSTORE_PUSH_PROJECT_ID" \
               "$RUSTORE_PUSH_SERVICE_TOKEN" \
-              "$GITHUB_SHA"
+              "$GITHUB_SHA" \
+              "$RELEASE_ID"
           } | ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             "${SSH_USER}@${SSH_HOST}" "bash ${REMOTE_SCRIPT} --env-stdin"

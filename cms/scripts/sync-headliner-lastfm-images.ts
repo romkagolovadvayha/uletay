@@ -1,3 +1,4 @@
+import { saveContentSnapshot } from './save-content-snapshot.mjs';
 import mysql from 'mysql2/promise';
 import { pickLastFmImageUrl, syncHeadlinerImage } from '../src/lib/lastfm-images';
 import { resolveLastFmProfileForHeadliner, sleep, verifyLastFmApiKey } from '../src/lib/lastfm';
@@ -146,9 +147,7 @@ async function main() {
     headliners: mergeHeadlinerChanges(synced.headliners, headliners),
   });
 
-  await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
-    JSON.stringify(nextContent),
-  ]);
+  await saveContentSnapshot(pool, row.content, nextContent);
   await pool.end();
   console.log('Saved Last.fm images to uploads and app_content');
 }

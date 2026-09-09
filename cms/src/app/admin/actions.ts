@@ -1,13 +1,15 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { RateLimitError, requestSource } from '@/lib/rate-limit';
 import {
   buildAutographId,
   buildFoodcourtId,
   buildScheduleId,
   uniqueId,
 } from '@/lib/admin-ids';
-import { getAppData, saveAppData } from '@/lib/app-data';
+import { AppDataConflictError, AppDataValidationError, getAppData, saveAppData } from '@/lib/app-data';
 import { verifyAdminCredentials } from '@/lib/auth';
 import { buildHeadlinerId, collectHeadlinerYears } from '@/lib/headliners';
 import {
@@ -105,11 +107,31 @@ function resolveHeadlinerArtist(data: AppData, headlinerId: string): string {
   return headliner.name;
 }
 
+async function saveAdminSnapshot(data: AppData, formData: FormData): Promise<void> {
+  data.revision = String(formData.get('_revision') ?? '');
+  try {
+    await saveAppData(data);
+  } catch (error) {
+    if (error instanceof AppDataConflictError || error instanceof AppDataValidationError) {
+      redirect('/admin?error=' + encodeURIComponent(error.message));
+    }
+    console.error('Admin content save failed', error);
+    redirect('/admin?error=' + encodeURIComponent('Не удалось сохранить изменения. Попробуйте ещё раз.'));
+  }
+}
+
+
 export async function loginAction(formData: FormData) {
   const username = String(formData.get('username') ?? '').trim();
   const password = String(formData.get('password') ?? '');
 
-  const userId = await verifyAdminCredentials(username, password);
+  let userId: number | null;
+  try {
+    userId = await verifyAdminCredentials(username, password, requestSource(await headers()));
+  } catch (error) {
+    if (error instanceof RateLimitError) redirect('/admin/login?error=rate');
+    throw error;
+  }
   if (!userId) {
     redirect('/admin/login?error=1');
   }
@@ -198,7 +220,7 @@ export async function saveFestivalAction(formData: FormData) {
     ...(logoImageUrl ? { logoImageUrl } : { logoImageUrl: undefined }),
   };
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=festival&ok=1');
 }
 
@@ -217,7 +239,7 @@ export async function saveStagesAction(formData: FormData) {
     color: (colors[index] ?? '#FFFFFF').trim(),
   }));
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=stages&ok=1');
 }
 
@@ -273,7 +295,7 @@ export async function upsertScheduleAction(formData: FormData) {
     data.schedule[index] = item;
   }
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=schedule&ok=1');
 }
 
@@ -282,7 +304,7 @@ export async function deleteScheduleAction(formData: FormData) {
   const data = await getAppData();
   const id = String(formData.get('id') ?? '').trim();
   data.schedule = data.schedule.filter((item) => item.id !== id);
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=schedule&ok=1');
 }
 
@@ -336,7 +358,7 @@ export async function upsertAutographAction(formData: FormData) {
     data.autographs[index] = item;
   }
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=autographs&ok=1');
 }
 
@@ -345,7 +367,7 @@ export async function deleteAutographAction(formData: FormData) {
   const data = await getAppData();
   const id = String(formData.get('id') ?? '').trim();
   data.autographs = data.autographs.filter((item) => item.id !== id);
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=autographs&ok=1');
 }
 
@@ -408,7 +430,7 @@ export async function upsertFoodcourtAction(formData: FormData) {
     data.foodcourt[index] = item;
   }
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=foodcourt&ok=1');
 }
 
@@ -417,13 +439,14 @@ export async function deleteFoodcourtAction(formData: FormData) {
   const data = await getAppData();
   const id = String(formData.get('id') ?? '').trim();
   data.foodcourt = data.foodcourt.filter((item) => item.id !== id);
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=foodcourt&ok=1');
 }
 
 export async function reorderFoodcourtAction(
   ids: string[],
-): Promise<{ ok: true } | { ok: false; error: string }> {
+  revision?: string,
+): Promise<{ ok: true; revision: string } | { ok: false; error: string }> {
   await requireSession();
 
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -454,8 +477,13 @@ export async function reorderFoodcourtAction(
   }
 
   data.foodcourt = reordered;
-  await saveAppData(data);
-  return { ok: true };
+  data.revision = revision;
+  try {
+    await saveAppData(data);
+    return { ok: true, revision: data.revision! };
+  } catch (error) {
+    return { ok: false, error: error instanceof AppDataConflictError ? error.message : 'Не удалось сохранить порядок' };
+  }
 }
 
 export async function upsertHeadlinerAction(formData: FormData) {
@@ -517,7 +545,7 @@ export async function upsertHeadlinerAction(formData: FormData) {
 
   data.headliners = applyBidirectionalHeadlinerLinks(data.headliners, id, linkedHeadlinerIds);
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=headliners&ok=1');
 }
 
@@ -536,13 +564,14 @@ export async function deleteHeadlinerAction(formData: FormData) {
   }
 
   data.headliners = data.headliners.filter((item) => item.id !== id);
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=headliners&ok=1');
 }
 
 export async function reorderHeadlinersAction(
   ids: string[],
-): Promise<{ ok: true } | { ok: false; error: string }> {
+  revision?: string,
+): Promise<{ ok: true; revision: string } | { ok: false; error: string }> {
   await requireSession();
 
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -573,8 +602,13 @@ export async function reorderHeadlinersAction(
   }
 
   data.headliners = reordered;
-  await saveAppData(data);
-  return { ok: true };
+  data.revision = revision;
+  try {
+    await saveAppData(data);
+    return { ok: true, revision: data.revision! };
+  } catch (error) {
+    return { ok: false, error: error instanceof AppDataConflictError ? error.message : 'Не удалось сохранить порядок' };
+  }
 }
 
 function parseGeoJson<T>(raw: FormDataEntryValue | null, label: string): T {
@@ -617,7 +651,7 @@ export async function saveMapConfigAction(formData: FormData) {
     ...(existing?.adminOverlay ? { adminOverlay: existing.adminOverlay } : {}),
   };
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=map&ok=1');
 }
 
@@ -663,7 +697,7 @@ export async function uploadMapSchemeAction(formData: FormData) {
     adminOverlay,
   };
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=map&ok=1');
 }
 
@@ -707,18 +741,18 @@ export async function saveMapOverlayGeorefAction(formData: FormData) {
     },
   };
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=map&ok=1');
 }
 
-export async function removeMapSchemeAction(_formData: FormData) {
+export async function removeMapSchemeAction(formData: FormData) {
   await requireSession();
   const data = await getAppData();
   if (data.festivalMap) {
     const { adminOverlay: _removed, ...rest } = data.festivalMap;
     data.festivalMap = rest;
   }
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=map&ok=1');
 }
 
@@ -729,15 +763,16 @@ export async function saveMapLayersAction(formData: FormData) {
   data.mapZones = parseGeoJson<MapZonesGeoJson>(formData.get('mapZones'), 'зоны');
   data.mapPaths = parseGeoJson<MapPathsGeoJson>(formData.get('mapPaths'), 'дорожки');
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=map&ok=1');
 }
+
 
 export async function saveMapPoisAction(formData: FormData) {
   await requireSession();
   const data = await getAppData();
   data.mapPois = parseGeoJson<MapPoisGeoJson>(formData.get('mapPois'), 'точки карты');
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=map&ok=1');
 }
 
@@ -749,7 +784,7 @@ export async function saveMapGeoJsonAction(formData: FormData) {
   data.mapPaths = parseGeoJson<MapPathsGeoJson>(formData.get('mapPaths'), 'дорожки');
   data.mapPois = parseGeoJson<MapPoisGeoJson>(formData.get('mapPois'), 'точки карты');
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=map&ok=1');
 }
 
@@ -803,7 +838,7 @@ export async function uploadImageAction(formData: FormData) {
     );
   }
 
-  await saveAppData(data);
+  await saveAdminSnapshot(data, formData);
   redirect(`/admin?tab=${tab}&ok=1`);
 }
 

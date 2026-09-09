@@ -1,9 +1,13 @@
-import type { RowDataPacket } from 'mysql2';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { createHash } from 'node:crypto';
+import { validateAppData } from '../../../shared/app-data-validation';
 import type { AppData, MapPathsGeoJson, MapPoisGeoJson, MapZonesGeoJson } from '@/types';
 import { getPool } from './db';
 import { resolveAllHeadlinerLastFm } from './headliner-lastfm-resolve';
 import { toClientLastFmProfile } from './lastfm-tracks';
 import { syncAppHeadliners } from './headliners';
+
+export { validateAppData } from '../../../shared/app-data-validation';
 
 const EMPTY_ZONES: MapZonesGeoJson = { type: 'FeatureCollection', features: [] };
 const EMPTY_PATHS: MapPathsGeoJson = { type: 'FeatureCollection', features: [] };
@@ -12,7 +16,7 @@ const EMPTY_POIS: MapPoisGeoJson = { type: 'FeatureCollection', features: [] };
 type AppDataCache = {
   raw: AppData;
   client: AppData;
-  updatedAt: number;
+  revision: string;
 };
 
 let appDataCache: AppDataCache | null = null;
@@ -37,7 +41,7 @@ function normalizeStoredAppData(content: AppData): AppData {
     ...content,
     schedule: Array.isArray(content.schedule) ? content.schedule : [],
     autographs: Array.isArray(content.autographs) ? content.autographs : [],
-    foodcourt: Array.isArray(content.foodcourt) ? content.foodcourt : [],
+    foodcourt: Array.isArray(content.foodcourt) ? content.foodcourt.map((vendor) => ({ ...vendor, imageTint: vendor.imageTint ?? '#3A3018' })) : [],
     headliners: Array.isArray(content.headliners) ? content.headliners : [],
     rules: Array.isArray(content.rules) ? content.rules : [],
     stages: Array.isArray(content.stages) ? content.stages : [],
@@ -57,19 +61,18 @@ function prepareClientAppData(raw: AppData): AppData {
   };
 }
 
-async function getDbUpdatedAt(): Promise<number> {
+async function getDbRevision(): Promise<string> {
   const pool = getPool();
   const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT UNIX_TIMESTAMP(updated_at) AS updatedAt FROM app_content WHERE id = 1 LIMIT 1',
+    'SELECT SHA2(content, 256) AS revision FROM app_content WHERE id = 1 LIMIT 1',
   );
-  const updatedAt = rows[0]?.updatedAt;
-  return typeof updatedAt === 'number' ? updatedAt : Number(updatedAt ?? 0);
+  return String(rows[0]?.revision ?? '');
 }
 
 async function loadRawAppDataFromDb(): Promise<AppData> {
   const pool = getPool();
   const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT content FROM app_content WHERE id = 1 LIMIT 1',
+    'SELECT content, SHA2(content, 256) AS revision FROM app_content WHERE id = 1 LIMIT 1',
   );
 
   const row = rows[0];
@@ -82,20 +85,22 @@ async function loadRawAppDataFromDb(): Promise<AppData> {
     throw new Error('Invalid app content JSON');
   }
 
-  return normalizeStoredAppData(content);
+  const normalized = normalizeStoredAppData(content);
+  if (!validateAppData(normalized)) throw new Error('Некорректные данные фестиваля в базе');
+  return { ...normalized, revision: String(row.revision) };
 }
 
 async function ensureAppDataCache(): Promise<AppDataCache> {
-  const updatedAt = await getDbUpdatedAt();
-  if (appDataCache && appDataCache.updatedAt === updatedAt) {
+  const revision = await getDbRevision();
+  if (appDataCache && appDataCache.revision === revision) {
     return appDataCache;
   }
 
   const raw = await loadRawAppDataFromDb();
   appDataCache = {
     raw,
-    client: prepareClientAppData(raw),
-    updatedAt,
+    client: prepareClientAppData(structuredClone(raw)),
+    revision: raw.revision!,
   };
   return appDataCache;
 }
@@ -106,28 +111,38 @@ export function invalidateAppDataCache(): void {
 
 export async function getAppData(): Promise<AppData> {
   const cache = await ensureAppDataCache();
-  return cache.raw;
+  return structuredClone(cache.raw);
 }
 
 export async function getClientAppData(): Promise<AppData> {
   const cache = await ensureAppDataCache();
-  return cache.client;
+  return structuredClone(cache.client);
+}
+
+export class AppDataConflictError extends Error {
+  constructor() { super('Данные уже изменены. Обновите страницу и повторите правку.'); }
+}
+
+export class AppDataValidationError extends Error {
+  constructor() { super('Некорректные данные: проверьте обязательные поля, даты, ссылки и геометрию карты.'); }
 }
 
 export async function saveAppData(content: AppData): Promise<void> {
+  if (!validateAppData(content)) throw new AppDataValidationError();
+  if (!content.revision) throw new AppDataConflictError();
   const pool = getPool();
-  const json = JSON.stringify(normalizeStoredAppData(content));
-  await pool.query(
-    'UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1',
-    [json],
+  const { revision, ...snapshot } = content;
+  const json = JSON.stringify(normalizeStoredAppData(snapshot));
+  // A content fingerprint also detects writes by existing maintenance scripts;
+  // no schema migration or second-resolution timestamp is involved.
+  const [result] = await pool.query<ResultSetHeader>(
+    'UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1 AND SHA2(content, 256) = ?',
+    [json, revision],
   );
-  invalidateAppDataCache();
-}
-
-export function validateAppData(data: unknown): data is AppData {
-  if (!data || typeof data !== 'object') {
-    return false;
+  if (result.affectedRows !== 1) {
+    invalidateAppDataCache();
+    throw new AppDataConflictError();
   }
-  const keys = ['festival', 'stages', 'schedule', 'autographs', 'foodcourt', 'headliners'] as const;
-  return keys.every((key) => key in data);
+  content.revision = createHash('sha256').update(json).digest('hex');
+  invalidateAppDataCache();
 }

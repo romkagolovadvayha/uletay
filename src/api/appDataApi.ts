@@ -4,6 +4,7 @@ import { AppData } from '../types';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { normalizeAppData } from '../utils/appDataNormalize';
 import { defaultAppData } from '../storage/dataStore';
+import { validateAppData } from '../../shared/app-data-validation';
 
 // v5 drops snapshots from the 2026 edition after the published festival window moved to 2027.
 export const APP_DATA_CACHE_KEY = '@uletay_api_cache_v5';
@@ -104,15 +105,18 @@ async function fetchRemoteAppData(): Promise<AppData> {
     try {
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/data`,
-        { headers: { Accept: 'application/json' } },
+        { headers: { Accept: 'application/json', ...(memoryCache?.data.revision ? { 'If-None-Match': `"${memoryCache.data.revision}"` } : {}) } },
         FETCH_TIMEOUT_MS,
       );
 
+      if (response.status === 304 && memoryCache) return memoryCache.data;
       if (!response.ok) {
         throw new ApiResponseError(response.status);
       }
 
-      return (await response.json()) as AppData;
+      const payload: unknown = await response.json();
+      if (!validateAppData(payload)) throw new ApiResponseError(422);
+      return payload;
     } catch (error) {
       lastError = error;
       const lastAttempt = attempt === FETCH_RETRY_DELAYS_MS.length - 1;
@@ -127,7 +131,9 @@ async function fetchRemoteAppData(): Promise<AppData> {
 
 export async function fetchAndCacheAppData(): Promise<CachedAppData | null> {
   try {
-    const data = normalizeAppData(await fetchRemoteAppData());
+    const remote = await fetchRemoteAppData();
+    const data = remote.revision && remote.revision === memoryCache?.data.revision
+      ? memoryCache.data : normalizeAppData(remote);
     const cache: CachedAppData = { data, fetchedAt: Date.now() };
     memoryCache = cache;
     try {

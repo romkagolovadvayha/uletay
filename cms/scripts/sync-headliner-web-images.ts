@@ -1,3 +1,4 @@
+import { saveContentSnapshot } from './save-content-snapshot.mjs';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { sleep } from '../src/lib/duckduckgo-images';
@@ -229,9 +230,7 @@ async function main() {
     headliners: mergeHeadlinerChanges(synced.headliners, updates),
   });
 
-  await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
-    JSON.stringify(nextContent),
-  ]);
+  await saveContentSnapshot(pool, row.content, nextContent);
   invalidateAppDataCache();
   await pool.end();
   console.log('Saved headliner images to uploads and app_content');

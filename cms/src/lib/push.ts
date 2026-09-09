@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { isAllowedPushEndpoint, isValidPushKey } from './push-endpoint';
 import type { RowDataPacket } from 'mysql2';
 import webpush from 'web-push';
 import { config } from './config';
@@ -232,10 +233,7 @@ export async function registerWebPushSubscription(
   const p256dh = String(subscription.keys?.p256dh ?? '');
   const auth = String(subscription.keys?.auth ?? '');
   if (
-    !endpoint.startsWith('https://') ||
-    endpoint.length > 4096 ||
-    !/^[A-Za-z0-9_-]{40,200}$/.test(p256dh) ||
-    !/^[A-Za-z0-9_-]{10,100}$/.test(auth)
+    !isAllowedPushEndpoint(endpoint) || !isValidPushKey(p256dh, auth)
   ) {
     throw new Error('Некорректная web push подписка');
   }
@@ -613,6 +611,9 @@ export async function sendWebPushToSubscription(
   subscription: WebSubscriptionRow,
   payload: WebPushPayload,
 ): Promise<void> {
+  if (!isAllowedPushEndpoint(subscription.endpoint) || !isValidPushKey(subscription.p256dh, subscription.auth_secret)) {
+    throw new Error('Неподдерживаемый адрес или ключ web push подписки');
+  }
   if (!config.vapidPublicKey || !config.vapidPrivateKey) {
     throw new Error('Не настроены VAPID_PUBLIC_KEY и VAPID_PRIVATE_KEY');
   }

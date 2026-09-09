@@ -43,7 +43,7 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "^16.3.2",
+    "@next/eslint-plugin-next": "^16.3.4",
     "@react-native/metro-config": "^0.86.3",
     "@types/geojson": "^7946.0.16",
     "@types/react": "~19.2.2",
@@ -51,7 +51,7 @@
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
     "polygon-clipping": "^0.15.7",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.4",
     "tesseract.js": "^7.0.0",
     "tsx": "^4.22.5",
     "typescript": "~6.0.3"
@@ -70,6 +70,7 @@
     "seo:check": "node scripts/check-web-seo.mjs",
     "test:push-web": "node scripts/test-push-service-worker.mjs",
     "test:sw": "node scripts/test-service-worker.mjs",
+    "test:audit-fixes": "node scripts/test-audit-fixes.mjs",
     "test:api-url": "tsx scripts/test-api-url.ts",
     "test:map": "node scripts/test-map.mjs",
     "test:map:routing": "node scripts/audit-map-routes.mjs",

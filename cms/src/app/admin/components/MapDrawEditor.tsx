@@ -1,5 +1,6 @@
 'use client';
 
+import { ContentRevision } from './ContentRevision';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { applySchemeOverlayStyle, ensureAdminMapStyles, upsertImageOverlay } from '@/lib/admin-yandex-map-layers';
 import {
@@ -1293,7 +1294,8 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         <span className="hint">
           Зон: {zones.features.length} · Линий: {paths.features.length}
         </span>
-      </form>
+      <ContentRevision />
+</form>
     </div>
   );
 }

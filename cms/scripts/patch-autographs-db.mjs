@@ -1,3 +1,4 @@
+import { saveContentSnapshot } from './save-content-snapshot.mjs';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -51,9 +52,7 @@ async function main() {
   }
 
   content.autographs = result.merged;
-  await pool.query('UPDATE app_content SET content = ?, updated_at = NOW() WHERE id = 1', [
-    JSON.stringify(content),
-  ]);
+  await saveContentSnapshot(pool, row.content, content);
   await pool.end();
 
   console.log(

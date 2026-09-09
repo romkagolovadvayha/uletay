@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { ScreenTitle } from '../components/ScreenTitle';
@@ -75,6 +75,8 @@ export function SettingsScreen({ navigation }: Props) {
   const { mode, ready, setMode, demoDescription } = useDemoMode();
   const { refreshData } = useAppData();
   const [clearingCache, setClearingCache] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [cacheMessage, setCacheMessage] = useState<string | null>(null);
 
   const handleModeChange = (nextMode: AppTimeMode) => {
     if (nextMode !== mode) {
@@ -87,6 +89,8 @@ export function SettingsScreen({ navigation }: Props) {
       return;
     }
     setClearingCache(true);
+    setConfirmReset(false);
+    setCacheMessage(null);
     try {
       await clearOfflineAppCache({ reload: Platform.OS === 'web' });
       if (Platform.OS !== 'web') {
@@ -94,20 +98,22 @@ export function SettingsScreen({ navigation }: Props) {
         Alert.alert('Готово', 'Кэш расписания очищен, данные загружены заново.');
       }
     } catch {
-      Alert.alert('Не удалось очистить кэш', 'Попробуйте ещё раз или очистите данные сайта в настройках браузера.');
+      const message = 'Не удалось очистить кэш. Попробуйте ещё раз.';
+      if (Platform.OS === 'web') setCacheMessage(message);
+      else Alert.alert('Ошибка', message);
     } finally {
-      if (Platform.OS !== 'web') {
-        setClearingCache(false);
-      }
+      setClearingCache(false);
     }
   };
 
   const handleClearCachePress = () => {
+    if (Platform.OS === 'web') {
+      setConfirmReset(true);
+      return;
+    }
     Alert.alert(
       'Сбросить кэш?',
-      Platform.OS === 'web'
-        ? 'Будет очищен офлайн-кэш и service worker. Страница перезагрузится. Избранное и настройки уведомлений сохранятся.'
-        : 'Будет очищен офлайн-кэш расписания и данные загрузятся с сервера заново. Избранное и настройки уведомлений сохранятся.',
+      'Будет очищен офлайн-кэш расписания и данные загрузятся с сервера заново. Избранное и настройки уведомлений сохранятся.',
       [
         { text: 'Отмена', style: 'cancel' },
         {
@@ -165,6 +171,7 @@ export function SettingsScreen({ navigation }: Props) {
           />
         </View>
 
+        {cacheMessage ? <Text accessibilityRole="alert" style={styles.modeSubtitle}>{cacheMessage}</Text> : null}
         <Text style={styles.sectionLabel}>Правовая информация</Text>
         <View style={styles.section}>
           <SettingsLink
@@ -184,11 +191,33 @@ export function SettingsScreen({ navigation }: Props) {
           </Text>
         </View>
       </ScrollView>
+      <Modal visible={confirmReset} transparent animationType="fade" onRequestClose={() => setConfirmReset(false)}>
+        <View style={styles.dialogBackdrop}>
+          <View style={styles.dialog} accessibilityViewIsModal>
+            <Text accessibilityRole="header" style={styles.modeTitle}>Сбросить кэш?</Text>
+            <Text style={styles.modeSubtitle}>
+              Данные загрузятся заново, страница перезагрузится. Избранное и настройки уведомлений сохранятся.
+            </Text>
+            <View style={styles.dialogActions}>
+              <Pressable accessibilityRole="button" onPress={() => setConfirmReset(false)} style={styles.dialogButton}>
+                <Text style={styles.modeTitle}>Отмена</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" onPress={() => void runClearCache()} style={styles.dialogButton}>
+                <Text style={[styles.modeTitle, { color: colors.primary }]}>Сбросить кэш</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  dialogBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', padding: 24 },
+  dialog: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: 24, gap: 16, maxWidth: 460, width: '100%', alignSelf: 'center' },
+  dialogActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 12 },
+  dialogButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 8 },
   safe: {
     flex: 1,
     backgroundColor: colors.background,

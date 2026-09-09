@@ -1,5 +1,6 @@
 'use client';
 
+import { ContentRevision } from './ContentRevision';
 import { AdminIcon } from './AdminIcon';
 
 type DeleteButtonProps = {
@@ -23,6 +24,7 @@ export function DeleteButton({ action, id, label = 'Удалить' }: DeleteBut
         <AdminIcon name="close" size={16} />
         {label}
       </button>
-    </form>
+    <ContentRevision />
+</form>
   );
 }

@@ -1,11 +1,12 @@
 import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
+import { API_BASE_URL } from '../../config/api';
+import { fetchWithTimeout } from '../fetchWithTimeout';
 import type { LatLng } from '../../types/map';
 import { haversineMeters } from './geo';
 
 const OSRM_DRIVING_BASE = 'https://router.project-osrm.org/route/v1/driving';
 const OSRM_WALKING_BASE = 'https://router.project-osrm.org/route/v1/foot';
 const YANDEX_ROUTER_BASE = 'https://api.routing.yandex.net/v2/route';
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 const MAX_WALKING_WAYPOINTS = 25;
 
 const cache = new Map<string, { expires: number; result: ExternalRouteResult }>();
@@ -69,14 +70,14 @@ function parseYandexRoute(data: unknown): ExternalRouteResult | null {
       polyline?: { points?: [number, number][] };
     }[];
   }[] } }).route;
-  const leg = route?.legs?.[0];
-  if (!leg || leg.status !== 'OK') return null;
+  const legs = route?.legs;
+  if (!legs?.length || legs.some((leg) => leg.status !== 'OK')) return null;
 
   const coordinates: [number, number][] = [];
   let distanceMeters = 0;
   let durationSeconds = 0;
 
-  for (const step of leg.steps ?? []) {
+  for (const step of legs.flatMap((leg) => leg.steps ?? [])) {
     distanceMeters += step.length ?? 0;
     durationSeconds += (step.duration ?? 0) + (step.waiting_duration ?? 0);
     for (const point of step.polyline?.points ?? []) {
@@ -129,7 +130,7 @@ async function fetchYandexRouteDirect(
   url = appendAvoidZones(url, avoidZones);
 
   try {
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, {}, 8000);
     if (!response.ok) return null;
     return parseYandexRoute(await response.json());
   } catch {
@@ -142,9 +143,9 @@ async function fetchYandexRouteViaProxy(
   mode: RouteTravelMode,
   avoidZones?: string[],
 ): Promise<ExternalRouteResult | null> {
-  if (!API_URL || waypoints.length < 2) return null;
+  if (waypoints.length < 2) return null;
 
-  const base = API_URL.replace(/\/$/, '');
+  const base = API_BASE_URL.replace(/\/$/, '');
   const params = new URLSearchParams({
     waypoints: formatYandexWaypoints(waypoints),
     mode,
@@ -155,7 +156,7 @@ async function fetchYandexRouteViaProxy(
   const url = `${base}/route?${params.toString()}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, {}, 8000);
     if (!response.ok) return null;
     const data = await response.json();
     if ((data as { error?: string }).error) return null;
@@ -175,7 +176,7 @@ async function fetchOsrmRoute(
   const url = `${base}/${formatOsrmWaypoints(waypoints)}?overview=full&geometries=geojson`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, {}, 8000);
     if (!response.ok) return null;
     return parseOsrmRoute(await response.json());
   } catch {

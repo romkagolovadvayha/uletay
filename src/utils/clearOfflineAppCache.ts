@@ -6,9 +6,9 @@ const LEGACY_APP_DATA_KEY = '@uletay_app_data_v1';
 const SW_RELOAD_FLAG = 'uletay_sw_reloaded';
 
 /**
- * Clears offline schedule/API cache and (on web) service-worker caches.
+ * Clears offline schedule/API cache and (on web) application service-worker caches.
  * Does not touch favorites, demo mode, or notification preferences.
- * On web, reloads the page so a fresh SW and bundle can load.
+ * Keeps the worker registration and its push subscription; reloads the web page.
  */
 export async function clearOfflineAppCache(options?: { reload?: boolean }): Promise<void> {
   const shouldReload = options?.reload ?? Platform.OS === 'web';
@@ -29,20 +29,10 @@ export async function clearOfflineAppCache(options?: { reload?: boolean }): Prom
     try {
       if ('caches' in window) {
         const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
+        await Promise.all(keys.filter((key) => key.startsWith('uletay-')).map((key) => caches.delete(key)));
       }
     } catch {
       // Cache Storage unavailable.
-    }
-
-    try {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.controller?.postMessage({ type: 'CLEAR_CACHES' });
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.unregister()));
-      }
-    } catch {
-      // SW APIs unavailable.
     }
 
     if (shouldReload) {

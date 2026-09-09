@@ -22,6 +22,7 @@ import {
 } from '@/lib/resolve-admin-image';
 import { config } from '@/lib/config';
 import { getPushBroadcastHistory, getPushStats } from '@/lib/push';
+import { ContentRevision, ContentRevisionProvider } from './components/ContentRevision';
 
 const TABS: Record<AdminTab, string> = {
   festival: 'Фестиваль',
@@ -60,6 +61,7 @@ export default async function AdminPage({
   }
 
   return (
+    <ContentRevisionProvider key={data.revision} value={data.revision}>
     <AdminShell activeTab={activeTab} logoutAction={logoutAction}>
       {params.ok ? <AdminNotice tone="success">Изменения сохранены</AdminNotice> : null}
       {params.error ? (
@@ -72,6 +74,7 @@ export default async function AdminPage({
           className="admin-form"
           encType="multipart/form-data"
         >
+          <ContentRevision />
           <section className="panel">
             <div className="panel-heading">
               <div>
@@ -183,6 +186,7 @@ export default async function AdminPage({
 
       {activeTab === 'stages' ? (
         <form action={saveStagesAction} className="admin-form">
+          <ContentRevision />
           <section className="panel">
             <div className="panel-heading">
               <div>
@@ -275,5 +279,6 @@ export default async function AdminPage({
           />
       ) : null}
     </AdminShell>
+    </ContentRevisionProvider>
   );
 }

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "schema-validation",
+    "reproduced": true,
+    "detail": "The validator accepts null for every required property."
+  },
+  {
+    "id": "uncommitted-cache-mutation",
+    "reproduced": true,
+    "detail": "Mutating getAppData().festival changes the public cached response before any database write."
+  },
+  {
+    "id": "lost-concurrent-edit",
+    "reproduced": true,
+    "detail": "A later save from a stale snapshot overwrites the other editor's changes without conflict detection."
+  },
+  {
+    "id": "unrestricted-push-endpoint",
+    "reproduced": true,
+    "detail": "A loopback HTTPS endpoint passed validation and reached the mocked INSERT. No database connection or outbound HTTP request occurred."
+  },
+  {
+    "id": "routing-first-leg-only",
+    "reproduced": true,
+    "actual": {
+      "distance": 100,
+      "duration": 60
+    },
+    "expected": {
+      "distance": 300,
+      "duration": 180
+    }
+  }
+]

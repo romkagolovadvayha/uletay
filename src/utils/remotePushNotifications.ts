@@ -71,7 +71,7 @@ async function getOrCreateWebPushSubscription(): Promise<PushSubscription> {
     throw new Error('Web Push пока не настроен на сервере');
   }
 
-  const registration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/' });
+  const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
   await navigator.serviceWorker.ready;
   const existing = await registration.pushManager.getSubscription();
   const subscription =
