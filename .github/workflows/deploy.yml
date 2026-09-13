@@ -138,6 +138,7 @@ jobs:
           npm run test:map:routing
           npm run test:push-reminders --prefix cms
           npm run test:admin --prefix cms
+          node scripts/test-deployed-map.mjs
           test -f deploy/setup-push-reminders-cron.sh
           for script in deploy/*.sh scripts/test-release-deploy.sh; do bash -n "$script"; done
           bash scripts/test-release-deploy.sh
@@ -228,7 +229,7 @@ jobs:
             "https://${DOMAIN}/api/data" -o "$RUNNER_TEMP/uletay-api.json"
           node -e "JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8'))" \
             "$RUNNER_TEMP/uletay-api.json"
-          node -e "const fs=require('node:fs');const live=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));const seed=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));if(live.mapDataVersion!==seed.mapDataVersion)throw new Error('Production map version mismatch');for(const key of ['mapZones','mapPaths','mapPois'])if(live[key]?.features?.length!==seed[key]?.features?.length)throw new Error(key+' count mismatch')" \
+          node deploy/verify-map-data.mjs \
             "$RUNNER_TEMP/uletay-api.json" "cms/seed/content.json"
 
       - name: Write deployment summary

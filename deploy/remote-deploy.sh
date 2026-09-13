@@ -303,7 +303,7 @@ if [ "$cms_ok" -ne 1 ]; then
   exit 1
 fi
 
-node -e 'const fs=require("node:fs");const live=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const seed=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));if(live.mapDataVersion!==seed.mapDataVersion)throw new Error("Candidate map version mismatch");for(const key of ["mapZones","mapPaths","mapPois"])if(live[key]?.features?.length!==seed[key]?.features?.length)throw new Error(key+" count mismatch")' \
+node "$DEPLOY_PATH/deploy/verify-map-data.mjs" \
   "$CMS_CHECK" "$DEPLOY_PATH/cms/seed/content.json"
 rm -f "$CMS_CHECK"
 
