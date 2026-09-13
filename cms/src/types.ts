@@ -267,6 +267,7 @@ export interface AppData {
 }
 
 export type AdminTab =
+  | 'overview'
   | 'festival'
   | 'stages'
   | 'schedule'

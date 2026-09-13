@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { SubmitButton } from '../components/EditorForm';
 import { loginAction } from '../actions';
 
 export default async function LoginPage({
@@ -14,12 +16,16 @@ export default async function LoginPage({
         <div className="auth-heading">
           <span className="admin-brand-mark">У</span>
           <div>
-            <h1>Вход в админку</h1>
-            <p>Управление контентом фестиваля УЛЕТАЙ</p>
+            <h1>Добро пожаловать</h1>
+            <p>Войдите в рабочее пространство команды</p>
           </div>
         </div>
         {hasError ? (
-          <p className="admin-notice admin-notice--error">{params.error === 'rate' ? 'Слишком много попыток входа. Повторите через 15 минут.' : 'Неверный логин или пароль'}</p>
+          <p className="admin-notice admin-notice--error">
+            {params.error === 'rate'
+              ? 'Слишком много попыток входа. Повторите через 15 минут.'
+              : 'Неверный логин или пароль'}
+          </p>
         ) : null}
         <label>
           Логин
@@ -29,7 +35,10 @@ export default async function LoginPage({
           Пароль
           <input name="password" type="password" required autoComplete="current-password" />
         </label>
-        <button type="submit">Войти</button>
+        <SubmitButton pendingLabel="Входим…">Войти в админку</SubmitButton>
+        <p className="auth-footer">
+          <Link href="/">← Вернуться к приложению</Link>
+        </p>
       </form>
     </div>
   );

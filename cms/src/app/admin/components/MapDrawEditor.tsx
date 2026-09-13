@@ -1,5 +1,7 @@
 'use client';
 
+import { matchesAdminSearch } from '@/lib/admin-navigation';
+
 import { ContentRevision } from './ContentRevision';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { applySchemeOverlayStyle, ensureAdminMapStyles, upsertImageOverlay } from '@/lib/admin-yandex-map-layers';
@@ -874,14 +876,17 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
     return items;
   }, [zones, paths]);
 
+  const [layerQuery, setLayerQuery] = useState('');
+  const visibleLayers = layerItems.filter((item) => matchesAdminSearch(layerQuery, item.label, item.group));
+
   return (
     <div className="panel map-draw-editor">
       <h2>Редактор карты</h2>
-      <p className="hint">
+      <details className="map-editor-help"><summary>Как редактировать карту</summary><p className="hint">
         Прямоугольник — здания, линия — дороги/заборы, полигон — зоны. Выделите объект
         и перетащите жёлтый маркер в центре; синие точки — вершины для изменения формы.
-        инструменты, Enter — завершить линию/полигон, Del — удалить, Esc — отмена, Ctrl+Z / Ctrl+Y — отмена/повтор.
-      </p>
+        Клавиши 1–4 — инструменты, Enter — завершить линию/полигон, Del — удалить, Esc — отмена, Ctrl+Z / Ctrl+Y — отмена/повтор.
+      </p></details>
 
       <div className="map-draw-toolbar">
         {(
@@ -984,12 +989,13 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         </div>
 
         <aside className="map-draw-sidebar">
-          <h3>Слои ({layerItems.length})</h3>
+          <h3>Объекты ({visibleLayers.length} из {layerItems.length})</h3>
+          <label className="map-layer-search">Найти объект<input type="search" value={layerQuery} onChange={(event) => setLayerQuery(event.target.value)} placeholder="Сцена, туалет, парковка…" /></label>
           <ul className="map-layer-list">
-            {layerItems.length === 0 ? (
-              <li className="map-layer-empty">Нет объектов — нарисуйте на карте</li>
+            {visibleLayers.length === 0 ? (
+              <li className="map-layer-empty">{layerQuery ? 'Объекты не найдены' : 'Нет объектов — нарисуйте на карте'}</li>
             ) : (
-              layerItems.map((item) => {
+              visibleLayers.map((item) => {
                 const active =
                   activeSelection?.kind === item.kind && activeSelection.id === item.id;
                 return (

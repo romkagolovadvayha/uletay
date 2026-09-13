@@ -1,3 +1,7 @@
+import { LinkedArtistsField } from './LinkedArtistsField';
+import { EditorForm, SaveBar } from './EditorForm';
+import { CollectionToolbar } from './CollectionToolbar';
+import { matchesAdminSearch, adminHref } from '@/lib/admin-navigation';
 import { ContentRevision } from './ContentRevision';
 import Link from 'next/link';
 import { upsertHeadlinerAction } from '../actions';
@@ -12,35 +16,74 @@ import { formatAlternateNamesInput } from '@/lib/headliner-groups';
 type Props = {
   items: Headliner[];
   editId?: string;
+  query?: string;
+  yearFilter?: string;
 };
 
-export function HeadlinersEditor({ items, editId }: Props) {
+export function HeadlinersEditor({ items, editId, query = '', yearFilter }: Props) {
+  const listHref = adminHref('headliners', { q: query, year: yearFilter });
   const isNew = editId === 'new';
-  const editing = isNew
-    ? null
-    : editId
-      ? items.find((item) => item.id === editId) ?? null
-      : null;
+  const editing = isNew ? null : editId ? (items.find((item) => item.id === editId) ?? null) : null;
 
-  const tableItems = items.map((item) => ({
+  const years = [...new Set(items.flatMap((item) => item.years))].sort((a, b) => b - a);
+  const filtered = items.filter(
+    (item) =>
+      matchesAdminSearch(query, item.name, item.alternateNames?.join(' ')) &&
+      (!yearFilter || item.years.includes(Number(yearFilter))),
+  );
+  const tableItems = filtered.map((item) => ({
     ...item,
     imageSrc: resolveAdminImageSrc(item.imageUrl, item.name),
   }));
 
-  return (
-    <>
-      <div className="toolbar">
-        <Link className="btn-primary" href="/admin?tab=headliners&edit=new">
-          + Добавить хэдлайнера
+  if (editId && !isNew && !editing)
+    return (
+      <div className="panel">
+        <h2>Запись не найдена</h2>
+        <p>Возможно, её уже удалили.</p>
+        <Link href="/admin?tab=headliners" className="btn-secondary">
+          К списку
         </Link>
       </div>
+    );
+
+  return (
+    <>
+      {!editId ? (
+        <CollectionToolbar
+          key={listHref}
+          tab="headliners"
+          query={query}
+          addLabel="Артиста"
+          filtered={Boolean(query || yearFilter)}
+        >
+          <label>
+            <span className="visually-hidden">Год участия</span>
+            <select name="year" defaultValue={yearFilter ?? ''}>
+              <option value="">Все годы</option>
+              {[...new Set([...years, ...(yearFilter ? [Number(yearFilter)] : [])])]
+                .sort((a, b) => b - a)
+                .map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </CollectionToolbar>
+      ) : (
+        <Link className="editor-back" href={listHref}>
+          ← К списку
+        </Link>
+      )}
 
       {editId ? (
-        <form action={upsertHeadlinerAction} className="panel" encType="multipart/form-data">
-<ContentRevision />
+        <EditorForm action={upsertHeadlinerAction} className="panel editor-panel">
+          <ContentRevision />
+          <input type="hidden" name="_returnTo" value={listHref} />
           <div className="panel-heading">
             <div>
-              <h2>{isNew ? 'Новый хэдлайнер' : `Редактирование: ${editing?.name ?? ''}`}</h2>
+              <h2>{isNew ? 'Новый артист' : `Редактирование: ${editing?.name ?? ''}`}</h2>
               <p>Основная карточка артиста, связи и изображение для приложения.</p>
             </div>
           </div>
@@ -56,53 +99,36 @@ export function HeadlinersEditor({ items, editId }: Props) {
               Описание
               <textarea name="description" rows={3} defaultValue={editing?.description ?? ''} />
             </label>
-            <label className="span-2">
-              Дополнительные названия
-              <textarea
-                name="alternateNames"
-                rows={3}
-                defaultValue={formatAlternateNamesInput(editing?.alternateNames)}
-                placeholder={'КняZZ\nКороль и Шут'}
-              />
-              <span className="hint">
-                Бывшие или альтернативные имена — по одному в строке. Last.fm подтянется при
-                ночном синке в GitHub Actions, не при сохранении.
-              </span>
-            </label>
-            {!isNew && editing ? (
-              <div className="span-2 linked-headliners-field">
-                <span className="field-label">Связанные хэдлайнеры</span>
-                <div className="linked-headliners-list">
-                  {items
-                    .filter((item) => item.id !== editing.id)
-                    .map((item) => (
-                      <label key={item.id} className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          name="linkedHeadlinerIds"
-                          value={item.id}
-                          defaultChecked={editing.linkedHeadlinerIds?.includes(item.id)}
-                        />
-                        <span>{item.name}</span>
-                      </label>
-                    ))}
-                </div>
+            <details className="advanced-panel span-2">
+              <summary>Другие названия и связанные артисты</summary>
+              <label>
+                Дополнительные названия
+                <textarea
+                  name="alternateNames"
+                  rows={3}
+                  defaultValue={formatAlternateNamesInput(editing?.alternateNames)}
+                  placeholder={'КняZZ\nКороль и Шут'}
+                />
                 <span className="hint">
-                  Другие карточки того же артиста (например, «КняZZ» и «Король и Шут»). Статистика
-                  и треки суммируются.
+                  Бывшие или альтернативные имена — по одному в строке. Музыкальные данные
+                  обновляются автоматически раз в сутки.
                 </span>
-              </div>
-            ) : null}
+              </label>
+              {!isNew && editing && (
+                <LinkedArtistsField
+                  items={items
+                    .filter((item) => item.id !== editing.id)
+                    .map((item) => ({ id: item.id, name: item.name }))}
+                  selected={editing.linkedHeadlinerIds}
+                />
+              )}
+            </details>
             <label>
               Цвет карточки
-              <input
-                name="imageTint"
-                type="color"
-                defaultValue={editing?.imageTint ?? '#4A1C1C'}
-              />
+              <input name="imageTint" type="color" defaultValue={editing?.imageTint ?? '#4A1C1C'} />
             </label>
             <label>
-              Годы (теги)
+              Годы участия
               <input
                 name="years"
                 defaultValue={editing ? formatHeadlinerYears(editing.years) : ''}
@@ -123,30 +149,30 @@ export function HeadlinersEditor({ items, editId }: Props) {
             </div>
           </div>
 
-          <div className="form-actions">
-            <button type="submit" className="btn-primary">
-              Сохранить
-            </button>
-            <Link className="btn-secondary" href="/admin?tab=headliners">
-              Отмена
-            </Link>
-          </div>
-        </form>
+          <SaveBar cancelHref={listHref} />
+        </EditorForm>
       ) : null}
 
-      <div className="panel">
-        <div className="panel-heading">
-          <div>
-            <h2>Все хэдлайнеры</h2>
-            <p>Перетаскивание меняет порядок карточек в приложении.</p>
+      {!editId && (
+        <div className="panel collection-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Каталог артистов</h2>
+              <p>Перетаскивание меняет порядок карточек в приложении.</p>
+            </div>
+            <span className="count-badge">{filtered.length}</span>
           </div>
-          <span className="count-badge">{items.length}</span>
+          <div className="panel-body table-wrap">
+            <HeadlinersSortableTable
+              key={tableItems.map((item) => item.id).join('|')}
+              items={tableItems}
+              listHref={listHref}
+              sortable={!query && !yearFilter}
+            />
+            {filtered.length === 0 ? <p className="empty-state">Артисты не найдены</p> : null}
+          </div>
         </div>
-        <div className="panel-body table-wrap">
-          <HeadlinersSortableTable items={tableItems} />
-          {items.length === 0 ? <p className="empty-state">Хэдлайнеров пока нет</p> : null}
-        </div>
-      </div>
+      )}
     </>
   );
 }

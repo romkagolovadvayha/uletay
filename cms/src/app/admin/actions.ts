@@ -36,6 +36,8 @@ import type {
 } from '@/types';
 import { defaultOverlayFromBounds } from '@/lib/map-overlay-georef';
 import { sendPushBroadcast, type PushAudience } from '@/lib/push';
+import { parseFoodcourtMenu } from '@/lib/foodcourt-menu-input';
+import { adminSaveRedirect } from '@/lib/admin-navigation';
 
 async function requireSession(): Promise<number> {
   const session = await getSession();
@@ -296,7 +298,7 @@ export async function upsertScheduleAction(formData: FormData) {
   }
 
   await saveAdminSnapshot(data, formData);
-  redirect('/admin?tab=schedule&ok=1');
+  redirect(adminSaveRedirect('schedule', String(formData.get('_returnTo') ?? '')));
 }
 
 export async function deleteScheduleAction(formData: FormData) {
@@ -305,7 +307,7 @@ export async function deleteScheduleAction(formData: FormData) {
   const id = String(formData.get('id') ?? '').trim();
   data.schedule = data.schedule.filter((item) => item.id !== id);
   await saveAdminSnapshot(data, formData);
-  redirect('/admin?tab=schedule&ok=1');
+  redirect(adminSaveRedirect('schedule', String(formData.get('_returnTo') ?? '')));
 }
 
 export async function upsertAutographAction(formData: FormData) {
@@ -359,7 +361,7 @@ export async function upsertAutographAction(formData: FormData) {
   }
 
   await saveAdminSnapshot(data, formData);
-  redirect('/admin?tab=autographs&ok=1');
+  redirect(adminSaveRedirect('autographs', String(formData.get('_returnTo') ?? '')));
 }
 
 export async function deleteAutographAction(formData: FormData) {
@@ -368,7 +370,7 @@ export async function deleteAutographAction(formData: FormData) {
   const id = String(formData.get('id') ?? '').trim();
   data.autographs = data.autographs.filter((item) => item.id !== id);
   await saveAdminSnapshot(data, formData);
-  redirect('/admin?tab=autographs&ok=1');
+  redirect(adminSaveRedirect('autographs', String(formData.get('_returnTo') ?? '')));
 }
 
 export async function upsertFoodcourtAction(formData: FormData) {
@@ -394,6 +396,19 @@ export async function upsertFoodcourtAction(formData: FormData) {
 
   const id = isNew ? buildFoodcourtId() : existingId;
 
+  let menu = existing?.menu;
+  try {
+    if (formData.has('menuJson')) menu = parseFoodcourtMenu(String(formData.get('menuJson')));
+  } catch (error) {
+    redirect('/admin?tab=foodcourt&error=' + encodeURIComponent(error instanceof Error ? error.message : 'Проверьте меню'));
+  }
+  const optionalText = (key: 'legalName' | 'contacts' | 'notes', maxLength: number) => formData.has(key)
+    ? String(formData.get(key) ?? '').trim().slice(0, maxLength)
+    : existing?.[key];
+  const legalName = optionalText('legalName', 300);
+  const contacts = optionalText('contacts', 500);
+  const notes = optionalText('notes', 2000);
+
   let imageUrl: string | undefined;
   try {
     imageUrl = await optionalImageUrl(formData, existing?.imageUrl, 'thumb');
@@ -413,10 +428,10 @@ export async function upsertFoodcourtAction(formData: FormData) {
     imageTint,
     ...(priceRange ? { priceRange } : {}),
     ...(imageUrl ? { imageUrl } : {}),
-    ...(existing?.legalName ? { legalName: existing.legalName } : {}),
-    ...(existing?.contacts ? { contacts: existing.contacts } : {}),
-    ...(existing?.notes ? { notes: existing.notes } : {}),
-    ...(existing?.menu?.length ? { menu: existing.menu } : {}),
+    ...(legalName ? { legalName } : {}),
+    ...(contacts ? { contacts } : {}),
+    ...(notes ? { notes } : {}),
+    ...(menu?.length ? { menu } : {}),
     ...(existing?.menuImageUrls?.length ? { menuImageUrls: existing.menuImageUrls } : {}),
   };
 
@@ -431,7 +446,7 @@ export async function upsertFoodcourtAction(formData: FormData) {
   }
 
   await saveAdminSnapshot(data, formData);
-  redirect('/admin?tab=foodcourt&ok=1');
+  redirect(adminSaveRedirect('foodcourt', String(formData.get('_returnTo') ?? '')));
 }
 
 export async function deleteFoodcourtAction(formData: FormData) {
@@ -440,7 +455,7 @@ export async function deleteFoodcourtAction(formData: FormData) {
   const id = String(formData.get('id') ?? '').trim();
   data.foodcourt = data.foodcourt.filter((item) => item.id !== id);
   await saveAdminSnapshot(data, formData);
-  redirect('/admin?tab=foodcourt&ok=1');
+  redirect(adminSaveRedirect('foodcourt', String(formData.get('_returnTo') ?? '')));
 }
 
 export async function reorderFoodcourtAction(
@@ -546,7 +561,7 @@ export async function upsertHeadlinerAction(formData: FormData) {
   data.headliners = applyBidirectionalHeadlinerLinks(data.headliners, id, linkedHeadlinerIds);
 
   await saveAdminSnapshot(data, formData);
-  redirect('/admin?tab=headliners&ok=1');
+  redirect(adminSaveRedirect('headliners', String(formData.get('_returnTo') ?? '')));
 }
 
 export async function deleteHeadlinerAction(formData: FormData) {
@@ -565,7 +580,7 @@ export async function deleteHeadlinerAction(formData: FormData) {
 
   data.headliners = data.headliners.filter((item) => item.id !== id);
   await saveAdminSnapshot(data, formData);
-  redirect('/admin?tab=headliners&ok=1');
+  redirect(adminSaveRedirect('headliners', String(formData.get('_returnTo') ?? '')));
 }
 
 export async function reorderHeadlinersAction(

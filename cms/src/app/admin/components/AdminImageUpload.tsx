@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { AdminIcon } from './AdminIcon';
+import { useEditorChange } from './EditorForm';
 
 type Props = {
   accept?: string;
@@ -27,6 +28,7 @@ export function AdminImageUpload({
   valueName = 'imageUrl',
 }: Props) {
   const inputId = useId();
+  const markDirty = useEditorChange();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState(currentSrc);
   const [selectedName, setSelectedName] = useState<string>();
@@ -42,6 +44,7 @@ export function AdminImageUpload({
   function selectFile(file?: File) {
     if (!file) return;
     if (!file.type.startsWith('image/')) return;
+    markDirty();
     if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
     setPreview(URL.createObjectURL(file));
     setSelectedName(file.name);
@@ -53,6 +56,7 @@ export function AdminImageUpload({
   }
 
   function removeImage() {
+    markDirty();
     if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
     setPreview(undefined);
     setSelectedName(undefined);

@@ -137,6 +137,7 @@ jobs:
           npm run test:map:layout
           npm run test:map:routing
           npm run test:push-reminders --prefix cms
+          npm run test:admin --prefix cms
           test -f deploy/setup-push-reminders-cron.sh
           for script in deploy/*.sh scripts/test-release-deploy.sh; do bash -n "$script"; done
           bash scripts/test-release-deploy.sh

@@ -1,4 +1,5 @@
 import { ContentRevision } from './ContentRevision';
+import { LazyMapPanel } from './LazyMapPanel';
 import {
   removeMapSchemeAction,
   saveMapConfigAction,
@@ -43,82 +44,132 @@ export function MapEditor({ data }: Props) {
 
   return (
     <>
-      <MapOverlayEditor
-        config={config}
-        zones={zones}
-        paths={paths}
-        overlay={config.adminOverlay}
-        uploadAction={uploadMapSchemeAction}
-        saveGeorefAction={saveMapOverlayGeorefAction}
-        removeOverlayAction={removeMapSchemeAction}
-      />
-
-      <MapDrawEditor
-        config={config}
-        zones={zones}
-        paths={paths}
-        overlay={config.adminOverlay}
-        saveAction={saveMapLayersAction}
-      />
-
-      <MapOperationsEditor
-        config={config}
-        initialPois={pois}
-        paths={paths}
-        saveAction={saveMapPoisAction}
-      />
-
-      <form action={saveMapConfigAction} className="panel">
-<ContentRevision />
-        <h2>Настройки карты</h2>
-        <div className="grid">
-          <label>
-            Включена
-            <select name="enabled" defaultValue={config.enabled ? '1' : '0'}>
-              <option value="1">Да</option>
-              <option value="0">Нет</option>
-            </select>
-          </label>
-          <label>
-            Zoom по умолчанию
-            <input name="defaultZoom" type="number" defaultValue={config.defaultZoom} min={1} max={20} />
-          </label>
-          <label>
-            Центр — широта
-            <input name="centerLat" type="number" step="0.000001" defaultValue={config.center.lat} />
-          </label>
-          <label>
-            Центр — долгота
-            <input name="centerLng" type="number" step="0.000001" defaultValue={config.center.lng} />
-          </label>
-          <label>
-            Граница SW — lat
-            <input name="swLat" type="number" step="0.000001" defaultValue={bounds?.sw.lat ?? ''} />
-          </label>
-          <label>
-            Граница SW — lng
-            <input name="swLng" type="number" step="0.000001" defaultValue={bounds?.sw.lng ?? ''} />
-          </label>
-          <label>
-            Граница NE — lat
-            <input name="neLat" type="number" step="0.000001" defaultValue={bounds?.ne.lat ?? ''} />
-          </label>
-          <label>
-            Граница NE — lng
-            <input name="neLng" type="number" step="0.000001" defaultValue={bounds?.ne.lng ?? ''} />
-          </label>
-        </div>
-        <button type="submit" className="btn-primary">
-          Сохранить настройки
-        </button>
-      </form>
-
-      <details className="panel">
+      <nav className="map-section-tabs" aria-label="Разделы редактора карты">
+        <a href="#map-objects">Объекты и дорожки</a>
+        <a href="#map-navigation">Точки и навигация</a>
+        <a href="#map-settings">Настройки</a>
+        <a href="/map" target="_blank" rel="noreferrer">
+          Открыть карту ↗
+        </a>
+      </nav>
+      <LazyMapPanel>
+        <MapOverlayEditor
+          config={config}
+          zones={zones}
+          paths={paths}
+          overlay={config.adminOverlay}
+          uploadAction={uploadMapSchemeAction}
+          saveGeorefAction={saveMapOverlayGeorefAction}
+          removeOverlayAction={removeMapSchemeAction}
+        />
+      </LazyMapPanel>
+      <section id="map-objects" className="map-editor-section">
+        <MapDrawEditor
+          config={config}
+          zones={zones}
+          paths={paths}
+          overlay={config.adminOverlay}
+          saveAction={saveMapLayersAction}
+        />
+      </section>
+      <section id="map-navigation" className="map-editor-section">
+        <MapOperationsEditor
+          config={config}
+          initialPois={pois}
+          paths={paths}
+          saveAction={saveMapPoisAction}
+        />
+      </section>
+      <details id="map-settings" className="advanced-panel map-editor-section">
+        <summary>Настройки отображения карты</summary>
+        <form action={saveMapConfigAction} className="panel">
+          <ContentRevision />
+          <h2>Настройки карты</h2>
+          <div className="grid">
+            <label>
+              Включена
+              <select name="enabled" defaultValue={config.enabled ? '1' : '0'}>
+                <option value="1">Да</option>
+                <option value="0">Нет</option>
+              </select>
+            </label>
+            <label>
+              Масштаб при открытии
+              <input
+                name="defaultZoom"
+                type="number"
+                defaultValue={config.defaultZoom}
+                min={1}
+                max={20}
+              />
+            </label>
+            <label>
+              Центр — широта
+              <input
+                name="centerLat"
+                type="number"
+                step="0.000001"
+                defaultValue={config.center.lat}
+              />
+            </label>
+            <label>
+              Центр — долгота
+              <input
+                name="centerLng"
+                type="number"
+                step="0.000001"
+                defaultValue={config.center.lng}
+              />
+            </label>
+            <label>
+              Юго-запад — широта
+              <input
+                name="swLat"
+                type="number"
+                step="0.000001"
+                defaultValue={bounds?.sw.lat ?? ''}
+              />
+            </label>
+            <label>
+              Юго-запад — долгота
+              <input
+                name="swLng"
+                type="number"
+                step="0.000001"
+                defaultValue={bounds?.sw.lng ?? ''}
+              />
+            </label>
+            <label>
+              Северо-восток — широта
+              <input
+                name="neLat"
+                type="number"
+                step="0.000001"
+                defaultValue={bounds?.ne.lat ?? ''}
+              />
+            </label>
+            <label>
+              Северо-восток — долгота
+              <input
+                name="neLng"
+                type="number"
+                step="0.000001"
+                defaultValue={bounds?.ne.lng ?? ''}
+              />
+            </label>
+          </div>
+          <button type="submit" className="btn-primary">
+            Сохранить настройки
+          </button>
+        </form>
+      </details>
+      <details className="advanced-panel">
         <summary>GeoJSON (расширенный режим)</summary>
         <form action={saveMapGeoJsonAction} className="panel-inner">
-<ContentRevision />
+          <ContentRevision />
           <p className="hint">
-            Ручное редактирование FeatureCollection. Координаты: [lng, lat]. Предпочтительно — редактор выше.
+            Ручное редактирование FeatureCollection. Координаты: [lng, lat]. Предпочтительно —
+            редактор выше.
           </p>
           <label className="full">
             Зоны (Polygon)

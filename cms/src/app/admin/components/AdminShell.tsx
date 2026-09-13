@@ -1,185 +1,130 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { AdminTab } from '@/types';
+import { adminSections, type AdminSearchItem } from '@/lib/admin-navigation';
 import { AdminIcon } from './AdminIcon';
+import { AdminSearch } from './AdminSearch';
 
 type Props = {
   activeTab: AdminTab;
-  children: React.ReactNode;
+  children: ReactNode;
   logoutAction: () => void | Promise<void>;
+  searchItems: AdminSearchItem[];
+  festivalName: string;
+  festivalYear: number;
 };
-
-const pageMeta: Record<AdminTab, { title: string; description: string }> = {
-  festival: {
-    title: 'Настройки фестиваля',
-    description: 'Основная информация, даты, локация и медиа-материалы.',
-  },
-  stages: {
-    title: 'Сцены',
-    description: 'Названия, короткие подписи и цвета фестивальных сцен.',
-  },
-  schedule: {
-    title: 'Расписание',
-    description: 'Выступления артистов по датам, времени и сценам.',
-  },
-  autographs: {
-    title: 'Автограф-сессии',
-    description: 'Встречи с артистами, время проведения и локации.',
-  },
-  headliners: {
-    title: 'Хэдлайнеры',
-    description: 'Карточки артистов, изображения, связи и годы участия.',
-  },
-  foodcourt: {
-    title: 'Фудкорт',
-    description: 'Точки питания, категории, часы работы и изображения.',
-  },
-  map: {
-    title: 'Карта фестиваля',
-    description: 'Схема территории, зоны, дорожки и настройки отображения.',
-  },
-  push: {
-    title: 'Push-уведомления',
-    description: 'Рассылки пользователям приложения и веб-версии.',
-  },
-};
-
-const groups: {
-  label: string;
-  items: { key: AdminTab; label: string; icon: Parameters<typeof AdminIcon>[0]['name'] }[];
-}[] = [
-  {
-    label: 'Управление',
-    items: [
-      { key: 'festival', label: 'Фестиваль', icon: 'festival' },
-      { key: 'stages', label: 'Сцены', icon: 'stages' },
-      { key: 'schedule', label: 'Расписание', icon: 'calendar' },
-    ],
-  },
-  {
-    label: 'Контент',
-    items: [
-      { key: 'autographs', label: 'Автографы', icon: 'autographs' },
-      { key: 'headliners', label: 'Хэдлайнеры', icon: 'star' },
-      { key: 'foodcourt', label: 'Фудкорт', icon: 'food' },
-    ],
-  },
-  {
-    label: 'Инструменты',
-    items: [
-      { key: 'map', label: 'Карта', icon: 'map' },
-      { key: 'push', label: 'Push-уведомления', icon: 'bell' },
-    ],
-  },
-];
-
-export function AdminShell({ activeTab, children, logoutAction }: Props) {
-  const meta = pageMeta[activeTab];
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const labelYandexLinks = () => {
-      document.querySelectorAll<HTMLAnchorElement>('a[href*="yandex.ru/maps"]').forEach((link) => {
-        if (!link.getAttribute('aria-label') && !link.textContent?.trim()) {
-          link.setAttribute('aria-label', 'Открыть карту в Яндекс Картах');
-        }
-      });
-    };
-    const observer = new MutationObserver(labelYandexLinks);
-    observer.observe(document.body, { childList: true, subtree: true });
-    labelYandexLinks();
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div className="admin-shell">
-      <button
-        aria-label="Закрыть меню"
-        className={menuOpen ? 'admin-sidebar-overlay is-open' : 'admin-sidebar-overlay'}
-        onClick={() => setMenuOpen(false)}
-        type="button"
-      />
-
-      <aside className={menuOpen ? 'admin-sidebar is-open' : 'admin-sidebar'} id="admin-sidebar">
+export function AdminShell({
+  activeTab,
+  children,
+  logoutAction,
+  searchItems,
+  festivalName,
+  festivalYear,
+}: Props) {
+  const menu = useRef<HTMLDialogElement>(null);
+  const meta = adminSections.find((item) => item.key === activeTab)!;
+  const groups = [...new Set(adminSections.map((item) => item.group))];
+  function navigation() {
+    return (
+      <>
         <div className="admin-brand">
-          <div className="admin-brand-mark">У</div>
+          <Link href="/admin" className="admin-brand-mark" aria-label="Обзор админки">
+            У
+          </Link>
           <div>
             <strong>УЛЕТАЙ</strong>
-            <span>Панель управления</span>
+            <span>Команда фестиваля</span>
           </div>
-          <button
-            aria-label="Закрыть меню"
-            className="admin-sidebar-close"
-            onClick={() => setMenuOpen(false)}
-            type="button"
-          >
-            <AdminIcon name="close" />
-          </button>
         </div>
-
+        <div className="admin-festival-label">
+          <span className="status-dot" />
+          <span>
+            {festivalName} {festivalYear}
+          </span>
+        </div>
         <nav className="admin-nav" aria-label="Разделы админки">
           {groups.map((group) => (
-            <div className="admin-nav-group" key={group.label}>
-              <p>{group.label}</p>
-              {group.items.map((item) => (
-                <Link
-                  aria-current={activeTab === item.key ? 'page' : undefined}
-                  className={activeTab === item.key ? 'admin-nav-link active' : 'admin-nav-link'}
-                  href={`/admin?tab=${item.key}`}
-                  key={item.key}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <AdminIcon name={item.icon} />
-                  <span>{item.label}</span>
-                </Link>
-              ))}
+            <div className="admin-nav-group" key={group}>
+              <p>{group}</p>
+              {adminSections
+                .filter((item) => item.group === group)
+                .map((item) => (
+                  <Link
+                    key={item.key}
+                    href={`/admin?tab=${item.key}`}
+                    className={activeTab === item.key ? 'admin-nav-link active' : 'admin-nav-link'}
+                    aria-current={activeTab === item.key ? 'page' : undefined}
+                    onClick={() => menu.current?.close()}
+                  >
+                    <AdminIcon name={item.icon} size={19} />
+                    <span>{item.label}</span>
+                    {activeTab === item.key && <span className="nav-active-dot" />}
+                  </Link>
+                ))}
             </div>
           ))}
         </nav>
-
         <div className="admin-sidebar-footer">
-          <div className="admin-user">
-            <span className="admin-user-avatar">A</span>
-            <span>
-              <strong>Администратор</strong>
-              <small>Управление контентом</small>
-            </span>
-          </div>
+          <a className="admin-site-link" href="/" target="_blank" rel="noreferrer">
+            <AdminIcon name="external" size={18} />
+            Открыть приложение
+          </a>
           <form action={logoutAction}>
             <button className="admin-logout" type="submit">
-              <AdminIcon name="logout" />
-              Выйти
+              <AdminIcon name="logout" size={18} />
+              Выйти из аккаунта
             </button>
           </form>
         </div>
-      </aside>
-
+      </>
+    );
+  }
+  return (
+    <div className="admin-shell">
+      <a className="skip-link" href="#admin-content">
+        К содержимому
+      </a>
+      <aside className="admin-sidebar">{navigation()}</aside>
+      <dialog ref={menu} className="admin-mobile-nav" aria-label="Меню админки">
+        <button
+          type="button"
+          className="admin-mobile-close icon-button"
+          aria-label="Закрыть меню"
+          onClick={() => menu.current?.close()}
+        >
+          <AdminIcon name="close" />
+        </button>
+        {navigation()}
+      </dialog>
       <div className="admin-workspace">
         <header className="admin-topbar">
           <button
-            aria-controls="admin-sidebar"
-            aria-expanded={menuOpen}
-            aria-label="Открыть меню"
             className="admin-menu-button"
-            onClick={() => setMenuOpen(true)}
             type="button"
+            aria-label="Открыть меню"
+            onClick={() => menu.current?.showModal()}
           >
             <AdminIcon name="menu" />
           </button>
+          <div className="admin-topbar-location">
+            <span>Рабочее пространство</span>
+            <AdminIcon name="chevron" size={14} />
+            <strong>{meta.label}</strong>
+          </div>
+          <AdminSearch items={searchItems} />
+        </header>
+        <main className="admin-content" id="admin-content" tabIndex={-1}>
           <div className="admin-page-heading">
-            <div className="admin-breadcrumbs">
-              <span>Админка</span>
-              <AdminIcon name="chevron" size={14} />
-              <span>{meta.title}</span>
-            </div>
-            <h1>{meta.title}</h1>
+            <span className="admin-eyebrow">
+              {activeTab === 'overview' ? 'Панель управления' : meta.group}
+            </span>
+            <h1>{meta.label}</h1>
             <p>{meta.description}</p>
           </div>
-        </header>
-
-        <main className="admin-content">{children}</main>
+          {children}
+        </main>
       </div>
     </div>
   );

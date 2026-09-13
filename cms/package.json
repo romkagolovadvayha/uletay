@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "test:admin": "tsx scripts/test-admin-workspace.ts",
     "dev": "next dev -p 3000",
     "build": "next build --webpack",
     "start": "next start -p 3000",
