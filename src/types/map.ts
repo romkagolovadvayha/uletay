@@ -38,7 +38,11 @@ export type MapZoneType =
 export interface MapZoneProperties {
   /** Unadjusted source geometry retained for repeatable landscape fitting. */
   schematicGeometry?: GeoJSON.Polygon;
-  /** Remaining parts of an area divided by a road; share its identity and caption. */
+  /** Source drawing approach point before registration to the current street. */
+  schematicAccessPoint?: LatLng;
+  /** Approach generated after fitting the footprint to roads and fences. */
+  accessPointGenerated?: boolean;
+  /** Area/pavilion parts separated by passages; share their identity and caption. */
   geometryParts?: GeoJSON.Polygon[];
   /** A numbered pitch inside a larger zone. */
   parentZoneId?: string;
@@ -77,6 +81,8 @@ export interface MapZoneProperties {
 }
 
 export type MapPathProperties = {
+  /** Source drawing geometry used by the repeatable map-data migration. */
+  schematicGeometry?: GeoJSON.LineString;
   id: string;
   name?: string;
   pathKind?: 'road' | 'walkway' | 'fence';

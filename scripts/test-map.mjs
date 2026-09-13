@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
+import { isDeepStrictEqual } from 'node:util';
 import { supplementFestivalMap, planCoordinate } from './festival-map-plan.mjs';
 import { landscapeRoad } from './map-landscape-layout.mjs';
 
@@ -24,7 +25,7 @@ const nearestOnLine=(point,line)=>line.slice(1).reduce((best,b,index)=>{
   const candidate=[a[0]+ab[0]*t,a[1]+ab[1]*t],distance=Math.hypot(point[0]-candidate[0],point[1]-candidate[1]);
   return distance<best.distance?{point:candidate,distance}:best;
 },{point:line[0],distance:Infinity});
-assert.deepEqual(supplementFestivalMap(data),data,'The map supplement must be idempotent');
+assert.equal(isDeepStrictEqual(supplementFestivalMap(data),data),true,'The map supplement must be idempotent');
 for(const collection of [data.mapZones,data.mapPaths,data.mapPois]) {
   const ids=collection.features.map(f=>f.properties.id);
   assert.equal(new Set(ids).size,ids.length,'Unique feature IDs');

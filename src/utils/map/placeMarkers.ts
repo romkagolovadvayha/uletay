@@ -10,6 +10,7 @@ export type MapPlaceMarker = {
   coordinates: [number, number];
   glyph: string;
   color: string;
+  labelColor?: string;
   selected: boolean;
   pinned: boolean;
   priority: number;
@@ -58,9 +59,11 @@ export function buildMapPlaceMarkers(
       /танцпол/i.test(p.name) ? 'ТАНЦПОЛ' : p.zoneType === 'toilet' ? 'WC' : p.zoneType === 'shower' ? 'ДУШ' :
       p.zoneType === 'water' ? 'ВОДА' : /мерч/i.test(p.name) ? 'МЕРЧ' : category === 'medical' ? 'МЕДПУНКТ' :
       /торговые/i.test(p.name) ? 'ТОРГОВЫЕ РЯДЫ' : p.name.replace(/ — .*$/, '').replace('Палаточная гостиница', 'ПАЛАТОЧНАЯ\nГОСТИНИЦА').replace('Палаточный городок', 'ПАЛАТОЧНЫЙ\nГОРОДОК').replace('Лагерь «Комфорт»', 'ЛАГЕРЬ\nКОМФОРТ').replace('Западная сцена', 'ЗАПАДНАЯ\nСЦЕНА').replace('Южная сцена', 'ЮЖНАЯ\nСЦЕНА').replace('Сцена РЕН ТВ', 'СЦЕНА\nРЕН ТВ').toUpperCase();
+    const rgb = /^#[\da-f]{6}$/i.test(p.fillColor) ? [1,3,5].map(i=>parseInt(p.fillColor.slice(i,i+2),16)/255) : [0,0,0];
+    const lightFootprint = p.fillOpacity > .5 && rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722 > .6;
     return {
       id: p.id, kind: 'zone', name: p.name, coordinates: [center.lng, center.lat],
-      glyph, color, selected: p.id === selectedZoneId,
+      glyph, color, labelColor: lightFootprint ? '#263124' : '#F2F0DD', selected: p.id === selectedZoneId,
       pinned: category === 'parking' && !p.parentZoneId,
       priority: category === 'stage' ? 8 : category === 'medical' ? 7 : 1,
       layout, label, isArea, isPitch,

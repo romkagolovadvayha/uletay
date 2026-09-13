@@ -1,15 +1,10 @@
-import type { MapPoisGeoJson } from '../types/map';
-import { getDefaultMapData as getOfflineMapData } from './festivalMap';
-
-const emptyPois: MapPoisGeoJson = { type: 'FeatureCollection', features: [] };
+import type { FestivalMapConfig, MapPathsGeoJson, MapPoisGeoJson, MapZonesGeoJson } from '../types/map';
+import snapshot from './festivalMapSnapshot.json';
 
 /**
- * Native offline geometry remains available, but POIs are CMS-owned.
- * An empty CMS collection must stay empty instead of showing invented services.
+ * Snapshot generated alongside the CMS seed. An empty CMS collection still
+ * replaces the snapshot rather than restoring deleted places.
  */
 export function getDefaultMapData() {
-  return {
-    ...getOfflineMapData(),
-    mapPois: emptyPois,
-  };
+  return snapshot as unknown as { festivalMap: FestivalMapConfig; mapZones: MapZonesGeoJson; mapPaths: MapPathsGeoJson; mapPois: MapPoisGeoJson };
 }

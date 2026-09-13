@@ -1,4 +1,5 @@
 import { arrangeMapLandscape } from './map-landscape-layout.mjs';
+import { registerFestivalMap } from './map-site-registration.mjs';
 
 /**
  * Inventory traced from the supplied 2026 plan, in its 1280 × 1920 pixel space.
@@ -152,7 +153,9 @@ function routePath(id,name,pathKind,points,routingOnly=false) {
   }};
 }
 export const planPaths = [
-  // The public road is present in the Yandex landscape. These route anchors keep
+  routePath('hotel-admin-approach','Проход к административному лагерю','walkway',[[881,1004],[892,1028],[907,1050],[901,1074]]),
+  routePath('trade-north-passage','Проход между торговыми павильонами','walkway',[[710,950.2764857881],[710,906]]),
+  // The public road is registered to the current underlay. These anchors keep
   // all four roadside entrances connected to the internal path beginning at №1.
   routePath('public-road-route','Дорога Ижевск — Гольяны','road',[[109,859],[120,925],[128,980],[136,1046],[159,1280]],true),
   routePath('entry-1-link','Проход от въезда №1','walkway',[[136,1046],[139,1047]],true),
@@ -183,7 +186,8 @@ export const planPaths = [
   routePath('entry-3-toilets','Проход к туалетам у въезда №3','walkway',[[166,891],[190,920],[202,938]],true),
   routePath('ren-autograph-services','Проход к шатру РЕН ТВ','walkway',[[910,940],[948,957],[977,944]],true),
   routePath('south-stage-services','Проход к сервисам Южной сцены','walkway',[[627,1148],[660,1175],[695,1177],[741,1174]],true),
-  routePath('south-stage-wc','Точка подхода к WC Южной сцены','walkway',[[702,1182],[703,1182]],true),
+  // Walk around the western end of the internal fence beside the stage.
+  routePath('south-stage-wc','Проход к WC Южной сцены','walkway',[[660,1175],[642,1174],[636,1182],[646,1197],[680,1210]],true),
 ];
 // More specific names make repeated sanitary blocks distinguishable in search.
 export const existingUpdates = {
@@ -243,7 +247,7 @@ const routeAccessUpdates = {
   'plan-2026-wc-ren-autograph': { accessPoint:latLng([977,944]) },
   'plan-2026-urinal': { accessPoint:latLng([970,760]) },
   // WC is immediately behind the diagonal fence; route to its accessible side.
-  'plan-2026-wc-south': { accessPoint:latLng([702,1182]), description:'WC у Южной сцены. Маршрут ведёт к ближайшей доступной стороне ограждения.' },
+  'plan-2026-wc-south': { accessPoint:latLng([680,1210]), description:'WC у Южной сцены. Подход со стороны сцены, вокруг западного конца внутреннего ограждения.' },
   'plan-2026-zags': { accessPoint:latLng([660,1175]) },
 };
 export function supplementFestivalMap(data) {
@@ -269,9 +273,10 @@ export function supplementFestivalMap(data) {
   const mergedPaths = merge(data.mapPaths,planPaths);
   const currentPlanPaths = new Map(planPaths.map(feature=>[feature.properties.id,feature]));
   const mapPaths = {...mergedPaths,features:mergedPaths.features.map(feature=>currentPlanPaths.get(feature.properties.id) ?? feature)};
-  const coords = mapZones.features.flatMap(f=>(f.properties.schematicGeometry ?? f.geometry).coordinates[0]);
-  return arrangeMapLandscape({...data,mapZones,mapPois,mapPaths,festivalMap:{...data.festivalMap,
+  const fitted = arrangeMapLandscape(registerFestivalMap({...data,mapZones,mapPois,mapPaths})).data;
+  const coords = fitted.mapZones.features.flatMap(f=>[f.geometry,...(f.properties.geometryParts??[])].flatMap(g=>g.coordinates[0]));
+  return {...fitted,festivalMap:{...fitted.festivalMap,
     territoryBounds:{sw:{lng:Math.min(...coords.map(p=>p[0]))-0.0001,lat:Math.min(...coords.map(p=>p[1]))-0.0001},
       ne:{lng:Math.max(...coords.map(p=>p[0]))+0.0001,lat:Math.max(...coords.map(p=>p[1]))+0.0001}},
-  }}).data;
+  }};
 }

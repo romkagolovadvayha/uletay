@@ -75,14 +75,15 @@ export function buildPlaceLabels(markers: ReturnType<typeof buildMapPlaceMarkers
     }
     return point(group.coordinates, { groupKey: key, label, size: Math.max(1, size), rotation, footprint,
       visible: !footprint || size >= (place.isPitch ? 6 : 8), selected: place.selected,
-      color: place.selected ? '#FFD400' : footprint ? '#F2F0DD' : place.color });
+      color: place.selected ? '#FFD400' : footprint ? place.labelColor ?? '#F2F0DD' : place.color,
+      halo: footprint && !place.selected && place.labelColor === '#263124' ? '#F5F2E5' : '#202724' });
   });
   return { data: collection(features), byKey };
 }
 
 export function buildPaths(paths?: MapPathsGeoJson): SceneData {
   return collection((paths?.features ?? []).filter(p => !p.properties.routingOnly).map(p => ({ ...p,
-    properties: { ...p.properties, color: p.properties.closed ? '#FF818A' : p.properties.pathKind === 'fence' ? '#E1B076' : p.properties.pathKind === 'walkway' ? '#C5B697' : '#A5A18D',
+    properties: { ...p.properties, color: p.properties.closed ? '#FF818A' : p.properties.pathKind === 'fence' ? '#E45443' : p.properties.pathKind === 'walkway' ? '#CCD1AB' : '#B6B7A7',
       width: p.properties.closed ? 4 : p.properties.pathKind === 'fence' ? 2 : p.properties.pathKind === 'walkway' ? 2.5 : 5,
       dashed: Boolean(p.properties.closed || p.properties.pathKind === 'fence' || p.properties.pathKind === 'walkway') },
   })));
@@ -123,8 +124,8 @@ export const sceneLayers: Record<string, SceneLayer[]> = {
   paths: [
     { id: 'fest-paths', type: 'line', source: 'paths', filter: ['!', ['get', 'dashed']], layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'] } },
-    { id: 'fest-paths-dashed', type: 'line', source: 'paths', filter: ['get', 'dashed'],
-      paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-dasharray': [3, 3] } },
+    { id: 'fest-paths-dashed', type: 'line', source: 'paths', filter: ['get', 'dashed'], layout: { 'line-cap': 'round' },
+      paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-dasharray': [1, 2] } },
   ],
   routes: [
     { id: 'fest-route-outline', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#202724', 'line-width': 9 } },
@@ -139,7 +140,7 @@ export const sceneLayers: Record<string, SceneLayer[]> = {
     { id: 'fest-place-label', type: 'symbol', source: 'places', filter: ['get', 'visible'],
       layout: { 'text-field': ['get', 'label'], 'text-font': [MAP_FONT], 'text-size': ['get', 'size'], 'text-rotate': ['get', 'rotation'],
         'text-rotation-alignment': 'map', 'text-allow-overlap': true, 'text-ignore-placement': true, 'text-max-width': 100, 'text-line-height': 1.2 },
-      paint: { 'text-color': ['get', 'color'], 'text-halo-color': '#202724', 'text-halo-width': 1 } },
+      paint: { 'text-color': ['get', 'color'], 'text-halo-color': ['get', 'halo'], 'text-halo-width': 1 } },
   ],
   saved: [
     { id: 'fest-saved-dot', type: 'circle', source: 'saved', paint: { 'circle-radius': 8, 'circle-color': '#FFD400', 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' } },
