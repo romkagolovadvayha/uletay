@@ -837,6 +837,31 @@ export function MapDrawEditor({
             overlay={preview || showOverlay ? overlay : undefined}
             selection={selection}
             handles={handles}
+            rotationControl={
+              selectedZone
+                ? {
+                    coordinate: featureCenter(selectedZone),
+                    onRotate: (angle) => rotateZoneGroup(selectedZone, angle),
+                  }
+                : selectedPath
+                  ? {
+                      coordinate: featureCenter(selectedPath),
+                      onRotate: (angle) =>
+                        updatePath(selectedPath.properties.id, (path) => {
+                          const center = featureCenter(path);
+                          return {
+                            ...path,
+                            geometry: {
+                              ...path.geometry,
+                              coordinates: path.geometry.coordinates.map((point) =>
+                                transformCoordinate(point, center, angle),
+                              ),
+                            },
+                          };
+                        }),
+                    }
+                  : undefined
+            }
             draft={draftCoords}
             drawing={tool !== 'select' || pickingAccess}
             helpers={helpers}
@@ -857,7 +882,7 @@ export function MapDrawEditor({
               : pickingAccess
                 ? 'Нажмите на дорожку у входа в объект. Esc — отмена.'
                 : tool === 'select'
-                  ? 'Выберите объект на карте или в списке. Жёлтая ручка — перемещение, зелёная — вход, синие — вершины.'
+                  ? 'Выберите объект на карте или в списке. Стрелки ↶ ↷ — поворот на 5°, жёлтая ручка — перемещение, зелёная — вход, синие — вершины.'
                   : tool === 'rect'
                     ? 'Нажмите на карту, чтобы разместить здание.'
                     : tool === 'poi'

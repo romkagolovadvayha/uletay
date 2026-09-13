@@ -1594,6 +1594,40 @@ dialog::backdrop {
   margin: 12px 0;
 }
 
+.admin-map-rotation {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #cbd6bc;
+  border-radius: 14px;
+  background: #fffdf5;
+  box-shadow: 0 4px 16px #243e2626;
+  cursor: default;
+  z-index: 2;
+}
+.admin-map-rotation button {
+  min-width: 48px;
+  min-height: 44px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #edf3e9;
+  color: #214933;
+  font-size: 16px;
+  font-weight: 650;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+.admin-map-rotation button:hover {
+  background: #dce8d2;
+}
+.admin-map-rotation button:active {
+  background: #ffd400;
+}
+.admin-map-rotation button:focus-visible {
+  outline: 2px solid #347052;
+  outline-offset: 1px;
+}
+
 .map-leave-dialog {
   width: min(460px, calc(100vw - 32px));
   border: 1px solid #d5dec9;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GeoJSONSource, Map as WebMap } from 'maplibre-gl';
+import type { GeoJSONSource, Map as WebMap, Marker } from 'maplibre-gl';
 import { loadMapLibre } from '../../../../../src/components/map/maplibre-loader.web';
 import { festivalMapStyle, MAP_MAX_ZOOM, MAP_MIN_ZOOM } from '../../../../../src/components/map/map-style';
 import {
@@ -47,6 +47,7 @@ type Props = {
   overlay?: MapAdminOverlay;
   selection?: MapSelection;
   handles?: MapHandle[];
+  rotationControl?: { coordinate: Coordinate; onRotate: (angle: number) => void };
   draft?: Coordinate[];
   drawing?: boolean;
   helpers?: boolean;
@@ -66,6 +67,7 @@ export function AdminMapCanvas({
   overlay,
   selection = null,
   handles = noHandles,
+  rotationControl,
   draft,
   drawing = false,
   helpers = false,
@@ -86,6 +88,9 @@ export function AdminMapCanvas({
   const clickRef = useLatestRef(onClick);
   const drawingRef = useLatestRef(drawing);
   const previewRef = useLatestRef(preview);
+  const rotationRef = useLatestRef(rotationControl);
+  const rotationMarker = useRef<Marker | null>(null);
+  const showRotation = !!rotationControl && !preview && !drawing;
   const initial = useRef(config);
 
   useEffect(() => {
@@ -338,6 +343,45 @@ export function AdminMapCanvas({
     });
     return () => markers.forEach((marker) => marker.remove());
   }, [ready, handles, preview]);
+
+  useEffect(() => {
+    const map = mapRef.current,
+      api = apiRef.current;
+    if (!ready || !map || !api || !showRotation || !rotationRef.current) return;
+    const element = document.createElement('div');
+    element.className = 'admin-map-rotation';
+    element.setAttribute('role', 'group');
+    element.setAttribute('aria-label', 'Поворот выбранного объекта');
+    // Keep map gestures and hit testing from clearing the selection underneath the buttons.
+    for (const event of ['pointerdown', 'mousedown', 'touchstart', 'click', 'dblclick']) {
+      element.addEventListener(event, (e) => e.stopPropagation());
+    }
+    for (const [angle, label, title] of [
+      [5, '↶ 5°', 'Повернуть против часовой стрелки на 5°'],
+      [-5, '↷ 5°', 'Повернуть по часовой стрелке на 5°'],
+    ] as const) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.title = title;
+      button.setAttribute('aria-label', title);
+      button.addEventListener('click', () => rotationRef.current?.onRotate(angle));
+      element.append(button);
+    }
+    const marker = new api.Marker({ element, anchor: 'bottom', offset: [0, -24] })
+      .setLngLat(rotationRef.current.coordinate)
+      .addTo(map);
+    rotationMarker.current = marker;
+    return () => {
+      marker.remove();
+      rotationMarker.current = null;
+    };
+  }, [ready, showRotation, rotationRef]);
+
+  useEffect(() => {
+    // Update the anchor without recreating focused buttons after each rotation or undo.
+    if (rotationControl) rotationMarker.current?.setLngLat(rotationControl.coordinate);
+  }, [ready, showRotation, rotationControl]);
 
   useEffect(() => {
     if (ready && focus) {
