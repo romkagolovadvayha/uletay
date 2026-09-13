@@ -1,8 +1,11 @@
 import type { Feature, FeatureCollection, Geometry, Point } from 'geojson';
 import type { LayerSpecification } from '@maplibre/maplibre-gl-style-spec';
-import type { LatLng, MapPathsGeoJson, RouteSegment, UserLocationState, UserMapMarker } from '../../types/map';
+import type { LatLng, MapPathsGeoJson, MapZonesGeoJson, RouteSegment, UserLocationState, UserMapMarker } from '../../types/map';
 import { mapColors } from '../../theme/map';
-import { buildMapPlaceMarkers, clusterMapPlaces, type MapPlaceGroup } from '../../utils/map/placeMarkers';
+import { buildMapPlaceMarkers, type MapPlaceGroup } from '../../utils/map/placeMarkers';
+import { buildingHeight } from '../../utils/map/buildingHeight';
+import { buildMapLettering } from '../../utils/map/mapLettering';
+import { extractFencePaths, visitorPathFeatures } from '../../utils/map/fenceRouting';
 import { filterPoiFeatures, filterZoneFeatures } from '../../utils/map/layerStyles';
 import { overlayToImageCoordinates } from '../../utils/map/overlayGeoref';
 import { zoneImageLayout, zoneFillImageCoordinates } from '../../utils/map/zoneFillImage';
@@ -10,7 +13,7 @@ import { MAP_FONT, MAP_MAX_ZOOM, MAP_MIN_ZOOM } from './map-style';
 import type { FestivalMapViewProps } from './types';
 
 export type SceneData = FeatureCollection<Geometry, Record<string, unknown>>;
-export type SceneLayer = Extract<LayerSpecification, { type: 'fill' | 'line' | 'circle' | 'symbol' }>;
+export type SceneLayer = Extract<LayerSpecification, { type: 'fill' | 'fill-extrusion' | 'line' | 'circle' | 'symbol' }>;
 export type SceneSource = { id: string; data: SceneData; layers: SceneLayer[] };
 export type SceneImage = { id: string; url: string; coordinates: ReturnType<typeof overlayToImageCoordinates>; opacity: number };
 export const collection = (features: Feature<Geometry, Record<string, unknown>>[] = []): SceneData => ({ type: 'FeatureCollection', features });
@@ -34,28 +37,44 @@ export function routeBounds(coordinates: [number, number][]): [number, number, n
 }
 
 export function buildPlaceScene(props: Pick<FestivalMapViewProps, 'zones' | 'pois' | 'filter' | 'selectedZoneId' | 'selectedPoiId'>) {
-  const zones = filterZoneFeatures(props.zones?.features ?? [], props.filter);
-  const pois = filterPoiFeatures(props.pois?.features ?? [], props.filter).filter(p => !p.properties.sourceZoneId);
+  const matchingPois = filterPoiFeatures(props.pois?.features ?? [], props.filter);
+  const zoneIds = new Set(filterZoneFeatures(props.zones?.features ?? [], props.filter).map(z => z.properties.id));
+  matchingPois.forEach(p => { if (p.properties.sourceZoneId) zoneIds.add(p.properties.sourceZoneId); });
+  const zones = (props.zones?.features ?? []).filter(z => z.properties.zoneType !== 'fence' && zoneIds.has(z.properties.id));
+  const pois = matchingPois.filter(p => !p.properties.sourceZoneId || !zones.some(z => z.properties.id === p.properties.sourceZoneId));
   const shapes = zones.flatMap(zone => [zone.geometry, ...(zone.properties.geometryParts ?? [])].map((geometry, index) => ({
     type: 'Feature' as const, id: `${zone.properties.id}:${index}`, geometry,
     properties: { zoneId: zone.properties.id, child: Boolean(zone.properties.parentZoneId),
       color: zone.properties.fillColor || mapColors.zoneFallback,
       opacity: zone.properties.fillOpacity ?? 0.45,
+      height: buildingHeight(zone.properties),
       stroke: zone.properties.id === props.selectedZoneId ? '#FFFFFF' : zone.properties.strokeColor || zone.properties.fillColor || mapColors.zoneFallback,
       width: zone.properties.id === props.selectedZoneId ? 3 : zone.properties.strokeWidth ?? 1 },
   })));
   // Draw child pitches above their parent so both platforms select the same place.
   shapes.sort((a, b) => Number(a.properties.child) - Number(b.properties.child));
-  return { zones, pois, shapes: collection(shapes),
+  const markers = buildMapPlaceMarkers(zones, pois, props.selectedZoneId, props.selectedPoiId);
+  return { zones, pois, shapes: collection(shapes), lettering: collection(buildMapLettering(markers)),
     rows: collection(zones.flatMap(zone => (zone.properties.layoutRings ?? []).map(coordinates => ({
       type: 'Feature' as const, geometry: { type: 'LineString' as const, coordinates }, properties: {},
     })))),
-    markers: buildMapPlaceMarkers(zones, pois, props.selectedZoneId, props.selectedPoiId) };
+    markers };
+}
+
+export function buildSiteGround(config: FestivalMapViewProps['config']): SceneData {
+  const bounds = festivalBounds(config);
+  if (!bounds || !config.siteOutline) return collection();
+  const [west, south, east, north] = bounds;
+  return collection([
+    { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[west-.002,south-.002],[east+.002,south-.002],[east+.002,north+.002],[west-.002,north+.002],[west-.002,south-.002]]] }, properties: { color: '#EDCD80' } },
+    { type: 'Feature', geometry: config.siteOutline, properties: { color: '#8DA837' } },
+  ]);
 }
 
 export function buildPlaceLabels(markers: ReturnType<typeof buildMapPlaceMarkers>, zoom: number) {
-  // MapLibre uses 512px world tiles; the existing label geometry uses 256px.
-  const groups = clusterMapPlaces(markers, zoom + 1);
+  // Physical lettering replaces floating clusters. Every place remains clickable
+  // through its footprint and searchable, even when its caption is very small.
+  const groups: MapPlaceGroup[] = markers.map(place => ({ coordinates: place.coordinates, places: [place] }));
   const byKey = new Map<string, MapPlaceGroup>();
   const features = groups.map(group => {
     const place = group.places[0], clustered = group.places.length > 1;
@@ -74,18 +93,19 @@ export function buildPlaceLabels(markers: ReturnType<typeof buildMapPlaceMarkers
       else size = 12;
     }
     return point(group.coordinates, { groupKey: key, label, size: Math.max(1, size), rotation, footprint,
-      visible: !footprint || size >= (place.isPitch ? 6 : 8), selected: place.selected,
+      emAtZoom0: place.layout ? Math.min(place.layout.widthMeters / ((place.label?.length ?? 3) * .8 + 1), place.layout.heightMeters / 2.3) / (78271.51696 * Math.cos(place.layout.center.lat * Math.PI / 180)) : .0001,
+      visible: Boolean(place.isPitch && footprint && size >= 6), selected: place.selected,
       color: place.selected ? '#FFD400' : footprint ? place.labelColor ?? '#F2F0DD' : place.color,
       halo: footprint && !place.selected && place.labelColor === '#263124' ? '#F5F2E5' : '#202724' });
   });
   return { data: collection(features), byKey };
 }
 
-export function buildPaths(paths?: MapPathsGeoJson): SceneData {
-  return collection((paths?.features ?? []).filter(p => !p.properties.routingOnly).map(p => ({ ...p,
-    properties: { ...p.properties, color: p.properties.closed ? '#FF818A' : p.properties.pathKind === 'fence' ? '#E45443' : p.properties.pathKind === 'walkway' ? '#CCD1AB' : '#B6B7A7',
-      width: p.properties.closed ? 4 : p.properties.pathKind === 'fence' ? 2 : p.properties.pathKind === 'walkway' ? 2.5 : 5,
-      dashed: Boolean(p.properties.closed || p.properties.pathKind === 'fence' || p.properties.pathKind === 'walkway') },
+export function buildPaths(paths?: MapPathsGeoJson, zones?: MapZonesGeoJson): SceneData {
+  return collection([...visitorPathFeatures(paths, zones), ...extractFencePaths(paths)].filter(p => !p.properties.routingOnly && !p.properties.closed).map(p => ({ ...p,
+    properties: { ...p.properties, color: p.properties.pathKind === 'fence' ? '#CD3F32' : '#454642',
+      width: p.properties.pathKind === 'fence' ? 2 : (p.properties.sourcePathId ?? p.properties.id) === 'plan-2026-public-road-route' ? 6 : p.properties.pathKind === 'walkway' ? 2.5 : 4,
+      dashed: p.properties.pathKind === 'fence', label: (p.properties.sourcePathId ?? p.properties.id) === 'path-mr8mckl0' ? 'улица Центральная' : '' },
   })));
 }
 export function buildRoutes(routes?: RouteSegment[]): SceneData {
@@ -116,16 +136,24 @@ export function buildSceneImages(config: FestivalMapViewProps['config'], zones: 
 }
 
 export const sceneLayers: Record<string, SceneLayer[]> = {
+  ground: [{ id: 'fest-ground', type: 'fill', source: 'ground', paint: { 'fill-color': ['get', 'color'] } }],
   zones: [
     { id: 'fest-zone-fill', type: 'fill', source: 'zones', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': ['get', 'opacity'] } },
     { id: 'fest-zone-outline', type: 'line', source: 'zones', paint: { 'line-color': ['get', 'stroke'], 'line-width': ['get', 'width'] } },
+    { id: 'fest-buildings', type: 'fill-extrusion', source: 'zones', filter: ['>', ['get', 'height'], 0],
+      paint: { 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': 0, 'fill-extrusion-vertical-gradient': true } },
   ],
+  lettering: [{ id: 'fest-roof-lettering', type: 'fill-extrusion', source: 'lettering',
+    paint: { 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-base': ['get', 'base'], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-vertical-gradient': false } }],
   rows: [{ id: 'fest-rows', type: 'line', source: 'rows', paint: { 'line-color': '#C2AD78', 'line-width': 0.7, 'line-opacity': 0.5 } }],
   paths: [
     { id: 'fest-paths', type: 'line', source: 'paths', filter: ['!', ['get', 'dashed']], layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'] } },
     { id: 'fest-paths-dashed', type: 'line', source: 'paths', filter: ['get', 'dashed'], layout: { 'line-cap': 'round' },
       paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-dasharray': [1, 2] } },
+    { id: 'fest-street-label', type: 'symbol', source: 'paths', filter: ['!=', ['get', 'label'], ''], minzoom: 16,
+      layout: { 'symbol-placement': 'line', 'text-field': ['get', 'label'], 'text-font': [MAP_FONT], 'text-size': 11, 'text-pitch-alignment': 'map' },
+      paint: { 'text-color': '#FFFFFF', 'text-halo-color': '#454642', 'text-halo-width': 1.5 } },
   ],
   routes: [
     { id: 'fest-route-outline', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#202724', 'line-width': 9 } },
@@ -135,12 +163,11 @@ export const sceneLayers: Record<string, SceneLayer[]> = {
       paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-dasharray': [2, 2] } },
   ],
   places: [
-    { id: 'fest-place-dot', type: 'circle', source: 'places', filter: ['!', ['get', 'footprint']],
-      paint: { 'circle-radius': 15, 'circle-color': '#20242A', 'circle-stroke-width': 1.5, 'circle-stroke-color': ['get', 'color'] } },
     { id: 'fest-place-label', type: 'symbol', source: 'places', filter: ['get', 'visible'],
-      layout: { 'text-field': ['get', 'label'], 'text-font': [MAP_FONT], 'text-size': ['get', 'size'], 'text-rotate': ['get', 'rotation'],
-        'text-rotation-alignment': 'map', 'text-allow-overlap': true, 'text-ignore-placement': true, 'text-max-width': 100, 'text-line-height': 1.2 },
-      paint: { 'text-color': ['get', 'color'], 'text-halo-color': ['get', 'halo'], 'text-halo-width': 1 } },
+      layout: { 'text-field': ['get', 'label'], 'text-font': [MAP_FONT],
+        'text-size': ['interpolate', ['exponential', 2], ['zoom'], 0, ['get', 'emAtZoom0'], 24, ['*', ['get', 'emAtZoom0'], 16777216]], 'text-rotate': ['get', 'rotation'],
+        'text-rotation-alignment': 'map', 'text-pitch-alignment': 'map', 'text-allow-overlap': false, 'text-ignore-placement': false, 'text-max-width': 100, 'text-line-height': 1.2 },
+      paint: { 'text-color': '#343728', 'text-halo-width': 0 } },
   ],
   saved: [
     { id: 'fest-saved-dot', type: 'circle', source: 'saved', paint: { 'circle-radius': 8, 'circle-color': '#FFD400', 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF' } },
@@ -149,7 +176,7 @@ export const sceneLayers: Record<string, SceneLayer[]> = {
   ],
   user: [{ id: 'fest-user', type: 'circle', source: 'user', paint: { 'circle-radius': 7, 'circle-color': mapColors.userDot, 'circle-stroke-width': 3, 'circle-stroke-color': '#FFFFFF' } }],
 };
-export const interactiveLayers = ['fest-place-dot', 'fest-place-label', 'fest-zone-fill'];
+export const interactiveLayers = ['fest-roof-lettering', 'fest-place-label', 'fest-buildings', 'fest-zone-fill'];
 
 export function dispatchMapPress(props: FestivalMapViewProps, labels: ReturnType<typeof buildPlaceLabels>, features: Feature[], coordinate: LatLng) {
   if (!props.coordinatePicking) {

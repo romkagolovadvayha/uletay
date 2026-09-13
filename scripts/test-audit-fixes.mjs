@@ -43,6 +43,11 @@ try {
   globalThis.fetch = async () => { throw new Error('Real networking is disabled in regression tests'); };
   const schema = await bundle('shared/app-data-validation.ts', 'schema');
   assert.equal(schema.validateAppData(seed), true, 'existing seed remains valid');
+  for (const coordinates of [[], [[[[53,56],[54,56],[54,57]]]], [[[null]]]]) {
+    const malformed = structuredClone(seed);
+    malformed.festivalMap.siteOutline = { type: 'MultiPolygon', coordinates };
+    assert.equal(schema.validateAppData(malformed), false, 'reject malformed site geometry before rendering');
+  }
   assert.equal(schema.validateAppData(Object.fromEntries(['festival','stages','schedule','autographs','foodcourt','headliners'].map(k=>[k,null]))), false);
   const invalid = structuredClone(seed);
   invalid.schedule[0].headlinerId = 'missing-artist';

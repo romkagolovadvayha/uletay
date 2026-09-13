@@ -55,6 +55,7 @@ export function MapSearchPanel({
     if (normalizedQuery.length < 2) return [];
 
     const zoneResults: Result[] = (zones?.features ?? [])
+      .filter((zone) => zone.properties.zoneType !== 'fence')
       .filter((zone) => normalize(`${zone.properties.name} ${zone.properties.description ?? ''}`).includes(normalizedQuery))
       .map((zone) => ({
         kind: 'zone',

@@ -80,8 +80,8 @@ function rigidPolygon(ring,anchor,facilityScale=1) {
 }
 const broad=f=>!f.properties.parentZoneId&&['parking','camping','autocamp','comfort'].includes(f.properties.zoneType)&&!/гостиниц/i.test(f.properties.name);
 const palette={
-  parking:['#8CA52F',.42,'#B5C767'],camping:['#8CA52F',.34,'#A1B94D'],
-  autocamp:['#EBC936',.3,'#DDD564'],comfort:['#A8B759',.42,'#CAD487'],
+  parking:['#8DA837',1,'#8DA837'],camping:['#8DA837',1,'#8DA837'],
+  autocamp:['#8DA837',1,'#8DA837'],comfort:['#8DA837',1,'#8DA837'],
   trade:['#F2F0DF',.93,'#D9D8C9'],building:['#C8CDC5',.94,'#E0E4DD'],
   service:['#F5F2E5',.96,'#DF655A'],water:['#55BFDB',.93,'#C5F0F5'],
   toilet:['#F5F2E5',.96,'#DC544A'],shower:['#E76055',.94,'#FBE7D8'],
@@ -117,11 +117,14 @@ export function registerFestivalMap(data) {
     delete f.properties.geometryParts;
     const colors=palette[f.properties.zoneType];
     if(colors){[f.properties.fillColor,f.properties.fillOpacity,f.properties.strokeColor]=colors;f.properties.strokeWidth=1;}
+    if(broad(f))f.properties.strokeWidth=0;
+    if(f.properties.zoneType==='comfort'&&/гостиниц/i.test(f.properties.name)){f.properties.fillColor='#CFD1C8';f.properties.fillOpacity=1;}
     if(f.properties.parentZoneId){f.properties.fillColor='#F2CE39';f.properties.fillOpacity=.88;f.properties.strokeColor='#FCED9B';f.properties.strokeWidth=.7;}
   }
   for(const f of mapPaths.features){
     f.properties.schematicGeometry??=structuredClone(f.geometry);
     f.geometry={type:'LineString',coordinates:registerLine(f.properties.schematicGeometry.coordinates)};
+    if(f.properties.id==='path-mr8mh9no'){f.properties.closed=true;f.properties.routingOnly=true;}
   }
   for(const f of mapPois.features){
     f.geometry.coordinates=register(f.geometry.coordinates);
@@ -145,6 +148,9 @@ export function registerFestivalMap(data) {
   movePoi(poi('entry-4'),[entry3[0]-18/sx,entry3[1]]);
   eastOfRoad(poi('exit-july12'),18);
   path('plan-2026-public-road-route').geometry.coordinates=structuredClone(currentPublicRoad);
+  path('plan-2026-public-road-route').properties.routingOnly=false;
+  poi('main-gate').properties.sourceZoneId='plan-2026-main-gate-booth';
+  poi('comfort-gate').properties.sourceZoneId='plan-2026-comfort-gate-booth';
   path('plan-2026-entry-1-link').geometry.coordinates=currentCentralStreet.slice(0,2);
   path('plan-2026-entry-2-link').geometry.coordinates=[entry2,poi('entry-2').geometry.coordinates];
   path('plan-2026-entry-3-4-crossing').geometry.coordinates=[poi('entry-4').geometry.coordinates,entry3,poi('entry-3').geometry.coordinates];

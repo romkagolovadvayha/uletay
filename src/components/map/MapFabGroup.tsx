@@ -42,6 +42,8 @@ type Props = {
   followUser: boolean;
   bottomOffset?: number;
   compact?: boolean;
+  viewMode?: '2d' | '3d';
+  onToggleView?: () => void;
 };
 
 export function MapFabGroup({
@@ -53,10 +55,17 @@ export function MapFabGroup({
   onSavedPlaces,
   followUser,
   compact = false,
+  viewMode = '3d',
+  onToggleView,
   bottomOffset = compact ? 80 : 96,
 }: Props) {
   return (
     <View style={[styles.col, compact && styles.compact, { bottom: bottomOffset }]}>
+      {onToggleView ? <MotionPressable accessibilityRole="button"
+        accessibilityLabel={viewMode === '3d' ? 'Показать карту сверху' : 'Показать объёмную карту'}
+        onPress={onToggleView} style={styles.fab}>
+        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>{viewMode === '3d' ? '2D' : '3D'}</Text>
+      </MotionPressable> : null}
       {onZoomIn ? <MapFab icon="add" label="Приблизить карту" onPress={onZoomIn} /> : null}
       {onZoomOut ? <MapFab icon="remove" label="Отдалить карту" onPress={onZoomOut} /> : null}
       <MapFab icon="locate" label="Моё местоположение" onPress={onLocate} active={followUser} />

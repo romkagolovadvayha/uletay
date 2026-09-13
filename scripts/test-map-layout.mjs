@@ -12,7 +12,7 @@ const center=[53.624016,56.609196],sx=111320*Math.cos(center[1]*Math.PI/180);
 const xy=p=>[(p[0]-center[0])*sx,(p[1]-center[1])*111320];
 const area=poly=>Math.abs(poly[0].reduce((s,a,i,r)=>{const b=r[(i+1)%r.length];return s+a[0]*b[1]-b[0]*a[1]},0)/2);
 const roads=landscapeRoadCorridors(data);
-const shapes=data.mapZones.features.map(f=>({f,poly:[f.geometry,...(f.properties.geometryParts??[])].map(g=>g.coordinates.map(r=>r.map(xy)))}));
+const shapes=data.mapZones.features.filter(f=>f.properties.zoneType!=='fence').map(f=>({f,poly:[f.geometry,...(f.properties.geometryParts??[])].map(g=>g.coordinates.map(r=>r.map(xy)))}));
 const close=ring=>[...ring,ring[0]];
 const outerFence=data.mapPaths.features.find(f=>f.properties.id==='path-mr8m9bz5');
 const boundary=[close(outerFence.geometry.coordinates).map(xy)];

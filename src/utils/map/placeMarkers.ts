@@ -2,6 +2,7 @@ import type { MapPoiProperties, MapZoneProperties } from '../../types/map';
 import { zonePoiCategory } from './poiData';
 import type { ZoneRectLayout } from './zoneFillImage';
 import { polygonLabelLayout } from './polygonLabelLayout';
+import { buildingHeight } from './buildingHeight';
 
 export type MapPlaceMarker = {
   id: string;
@@ -11,6 +12,7 @@ export type MapPlaceMarker = {
   glyph: string;
   color: string;
   labelColor?: string;
+  height?: number;
   selected: boolean;
   pinned: boolean;
   priority: number;
@@ -55,15 +57,14 @@ export function buildMapPlaceMarkers(
     const center = layout.center;
     const isPitch = Boolean(p.parentZoneId);
     const isArea = !isPitch && ['parking', 'camping', 'autocamp', 'comfort'].includes(p.zoneType);
-    const label = isPitch ? glyph : p.zoneType === 'parking' ? 'ПАРКОВКА' : p.zoneType === 'camping' ? 'ПАЛАТОЧНЫЙ\nГОРОДОК' :
-      /танцпол/i.test(p.name) ? 'ТАНЦПОЛ' : p.zoneType === 'toilet' ? 'WC' : p.zoneType === 'shower' ? 'ДУШ' :
-      p.zoneType === 'water' ? 'ВОДА' : /мерч/i.test(p.name) ? 'МЕРЧ' : category === 'medical' ? 'МЕДПУНКТ' :
+    const label = isPitch ? glyph : p.zoneType === 'parking' ? 'ПАРКОВКА' : p.zoneType === 'camping' ? 'ПАЛАТОЧНЫЙ ГОРОДОК' :
+      /танцпол/i.test(p.name) ? 'ТАНЦПОЛ' : p.zoneType === 'toilet' ? (/писсуар/i.test(p.name) ? 'ПИССУАР' : 'ТУАЛЕТ') : p.zoneType === 'shower' ? 'ДУШ' :
+      p.zoneType === 'water' ? 'ВОДА' : /мерч/i.test(p.name) ? 'МЕРЧ' : /бар/i.test(p.name) ? 'БАР' : /автограф/i.test(p.name) ? 'АВТОГРАФЫ' : category === 'medical' ? 'МЕДПУНКТ' :
       /торговые/i.test(p.name) ? 'ТОРГОВЫЕ РЯДЫ' : p.name.replace(/ — .*$/, '').replace('Палаточная гостиница', 'ПАЛАТОЧНАЯ\nГОСТИНИЦА').replace('Палаточный городок', 'ПАЛАТОЧНЫЙ\nГОРОДОК').replace('Лагерь «Комфорт»', 'ЛАГЕРЬ\nКОМФОРТ').replace('Западная сцена', 'ЗАПАДНАЯ\nСЦЕНА').replace('Южная сцена', 'ЮЖНАЯ\nСЦЕНА').replace('Сцена РЕН ТВ', 'СЦЕНА\nРЕН ТВ').toUpperCase();
-    const rgb = /^#[\da-f]{6}$/i.test(p.fillColor) ? [1,3,5].map(i=>parseInt(p.fillColor.slice(i,i+2),16)/255) : [0,0,0];
-    const lightFootprint = p.fillOpacity > .5 && rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722 > .6;
     return {
       id: p.id, kind: 'zone', name: p.name, coordinates: [center.lng, center.lat],
-      glyph, color, labelColor: lightFootprint ? '#263124' : '#F2F0DD', selected: p.id === selectedZoneId,
+      glyph, color, labelColor: p.zoneType === 'parking' ? '#FFFFFF' : category === 'medical' ? '#B42E2A' : '#263124',
+      height: buildingHeight(p), selected: p.id === selectedZoneId,
       pinned: category === 'parking' && !p.parentZoneId,
       priority: category === 'stage' ? 8 : category === 'medical' ? 7 : 1,
       layout, label, isArea, isPitch,
@@ -73,12 +74,13 @@ export function buildMapPlaceMarkers(
   });
   for (const poi of pois) {
     const p = poi.properties;
-    if (p.sourceZoneId || (p.category === 'stage' && zones.some(z => z.properties.zoneType === 'stage_area' &&
+    if ((p.sourceZoneId && zones.some(z => z.properties.id === p.sourceZoneId)) || (p.category === 'stage' && zones.some(z => z.properties.zoneType === 'stage_area' &&
       (z.properties.name === p.name || (p.link?.id && ({ 'ren-tv': /рен/i, west: /запад/i, south: /юж/i }[p.link.id]?.test(z.properties.name))))))) continue;
     let [glyph, color] = symbols[p.category] ?? symbols.custom;
     if (p.category === 'entrance') glyph = p.name.match(/№\s*\d+/)?.[0] ?? (p.name.includes('Авто') ? 'АВТО' : 'КПП');
     result.push({ id: p.id, kind: 'poi', name: p.name, coordinates: poi.geometry.coordinates as [number, number],
-      glyph, color, selected: p.id === selectedPoiId, pinned: false, priority: 5,
+      glyph, color, label: p.category === 'entrance' ? /№/.test(p.name) ? `ВЪЕЗД ${p.name.match(/№\s*\d+/)?.[0]}` : p.name.includes('Авто') ? 'АВТОВЪЕЗД' : 'КПП' : /турникет/i.test(p.name) ? 'ТУРНИКЕТ\nВЫХОДА' : 'ВЫЕЗД',
+      selected: p.id === selectedPoiId, pinned: false, priority: 5,
       icon: /въезд|автовъезд/i.test(p.name) ? 'car' : /выход|выезд|турникет/i.test(p.name) ? 'exit' : p.category === 'entrance' ? 'gate' : 'info',
       badge: p.name.match(/№\s*(\d+)/)?.[1] });
   }

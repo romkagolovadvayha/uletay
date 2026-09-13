@@ -14,7 +14,7 @@ await build({stdin:{contents:`export * from './src/utils/map/pathfinding'; expor
   bundle:true,platform:'node',format:'cjs',outfile:output,define:{__DEV__:'false'},
   plugins:[{name:'platform-link-adapter',setup(b){b.onResolve({filter:/^react-native$/},()=>({path:'platform',namespace:'test'}));
     b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:`export const Platform={OS:'web'}; export const Linking={openURL(){throw Error('Unexpected navigation in geometry test')}};` }));}}]});
-const {buildCombinedRouteToTarget,buildGoogleMapsRouteUrl,buildYandexRouteUrl,findInternalPathAsync,zoneTargetPoint,withOperationalPois,getMapFilters,filterZoneFeatures,routeCrossesFencePaths,extractFencePaths,buildMapPlaceMarkers,clusterMapPlaces} = await import(pathToFileURL(output).href);
+const {buildCombinedRouteToTarget,buildGoogleMapsRouteUrl,buildYandexRouteUrl,findInternalPathAsync,zoneTargetPoint,withOperationalPois,getMapFilters,filterZoneFeatures,routeCrossesFencePaths,extractFencePaths,routeCrossesFenceZones,extractFenceZones,buildMapPlaceMarkers,clusterMapPlaces} = await import(pathToFileURL(output).href);
 const data = process.argv.includes('--local') ? await (await fetch('http://localhost:3000/api/data')).json() : JSON.parse(await fs.readFile('cms/seed/content.json','utf8'));
 const planOrigin=planCoordinate(0,0),planX=planCoordinate(1,0),planY=planCoordinate(0,1);
 const planDx=planX[0]-planOrigin[0],planDy=planX[1]-planOrigin[1],planEx=planY[0]-planOrigin[0],planEy=planY[1]-planOrigin[1],planDet=planDx*planEy-planEx*planDy;
@@ -39,7 +39,7 @@ const pois=withOperationalPois(data.mapZones,data.mapPois);
 assert.deepEqual(withOperationalPois(data.mapZones,pois),pois,'No duplicate derived places after cache normalization');
 const filters=getMapFilters(data.mapZones,pois).map(f=>f.id);
 for(const category of ['camping','comfort','building','medical','entrance','parking']) assert.ok(filters.includes(category),category);
-const medical=filterZoneFeatures(data.mapZones.features,'medical');
+const medical=filterZoneFeatures(data.mapZones.features,'medical').filter(f=>f.properties.zoneType!=='fence');
 assert.equal(medical.length,5,'All five medical points belong to the medical filter');
 assert.ok(medical.every(f=>!f.properties.name.includes('Полиция')));
 assert.equal(data.mapZones.features.filter(f=>f.properties.zoneType==='parking').length,3,'Three separate parking areas match the source');
@@ -50,7 +50,7 @@ assert.deepEqual(autocampPlaces.map(f=>f.properties.bookingNumber).sort((a,b)=>a
 assert.ok(autocampPlaces.every(f=>f.properties.id===`ticket-2027-autocamp-place-${String(f.properties.bookingNumber).padStart(3,'0')}`));
 assert.ok(autocampPlaces.every(f=>f.properties.markerLabel===String(f.properties.bookingNumber)&&!f.properties.name.includes('ряд')));
 assert.ok(filters.includes('autocamp'),'Autocamp has its own visible filter');
-assert.equal(filterZoneFeatures(data.mapZones.features,'parking').length,3,'Parking filter stays separate from autocamp pitches');
+assert.equal(filterZoneFeatures(data.mapZones.features,'parking').filter(f=>f.properties.zoneType!=='fence').length,3,'Parking filter stays separate from autocamp pitches');
 assert.ok(!data.mapZones.features.some(f=>['plan-2026-police','plan-2026-groceries'].includes(f.properties.id)),'Misread duplicate places are removed');
 const planPoi=id=>toPlan(data.mapPois.features.find(f=>f.properties.id===id).geometry.coordinates);
 const publicRoad=landscapeRoad.map(toPlan),entry1=planPoi('plan-2026-entry-1');
@@ -62,7 +62,7 @@ const exit=planPoi('plan-2026-exit-july12'),entry2=planPoi('plan-2026-entry-2');
 assert.ok(exit[1]<entry3[1]&&entry3[1]<entry1[1]&&entry1[1]<entry2[1],'Roadside entrances keep the north-to-south order from the plan');
 const placeMarkers=buildMapPlaceMarkers(data.mapZones.features,pois.features);
 const expectedPlaceIds=placeMarkers.map(p=>p.kind+':'+p.id).sort();
-assert.equal(expectedPlaceIds.length,data.mapZones.features.length+data.mapPois.features.length,'Each real place has a visible marker representation');
+assert.equal(expectedPlaceIds.length,data.mapZones.features.filter(f=>f.properties.zoneType!=='fence').length+data.mapPois.features.filter(f=>!f.properties.sourceZoneId).length,'Each real place has one representation; gate booths do not get duplicate pins');
 for(const zoom of [12,15,17,20]) {
   const groups=clusterMapPlaces(placeMarkers,zoom);
   assert.deepEqual(groups.flatMap(g=>g.places.map(p=>p.kind+':'+p.id)).sort(),expectedPlaceIds,'Grouping never hides or duplicates places at zoom '+zoom);
@@ -108,13 +108,41 @@ const [lng,lat]=data.mapPois.features.find(f=>f.properties.id==='plan-2026-main-
 const reports=[];
 for(const zone of data.mapZones.features) {
   const route=await findInternalPathAsync(data.mapPaths,{lng,lat},zoneTargetPoint(zone),data.mapZones);
+  const restricted=zone.properties.zoneType==='fence'||Boolean(zone.properties.accessRestricted);
+  if(restricted)assert.equal(route,null,'No visitor route into the closed backstage: '+zone.properties.name);
   if(route)assert.equal(routeCrossesFencePaths(route.coordinates,extractFencePaths(data.mapPaths)),false);
-  reports.push({id:zone.properties.id,name:zone.properties.name,routable:Boolean(route),distance:route?Math.round(route.distanceMeters):null});
+  if(route)assert.equal(routeCrossesFenceZones(route.coordinates,extractFenceZones(data.mapZones)),false,'Public routes never cross a stage or its backstage');
+  reports.push({id:zone.properties.id,name:zone.properties.name,restricted,routable:Boolean(route),distance:route?Math.round(route.distanceMeters):null});
 }
 await fs.mkdir('artifacts/map-audit',{recursive:true});
 await fs.writeFile('artifacts/map-audit/routes.json',JSON.stringify(reports,null,2));
 for (const name of ['Сцена РЕН ТВ','Западная сцена','Южная сцена']) assert.ok(reports.find(r=>r.name===name)?.routable,`Route to ${name}`);
-assert.equal(reports.filter(report=>report.routable).length,reports.length,'Every mapped zone is connected to the visitor route network');
+assert.equal(reports.filter(report=>report.routable).length,reports.filter(report=>!report.restricted).length,'Every public place is connected and every backstage zone is blocked');
+const backstage=data.mapZones.features.filter(f=>f.properties.zoneType==='fence');
+const renStage=data.mapZones.features.find(f=>f.properties.id==='zone-mr8m4008');
+const renMedical=data.mapZones.features.find(f=>f.properties.id==='plan-2026-medical-ren');
+assert.ok(reports.find(r=>r.id===renStage.properties.id).distance<400,'Stage front stays connected to Central Street after adding the dance-floor link');
+const frontRoute=await findInternalPathAsync(data.mapPaths,zoneTargetPoint(renStage),zoneTargetPoint(renMedical),data.mapZones);
+assert.ok(frontRoute&&frontRoute.distanceMeters<150,'Nearby medical point is reachable across the public dance floor without a long circuit');
+const solidZones=data.mapZones.features.filter(f=>['building','trade','toilet','shower','water','service','stage_area','fence'].includes(f.properties.zoneType));
+for(const path of data.mapPaths.features.filter(f=>f.properties.openAreaId)) {
+  assert.equal(path.properties.routingOnly,true,'Open-area walk is not drawn as a separate road');
+  assert.equal(routeCrossesFenceZones(path.geometry.coordinates,solidZones),false,'Dance-floor route avoids all buildings and closed areas');
+}
+assert.equal(backstage.length,3,'Each stage has one continuous backstage enclosure, without disconnected fence fragments');
+for(const stage of data.mapZones.features.filter(f=>f.properties.zoneType==='stage_area')) {
+  const yard=backstage.find(f=>f.properties.name.endsWith(stage.properties.name));
+  assert.ok(yard,'Stage has its own enclosure: '+stage.properties.name);
+  for(const vertex of stage.geometry.coordinates[0])assert.equal(routeCrossesFenceZones([vertex],[yard]),true,'No passage between the stage and its backstage fence');
+}
+for(const zone of backstage){
+  const target=zoneTargetPoint(zone);
+  assert.equal(await findInternalPathAsync(data.mapPaths,target,{lng,lat},data.mapZones),null,'GPS inside backstage cannot route through the barrier');
+}
+const thinBarrier={type:'Feature',properties:{id:'thin',name:'Closed',zoneType:'fence'},geometry:{type:'Polygon',coordinates:[[[11,-1],[12,-1],[12,1],[11,1],[11,-1]].map(([x,y])=>{const v=p(x,y);return[v.lng,v.lat]})]}};
+assert.equal(routeCrossesFenceZones([[p(0,0).lng,p(0,0).lat],[p(100,0).lng,p(100,0).lat]],[thinBarrier]),true,'Exact intersection detects a narrow barrier between sampling points');
+const detour=await findInternalPathAsync(paths(line('direct',[[0,0],[100,0]]),line('detour',[[0,0],[0,30],[100,30],[100,0]])),p(0,0),p(100,0),{type:'FeatureCollection',features:[thinBarrier]});
+assert.ok(detour&&detour.distanceMeters>150,'Blocked shortest edge is removed before searching for a public detour');
 console.log(`Map data and routing regressions passed. ${data.mapZones.features.length} zones, ${data.mapPois.features.length} explicit markers.`);
 console.log(`Routes from main gate: ${reports.filter(r=>r.routable).length}/${reports.length}`);
 if(process.argv.includes('--details')) console.log(reports);

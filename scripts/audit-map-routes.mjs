@@ -33,8 +33,10 @@ await build({
 
 const {
   extractFencePaths,
+  extractFenceZones,
   findInternalPathAsync,
   routeCrossesFencePaths,
+  routeCrossesFenceZones,
   zoneTargetPoint,
 } = await import(pathToFileURL(output).href);
 
@@ -123,7 +125,7 @@ async function auditRoute(start, destination) {
     routable: Boolean(route),
     distanceMeters: route ? Math.round(route.distanceMeters) : null,
     crossesFence: route
-      ? routeCrossesFencePaths(route.coordinates, fencePaths)
+      ? routeCrossesFencePaths(route.coordinates, fencePaths) || routeCrossesFenceZones(route.coordinates,extractFenceZones(data.mapZones))
       : false,
   };
 }

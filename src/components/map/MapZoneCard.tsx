@@ -57,6 +57,13 @@ export function MapZoneCard({
     return buildYandexRouteUrl(userLocation ?? null, festivalCenter);
   }, [festivalCenter, userLocation]);
 
+  if (zone.properties.accessRestricted) {
+    return <View style={styles.card}>
+      <Text style={styles.title}>{name}</Text>
+      <Text style={styles.subtitle}>Служебная зона за сценой. Проход для посетителей закрыт.</Text>
+    </View>;
+  }
+
   if (outsideTerritory) {
     return (
       <View style={styles.card}>

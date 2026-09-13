@@ -13,7 +13,7 @@ import type { FestivalMapViewProps } from './types';
 const captureFeatures = () => {}; // The source enriches the single bubbling Map press event.
 const Source = React.memo(function Source({ id, data, layers }: SceneSource) {
   return <GeoJSONSource id={id} data={data} tolerance={0}
-    onPress={id === 'zones' || id === 'places' ? captureFeatures : undefined}>
+    onPress={['zones', 'places', 'lettering'].includes(id) ? captureFeatures : undefined}>
     {layers.map(layer => <Layer key={layer.id} {...layer} />)}
   </GeoJSONSource>;
 });
@@ -36,7 +36,7 @@ export function FestivalMapView(props: FestivalMapViewProps) {
   const motion = useLatestRef(reduceMotion);
   const attachCamera = useMapCamera(props.onMapReady);
   const style = useMemo(() => JSON.stringify(festivalMapStyle()), []);
-  const [initialView] = useState(() => ({ center: [props.config.center.lng, props.config.center.lat] as [number, number], zoom: clampZoom(props.config.defaultZoom) }));
+  const [initialView] = useState(() => ({ center: [props.config.center.lng, props.config.center.lat] as [number, number], zoom: clampZoom(props.config.defaultZoom), pitch: props.viewMode === '2d' ? 0 : 36 }));
 
   useEffect(() => { void configureNativeMapCache(); }, []);
   useEffect(() => {
@@ -66,6 +66,10 @@ export function FestivalMapView(props: FestivalMapViewProps) {
 
   const lat = props.userLocation?.lat, lng = props.userLocation?.lng;
   useEffect(() => {
+    // Only change tilt: preserving the current bounds avoids racing the initial fit.
+    if (initialized) void camera.current?.setStop({ pitch: props.viewMode === '2d' ? 0 : 36, duration: reduceMotion ? 0 : 300, easing: 'ease' });
+  }, [initialized, props.viewMode, reduceMotion]);
+  useEffect(() => {
     if (!initialized || !props.followUser || lat == null || lng == null || !validCoordinate({ lat, lng })) return;
     camera.current?.easeTo({ center: [lng, lat], zoom: Math.max(16, zoom.current), duration: reduceMotion ? 0 : 350 });
   }, [initialized, props.followUser, lat, lng, reduceMotion]);
@@ -91,10 +95,11 @@ export function FestivalMapView(props: FestivalMapViewProps) {
       dispatchMapPress(latest.current, scene.labels, features, { lat: pressLat, lng: pressLng });
     }}>
     <Camera ref={camera} initialViewState={initialView} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} />
-    {scene.images.filter(image => image.id === 'festival-plan').map(image => <MapImage key={image.id} image={image} />)}
     <Source {...scene.sources[0]} />
+    {scene.images.filter(image => image.id === 'festival-plan').map(image => <MapImage key={image.id} image={image} />)}
+    <Source {...scene.sources[1]} />
     {scene.images.filter(image => image.id !== 'festival-plan').map(image => <MapImage key={image.id} image={image} />)}
-    {scene.sources.slice(1).map(source => <Source key={source.id} {...source} />)}
+    {scene.sources.slice(2).map(source => <Source key={source.id} {...source} />)}
   </NativeMap>;
 }
 const styles = StyleSheet.create({ fill: { flex: 1, minHeight: 0 } });

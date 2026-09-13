@@ -29,6 +29,7 @@ type Props = {
   children: React.ReactNode;
   onClose?: () => void;
   showCloseButton?: boolean;
+  onHeightChange?: (height: number) => void;
 };
 
 const SHEET_OFFSET = 24;
@@ -48,7 +49,7 @@ function rubberband(overshoot: number, dimension: number, constant = 0.55) {
   );
 }
 
-export function MapPoiPopup({ visible, children, onClose, showCloseButton = true }: Props) {
+export function MapPoiPopup({ visible, children, onClose, showCloseButton = true, onHeightChange }: Props) {
   const insets = useSafeAreaInsets();
   const { reduceMotion } = useMapMotion();
   const progress = useSharedValue(visible ? 1 : 0);
@@ -160,6 +161,7 @@ export function MapPoiPopup({ visible, children, onClose, showCloseButton = true
       <View
         onLayout={(event) => {
           sheetHeight.set(Math.max(1, event.nativeEvent.layout.height));
+          onHeightChange?.(event.nativeEvent.layout.height);
         }}
         style={[
           styles.sheet,

@@ -9,6 +9,7 @@ import {
   routeCrossesFencePaths,
   routeCrossesFenceZones,
   routableDrawnFeatures,
+  visitorPathFeatures,
   type FenceZones,
 } from './fenceRouting';
 import { haversineMeters, coordToLatLng } from './geo';
@@ -592,8 +593,13 @@ export async function findInternalPathAsync(
 
   const ctx = createRouteContext(mapZones, paths);
 
+  if (routeCrossesFenceZones([[start.lng, start.lat]], ctx.fenceZones) || routeCrossesFenceZones([[end.lng, end.lat]], ctx.fenceZones)) return null;
+  // Exclude blocked edges before searching. Rejecting just the shortest route
+  // afterwards can miss an available public detour and can snap onto staff roads.
+  const visitorPaths: MapPathsGeoJson = { type: 'FeatureCollection', features: visitorPathFeatures(paths, mapZones) };
+
   for (const mergeM of MERGE_STEPS_M) {
-    const exact = await tryGraphRouteAsync(paths, start, end, mergeM, ctx);
+    const exact = await tryGraphRouteAsync(visitorPaths, start, end, mergeM, ctx);
     if (exact) return exact;
   }
 

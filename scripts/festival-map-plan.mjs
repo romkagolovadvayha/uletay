@@ -1,5 +1,6 @@
 import { arrangeMapLandscape } from './map-landscape-layout.mjs';
 import { registerFestivalMap } from './map-site-registration.mjs';
+import { finalizeSitePresentation } from './map-site-presentation.mjs';
 
 /**
  * Inventory traced from the supplied 2026 plan, in its 1280 × 1920 pixel space.
@@ -75,6 +76,8 @@ export const planZones = [
   box('medical-south','Пункт первой помощи — Южная сцена','service',631,1127,45,29,-35,'Медпункт перед Южной сценой.',[660,1104]),
   box('emergency','МЧС','service',438,944,18,28,0,'Пункт МЧС у главного входа.',[421,947]),
   box('cashier','Касса','service',380,1031,16,32,0,'Касса рядом с главным КПП.',[397,1042]),
+  box('main-gate-booth','КПП — главный вход','service',385,1000,16,32,0,'Главный пешеходный вход на территорию.',[415,1000]),
+  box('comfort-gate-booth','КПП — Комфорт','service',1019,640,16,28,0,'Контроль входа в лагерь «Комфорт».',[1004,663]),
   box('wc-west','Туалеты — въезд №3 (4 шт.)','toilet',202,938,15,55,-6,'Туалетный блок со стороны въезда №3. На схеме: 4 кабины.'),
   box('water-ren','Вода бесплатно — РЕН ТВ','water',984,829,13,13,0,'Бесплатная вода к северу от сцены РЕН ТВ.'),
   box('water-south','Вода бесплатно — юг','water',741,1174,13,13,0,'Бесплатная вода у южного прохода.'),
@@ -163,9 +166,9 @@ export const planPaths = [
   routePath('entry-3-4-crossing','Переход между въездами №3 и №4','walkway',[[56,891],[110,891],[166,891]],true),
   // The Comfort gate is in the documented fence opening at y=653–674.
   routePath('comfort-gate-link','Проход к КПП «Комфорт»','walkway',[[950,629],[976,644],[996,659],[1004,663]]),
-  // Approach the REN TV medical point from the east side of the dance floor,
-  // staying west of both fence segments that border the service area.
-  routePath('medical-ren-link','Проход к медпункту РЕН ТВ','walkway',[[850,951],[910,940],[922,900],[923,850]]),
+  // Reach the medical point from the north/front of the stage. The former
+  // eastern approach went behind the stage and belongs to its closed yard.
+  routePath('medical-ren-link','Проход к медпункту РЕН ТВ','walkway',[[858,847],[900,846],[923,850]]),
   // The ticket plan shows regular access lanes between the numbered autocamp
   // blocks. Keep their routing graph available without covering 296 labels.
   routePath('autocamp-spine','Проезд автокемпинга','walkway',[[387,1155],[387,1580]],true),
@@ -184,13 +187,12 @@ export const planPaths = [
   routePath('ren-east-services','Проход к восточным сервисам РЕН ТВ','walkway',[[923,850],[950,838],[984,829],[990,800],[970,760]],true),
   routePath('ren-north-trade','Проход к северным торговым рядам РЕН ТВ','walkway',[[782,666],[800,760],[820,820],[858,847]],true),
   routePath('entry-3-toilets','Проход к туалетам у въезда №3','walkway',[[166,891],[190,920],[202,938]],true),
-  routePath('ren-autograph-services','Проход к шатру РЕН ТВ','walkway',[[910,940],[948,957],[977,944]],true),
+  routePath('ren-autograph-services','Проход к шатру РЕН ТВ','walkway',[[850,951],[910,940],[948,957],[977,944]],true),
   routePath('south-stage-services','Проход к сервисам Южной сцены','walkway',[[627,1148],[660,1175],[695,1177],[741,1174]],true),
-  // Walk around the western end of the internal fence beside the stage.
-  routePath('south-stage-wc','Проход к WC Южной сцены','walkway',[[660,1175],[642,1174],[636,1182],[646,1197],[680,1210]],true),
 ];
 // More specific names make repeated sanitary blocks distinguishable in search.
 export const existingUpdates = {
+  'plan-2026-camping-south-edge': { accessPoint:latLng([500,1332]), schematicAccessPoint:latLng([500,1332]) },
   'plan-2026-parking-north': { accessPoint:latLng([166,891]), description:'Северная парковка. Маршрут ведёт к въезду №3 со стороны дороги Ижевск — Гольяны.' },
   'plan-2026-parking-road': { accessPoint:latLng([56,891]), description:'Парковка на противоположной стороне дороги. Маршрут ведёт к въезду №4.' },
   'zone-mr8m54xa': { accessPoint:latLng([499,886]), description:'Западная сцена. Маршрут ведёт к подходу к танцполу с северной дороги.' },
@@ -246,8 +248,6 @@ const routeAccessUpdates = {
   'plan-2026-autograph-ren': { accessPoint:latLng([948,957]) },
   'plan-2026-wc-ren-autograph': { accessPoint:latLng([977,944]) },
   'plan-2026-urinal': { accessPoint:latLng([970,760]) },
-  // WC is immediately behind the diagonal fence; route to its accessible side.
-  'plan-2026-wc-south': { accessPoint:latLng([680,1210]), description:'WC у Южной сцены. Подход со стороны сцены, вокруг западного конца внутреннего ограждения.' },
   'plan-2026-zags': { accessPoint:latLng([660,1175]) },
 };
 export function supplementFestivalMap(data) {
@@ -259,6 +259,7 @@ export function supplementFestivalMap(data) {
   // Retire mistaken features and the provisional row/place autocamp labels that
   // preceded the official 2027 ticket numbering.
   mapZones.features = mapZones.features.filter(f=>
+    !f.properties.id.startsWith('stage-backstage-') &&
     !['plan-2026-police','plan-2026-groceries'].includes(f.properties.id) &&
     !/^plan-2026-autocamp-r\d{2}-p\d{2}$/.test(f.properties.id));
   mapZones.features = mapZones.features.map(f=>({...f,properties:{
@@ -272,11 +273,11 @@ export function supplementFestivalMap(data) {
   const mapPois = {...mergedPois,features:mergedPois.features.map(feature=>currentPlanPois.get(feature.properties.id) ?? feature)};
   const mergedPaths = merge(data.mapPaths,planPaths);
   const currentPlanPaths = new Map(planPaths.map(feature=>[feature.properties.id,feature]));
-  const mapPaths = {...mergedPaths,features:mergedPaths.features.map(feature=>currentPlanPaths.get(feature.properties.id) ?? feature)};
+  const mapPaths = {...mergedPaths,features:mergedPaths.features.filter(f=>!f.properties.id.startsWith('stage-backstage-')&&!f.properties.id.startsWith('stage-front-')&&f.properties.id!=='plan-2026-south-stage-wc').map(feature=>currentPlanPaths.get(feature.properties.id) ?? feature)};
   const fitted = arrangeMapLandscape(registerFestivalMap({...data,mapZones,mapPois,mapPaths})).data;
   const coords = fitted.mapZones.features.flatMap(f=>[f.geometry,...(f.properties.geometryParts??[])].flatMap(g=>g.coordinates[0]));
-  return {...fitted,festivalMap:{...fitted.festivalMap,
+  return finalizeSitePresentation({...fitted,festivalMap:{...fitted.festivalMap,
     territoryBounds:{sw:{lng:Math.min(...coords.map(p=>p[0]))-0.0001,lat:Math.min(...coords.map(p=>p[1]))-0.0001},
       ne:{lng:Math.max(...coords.map(p=>p[0]))+0.0001,lat:Math.max(...coords.map(p=>p[1]))+0.0001}},
-  }};
+  }});
 }

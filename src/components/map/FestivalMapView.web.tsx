@@ -35,6 +35,7 @@ export function FestivalMapView(props: FestivalMapViewProps) {
       const config = latest.current.config;
       instance = new api.Map({ container: host, style: festivalMapStyle(),
         center: [config.center.lng, config.center.lat], zoom: clampZoom(config.defaultZoom),
+        pitch: latest.current.viewMode === '2d' ? 0 : 36, maxPitch: 55,
         minZoom: MAP_MIN_ZOOM, maxZoom: MAP_MAX_ZOOM, attributionControl: false,
         locale: { 'NavigationControl.ResetBearing': 'Сбросить поворот карты', 'AttributionControl.ToggleAttribution': 'Авторство карты' } });
       const active = instance;
@@ -124,6 +125,10 @@ export function FestivalMapView(props: FestivalMapViewProps) {
   useEffect(() => {
     if (map.current && initialized) syncWebMapScene(map.current, scene, applied.current);
   }, [initialized, scene]);
+
+  useEffect(() => {
+    if (initialized) map.current?.easeTo({ pitch: props.viewMode === '2d' ? 0 : 36, duration: reduceMotion ? 0 : 300 });
+  }, [initialized, props.viewMode, reduceMotion]);
 
   const lat = props.userLocation?.lat, lng = props.userLocation?.lng;
   useEffect(() => {

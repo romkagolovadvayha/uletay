@@ -18,6 +18,7 @@ export interface FestivalMapConfig {
   enabled: boolean;
   territoryBounds?: { sw: LatLng; ne: LatLng };
   adminOverlay?: MapAdminOverlay;
+  siteOutline?: GeoJSON.MultiPolygon;
 }
 
 export type MapZoneType =
@@ -62,6 +63,8 @@ export interface MapZoneProperties {
   description?: string;
   /** Visitor entrance; kept separate from the polygon's visual center. */
   accessPoint?: LatLng;
+  /** Object behind a closed stage/service perimeter; no visitor route. */
+  accessRestricted?: boolean;
   extrusionHeight?: number;
   /** Подпись на карте (по умолчанию — для зданий и сервисных объектов) */
   showLabel?: boolean;
@@ -81,6 +84,10 @@ export interface MapZoneProperties {
 }
 
 export type MapPathProperties = {
+  /** Original path identifier on derived visitor-only sections. */
+  sourcePathId?: string;
+  /** Walking across an open visitor area, not a separately drawn road. */
+  openAreaId?: string;
   /** Source drawing geometry used by the repeatable map-data migration. */
   schematicGeometry?: GeoJSON.LineString;
   id: string;

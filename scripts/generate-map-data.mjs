@@ -3,7 +3,7 @@ import { supplementFestivalMap } from './festival-map-plan.mjs';
 
 const file='cms/seed/content.json';
 const data=supplementFestivalMap(JSON.parse(await fs.readFile(file,'utf8')));
-data.mapDataVersion='2026-plan-v3-central-street';
+data.mapDataVersion='2026-plan-v4-3d-visitor-map';
 await fs.writeFile(file,JSON.stringify(data,null,2)+'\n');
 // Same geometry for a cold native launch without a network connection. CMS
 // responses still replace these collections, including deliberately empty ones.

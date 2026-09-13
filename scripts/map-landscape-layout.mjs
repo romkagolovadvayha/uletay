@@ -42,7 +42,7 @@ function assignBuildingApproaches(zones,paths) {
   const roads=paths.features.filter(f=>f.properties.pathKind!=='fence'&&!f.properties.closed);
   const fences=paths.features.filter(f=>f.properties.pathKind==='fence').map(f=>f.geometry.coordinates);
   const solids=zones.filter(isSolid);
-  for(const feature of solids.filter(f=>f.properties.zoneType!=='stage_area')){
+  for(const feature of solids.filter(f=>f.properties.zoneType!=='stage_area'&&!f.properties.accessRestricted&&f.properties.id!=='plan-2026-wc-south')){
     const samples=geometries(feature).flatMap(g=>{const ring=g.coordinates[0];return ring.slice(0,-1).flatMap((a,i)=>[a,[(a[0]+ring[i+1][0])/2,(a[1]+ring[i+1][1])/2]]);});
     const candidates=samples.flatMap(target=>roads.map(f=>({...nearestOnLine(target,f.geometry.coordinates),target}))).sort((a,b)=>a.distance-b.distance);
     const best=candidates.find(({coordinate:a,target:b,distance})=>distance<=35
@@ -70,7 +70,7 @@ function corridor(points, radius) {
   return clipping.union(...polys);
 }
 export function landscapeRoadCorridors(data) {
-  const roads = data.mapPaths.features.filter(f=>f.properties.pathKind !== 'fence');
+  const roads = data.mapPaths.features.filter(f=>f.properties.pathKind !== 'fence' && !f.properties.openAreaId);
   return clipping.union(corridor(landscapeRoad.map(xy), 5), corridor(currentCentralStreet.map(xy), 4),
     ...currentSiteTracks.map(line=>corridor(line.map(xy),2.2)),
     ...roads.map(f => corridor(f.geometry.coordinates.map(xy), f.properties.routingOnly ? .7 : f.properties.pathKind === 'walkway' ? 1.4 : 3.5)));

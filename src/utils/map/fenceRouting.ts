@@ -27,7 +27,7 @@ export function isRoutableDrawnPath(
 }
 
 export function extractFenceZones(zones?: MapZonesGeoJson): FenceZones {
-  return (zones?.features ?? []).filter((f) => f.properties.zoneType === 'fence') as FenceZones;
+  return (zones?.features ?? []).filter((f) => f.properties.zoneType === 'fence' || f.properties.zoneType === 'stage_area' || f.properties.accessRestricted) as FenceZones;
 }
 
 export function extractFencePaths(paths?: MapPathsGeoJson): FencePaths {
@@ -92,21 +92,11 @@ export function fenceAvoidZonesParam(fenceZones: FenceZones): string[] {
     .filter((value): value is string => Boolean(value));
 }
 
-function sampleSegmentPoints(a: [number, number], b: [number, number], samples = 4): [number, number][] {
-  const points: [number, number][] = [a];
-  for (let i = 1; i < samples; i += 1) {
-    const t = i / samples;
-    points.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
-  }
-  points.push(b);
-  return points;
-}
-
 export function routeCrossesFenceZones(
   coordinates: [number, number][],
   fenceZones: FenceZones,
 ): boolean {
-  if (fenceZones.length === 0 || coordinates.length < 2) return false;
+  if (fenceZones.length === 0 || coordinates.length === 0) return false;
 
   const polys = fenceZones
     .map((feature) => {
@@ -118,12 +108,11 @@ export function routeCrossesFenceZones(
     })
     .filter((poly): poly is GeoJSON.Feature<GeoJSON.Polygon> => poly != null);
 
-  for (let i = 0; i < coordinates.length - 1; i += 1) {
-    for (const sample of sampleSegmentPoints(coordinates[i], coordinates[i + 1])) {
-      const pt = point(sample);
-      for (const poly of polys) {
-        if (booleanPointInPolygon(pt, poly)) return true;
-      }
+  for (const poly of polys) {
+    if (coordinates.some(coordinate => booleanPointInPolygon(point(coordinate), poly))) return true;
+    for (let i = 1; i < coordinates.length; i++) {
+      if (poly.geometry.coordinates.some(ring => ring.slice(1).some((b, j) =>
+        segmentsIntersect(coordinates[i - 1], coordinates[i], ring[j] as [number, number], b as [number, number])))) return true;
     }
   }
 
@@ -134,4 +123,26 @@ export function routableDrawnFeatures(paths?: MapPathsGeoJson) {
   return (paths?.features ?? []).filter((f): f is GeoJSON.Feature<GeoJSON.LineString, MapPathProperties> =>
     isRoutableDrawnPath(f as GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>),
   );
+}
+
+/** Shared visible/routable network: no public road may lead behind a stage. */
+export function visitorPathFeatures(paths?: MapPathsGeoJson, zones?: MapZonesGeoJson): FencePaths {
+  const fencePaths = extractFencePaths(paths), fenceZones = extractFenceZones(zones);
+  return routableDrawnFeatures(paths).flatMap(feature => {
+    const parts: FencePaths = [];
+    let current: [number, number][] = [];
+    const flush = () => {
+      if (current.length >= 2) parts.push({ ...feature,
+        properties: { ...feature.properties, id: `${feature.properties.id}:visitor-${parts.length}`, sourcePathId: feature.properties.id },
+        geometry: { type: 'LineString', coordinates: current } });
+      current = [];
+    };
+    feature.geometry.coordinates.slice(1).forEach((b, index) => {
+      const coordinates = [feature.geometry.coordinates[index], b] as [number, number][];
+      if (routeCrossesFencePaths(coordinates, fencePaths) || routeCrossesFenceZones(coordinates, fenceZones)) flush();
+      else { if (!current.length) current.push(coordinates[0]); current.push(coordinates[1]); }
+    });
+    flush();
+    return parts;
+  });
 }

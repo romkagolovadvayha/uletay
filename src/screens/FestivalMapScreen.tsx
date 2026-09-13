@@ -109,7 +109,9 @@ export function FestivalMapScreen({ route }: Props) {
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
   const [autocampGroupKey, setAutocampGroupKey] = useState('all');
   const [followUser, setFollowUser] = useState(false);
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('3d');
   const [compactMapControls, setCompactMapControls] = useState(false);
+  const [mapPopupHeight, setMapPopupHeight] = useState(0);
   const [pickedZoneId, setPickedZoneId] = useState<string | null>(null);
   const [pickedPoiId, setPickedPoiId] = useState<string | null>(null);
   const [highlightZoneId, setHighlightZoneId] = useState<string | null>(null);
@@ -293,7 +295,7 @@ export function FestivalMapScreen({ route }: Props) {
   );
 
   const handleZoneRoute = useCallback(async () => {
-    if (!selectedZone) return;
+    if (!selectedZone || selectedZone.properties.accessRestricted) return;
 
     const zoneId = selectedZone.properties.id;
     setHighlightZoneId(zoneId);
@@ -401,6 +403,7 @@ export function FestivalMapScreen({ route }: Props) {
                 selectedPoiId={pickedPoiId}
                 filter={filter}
                 followUser={followUser}
+                viewMode={viewMode}
                 coordinatePicking={Boolean(placingMarkerKind)}
                 onMapInteraction={() => setFollowUser(false)}
                 onZonePress={(zone) => {
@@ -548,7 +551,10 @@ export function FestivalMapScreen({ route }: Props) {
               </View>
             ) : null}
             <MapFabGroup
-              compact={compactMapControls}
+              viewMode={viewMode}
+              onToggleView={() => setViewMode(mode => mode === '3d' ? '2d' : '3d')}
+              compact={compactMapControls || popupVisible}
+              bottomOffset={popupVisible ? mapPopupHeight + 8 : undefined}
               onZoomIn={() => mapApi.current?.zoomBy?.(1)}
               onZoomOut={() => mapApi.current?.zoomBy?.(-1)}
               onLocate={handleLocate}
@@ -578,6 +584,7 @@ export function FestivalMapScreen({ route }: Props) {
 
         <MapPoiPopup
           visible={popupVisible}
+          onHeightChange={setMapPopupHeight}
           onClose={dismissPopup}
           showCloseButton={!directionsVisible}
         >
@@ -606,10 +613,10 @@ export function FestivalMapScreen({ route }: Props) {
               <View style={styles.mapInfoDescriptions}>
                 {dataError ? <Text accessibilityRole="alert" style={styles.mapInfoDescription}>{dataError}</Text> : null}
                 <Text style={styles.mapInfoDescription}>Объекты нанесены по схеме фестиваля 2026 года. Расположение ориентировочное; схема не подтверждает планировку следующего фестиваля.</Text>
-                <Text style={styles.mapInfoDescription}>Зелёный — палатки · песочный — парковки и торговля · оранжевый — «Комфорт» · голубой — вода, душ и туалеты · красный пунктир — забор.</Text>
-                <Text style={styles.mapInfoDescription}>Подписи зон размещены внутри их границ. Значок автомобиля с номером обозначает въезд, стрелка в проёме — вход или выход. Небольшой значок с числом открывает список близких сервисов.</Text>
+                <Text style={styles.mapInfoDescription}>Зелёный — территория и парковки · жёлтый — сцены и места автокемпинга · светлый — строения · голубой — вода · красный пунктир — ограждение.</Text>
+                <Text style={styles.mapInfoDescription}>Кнопка 2D / 3D переключает вид сверху и объёмную карту. Подписи находятся внутри объектов; приблизьте карту, чтобы прочитать мелкие названия и номера мест.</Text>
                 <Text style={styles.mapInfoDescription}>В автокемпинге нанесены официальные номера 1–296 по схеме выбора билетов 2027 года. Выберите диапазон и нажмите на нужную ячейку; цвет ячейки не показывает актуальную занятость.</Text>
-                <Text style={styles.mapInfoDescription}>Нажмите на объект или найдите его по названию. Маршруты учитывают дороги, проходы и ограждения; без геолокации путь начинается от главного входа.</Text>
+                <Text style={styles.mapInfoDescription}>Нажмите на объект или найдите его по названию. За сценами находятся закрытые служебные зоны — маршруты туда не строятся. Без геолокации путь начинается от главного входа.</Text>
               </View>
               <View style={styles.mapInfoCategories}>
                 {availableFilters.map(item => (

@@ -42,10 +42,12 @@ export function validateMapCollection(value: unknown, geometry: 'Polygon' | 'Lin
     if (g.type !== geometry || !id(p.id) || featureIds.has(p.id)) return false;
     featureIds.add(p.id);
     if (!optional(p.accessPoint, latLng)) return false;
+    if (!optional(p.accessRestricted, (v) => typeof v === 'boolean')) return false;
     if (geometry === 'Point') return position(g.coordinates) && id(p.name) &&
       ['stage', 'foodcourt', 'toilet', 'shower', 'water', 'medical', 'security', 'info', 'entrance', 'parking', 'custom'].includes(String(p.category)) &&
       optional(p.link, (link) => record(link) && ['stage', 'foodcourt', 'none'].includes(String(link.type)) && optional(link.id, id));
     if (geometry === 'LineString') return list(g.coordinates, position) && g.coordinates.length >= 2 &&
+      optional(p.openAreaId, id) &&
       optional(p.pathKind, (kind) => ['road', 'walkway', 'fence'].includes(String(kind))) &&
       optional(p.closed, (v) => typeof v === 'boolean') && optional(p.routingOnly, (v) => typeof v === 'boolean');
     return polygon(g) && id(p.name) && text(p.fillColor) && number(p.fillOpacity) && p.fillOpacity >= 0 && p.fillOpacity <= 1 &&
@@ -88,6 +90,7 @@ export function validateAppData(value: unknown): value is AppData {
     optional(block.link, (link) => record(link) && fields(link, ['label', 'url'])))) || !unique(value.rules)) return false;
   if (!optional(value.festivalMap, (map) => record(map) && latLng(map.center) && number(map.defaultZoom) && map.defaultZoom >= 0 && map.defaultZoom <= 24 && typeof map.enabled === 'boolean' &&
     optional(map.territoryBounds, (b) => record(b) && latLng(b.sw) && latLng(b.ne)) &&
+    optional(map.siteOutline, (g) => record(g) && g.type === 'MultiPolygon' && list(g.coordinates, (p) => list(p, ring) && p.length > 0) && g.coordinates.length > 0) &&
     optional(map.adminOverlay, (o) => record(o) && text(o.imageUrl) && latLng(o.center) && number(o.widthMeters) && o.widthMeters > 0 && optional(o.aspectRatio, (v) => number(v) && v > 0) && optional(o.opacity, (v) => number(v) && v >= 0 && v <= 1) && optional(o.rotation, number)))) return false;
   if (!optional(value.mapZones, (v) => validateMapCollection(v, 'Polygon')) || !optional(value.mapPaths, (v) => validateMapCollection(v, 'LineString')) || !optional(value.mapPois, (v) => validateMapCollection(v, 'Point'))) return false;
   if (record(value.mapPois) && Array.isArray(value.mapPois.features)) {
