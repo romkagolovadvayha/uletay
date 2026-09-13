@@ -41,6 +41,7 @@ type Props = {
   onSavedPlaces?: () => void;
   followUser: boolean;
   bottomOffset?: number;
+  compact?: boolean;
 };
 
 export function MapFabGroup({
@@ -51,10 +52,11 @@ export function MapFabGroup({
   onDirections,
   onSavedPlaces,
   followUser,
-  bottomOffset = 96,
+  compact = false,
+  bottomOffset = compact ? 80 : 96,
 }: Props) {
   return (
-    <View style={[styles.col, { bottom: bottomOffset }]}>
+    <View style={[styles.col, compact && styles.compact, { bottom: bottomOffset }]}>
       {onZoomIn ? <MapFab icon="add" label="Приблизить карту" onPress={onZoomIn} /> : null}
       {onZoomOut ? <MapFab icon="remove" label="Отдалить карту" onPress={onZoomOut} /> : null}
       <MapFab icon="locate" label="Моё местоположение" onPress={onLocate} active={followUser} />
@@ -86,6 +88,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: spacing.sm,
     zIndex: 25,
+  },
+  compact: {
+    width: 160,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
   fab: {
     width: 48,

@@ -45,8 +45,18 @@ export function FestivalMapView(props: FestivalMapViewProps) {
       const controls = host.querySelector<HTMLElement>('.maplibregl-ctrl-bottom-left');
       if (controls) {
         controls.style.bottom = '72px'; controls.style.left = '64px';
-        controls.style.maxWidth = 'calc(100% - 144px)';
+        const attribution = controls.querySelector<HTMLElement>('.maplibregl-ctrl-attrib');
+        if (attribution) {
+          attribution.style.maxWidth = 'calc(100% - 20px)';
+          attribution.style.boxSizing = 'border-box';
+        }
       }
+      const resize = () => {
+        if (cancelled) return;
+        if (controls) controls.style.maxWidth = host.clientHeight < 520 ? 'calc(100% - 256px)' : 'calc(100% - 144px)';
+        active.resize();
+      };
+      resize();
       active.getCanvas().setAttribute('aria-label', 'Интерактивная карта фестиваля');
       active.on('style.load', () => {
         if (cancelled) return;
@@ -97,7 +107,7 @@ export function FestivalMapView(props: FestivalMapViewProps) {
         const features = active.queryRenderedFeatures(event.point, { layers: interactiveLayers.filter(id => Boolean(active.getLayer(id))) });
         dispatchMapPress(latest.current, currentScene.current.labels, features, { lat: event.lngLat.lat, lng: event.lngLat.lng });
       });
-      observer = new ResizeObserver(() => { if (!cancelled) active.resize(); });
+      observer = new ResizeObserver(resize);
       observer.observe(host);
     }).catch(error => {
       if (cancelled) return;

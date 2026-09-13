@@ -109,6 +109,7 @@ export function FestivalMapScreen({ route }: Props) {
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
   const [autocampGroupKey, setAutocampGroupKey] = useState('all');
   const [followUser, setFollowUser] = useState(false);
+  const [compactMapControls, setCompactMapControls] = useState(false);
   const [pickedZoneId, setPickedZoneId] = useState<string | null>(null);
   const [pickedPoiId, setPickedPoiId] = useState<string | null>(null);
   const [highlightZoneId, setHighlightZoneId] = useState<string | null>(null);
@@ -378,7 +379,7 @@ export function FestivalMapScreen({ route }: Props) {
   return (
     <MapMotionConfig>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={styles.mapWrap}>
+        <View style={styles.mapWrap} onLayout={event => setCompactMapControls(event.nativeEvent.layout.height < 520)}>
           <ScreenTitle style={styles.visuallyHiddenTitle}>Карта фестиваля</ScreenTitle>
           <View style={styles.mapLayer}>
             <MapErrorBoundary
@@ -547,6 +548,7 @@ export function FestivalMapScreen({ route }: Props) {
               </View>
             ) : null}
             <MapFabGroup
+              compact={compactMapControls}
               onZoomIn={() => mapApi.current?.zoomBy?.(1)}
               onZoomOut={() => mapApi.current?.zoomBy?.(-1)}
               onLocate={handleLocate}
