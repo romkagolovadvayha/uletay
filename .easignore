@@ -1,0 +1,74 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+dist-tmp/
+dist-tmp-build/
+dist-build/
+dist-export/
+dist-web/
+dist-web-check/
+dist-audit/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+google-service-account.json
+firebase-service-account-uletay-9335f.json
+credentials/
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+cms/.env
+uploads/
+
+# cms build
+cms/.next/
+cms/.next-dev/
+deploy/ecosystem.runtime.cjs
+
+scripts/.fest-cache/
+scripts/fest-artist-sync-report.json
+*.traineddata
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# Superdesign session scratch files
+.superdesign/tmp/
+
+# Local build and QA scratch files
+/tmp/
+/public/vendor/maplibre/
+/cms/public/vendor/maplibre/
+.seo-cache/
+/artifacts/map-audit/*.json
+/artifacts/map-audit/*.png
+
+# Exclude local review and store presentation artifacts from native builds
+/artifacts/

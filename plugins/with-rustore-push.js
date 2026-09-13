@@ -1,4 +1,5 @@
 const { AndroidConfig, withAndroidManifest } = require('expo/config-plugins');
+const { withBuildProperties } = require('expo-build-properties');
 
 function upsertMetaData(application, name, value) {
   const metaData = application['meta-data'] || [];
@@ -25,6 +26,14 @@ module.exports = function withRuStorePush(config, options = {}) {
   if (!projectId) {
     throw new Error('RuStore Push projectId is required for a RuStore build');
   }
+
+  // The SDK loads this manifest-named class through reflection before MainActivity.
+  // R8 otherwise removes it, causing RuStorePushClientInitProvider to crash on launch.
+  config = withBuildProperties(config, {
+    android: {
+      extraProguardRules: '-keep class com.rustorepush.RuStorePushClientParams { *; }',
+    },
+  });
 
   return withAndroidManifest(config, (androidConfig) => {
     const application = AndroidConfig.Manifest.getMainApplicationOrThrow(

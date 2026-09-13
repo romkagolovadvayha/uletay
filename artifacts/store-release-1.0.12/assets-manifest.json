@@ -1,0 +1,44 @@
+[
+  {
+    "file": "artifacts/store-release-1.0.12/upload/01-home.jpg",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 390924,
+    "sha256": "189a59bee81a104270f0a88e3748b3d0f5c249fdcce3d378f9d9bc5b2aaf06be"
+  },
+  {
+    "file": "artifacts/store-release-1.0.12/upload/02-map.jpg",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 409799,
+    "sha256": "4914a27272099d95b229ea6627f438c7d68a9309e58215b6e39767e8e59a3f0f"
+  },
+  {
+    "file": "artifacts/store-release-1.0.12/upload/03-foodcourt.jpg",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 358403,
+    "sha256": "3ddcd28f3ae34e8b2b1e45588100940959f213e660ec44c788ebf46a13e7972c"
+  },
+  {
+    "file": "artifacts/store-release-1.0.12/upload/04-radio.jpg",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 326542,
+    "sha256": "5e6fb298003581593cfaac31bf9a19976c597232bd2cd92ba5f5965fe2d60fb1"
+  },
+  {
+    "file": "artifacts/store-release-1.0.12/upload/05-rules.jpg",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 377034,
+    "sha256": "caa3a14d76890d760638e14b4bfe1d71c88f50ac6859ad50536c1343f956743c"
+  },
+  {
+    "file": "artifacts/store-release-1.0.12/upload/feature-graphic.jpg",
+    "width": 1024,
+    "height": 500,
+    "bytes": 164283,
+    "sha256": "a899f22590c2c75c6092a9ed281afcb8939572a0f46a7b20e92b664a41127139"
+  }
+]

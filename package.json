@@ -1,6 +1,6 @@
 {
   "name": "uletay",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/montserrat": "^0.4.2",
@@ -83,6 +83,7 @@
     "test:map:routing": "node scripts/audit-map-routes.mjs",
     "test:map:layout": "node scripts/test-map-layout.mjs",
     "test:android-startup": "node scripts/test-android-startup.mjs",
+    "test:rustore-push-config": "node scripts/test-rustore-push-config.mjs",
     "push:check-android": "node scripts/check-android-push-config.mjs",
     "seed:api": "tsx scripts/export-seed.ts",
     "seed:sync-production": "node scripts/sync-production-api.mjs",

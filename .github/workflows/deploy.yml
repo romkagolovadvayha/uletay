@@ -129,6 +129,7 @@ jobs:
           npx expo install --check
           npm run lint
           npm run typecheck
+          npm run test:rustore-push-config
           npm run test:audit-fixes
           npm run test:sw
           npm run test:api-url
