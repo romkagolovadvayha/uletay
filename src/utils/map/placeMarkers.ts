@@ -50,7 +50,7 @@ export function buildMapPlaceMarkers(
     if (p.markerLabel) { glyph = p.markerLabel; color = '#F5D547'; }
     if (p.zoneType === 'comfort') { glyph = 'К'; color = '#FFB66E'; }
     if (p.zoneType === 'building' && /мерч/i.test(p.name)) glyph = 'М';
-    if (/танцпол/i.test(p.name)) glyph = 'Т';
+    if (/^танцпол/i.test(p.name)) glyph = 'Т';
     if (/детск/i.test(p.name) && category === 'custom') glyph = 'Д';
     let layout = layouts.get(zone);
     if (!layout) { layout = polygonLabelLayout(zone); layouts.set(zone, layout); }
@@ -58,7 +58,7 @@ export function buildMapPlaceMarkers(
     const isPitch = Boolean(p.parentZoneId);
     const isArea = !isPitch && ['parking', 'camping', 'autocamp', 'comfort'].includes(p.zoneType);
     const label = isPitch ? glyph : p.zoneType === 'parking' ? 'ПАРКОВКА' : p.zoneType === 'camping' ? 'ПАЛАТОЧНЫЙ ГОРОДОК' :
-      /танцпол/i.test(p.name) ? 'ТАНЦПОЛ' : p.zoneType === 'toilet' ? (/писсуар/i.test(p.name) ? 'ПИССУАР' : 'ТУАЛЕТ') : p.zoneType === 'shower' ? 'ДУШ' :
+      /^танцпол/i.test(p.name) ? 'ТАНЦПОЛ' : p.zoneType === 'toilet' ? (/писсуар/i.test(p.name) ? 'ПИССУАР' : 'ТУАЛЕТ') : p.zoneType === 'shower' ? 'ДУШ' :
       p.zoneType === 'water' ? 'ВОДА' : /мерч/i.test(p.name) ? 'МЕРЧ' : /бар/i.test(p.name) ? 'БАР' : /автограф/i.test(p.name) ? 'АВТОГРАФЫ' : category === 'medical' ? 'МЕДПУНКТ' :
       /торговые/i.test(p.name) ? 'ТОРГОВЫЕ РЯДЫ' : p.name.replace(/ — .*$/, '').replace('Палаточная гостиница', 'ПАЛАТОЧНАЯ\nГОСТИНИЦА').replace('Палаточный городок', 'ПАЛАТОЧНЫЙ\nГОРОДОК').replace('Лагерь «Комфорт»', 'ЛАГЕРЬ\nКОМФОРТ').replace('Западная сцена', 'ЗАПАДНАЯ\nСЦЕНА').replace('Южная сцена', 'ЮЖНАЯ\nСЦЕНА').replace('Сцена РЕН ТВ', 'СЦЕНА\nРЕН ТВ').toUpperCase();
     return {

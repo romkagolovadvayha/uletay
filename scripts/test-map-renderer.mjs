@@ -18,6 +18,7 @@ const data = JSON.parse(await fs.readFile('cms/seed/content.json', 'utf8'));
 const props = { config: data.festivalMap, zones: data.mapZones, pois: data.mapPois, paths: data.mapPaths,
   filter: 'all', followUser: false };
 const placeScene = m.buildPlaceScene(props);
+assert.equal(placeScene.markers.find(p=>p.id==='plan-2026-trade-ren-west').label,'ТОРГОВЫЕ РЯДЫ','A pavilion next to a dance floor is labelled as a pavilion');
 assert.equal(placeScene.shapes.features.length, data.mapZones.features.filter(z=>z.properties.zoneType!=='fence').reduce((n, z) => n + 1 + (z.properties.geometryParts?.length ?? 0), 0), 'All split visitor polygons are rendered');
 assert.ok(m.sceneLayers.zones.some(layer=>layer.type==='fill-extrusion'),'Native 3D building layer');
 assert.ok(!m.sceneLayers.places.some(layer=>layer.type==='circle'),'No floating cluster circles on the plan');
