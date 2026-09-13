@@ -1,6 +1,5 @@
 import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -27,7 +26,6 @@ import { useUserMapMarkers } from '../hooks/useUserMapMarkers';
 import { ROAD_ENTRANCE } from '../data/festivalMap';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
-import { mapColors } from '../theme/map';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import type {
@@ -381,7 +379,7 @@ export function FestivalMapScreen({ route }: Props) {
   return (
     <MapMotionConfig>
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={styles.mapWrap} onLayout={event => setCompactMapControls(event.nativeEvent.layout.height < 520)}>
+        <View style={styles.mapWrap} onLayout={event => setCompactMapControls(event.nativeEvent.layout.height < 640)}>
           <ScreenTitle style={styles.visuallyHiddenTitle}>Карта фестиваля</ScreenTitle>
           <View style={styles.mapLayer}>
             <MapErrorBoundary
@@ -524,12 +522,6 @@ export function FestivalMapScreen({ route }: Props) {
               <MapLocationBanner embedded status={status} outsideTerritory={outsideTerritory} onRequestPermission={requestPermission} />
             ) : null}
             </View>
-            {tracedPlan && !popupVisible ? (
-              <MotionPressable accessibilityRole="button" accessibilityLabel="О карте и условные обозначения"
-                style={styles.mapInfoButton} onPress={() => { dismissPopup(); setMapInfoVisible(true); }}>
-                <Ionicons name="information-circle" size={25} color={colors.text} />
-              </MotionPressable>
-            ) : null}
             {routeError && !selectedZone && !selectedPoi && !routing ? (
               <View style={styles.routeFailure} accessibilityLiveRegion="polite">
                 <Text style={styles.mapInfoLabel}>{routeError}</Text>
@@ -551,6 +543,7 @@ export function FestivalMapScreen({ route }: Props) {
               </View>
             ) : null}
             <MapFabGroup
+              onInfo={tracedPlan && !popupVisible ? () => { dismissPopup(); setMapInfoVisible(true); } : undefined}
               viewMode={viewMode}
               onToggleView={() => setViewMode(mode => mode === '3d' ? '2d' : '3d')}
               compact={compactMapControls || popupVisible}
@@ -727,9 +720,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm, zIndex: 100,
   },
   search: { marginHorizontal: spacing.screen },
-  mapInfoButton: { position:'absolute', left:spacing.screen, bottom:96, width:48, height:48,
-    borderRadius:24, backgroundColor:mapColors.fabBg, borderWidth:1, borderColor:mapColors.fabBorder,
-    alignItems:'center', justifyContent:'center' },
   mapInfoTitle: { ...typography.screenTitle, color:colors.text, textAlign:'center', marginBottom:spacing.md },
   mapInfoLabel: { ...typography.caption, color:colors.text },
   mapInfoContent: { maxHeight:360 },

@@ -39,6 +39,7 @@ type Props = {
   onFestival?: () => void;
   onDirections?: () => void;
   onSavedPlaces?: () => void;
+  onInfo?: () => void;
   followUser: boolean;
   bottomOffset?: number;
   compact?: boolean;
@@ -53,14 +54,15 @@ export function MapFabGroup({
   onFestival,
   onDirections,
   onSavedPlaces,
+  onInfo,
   followUser,
   compact = false,
   viewMode = '3d',
   onToggleView,
-  bottomOffset = compact ? 80 : 96,
+  bottomOffset = 120,
 }: Props) {
   return (
-    <View style={[styles.col, compact && styles.compact, { bottom: bottomOffset }]}>
+    <View style={[styles.col, compact && styles.compact, compact && onInfo && styles.compactWithInfo, { bottom: bottomOffset }]}>
       {onToggleView ? <MotionPressable accessibilityRole="button"
         accessibilityLabel={viewMode === '3d' ? 'Показать карту сверху' : 'Показать объёмную карту'}
         onPress={onToggleView} style={styles.fab}>
@@ -75,6 +77,7 @@ export function MapFabGroup({
       {onSavedPlaces ? (
         <MapFab icon="bookmark" label="Машина и палатка" onPress={onSavedPlaces} />
       ) : null}
+      {onInfo ? <MapFab icon="information-circle" label="О карте и условные обозначения" onPress={onInfo} /> : null}
       {onDirections ? (
         <MotionPressable
           accessibilityRole="button"
@@ -104,6 +107,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'flex-end',
   },
+  compactWithInfo: { width: 216 },
   fab: {
     width: 48,
     height: 48,

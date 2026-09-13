@@ -45,16 +45,27 @@ export function FestivalMapView(props: FestivalMapViewProps) {
       active.addControl(new api.NavigationControl({ showZoom: false, showCompass: true }), 'bottom-left');
       const controls = host.querySelector<HTMLElement>('.maplibregl-ctrl-bottom-left');
       if (controls) {
-        controls.style.bottom = '72px'; controls.style.left = '64px';
+        controls.style.bottom = '8px'; controls.style.left = '8px';
+        controls.style.maxWidth = 'calc(100% - 16px)';
         const attribution = controls.querySelector<HTMLElement>('.maplibregl-ctrl-attrib');
         if (attribution) {
-          attribution.style.maxWidth = 'calc(100% - 20px)';
+          // MapLibre 6 initially expands even compact controls. Mark it compact
+          // before attribution metadata arrives so later source updates stay closed.
+          attribution.classList.add('maplibregl-compact');
+          attribution.classList.remove('maplibregl-compact-show');
+          attribution.removeAttribute('open');
+          attribution.style.margin = '0';
+          attribution.style.maxWidth = '100%';
           attribution.style.boxSizing = 'border-box';
+        }
+        const compass = controls.querySelector<HTMLElement>('.maplibregl-ctrl-group');
+        if (compass) {
+          compass.style.position = 'absolute'; compass.style.bottom = '142px';
+          compass.style.left = '8px'; compass.style.margin = '0';
         }
       }
       const resize = () => {
         if (cancelled) return;
-        if (controls) controls.style.maxWidth = host.clientHeight < 520 ? 'calc(100% - 256px)' : 'calc(100% - 144px)';
         active.resize();
       };
       resize();

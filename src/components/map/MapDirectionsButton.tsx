@@ -26,7 +26,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.screen,
     right: spacing.screen,
-    bottom: spacing.lg,
+    // Keep the bottom-left attribution icon and its expanded links unobstructed.
+    bottom: 56,
     zIndex: 24,
     minHeight: 52,
     borderRadius: radius.lg,

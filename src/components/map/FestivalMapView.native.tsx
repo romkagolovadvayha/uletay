@@ -75,7 +75,7 @@ export function FestivalMapView(props: FestivalMapViewProps) {
   }, [initialized, props.followUser, lat, lng, reduceMotion]);
 
   return <NativeMap mapStyle={style} style={styles.fill} attribution logo={false} compass
-    attributionPosition={{ bottom: 72, left: 8 }} compassPosition={{ bottom: 150, left: 16 }}
+    attributionPosition={{ bottom: 8, left: 8 }} compassPosition={{ bottom: 150, left: 16 }}
     dragPan touchZoom touchRotate
     onLayout={event => { size.current = event.nativeEvent.layout; }}
     onDidFinishLoadingStyle={() => setInitialized(true)}
