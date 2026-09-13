@@ -79,7 +79,7 @@ export function buildMapPlaceMarkers(
     let [glyph, color] = symbols[p.category] ?? symbols.custom;
     if (p.category === 'entrance') glyph = p.name.match(/№\s*\d+/)?.[0] ?? (p.name.includes('Авто') ? 'АВТО' : 'КПП');
     result.push({ id: p.id, kind: 'poi', name: p.name, coordinates: poi.geometry.coordinates as [number, number],
-      glyph, color, label: p.category === 'entrance' ? /№/.test(p.name) ? `ВЪЕЗД ${p.name.match(/№\s*\d+/)?.[0]}` : p.name.includes('Авто') ? 'АВТОВЪЕЗД' : 'КПП' : /турникет/i.test(p.name) ? 'ТУРНИКЕТ\nВЫХОДА' : 'ВЫЕЗД',
+      glyph, color, label: p.category === 'entrance' ? /№/.test(p.name) ? `ВЪЕЗД ${p.name.match(/№\s*\d+/)?.[0]}` : p.name.includes('Авто') ? 'АВТОВЪЕЗД' : 'КПП' : /турникет/i.test(p.name) ? 'ТУРНИКЕТ\nВЫХОДА' : /выезд/i.test(p.name) ? 'ВЫЕЗД' : p.name.toUpperCase(),
       selected: p.id === selectedPoiId, pinned: false, priority: 5,
       icon: /въезд|автовъезд/i.test(p.name) ? 'car' : /выход|выезд|турникет/i.test(p.name) ? 'exit' : p.category === 'entrance' ? 'gate' : 'info',
       badge: p.name.match(/№\s*(\d+)/)?.[1] });

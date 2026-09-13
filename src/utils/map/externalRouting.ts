@@ -2,7 +2,8 @@ import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
 import { API_BASE_URL } from '../../config/api';
 import { fetchWithTimeout } from '../fetchWithTimeout';
 import type { LatLng } from '../../types/map';
-import { haversineMeters } from './geo';
+import { haversineMeters } from './geo-math';
+export { walkingDurationSeconds } from './geo-math';
 
 const OSRM_DRIVING_BASE = 'https://router.project-osrm.org/route/v1/driving';
 const OSRM_WALKING_BASE = 'https://router.project-osrm.org/route/v1/foot';
@@ -182,11 +183,6 @@ async function fetchOsrmRoute(
   } catch {
     return null;
   }
-}
-
-/** Yandex-like walking pace fallback (~4.3 km/h). */
-export function walkingDurationSeconds(distanceMeters: number): number {
-  return Math.max(60, distanceMeters / 1.2);
 }
 
 export function straightLineFallback(

@@ -1291,3 +1291,329 @@ dialog::backdrop {
   font-size: 12px;
   color: #758665;
 }
+.admin-map-frame {
+  position: relative;
+  height: clamp(430px, 65vh, 780px);
+  min-width: 0;
+  overflow: hidden;
+  background: #edcd80;
+  border: 1px solid var(--admin-border, #deded3);
+  border-radius: 18px;
+  isolation: isolate;
+}
+.admin-map-frame .admin-map-surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.admin-map-frame .maplibregl-map {
+  font: inherit;
+}
+.admin-map-frame .maplibregl-ctrl button {
+  min-height: 29px;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.admin-map-frame .maplibregl-ctrl-attrib {
+  font-size: 10px;
+  max-width: calc(100% - 30px);
+  color: #263124;
+}
+.admin-map-frame .maplibregl-ctrl-attrib a {
+  color: inherit;
+}
+.admin-map-frame .maplibregl-ctrl-attrib-button {
+  border: 0;
+  min-height: 24px;
+  width: 24px;
+}
+.admin-map-loading,
+.admin-map-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+  background: #f1eedeea;
+  z-index: 5;
+}
+.admin-map-home {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  font-size: 12px;
+  padding: 9px 12px;
+  background: #fffcf5;
+  box-shadow: 0 2px 10px #26312422;
+}
+.admin-map-handle {
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #f6cd37;
+  box-shadow: 0 1px 5px #183e4c88;
+  cursor: grab;
+}
+.admin-map-handle:active {
+  cursor: grabbing;
+}
+.admin-map-handle.vertex {
+  width: 17px;
+  height: 17px;
+  background: #007cbb;
+  border-width: 2px;
+}
+.admin-map-handle.access {
+  background: #16775c;
+  border-radius: 5px;
+}
+.map-engine-badge {
+  border: 1px solid #d1dfd3;
+  border-radius: 999px;
+  color: #345949;
+  background: #f2f7ee;
+  font-size: 12px;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+.map-view-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  margin: 20px 0 14px;
+}
+.map-view-toolbar > label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.map-view-toolbar input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: #254d3d;
+}
+.map-mode-switch {
+  display: flex;
+  border-radius: 12px;
+  padding: 4px;
+  background: #f0f1e8;
+  gap: 3px;
+}
+.map-mode-switch button {
+  border: 0;
+  background: transparent;
+  color: #667266;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.map-mode-switch button[aria-pressed='true'] {
+  background: #fffdf8;
+  color: #214933;
+  box-shadow: 0 1px 4px #26312418;
+}
+.map-draw-editor:focus {
+  outline: none;
+}
+.map-draw-toolbar {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f5f5ee;
+  margin-bottom: 14px;
+}
+.map-draw-toolbar[hidden] {
+  display: none;
+}
+.map-draw-layout {
+  grid-template-columns: minmax(0, 1fr) 248px;
+  align-items: start;
+  gap: 16px;
+}
+.map-draw-main {
+  min-width: 0;
+}
+.map-draw-sidebar {
+  max-height: min(780px, 65vh);
+  overflow: auto;
+  border-radius: 14px;
+}
+.map-layer-list {
+  max-height: none;
+}
+.map-draw-sidebar .map-layer-item {
+  display: grid;
+  width: 100%;
+  text-align: left;
+  justify-content: stretch;
+  justify-items: start;
+}
+.map-layer-item.active {
+  box-shadow: inset 3px 0 #347052;
+}
+.map-layer-name {
+  overflow-wrap: anywhere;
+}
+.map-canvas-hint {
+  min-height: 36px;
+  margin: 10px 3px 0;
+  color: #667266;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.map-draw-props {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid #e2e5d9;
+  border-radius: 14px;
+}
+.map-draw-props h3 {
+  overflow-wrap: anywhere;
+}
+.map-draw-props input[type='color'] {
+  padding: 4px;
+  height: 44px;
+  cursor: pointer;
+}
+.map-access-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+.map-access-controls .hint {
+  flex: 1 1 260px;
+}
+.map-route-check {
+  margin: 20px 0;
+}
+.map-route-check > p,
+.map-route-controls {
+  margin: 14px 18px;
+}
+.map-route-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.map-route-controls label {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+}
+.map-route-result {
+  background: #edf3e9;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 14px;
+}
+.map-draw-save {
+  position: sticky;
+  bottom: 12px;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 16px 18px;
+  margin: 20px 0 0;
+  background: #fffdf5f5;
+  border: 1px solid #dce2d0;
+  border-radius: 14px;
+  box-shadow: 0 6px 30px #243e2612;
+  backdrop-filter: blur(8px);
+}
+.map-draw-save .hint {
+  margin: 0;
+}
+.overlay-editor .admin-map-frame {
+  height: 510px;
+}
+@media (max-width: 1050px) {
+  .map-draw-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .map-draw-sidebar {
+    max-height: 250px;
+  }
+}
+@media (max-width: 600px) {
+  .admin-map-frame {
+    height: 470px;
+    border-radius: 12px;
+  }
+  .map-draw-editor {
+    padding: 14px;
+  }
+  .map-mode-switch {
+    width: 100%;
+  }
+  .map-mode-switch button {
+    flex: 1;
+    padding: 9px 7px;
+  }
+  .map-engine-badge {
+    white-space: normal;
+  }
+  .map-draw-props {
+    padding: 14px;
+  }
+  .map-draw-props .overlay-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .map-draw-save {
+    bottom: 6px;
+    padding: 12px;
+  }
+  .map-route-controls .btn-secondary {
+    white-space: normal;
+  }
+}
+
+.map-transform-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.map-leave-dialog {
+  width: min(460px, calc(100vw - 32px));
+  border: 1px solid #d5dec9;
+  border-radius: 18px;
+  padding: 26px;
+  color: #253924;
+  background: #fffdf5;
+  box-shadow: 0 20px 80px #152c2444;
+}
+.map-leave-dialog::backdrop {
+  background: #142c2266;
+  backdrop-filter: blur(3px);
+}
+.map-leave-dialog p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.map-leave-dialog > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}

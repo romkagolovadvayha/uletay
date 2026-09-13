@@ -1,3 +1,9 @@
+import type {
+  FestivalMapConfig,
+  MapPathsGeoJson,
+  MapZonesGeoJson,
+  MapPoisGeoJson,
+} from '../../src/types/map';
 import type { HeadlinerLastFmProfile } from '@/lastfm-types';
 
 export type StageId = 'ren-tv' | 'south' | 'west';
@@ -117,137 +123,21 @@ export interface FestivalRulesTab {
   blocks: FestivalRulesBlock[];
 }
 
-export interface LatLng {
-  lat: number;
-  lng: number;
-}
-
-export interface MapAdminOverlay {
-  imageUrl: string;
-  opacity?: number;
-  /** Центр схемы на карте */
-  center: LatLng;
-  /** Ширина схемы в метрах (масштаб) */
-  widthMeters: number;
-  /** Высота / ширина (из пропорций PNG) */
-  aspectRatio?: number;
-  /** Поворот по часовой, градусы */
-  rotation?: number;
-}
-
-export interface FestivalMapConfig {
-  center: LatLng;
-  defaultZoom: number;
-  enabled: boolean;
-  territoryBounds?: { sw: LatLng; ne: LatLng };
-  adminOverlay?: MapAdminOverlay;
-}
-
-export type MapZoneType =
-  | 'building'
-  | 'camping'
-  | 'parking'
-  | 'autocamp'
-  | 'comfort'
-  | 'trade'
-  | 'stage_area'
-  | 'service'
-  | 'toilet'
-  | 'shower'
-  | 'water'
-  | 'fence'
-  | 'custom';
-
-export interface MapZoneProperties {
-  /** Unadjusted source geometry retained for repeatable landscape fitting. */
-  schematicGeometry?: GeoJSON.Polygon;
-  /** Remaining parts of an area divided by a road; share its identity and caption. */
-  geometryParts?: GeoJSON.Polygon[];
-  parentZoneId?: string;
-  markerLabel?: string;
-  layoutRings?: [number, number][][];
-  accessPoint?: LatLng;
-  id: string;
-  name: string;
-  zoneType: MapZoneType;
-  fillColor: string;
-  fillOpacity: number;
-  strokeColor?: string;
-  strokeWidth?: number;
-  description?: string;
-  extrusionHeight?: number;
-  /** Подпись на карте (по умолчанию — для зданий и сервисных объектов) */
-  showLabel?: boolean;
-  /** Фоновое изображение внутри полигона */
-  fillImageUrl?: string;
-  fillImageOpacity?: number;
-  /** Поворот фона внутри полигона (°), по умолчанию как у формы */
-  fillImageRotation?: number;
-  /** Поворот подписи внутри полигона (°), по умолчанию как у формы */
-  labelRotation?: number;
-  /** Прямоугольная раскладка — для редактора (W/H/угол) */
-  layout?: {
-    center: LatLng;
-    widthMeters: number;
-    heightMeters: number;
-    rotation: number;
-  };
-}
-
-export type MapPathProperties = {
-  id: string;
-  name?: string;
-  pathKind?: 'road' | 'walkway' | 'fence';
-  routingOnly?: boolean;
-  closed?: boolean;
-};
-
-export type MapPoiCategory =
-  | 'stage'
-  | 'foodcourt'
-  | 'toilet'
-  | 'shower'
-  | 'water'
-  | 'medical'
-  | 'security'
-  | 'info'
-  | 'entrance'
-  | 'parking'
-  | 'custom';
-
-export interface MapPoiLink {
-  type: 'stage' | 'foodcourt' | 'none';
-  id?: string;
-}
-
-export interface MapPoiProperties {
-  id: string;
-  name: string;
-  category: MapPoiCategory;
-  description?: string;
-  link?: MapPoiLink;
-  accessPoint?: LatLng;
-  emergencyCode?: string;
-  phone?: string;
-  hours?: string;
-  status?: 'open' | 'closed' | 'unknown';
-  sourceZoneId?: string;
-}
-
-export type MapPathsGeoJson = GeoJSON.FeatureCollection<
-  GeoJSON.LineString,
-  MapPathProperties
->;
-
-export type MapZonesGeoJson = GeoJSON.FeatureCollection<
-  GeoJSON.Polygon,
-  MapZoneProperties
->;
-
-export type MapPoisGeoJson = GeoJSON.FeatureCollection<
-  GeoJSON.Point,
-  MapPoiProperties
->;
+// One map contract for the CMS, web and native app.
+export type {
+  LatLng,
+  MapAdminOverlay,
+  FestivalMapConfig,
+  MapZoneType,
+  MapZoneProperties,
+  MapPathProperties,
+  MapPoiCategory,
+  MapPoiLink,
+  MapPoiProperties,
+  MapPathsGeoJson,
+  MapZonesGeoJson,
+  MapPoisGeoJson,
+} from '../../src/types/map';
 
 export interface AppData {
   /** Opaque version of the stored content; required when saving a snapshot. */

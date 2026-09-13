@@ -3,48 +3,45 @@
 import { matchesAdminSearch } from '@/lib/admin-navigation';
 
 import { ContentRevision } from './ContentRevision';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { applySchemeOverlayStyle, ensureAdminMapStyles, upsertImageOverlay } from '@/lib/admin-yandex-map-layers';
+import { AdminMapCanvas, type MapHandle } from './AdminMapCanvas';
+import { MapLeaveGuard } from './MapLeaveGuard';
+import { MapOperationsEditor } from './MapOperationsEditor';
+import { SubmitButton } from './EditorForm';
 import {
-  defaultZoneProps,
-  PATH_KIND_LABELS,
-  pathFeatureStyle,
-  type DrawTool,
-  ZONE_TYPE_LABELS,
-  zoneFeatureStyle,
-} from '@/lib/map-draw-styles';
+  editZoneVertex,
+  moveZone,
+  transformZone,
+  transformCoordinate,
+  transformZoneGroup,
+  featureCenter,
+  selectionFeature,
+  POI_CATEGORIES,
+  type Coordinate,
+  type MapSelection,
+} from '@/lib/admin-map-model';
+import { polygonLabelLayout } from '../../../../../src/utils/map/polygonLabelLayout';
+import type { RouteSegment } from '../../../../../src/types/map';
+import { buildingHeight } from '../../../../../src/utils/map/buildingHeight';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { defaultZoneProps, PATH_KIND_LABELS, type DrawTool, ZONE_TYPE_LABELS } from '@/lib/map-draw-styles';
 import {
   closeRing,
   newMapId,
   nudgeLatLng,
   openRing,
-  polygonToRectLayout,
   rectToPolygon,
-  ringCentroid,
   translateCoords,
   type RectLayout,
 } from '@/lib/map-geometry';
 import { useMapEditorHistory } from '@/lib/use-map-editor-history';
 import { useLatestRef } from '@/hooks/useLatestRef';
-import { overlayToYandexLayoutBounds } from '@/lib/map-overlay-georef';
-import {
-  applyZoneLabelBoxStyle,
-  createZoneLabelElements,
-  shouldShowZoneLabel,
-  zoneFillImageBounds,
-  zoneFillImageRotation,
-  zoneImageLayout,
-  zoneLabelRotation,
-  zoneLabelText,
-} from '@/lib/zone-map-helpers';
-import { YANDEX_MAPS_API_KEY } from '@/lib/yandex-maps-config';
-import { loadYandexMaps, type YandexMapsBundle } from '@/lib/yandex-maps-loader';
 import type {
   FestivalMapConfig,
   MapAdminOverlay,
   MapPathProperties,
   MapPathsGeoJson,
   MapZoneProperties,
+  MapPoisGeoJson,
   MapZoneType,
   MapZonesGeoJson,
 } from '@/types';
@@ -53,101 +50,149 @@ type Props = {
   config: FestivalMapConfig;
   zones: MapZonesGeoJson;
   paths: MapPathsGeoJson;
+  pois: MapPoisGeoJson;
   overlay?: MapAdminOverlay;
   saveAction: (formData: FormData) => void | Promise<void>;
 };
-
-type Selection = { kind: 'zone'; id: string } | { kind: 'path'; id: string } | null;
-
-function removeAll(map: YandexMapInstance, items: YandexMapEntity[]) {
-  for (const item of items) {
-    map.removeChild(item);
-  }
-  items.length = 0;
-}
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
 
-function updateMapGeometry(entity: YandexMapEntity | undefined, geometry: GeoJSON.Geometry) {
-  entity?.update?.({ geometry });
-}
-
-export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths, overlay, saveAction }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<YandexMapInstance | null>(null);
-  const bundleRef = useRef<YandexMapsBundle | null>(null);
-  const listenerRef = useRef<YandexMapEntity | null>(null);
-  const featureRefs = useRef<YandexMapEntity[]>([]);
-  const zoneDecorRefs = useRef<YandexMapEntity[]>([]);
-  const handleRefs = useRef<YandexMapEntity[]>([]);
-  const overlayRef = useRef<YandexMapEntity | null>(null);
-  const draggingRef = useRef(false);
-  const featureEntityRef = useRef<Map<string, YandexMapEntity>>(new Map());
-  const lastDragCoordRef = useRef<YandexLngLat | null>(null);
-  const mapZoomRef = useRef(config.defaultZoom);
-  const zoneLabelDecorRef = useRef<
-    {
-      box: HTMLDivElement;
-      textEl: HTMLSpanElement;
-      layout: RectLayout;
-      labelRotation: number;
-    }[]
-  >([]);
-  const refreshZoneLabelSizesRef = useRef<() => void>(() => {});
-
-  const [ready, setReady] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
+export function MapDrawEditor({
+  config,
+  zones: initialZones,
+  paths: initialPaths,
+  pois: initialPois,
+  overlay,
+  saveAction,
+}: Props) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [routes, setRoutes] = useState<RouteSegment[]>();
+  const [preview, setPreview] = useState(false);
+  const [helpers, setHelpers] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [focus, setFocus] = useState<{
+    coordinates: Coordinate;
+    token: number;
+    bounds?: [Coordinate, Coordinate];
+  }>();
+  const [pickingAccess, setPickingAccess] = useState(false);
+  const [notice, setNotice] = useState('');
   const [tool, setTool] = useState<DrawTool>('select');
   const [newZoneType, setNewZoneType] = useState<MapZoneType>('building');
   const [newPathKind, setNewPathKind] = useState<MapPathProperties['pathKind']>('road');
-  const [selection, setSelection] = useState<Selection>(null);
+  const [selection, setSelection] = useState<MapSelection>(null);
   const [draftCoords, setDraftCoords] = useState<[number, number][]>([]);
-  const { zones, paths, setZones, setPaths, undo, redo, canUndo, canRedo } = useMapEditorHistory({
-    zones: initialZones,
-    paths: initialPaths,
-  });
-  const [dirty, setDirty] = useState(false);
+  const { zones, paths, pois, setZones, setPaths, setPois, setLayers, undo, redo, canUndo, canRedo } =
+    useMapEditorHistory({
+      zones: initialZones,
+      paths: initialPaths,
+      pois: initialPois,
+    });
+  const [submitted, setSubmitted] = useState(false);
+  const zonesJson = useMemo(() => JSON.stringify(zones), [zones]);
+  const pathsJson = useMemo(() => JSON.stringify(paths), [paths]);
+  const poisJson = useMemo(() => JSON.stringify(pois), [pois]);
+  const initialJson = useMemo(
+    () => [JSON.stringify(initialZones), JSON.stringify(initialPaths), JSON.stringify(initialPois)],
+    [initialZones, initialPaths, initialPois],
+  );
+  const dirty = zonesJson !== initialJson[0] || pathsJson !== initialJson[1] || poisJson !== initialJson[2];
   const [zoneImageUploading, setZoneImageUploading] = useState(false);
 
-  const markDirty = useCallback(() => setDirty(true), []);
+  const markDirty = useCallback(() => setSubmitted(false), []);
 
-  const selectObject = useCallback((kind: NonNullable<Selection>['kind'], id: string) => {
-    setSelection({ kind, id });
-  }, []);
-
-  const selectObjectRef = useLatestRef(selectObject);
+  const selectObject = useCallback(
+    (kind: NonNullable<MapSelection>['kind'], id: string) => {
+      setSelection({ kind, id });
+      setPickingAccess(false);
+      setTool('select');
+      setDraftCoords([]);
+      const feature = selectionFeature({ kind, id }, zones, paths, pois);
+      if (feature) {
+        const points =
+          feature.geometry.type === 'Polygon'
+            ? feature.geometry.coordinates.flat()
+            : feature.geometry.type === 'LineString'
+              ? feature.geometry.coordinates
+              : [];
+        setFocus({
+          coordinates: featureCenter(feature),
+          token: Date.now(),
+          bounds: points.length
+            ? [
+                [Math.min(...points.map((c) => c[0])), Math.min(...points.map((c) => c[1]))],
+                [Math.max(...points.map((c) => c[0])), Math.max(...points.map((c) => c[1]))],
+              ]
+            : undefined,
+        });
+      }
+    },
+    [zones, paths, pois],
+  );
 
   const activeSelection = selection;
 
   const selectedZone = useMemo(
-    () => (activeSelection?.kind === 'zone' ? zones.features.find((f) => f.properties.id === activeSelection.id) : undefined),
+    () =>
+      activeSelection?.kind === 'zone'
+        ? zones.features.find((f) => f.properties.id === activeSelection.id)
+        : undefined,
     [activeSelection, zones],
   );
   const selectedPath = useMemo(
-    () => (activeSelection?.kind === 'path' ? paths.features.find((f) => f.properties.id === activeSelection.id) : undefined),
+    () =>
+      activeSelection?.kind === 'path'
+        ? paths.features.find((f) => f.properties.id === activeSelection.id)
+        : undefined,
     [activeSelection, paths],
   );
 
-  const overlayBounds = useMemo(() => {
-    if (!overlay?.center || !overlay.widthMeters) return null;
-    return overlayToYandexLayoutBounds(overlay);
-  }, [overlay]);
-
+  const selectedPoi =
+    selection?.kind === 'poi' ? pois.features.find((f) => f.properties.id === selection.id) : undefined;
   const updateZone = useCallback(
-    (id: string, updater: (z: GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>) => GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>) => {
-      setZones((prev) => ({
-        ...prev,
-        features: prev.features.map((f) => (f.properties.id === id ? updater(f) : f)),
-      }));
+    (
+      id: string,
+      updater: (
+        z: GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>,
+      ) => GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>,
+    ) => {
+      setLayers((prev) => {
+        const old = prev.zones.features.find((f) => f.properties.id === id);
+        if (!old) return prev;
+        const next = updater(old);
+        const accessChanged = next.properties.accessPoint !== old.properties.accessPoint;
+        return {
+          ...prev,
+          zones: {
+            ...prev.zones,
+            features: prev.zones.features.map((f) => (f.properties.id === id ? next : f)),
+          },
+          pois: accessChanged
+            ? {
+                ...prev.pois,
+                features: prev.pois.features.map((f) =>
+                  f.properties.sourceZoneId === id
+                    ? { ...f, properties: { ...f.properties, accessPoint: next.properties.accessPoint } }
+                    : f,
+                ),
+              }
+            : prev.pois,
+        };
+      });
       markDirty();
     },
-    [markDirty, setZones],
+    [markDirty, setLayers],
   );
 
   const updatePath = useCallback(
-    (id: string, updater: (p: GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>) => GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>) => {
+    (
+      id: string,
+      updater: (
+        p: GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>,
+      ) => GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>,
+    ) => {
       setPaths((prev) => ({
         ...prev,
         features: prev.features.map((f) => (f.properties.id === id ? updater(f) : f)),
@@ -156,6 +201,37 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
     },
     [markDirty, setPaths],
   );
+
+  const moveZoneGroup = useCallback(
+    (id: string, delta: Coordinate) => {
+      setLayers((prev) => ({
+        ...prev,
+        ...transformZoneGroup(
+          prev.zones,
+          prev.pois!,
+          id,
+          (f) => moveZone(f, delta),
+          (c) => [c[0] + delta[0], c[1] + delta[1]],
+        ),
+      }));
+      markDirty();
+    },
+    [setLayers, markDirty],
+  );
+  const rotateZoneGroup = (zone: MapZonesGeoJson['features'][number], angle: number, scale = 1) => {
+    const center = featureCenter(zone);
+    setLayers((prev) => ({
+      ...prev,
+      ...transformZoneGroup(
+        prev.zones,
+        prev.pois!,
+        zone.properties.id,
+        (f) => transformZone(f, angle, scale, center),
+        (c) => transformCoordinate(c, center, angle, scale),
+      ),
+    }));
+    markDirty();
+  };
 
   const uploadZoneFillImage = useCallback(
     async (zoneId: string, file: File) => {
@@ -175,7 +251,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         }));
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Ошибка загрузки';
-        window.alert(message);
+        setNotice(message);
       } finally {
         setZoneImageUploading(false);
       }
@@ -185,93 +261,102 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
 
   const deleteSelection = useCallback(() => {
     if (!activeSelection) return;
-    if (activeSelection.kind === 'zone') {
-      setZones((prev) => ({ ...prev, features: prev.features.filter((f) => f.properties.id !== activeSelection.id) }));
-    } else {
-      setPaths((prev) => ({ ...prev, features: prev.features.filter((f) => f.properties.id !== activeSelection.id) }));
+    if (
+      activeSelection.kind === 'zone' &&
+      zones.features.some((f) => f.properties.parentZoneId === activeSelection.id)
+    ) {
+      setNotice('Внутри зоны есть отдельные места. Сначала перенесите или удалите их.');
+      return;
     }
+    if (activeSelection.kind === 'zone') {
+      // Remove associated POI records together, avoiding an orphan duplicate marker.
+      setLayers((prev) => ({
+        ...prev,
+        zones: {
+          ...prev.zones,
+          features: prev.zones.features.filter((f) => f.properties.id !== activeSelection.id),
+        },
+        pois: {
+          type: 'FeatureCollection',
+          features: (prev.pois?.features ?? []).filter(
+            (f) => f.properties.sourceZoneId !== activeSelection.id,
+          ),
+        },
+      }));
+    } else if (activeSelection.kind === 'path')
+      setPaths((prev) => ({
+        ...prev,
+        features: prev.features.filter((f) => f.properties.id !== activeSelection.id),
+      }));
+    else
+      setPois((prev) => ({
+        ...prev,
+        features: prev.features.filter((f) => f.properties.id !== activeSelection.id),
+      }));
     setSelection(null);
     markDirty();
-  }, [activeSelection, markDirty, setZones, setPaths]);
+  }, [activeSelection, zones, markDirty, setLayers, setPaths, setPois]);
 
   const duplicateSelection = useCallback(() => {
-    if (!activeSelection) return;
-    const offset = { northM: 0, eastM: 8 };
-    if (activeSelection.kind === 'zone') {
-      const src = zones.features.find((f) => f.properties.id === activeSelection.id);
-      if (!src) return;
-      const id = newMapId('zone');
-      const layout = src.properties.layout;
-      if (layout) {
-        const center = nudgeLatLng(layout.center.lat, layout.center.lng, offset.northM, offset.eastM);
-        const nextLayout = { ...layout, center };
-        setZones((prev) => ({
-          ...prev,
-          features: [
-            ...prev.features,
-            {
-              type: 'Feature',
-              properties: { ...src.properties, id, layout: nextLayout },
-              geometry: rectToPolygon(nextLayout),
-            },
-          ],
-        }));
-      } else {
-        const ring = openRing(src.geometry.coordinates[0] as [number, number][]);
-        const shifted = ring.map(([lng, lat]) => {
-          const c = nudgeLatLng(lat, lng, offset.northM, offset.eastM);
-          return [c.lng, c.lat] as [number, number];
-        });
-        setZones((prev) => ({
-          ...prev,
-          features: [
-            ...prev.features,
-            {
-              type: 'Feature',
-              properties: { ...src.properties, id },
-              geometry: { type: 'Polygon', coordinates: [closeRing(shifted)] },
-            },
-          ],
-        }));
-      }
-      setSelection({ kind: 'zone', id });
-    } else if (activeSelection.kind === 'path') {
-      const src = paths.features.find((f) => f.properties.id === activeSelection.id);
-      if (!src) return;
-      const id = newMapId('path');
-      const shifted = (src.geometry.coordinates as [number, number][]).map(([lng, lat]) => {
-        const c = nudgeLatLng(lat, lng, offset.northM, offset.eastM);
-        return [c.lng, c.lat] as [number, number];
-      });
+    if (!selection) return;
+    const source = selectionFeature(selection, zones, paths, pois);
+    if (!source) return;
+    const center = featureCenter(source),
+      shifted = nudgeLatLng(center[1], center[0], 0, 8);
+    const delta: Coordinate = [shifted.lng - center[0], shifted.lat - center[1]];
+    const id = newMapId(selection.kind);
+    if (selection.kind === 'zone') {
+      const original = zones.features.find((f) => f.properties.id === selection.id)!;
+      const copy = moveZone(original, delta);
+      setZones((prev) => ({
+        ...prev,
+        features: [
+          ...prev.features,
+          { ...copy, properties: { ...copy.properties, id, name: copy.properties.name + ' — копия' } },
+        ],
+      }));
+    } else if (selection.kind === 'path') {
+      const original = paths.features.find((f) => f.properties.id === selection.id)!;
       setPaths((prev) => ({
         ...prev,
         features: [
           ...prev.features,
           {
-            type: 'Feature',
-            properties: { ...src.properties, id },
-            geometry: { type: 'LineString', coordinates: shifted },
+            ...original,
+            properties: { ...original.properties, id },
+            geometry: {
+              type: 'LineString',
+              coordinates: translateCoords(original.geometry.coordinates as Coordinate[], ...delta),
+            },
           },
         ],
       }));
-      setSelection({ kind: 'path', id });
+    } else {
+      const original = pois.features.find((f) => f.properties.id === selection.id)!;
+      setPois((prev) => ({
+        ...prev,
+        features: [
+          ...prev.features,
+          {
+            ...original,
+            properties: {
+              ...original.properties,
+              id,
+              name: original.properties.name + ' — копия',
+              sourceZoneId: undefined,
+              accessPoint: undefined,
+            },
+            geometry: { type: 'Point', coordinates: [shifted.lng, shifted.lat] },
+          },
+        ],
+      }));
     }
+    setSelection({ kind: selection.kind, id });
     markDirty();
-  }, [activeSelection, zones, paths, markDirty, setZones, setPaths]);
-
-  const convertZoneToRect = useCallback(() => {
-    if (!selectedZone || selectedZone.properties.layout) return;
-    const ring = selectedZone.geometry.coordinates[0] as [number, number][];
-    const layout = polygonToRectLayout(ring);
-    updateZone(selectedZone.properties.id, (f) => ({
-      ...f,
-      properties: { ...f.properties, layout },
-      geometry: rectToPolygon(layout),
-    }));
-  }, [selectedZone, updateZone]);
+  }, [selection, zones, paths, pois, setZones, setPaths, setPois, markDirty]);
 
   const finishDraft = useCallback(() => {
-    if (draftCoords.length < 2) return;
+    if (draftCoords.length < (tool === 'polygon' ? 3 : 2)) return;
     if (tool === 'line') {
       const id = newMapId('path');
       setPaths((prev) => ({
@@ -280,7 +365,11 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
           ...prev.features,
           {
             type: 'Feature',
-            properties: { id, name: PATH_KIND_LABELS[newPathKind ?? 'road'], pathKind: newPathKind ?? 'road' },
+            properties: {
+              id,
+              name: PATH_KIND_LABELS[newPathKind ?? 'road'],
+              pathKind: newPathKind ?? 'road',
+            },
             geometry: { type: 'LineString', coordinates: [...draftCoords] },
           },
         ],
@@ -308,8 +397,32 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
   }, [draftCoords, tool, newPathKind, newZoneType, markDirty, setPaths, setZones]);
 
   const handleMapClick = useCallback(
-    (coordinates: YandexLngLat) => {
+    (coordinates: Coordinate) => {
       const [lng, lat] = coordinates;
+      if (tool === 'poi') {
+        const id = newMapId('poi');
+        setPois((prev) => ({
+          ...prev,
+          features: [
+            ...prev.features,
+            {
+              type: 'Feature',
+              geometry: { type: 'Point', coordinates },
+              properties: {
+                id,
+                name: 'Новая точка',
+                category: 'info',
+                status: 'open',
+                link: { type: 'none' },
+              },
+            },
+          ],
+        }));
+        setSelection({ kind: 'poi', id });
+        setTool('select');
+        markDirty();
+        return;
+      }
       if (tool === 'line' || tool === 'polygon') {
         setDraftCoords((prev) => [...prev, [lng, lat]]);
         return;
@@ -339,10 +452,9 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         return;
       }
     },
-    [tool, newZoneType, markDirty, setZones],
+    [tool, newZoneType, markDirty, setZones, setPois],
   );
 
-  const handleMapClickRef = useLatestRef(handleMapClick);
   const toolRef = useLatestRef(tool);
   const finishDraftRef = useLatestRef(finishDraft);
   const deleteSelectionRef = useLatestRef(deleteSelection);
@@ -352,6 +464,12 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
+      if (
+        !editorRef.current?.contains(e.target as Node) ||
+        preview ||
+        (e.target as HTMLElement)?.isContentEditable
+      )
+        return;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -372,6 +490,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         return;
       }
       if (e.key === 'Escape') {
+        setPickingAccess(false);
         if (draftCoords.length > 0) {
           setDraftCoords([]);
           setTool('select');
@@ -389,6 +508,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         '2': 'rect',
         '3': 'line',
         '4': 'polygon',
+        '5': 'poi',
       };
       if (toolKeys[e.key]) {
         const next = toolKeys[e.key];
@@ -399,464 +519,126 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [draftCoords.length, markDirty, deleteSelectionRef, finishDraftRef, redoRef, toolRef, undoRef]);
+  }, [preview, draftCoords.length, markDirty, deleteSelectionRef, finishDraftRef, redoRef, toolRef, undoRef]);
 
-  useEffect(() => {
-    if (!YANDEX_MAPS_API_KEY || !containerRef.current || mapRef.current) return;
-    ensureAdminMapStyles();
-    containerRef.current.classList.add('admin-yandex-map');
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const bundle = await loadYandexMaps();
-        if (cancelled || !containerRef.current) return;
-        bundleRef.current = bundle;
-        const { ymaps3 } = bundle;
-        const map = new ymaps3.YMap(
-          containerRef.current,
-          {
-            location: { center: [config.center.lng, config.center.lat], zoom: config.defaultZoom },
-            showScaleInCopyrights: true,
-            behaviors: ['drag', 'scrollZoom', 'pinchZoom', 'dblClick'],
-          },
-          [new ymaps3.YMapDefaultSchemeLayer({ theme: 'dark' }), new ymaps3.YMapDefaultFeaturesLayer({})],
-        );
-
-        const listener = new ymaps3.YMapListener({
-          layer: 'any',
-          onUpdate: (event: { location?: { zoom?: number } }) => {
-            const zoom = event?.location?.zoom;
-            if (typeof zoom === 'number') {
-              mapZoomRef.current = zoom;
-              refreshZoneLabelSizesRef.current();
-            }
-          },
-          onClick: (object, evt) => {
-            if (draggingRef.current) return;
-            const props = object?.entity?.properties as Record<string, unknown> | undefined;
-            const editorKind = props?.__editorKind as string | undefined;
-            const editorId = props?.__editorId as string | undefined;
-            if (editorKind && editorId && toolRef.current === 'select') {
-              selectObjectRef.current(editorKind as 'zone' | 'path', editorId);
-              return;
-            }
-            if (toolRef.current !== 'select' && evt?.coordinates) {
-              handleMapClickRef.current(evt.coordinates);
-            } else if (toolRef.current === 'select') {
-              setSelection(null);
-            }
-          },
-        });
-        map.addChild(listener);
-        listenerRef.current = listener;
-        mapRef.current = map;
-        setReady(true);
-      } catch (error) {
-        if (!cancelled) setInitError(error instanceof Error ? error.message : 'Ошибка карты');
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      setReady(false);
-      const map = mapRef.current;
-      if (map) {
-        /* eslint-disable react-hooks/exhaustive-deps -- Yandex map entities are torn down on unmount */
-        const features = featureRefs.current;
-        const zoneDecor = zoneDecorRefs.current;
-        const handles = handleRefs.current;
-        /* eslint-enable react-hooks/exhaustive-deps */
-        if (overlayRef.current) map.removeChild(overlayRef.current);
-        if (listenerRef.current) map.removeChild(listenerRef.current);
-        removeAll(map, features);
-        removeAll(map, zoneDecor);
-        removeAll(map, handles);
-        map.destroy?.();
-      }
-      mapRef.current = null;
-      bundleRef.current = null;
-    };
-  }, [config.center.lat, config.center.lng, config.defaultZoom, handleMapClickRef, selectObjectRef, toolRef]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const bundle = bundleRef.current;
-    if (!map || !ready || !bundle || draggingRef.current) return;
-
-    removeAll(map, featureRefs.current);
-    removeAll(map, zoneDecorRefs.current);
-    featureEntityRef.current.clear();
-
-    for (const feature of zones.features) {
-      const item = new bundle.ymaps3.YMapFeature({
-        id: `zone-${feature.properties.id}`,
-        geometry: feature.geometry,
-        style: zoneFeatureStyle(feature.properties),
-        properties: { __editorKind: 'zone', __editorId: feature.properties.id },
-      });
-      map.addChild(item);
-      featureRefs.current.push(item);
-      featureEntityRef.current.set(`zone-${feature.properties.id}`, item);
-    }
-
-    for (const feature of paths.features) {
-      const item = new bundle.ymaps3.YMapFeature({
-        id: `path-${feature.properties.id}`,
-        geometry: feature.geometry,
-        style: pathFeatureStyle(feature.properties),
-        properties: { __editorKind: 'path', __editorId: feature.properties.id },
-      });
-      map.addChild(item);
-      featureRefs.current.push(item);
-      featureEntityRef.current.set(`path-${feature.properties.id}`, item);
-    }
-
-    const styleRules: string[] = [];
-    zoneLabelDecorRef.current = [];
-    for (const feature of zones.features) {
-      const props = feature.properties;
-      const zoneLayout = zoneImageLayout(feature);
-
-      if (props.fillImageUrl) {
-        const classSuffix = props.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-        const opacity = props.fillImageOpacity ?? 0.92;
-        const imageRotation = zoneFillImageRotation(props, zoneLayout);
-        styleRules.push(
-          `.admin-zone-fill-image--${classSuffix}{opacity:${opacity};transform:rotate(${imageRotation}deg);}`,
-        );
-        const overlay = new bundle.YMapImageOverlay({
-          bounds: zoneFillImageBounds(zoneLayout),
-          imageUrl: props.fillImageUrl,
-          className: `admin-zone-fill-image admin-zone-fill-image--${classSuffix}`,
-        });
-        map.addChild(overlay);
-        zoneDecorRefs.current.push(overlay);
-      }
-
-      if (shouldShowZoneLabel(props)) {
-        const labelRotation = zoneLabelRotation(props, zoneLayout);
-        const { box, textEl } = createZoneLabelElements(zoneLabelText(props));
-        applyZoneLabelBoxStyle(box, textEl, zoneLayout, labelRotation, mapZoomRef.current);
-        zoneLabelDecorRef.current.push({ box, textEl, layout: zoneLayout, labelRotation });
-        const marker = new bundle.ymaps3.YMapMarker(
-          { coordinates: [zoneLayout.center.lng, zoneLayout.center.lat] },
-          box,
-        );
-        map.addChild(marker);
-        zoneDecorRefs.current.push(marker);
-      }
-    }
-
-    const styleId = 'admin-zone-fill-dynamic';
-    let styleEl = document.getElementById(styleId);
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = styleId;
-      document.head.appendChild(styleEl);
-    }
-    styleEl.textContent = styleRules.join('\n');
-    refreshZoneLabelSizesRef.current();
-
-    if (draftCoords.length >= 2 && tool === 'line') {
-      const draft = new bundle.ymaps3.YMapFeature({
-        id: 'draft-line',
-        geometry: { type: 'LineString', coordinates: draftCoords },
-        style: { stroke: [{ width: 4, color: '#74ACFC', dash: [4, 4] }], simplificationRate: 0 },
-      });
-      map.addChild(draft);
-      featureRefs.current.push(draft);
-    }
-    if (draftCoords.length >= 2 && tool === 'polygon') {
-      const ring = draftCoords.length >= 3 ? closeRing(draftCoords) : draftCoords;
-      const draft = new bundle.ymaps3.YMapFeature({
-        id: 'draft-polygon',
-        geometry: { type: 'Polygon', coordinates: [ring] },
-        style: {
-          fill: 'rgba(116, 172, 252, 0.15)',
-          stroke: [{ width: 2, color: '#74ACFC', dash: [3, 3] }],
-          simplificationRate: 0,
+  const setAccessPoint = useCallback(
+    (coordinate: Coordinate) => {
+      const accessPoint = { lng: coordinate[0], lat: coordinate[1] };
+      const zoneId = selectedZone?.properties.id ?? selectedPoi?.properties.sourceZoneId;
+      const poiId = selectedPoi?.properties.id;
+      setLayers((prev) => ({
+        ...prev,
+        zones: {
+          ...prev.zones,
+          features: prev.zones.features.map((f) =>
+            f.properties.id === zoneId
+              ? { ...f, properties: { ...f.properties, accessPoint, accessPointGenerated: false } }
+              : f,
+          ),
         },
-      });
-      map.addChild(draft);
-      featureRefs.current.push(draft);
-    }
-
-    if (overlay?.imageUrl && overlayBounds) {
-      applySchemeOverlayStyle(containerRef.current, {
-        opacity: overlay.opacity ?? 0.5,
-        rotation: overlay.rotation ?? 0,
-      });
-      overlayRef.current = upsertImageOverlay(map, bundle, overlayRef.current, {
-        bounds: overlayBounds,
-        imageUrl: overlay.imageUrl,
-      });
-    }
-
-    // Ручки поверх PNG-схемы
-  }, [ready, zones, paths, draftCoords, tool, overlay, overlayBounds, activeSelection, selectObjectRef, toolRef]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const bundle = bundleRef.current;
-    if (!map || !ready || !bundle || draggingRef.current) return;
-
-    removeAll(map, handleRefs.current);
-
-    const finishDrag = (commit: () => void) => {
-      draggingRef.current = false;
-      commit();
-    };
-
-    const addCenterHandle = (
-      coordinates: YandexLngLat,
-      onMove: (anchor: YandexLngLat, initial: [number, number][], current: YandexLngLat) => void,
-      onCommit: (anchor: YandexLngLat, initial: [number, number][], current: YandexLngLat) => void,
-      getInitial: () => [number, number][],
-    ) => {
-      const el = document.createElement('div');
-      el.className = 'editor-move-handle';
-      el.title = 'Перетащить объект';
-
-      let anchor: YandexLngLat = coordinates;
-      let initialCoords: [number, number][] = getInitial();
-
-      let marker: YandexMapEntity;
-      marker = new bundle.ymaps3.YMapMarker(
-        {
-          coordinates,
-          draggable: true,
-          zIndex: 3300,
-          blockBehaviors: true,
-          onDragStart: () => {
-            draggingRef.current = true;
-            anchor = coordinates;
-            initialCoords = getInitial();
-            lastDragCoordRef.current = coordinates;
-          },
-          onDragMove: (c: YandexLngLat) => {
-            marker.update?.({ coordinates: c });
-            lastDragCoordRef.current = c;
-            onMove(anchor, initialCoords, c);
-          },
-          onDragEnd: () => {
-            const c = lastDragCoordRef.current;
-            if (c) finishDrag(() => onCommit(anchor, initialCoords, c));
-            else draggingRef.current = false;
-          },
+        pois: {
+          ...prev.pois,
+          features: prev.pois.features.map((f) =>
+            f.properties.id === poiId || (zoneId && f.properties.sourceZoneId === zoneId)
+              ? { ...f, properties: { ...f.properties, accessPoint } }
+              : f,
+          ),
         },
-        el,
-      );
-      map.addChild(marker);
-      handleRefs.current.push(marker);
-    };
-
-    const addHandle = (
-      coordinates: YandexLngLat,
-      onMove: (c: YandexLngLat) => void,
-      onCommit: (c: YandexLngLat) => void,
-    ) => {
-      const el = document.createElement('div');
-      el.className = 'editor-vertex-handle';
-      const marker = new bundle.ymaps3.YMapMarker(
-        {
-          coordinates,
-          draggable: true,
-          zIndex: 3000,
-          blockBehaviors: true,
-          onDragStart: () => {
-            draggingRef.current = true;
-            lastDragCoordRef.current = coordinates;
-          },
-          onDragMove: (c: YandexLngLat) => {
-            marker.update?.({ coordinates: c });
-            lastDragCoordRef.current = c;
-            onMove(c);
-          },
-          onDragEnd: () => {
-            const c = lastDragCoordRef.current;
-            if (c) finishDrag(() => onCommit(c));
-            else draggingRef.current = false;
-          },
-        },
-        el,
-      );
-      map.addChild(marker);
-      handleRefs.current.push(marker);
-    };
-
-    if (selectedZone?.properties.layout) {
-      const zoneId = selectedZone.properties.id;
-      const layout = selectedZone.properties.layout;
-      const el = document.createElement('div');
-      el.className = 'editor-move-handle';
-      el.title = 'Перетащить объект';
-      const centerCoord: YandexLngLat = [layout.center.lng, layout.center.lat];
-      let initialLayout = layout;
-
-      let centerMarker: YandexMapEntity;
-      centerMarker = new bundle.ymaps3.YMapMarker(
-        {
-          coordinates: centerCoord,
-          draggable: true,
-          zIndex: 3300,
-          blockBehaviors: true,
-          onDragStart: () => {
-            draggingRef.current = true;
-            initialLayout = layout;
-            lastDragCoordRef.current = centerCoord;
-          },
-          onDragMove: (c: YandexLngLat) => {
-            centerMarker.update?.({ coordinates: c });
-            lastDragCoordRef.current = c;
-            const nextLayout = { ...initialLayout, center: { lng: c[0], lat: c[1] } };
-            updateMapGeometry(featureEntityRef.current.get(`zone-${zoneId}`), rectToPolygon(nextLayout));
-          },
-          onDragEnd: () => {
-            const c = lastDragCoordRef.current;
-            if (!c) {
-              draggingRef.current = false;
-              return;
-            }
-            finishDrag(() => {
-              const nextLayout = { ...initialLayout, center: { lng: c[0], lat: c[1] } };
-              updateZone(zoneId, (f) => ({
-                ...f,
-                properties: { ...f.properties, layout: nextLayout },
-                geometry: rectToPolygon(nextLayout),
-              }));
-            });
-          },
-        },
-        el,
-      );
-      map.addChild(centerMarker);
-      handleRefs.current.push(centerMarker);
-    } else if (selectedZone) {
-      const zoneId = selectedZone.properties.id;
-      const ring = openRing(selectedZone.geometry.coordinates[0] as [number, number][]);
-      const centroid = ringCentroid(ring);
-
-      addCenterHandle(
-        [centroid.lng, centroid.lat],
-        (anchor, initial, current) => {
-          const dLng = current[0] - anchor[0];
-          const dLat = current[1] - anchor[1];
-          const nextRing = translateCoords(initial, dLng, dLat);
-          updateMapGeometry(featureEntityRef.current.get(`zone-${zoneId}`), {
-            type: 'Polygon',
-            coordinates: [closeRing(nextRing)],
-          });
-        },
-        (_anchor, initial, current) => {
-          const dLng = current[0] - _anchor[0];
-          const dLat = current[1] - _anchor[1];
-          updateZone(zoneId, (f) => ({
-            ...f,
-            geometry: {
-              type: 'Polygon',
-              coordinates: [closeRing(translateCoords(initial, dLng, dLat))],
-            },
-          }));
-        },
-        () => openRing(selectedZone.geometry.coordinates[0] as [number, number][]),
-      );
-
-      ring.forEach((coord, index) => {
-        addHandle(
-          coord,
-          (c) => {
-            const nextRing = openRing(selectedZone.geometry.coordinates[0] as [number, number][]);
-            nextRing[index] = c;
-            updateMapGeometry(featureEntityRef.current.get(`zone-${zoneId}`), {
-              type: 'Polygon',
-              coordinates: [closeRing(nextRing)],
-            });
-          },
-          (c) => {
-            updateZone(zoneId, (f) => {
-              const nextRing = openRing(f.geometry.coordinates[0] as [number, number][]);
-              nextRing[index] = c;
-              return { ...f, geometry: { type: 'Polygon', coordinates: [closeRing(nextRing)] } };
-            });
-          },
-        );
-      });
-    }
-
-    if (selectedPath) {
-      const pathId = selectedPath.properties.id;
-      const lineCoords = selectedPath.geometry.coordinates as [number, number][];
-      const pathCenter = ringCentroid(lineCoords);
-
-      addCenterHandle(
-        [pathCenter.lng, pathCenter.lat],
-        (anchor, initial, current) => {
-          const dLng = current[0] - anchor[0];
-          const dLat = current[1] - anchor[1];
-          updateMapGeometry(featureEntityRef.current.get(`path-${pathId}`), {
-            type: 'LineString',
-            coordinates: translateCoords(initial, dLng, dLat),
-          });
-        },
-        (anchor, initial, current) => {
-          const dLng = current[0] - anchor[0];
-          const dLat = current[1] - anchor[1];
-          updatePath(pathId, (f) => ({
-            ...f,
-            geometry: { type: 'LineString', coordinates: translateCoords(initial, dLng, dLat) },
-          }));
-        },
-        () => [...lineCoords],
-      );
-
-      lineCoords.forEach((coord, index) => {
-        addHandle(
-          coord as YandexLngLat,
-          (c) => {
-            const next = [...selectedPath.geometry.coordinates] as [number, number][];
-            next[index] = c;
-            updateMapGeometry(featureEntityRef.current.get(`path-${pathId}`), {
-              type: 'LineString',
-              coordinates: next,
-            });
-          },
-          (c) => {
-            updatePath(pathId, (f) => {
-              const next = [...f.geometry.coordinates] as [number, number][];
-              next[index] = c;
-              return { ...f, geometry: { type: 'LineString', coordinates: next } };
-            });
-          },
-        );
-      });
-    }
-
-    // Ручки поверх PNG-схемы
-    for (const handle of handleRefs.current) {
-      map.removeChild(handle);
-      map.addChild(handle);
-    }
-  }, [ready, selectedZone, selectedPath, updateZone, updatePath]);
+      }));
+      setPickingAccess(false);
+      markDirty();
+    },
+    [selectedZone, selectedPoi, setLayers, markDirty],
+  );
 
   const layout = selectedZone?.properties.layout;
-
-  useEffect(() => {
-    refreshZoneLabelSizesRef.current = () => {
-      for (const item of zoneLabelDecorRef.current) {
-        applyZoneLabelBoxStyle(
-          item.box,
-          item.textEl,
-          item.layout,
-          item.labelRotation,
-          mapZoomRef.current,
-        );
-      }
-    };
-  });
+  const handles = useMemo<MapHandle[]>(() => {
+    if (tool !== 'select' || pickingAccess) return [];
+    const result: MapHandle[] = [];
+    const selected = selectedZone ?? selectedPath ?? selectedPoi;
+    if (!selected) return result;
+    const origin = featureCenter(selected);
+    result.push({
+      id: 'move',
+      coordinate: origin,
+      title: 'Перетащить объект',
+      onCommit: (coordinate) => {
+        const delta: Coordinate = [coordinate[0] - origin[0], coordinate[1] - origin[1]];
+        if (selectedZone) moveZoneGroup(selectedZone.properties.id, delta);
+        else if (selectedPath)
+          updatePath(selectedPath.properties.id, (f) => ({
+            ...f,
+            geometry: {
+              type: 'LineString',
+              coordinates: translateCoords(f.geometry.coordinates as Coordinate[], ...delta),
+            },
+          }));
+        else if (selectedPoi) {
+          setPois((prev) => ({
+            ...prev,
+            features: prev.features.map((f) =>
+              f.properties.id === selectedPoi.properties.id
+                ? { ...f, geometry: { type: 'Point', coordinates: coordinate } }
+                : f,
+            ),
+          }));
+          markDirty();
+        }
+      },
+    });
+    if (selectedZone && !selectedZone.properties.layout)
+      openRing(selectedZone.geometry.coordinates[0] as Coordinate[]).forEach((coordinate, index) => {
+        result.push({
+          id: `vertex-${index}`,
+          coordinate,
+          title: `Вершина ${index + 1}`,
+          kind: 'vertex',
+          onCommit: (c) => updateZone(selectedZone.properties.id, (f) => editZoneVertex(f, index, c)),
+        });
+      });
+    if (selectedPath)
+      selectedPath.geometry.coordinates.forEach((coordinate, index) => {
+        result.push({
+          id: `vertex-${index}`,
+          coordinate: coordinate as Coordinate,
+          title: `Вершина ${index + 1}`,
+          kind: 'vertex',
+          onCommit: (c) =>
+            updatePath(selectedPath.properties.id, (f) => ({
+              ...f,
+              geometry: {
+                type: 'LineString',
+                coordinates: f.geometry.coordinates.map((point, i) => (i === index ? c : point)),
+              },
+            })),
+        });
+      });
+    const access = (selectedZone ?? selectedPoi)?.properties.accessPoint;
+    if (access)
+      result.push({
+        id: 'access',
+        coordinate: [access.lng, access.lat],
+        title: 'Вход для маршрута',
+        kind: 'access',
+        onCommit: setAccessPoint,
+      });
+    return result;
+  }, [
+    selectedZone,
+    selectedPath,
+    selectedPoi,
+    tool,
+    pickingAccess,
+    updateZone,
+    updatePath,
+    moveZoneGroup,
+    setAccessPoint,
+    setPois,
+    markDirty,
+  ]);
 
   const layerItems = useMemo(() => {
-    const items: { kind: 'zone' | 'path'; id: string; label: string; group: string }[] = [];
+    const items: { kind: 'zone' | 'path' | 'poi'; id: string; label: string; group: string }[] = [];
     for (const f of zones.features) {
       items.push({
         kind: 'zone',
@@ -873,28 +655,80 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         group: PATH_KIND_LABELS[f.properties.pathKind ?? 'road'],
       });
     }
+    for (const f of pois.features)
+      items.push({
+        kind: 'poi',
+        id: f.properties.id,
+        label: f.properties.name,
+        group: POI_CATEGORIES[f.properties.category],
+      });
     return items;
-  }, [zones, paths]);
+  }, [zones, paths, pois]);
 
   const [layerQuery, setLayerQuery] = useState('');
   const visibleLayers = layerItems.filter((item) => matchesAdminSearch(layerQuery, item.label, item.group));
 
   return (
-    <div className="panel map-draw-editor">
-      <h2>Редактор карты</h2>
-      <details className="map-editor-help"><summary>Как редактировать карту</summary><p className="hint">
-        Прямоугольник — здания, линия — дороги/заборы, полигон — зоны. Выделите объект
-        и перетащите жёлтый маркер в центре; синие точки — вершины для изменения формы.
-        Клавиши 1–4 — инструменты, Enter — завершить линию/полигон, Del — удалить, Esc — отмена, Ctrl+Z / Ctrl+Y — отмена/повтор.
-      </p></details>
+    <div ref={editorRef} className="panel map-draw-editor" tabIndex={-1}>
+      <MapLeaveGuard dirty={dirty && !submitted} />
+      <div className="panel-heading">
+        <div>
+          <h2>Карта фестиваля</h2>
+          <p>Объекты, дороги и входы — на той же карте, что видят гости.</p>
+        </div>
+        <span className="map-engine-badge">MapLibre · как на сайте</span>
+      </div>
+      <div className="map-view-toolbar">
+        <div className="map-mode-switch" aria-label="Режим карты">
+          <button type="button" aria-pressed={!preview} onClick={() => setPreview(false)}>
+            Редактирование · 2D
+          </button>
+          <button
+            type="button"
+            aria-pressed={preview}
+            onClick={() => {
+              setPreview(true);
+              setPickingAccess(false);
+            }}
+          >
+            Вид для гостей · 3D
+          </button>
+        </div>
+        {!preview && (
+          <label>
+            <input type="checkbox" checked={helpers} onChange={(e) => setHelpers(e.target.checked)} />
+            Служебные линии и закрытые зоны
+          </label>
+        )}
+        {overlay && !preview && (
+          <label>
+            <input type="checkbox" checked={showOverlay} onChange={(e) => setShowOverlay(e.target.checked)} />
+            Схема-образец
+          </label>
+        )}
+      </div>
+      {notice && (
+        <p role="alert" className="notice error">
+          {notice}
+        </p>
+      )}
+      <details className="map-editor-help" hidden={preview}>
+        <summary>Как редактировать карту</summary>
+        <p className="hint">
+          Прямоугольник — здания, линия — дороги/заборы, полигон — зоны. Выделите объект и перетащите жёлтый
+          маркер в центре; синие точки — вершины для изменения формы. Клавиши 1–5 — инструменты, Enter —
+          завершить линию/полигон, Del — удалить, Esc — отмена, Ctrl+Z / Ctrl+Y — отмена/повтор.
+        </p>
+      </details>
 
-      <div className="map-draw-toolbar">
+      <div className="map-draw-toolbar" hidden={preview}>
         {(
           [
             ['select', 'Выбор (1)'],
             ['rect', 'Прямоугольник (2)'],
             ['line', 'Линия (3)'],
             ['polygon', 'Полигон (4)'],
+            ['poi', 'Точка (5)'],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -940,7 +774,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
           </label>
         ) : null}
 
-        {(tool === 'line' || tool === 'polygon') && draftCoords.length >= 2 ? (
+        {(tool === 'line' || tool === 'polygon') && draftCoords.length >= (tool === 'polygon' ? 3 : 2) ? (
           <button type="button" className="btn-primary btn-mini" onClick={finishDraft}>
             Завершить {tool === 'line' ? 'линию' : 'полигон'} (Enter)
           </button>
@@ -958,10 +792,26 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
           </button>
         ) : null}
 
-        <button type="button" className="btn-secondary btn-mini" disabled={!canUndo} onClick={() => { undo(); markDirty(); }}>
+        <button
+          type="button"
+          className="btn-secondary btn-mini"
+          disabled={!canUndo}
+          onClick={() => {
+            undo();
+            markDirty();
+          }}
+        >
           ↶ Отмена
         </button>
-        <button type="button" className="btn-secondary btn-mini" disabled={!canRedo} onClick={() => { redo(); markDirty(); }}>
+        <button
+          type="button"
+          className="btn-secondary btn-mini"
+          disabled={!canRedo}
+          onClick={() => {
+            redo();
+            markDirty();
+          }}
+        >
           ↷ Повтор
         </button>
 
@@ -979,25 +829,64 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
 
       <div className="map-draw-layout">
         <div className="map-draw-main">
-          {!YANDEX_MAPS_API_KEY ? (
-            <div className="map-preview map-preview--loading map-draw-canvas">Нет ключа Yandex Maps</div>
-          ) : initError ? (
-            <div className="map-preview map-preview--loading map-draw-canvas">{initError}</div>
-          ) : (
-            <div ref={containerRef} className="map-preview map-draw-canvas admin-yandex-map" />
-          )}
+          <AdminMapCanvas
+            config={config}
+            zones={zones}
+            paths={paths}
+            pois={pois}
+            overlay={preview || showOverlay ? overlay : undefined}
+            selection={selection}
+            handles={handles}
+            draft={draftCoords}
+            drawing={tool !== 'select' || pickingAccess}
+            helpers={helpers}
+            preview={preview}
+            focus={focus}
+            routes={routes}
+            onClick={(coordinate, hit) => {
+              editorRef.current?.focus({ preventScroll: true });
+              if (pickingAccess) {
+                setAccessPoint(coordinate);
+              } else if (tool !== 'select') handleMapClick(coordinate);
+              else setSelection(hit);
+            }}
+          />
+          <p className="map-canvas-hint" role="status">
+            {preview
+              ? 'Предпросмотр опубликованного вида. Для изменения объектов вернитесь в 2D.'
+              : pickingAccess
+                ? 'Нажмите на дорожку у входа в объект. Esc — отмена.'
+                : tool === 'select'
+                  ? 'Выберите объект на карте или в списке. Жёлтая ручка — перемещение, зелёная — вход, синие — вершины.'
+                  : tool === 'rect'
+                    ? 'Нажмите на карту, чтобы разместить здание.'
+                    : tool === 'poi'
+                      ? 'Нажмите на карту, чтобы добавить точку.'
+                      : 'Отметьте точки на карте и нажмите «Завершить». Esc — отмена.'}
+          </p>
         </div>
 
         <aside className="map-draw-sidebar">
-          <h3>Объекты ({visibleLayers.length} из {layerItems.length})</h3>
-          <label className="map-layer-search">Найти объект<input type="search" value={layerQuery} onChange={(event) => setLayerQuery(event.target.value)} placeholder="Сцена, туалет, парковка…" /></label>
+          <h3>
+            Объекты ({visibleLayers.length} из {layerItems.length})
+          </h3>
+          <label className="map-layer-search">
+            Найти объект
+            <input
+              type="search"
+              value={layerQuery}
+              onChange={(event) => setLayerQuery(event.target.value)}
+              placeholder="Сцена, туалет, парковка…"
+            />
+          </label>
           <ul className="map-layer-list">
             {visibleLayers.length === 0 ? (
-              <li className="map-layer-empty">{layerQuery ? 'Объекты не найдены' : 'Нет объектов — нарисуйте на карте'}</li>
+              <li className="map-layer-empty">
+                {layerQuery ? 'Объекты не найдены' : 'Нет объектов — нарисуйте на карте'}
+              </li>
             ) : (
               visibleLayers.map((item) => {
-                const active =
-                  activeSelection?.kind === item.kind && activeSelection.id === item.id;
+                const active = activeSelection?.kind === item.kind && activeSelection.id === item.id;
                 return (
                   <li key={`${item.kind}-${item.id}`}>
                     <button
@@ -1016,7 +905,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         </aside>
       </div>
 
-      {activeSelection && selectedZone ? (
+      {!preview && activeSelection && selectedZone ? (
         <div className="map-draw-props">
           <h3>Зона: {selectedZone.properties.name}</h3>
           <div className="grid">
@@ -1050,42 +939,55 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                 ))}
               </select>
             </label>
+            <label>
+              Цвет объекта
+              <input
+                type="color"
+                value={selectedZone.properties.fillColor}
+                onChange={(e) =>
+                  updateZone(selectedZone.properties.id, (f) => ({
+                    ...f,
+                    properties: { ...f.properties, fillColor: e.target.value },
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Непрозрачность
+              <input
+                type="range"
+                min="0.05"
+                max="1"
+                step="0.05"
+                value={selectedZone.properties.fillOpacity}
+                onChange={(e) =>
+                  updateZone(selectedZone.properties.id, (f) => ({
+                    ...f,
+                    properties: { ...f.properties, fillOpacity: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+            <p className="hint">
+              Объём: {buildingHeight(selectedZone.properties)} м. Высота зависит от типа объекта. Подпись
+              автоматически вписывается в его границы, как на сайте.
+            </p>
             <label className="map-draw-checkbox">
               <input
                 type="checkbox"
-                checked={shouldShowZoneLabel(selectedZone.properties)}
+                checked={selectedZone.properties.accessRestricted === true}
                 onChange={(e) =>
                   updateZone(selectedZone.properties.id, (f) => ({
                     ...f,
-                    properties: { ...f.properties, showLabel: e.target.checked },
+                    properties: { ...f.properties, accessRestricted: e.target.checked },
                   }))
                 }
               />
-              Показывать название на карте
-            </label>
-            <label>
-              Поворот подписи (°)
-              <input
-                type="number"
-                step="1"
-                value={Math.round(
-                  selectedZone.properties.labelRotation ??
-                    zoneImageLayout(selectedZone).rotation,
-                )}
-                onChange={(e) =>
-                  updateZone(selectedZone.properties.id, (f) => ({
-                    ...f,
-                    properties: {
-                      ...f.properties,
-                      labelRotation: clamp(Number(e.target.value), -180, 180),
-                    },
-                  }))
-                }
-              />
+              Закрыто для посетителей
             </label>
           </div>
-          <div className="map-zone-image-controls">
-            <span className="map-zone-image-title">Фон полигона</span>
+          <details className="map-zone-image-controls">
+            <summary>Изображение на объекте</summary>
             <div className="map-zone-image-row">
               <label className="file-label">
                 PNG / JPEG
@@ -1107,7 +1009,12 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                   onClick={() =>
                     updateZone(selectedZone.properties.id, (f) => ({
                       ...f,
-                      properties: { ...f.properties, fillImageUrl: undefined, fillImageOpacity: undefined, fillImageRotation: undefined },
+                      properties: {
+                        ...f.properties,
+                        fillImageUrl: undefined,
+                        fillImageOpacity: undefined,
+                        fillImageRotation: undefined,
+                      },
                     }))
                   }
                 >
@@ -1147,8 +1054,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                     type="number"
                     step="1"
                     value={Math.round(
-                      selectedZone.properties.fillImageRotation ??
-                        zoneImageLayout(selectedZone).rotation,
+                      selectedZone.properties.fillImageRotation ?? polygonLabelLayout(selectedZone).rotation,
                     )}
                     onChange={(e) =>
                       updateZone(selectedZone.properties.id, (f) => ({
@@ -1163,8 +1069,34 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                 </label>
               </>
             ) : (
-              <p className="hint">Загрузите картинку — она заполнит полигон (по его границам).</p>
+              <p className="hint">
+                Изображение размещается поверх объекта. Его поворот и прозрачность можно настроить.
+              </p>
             )}
+          </details>
+          <div className="map-transform-tools">
+            <span className="hint">Точный сдвиг:</span>
+            {(
+              [
+                [1, 0, '↑ 1 м'],
+                [0, -1, '← 1 м'],
+                [-1, 0, '↓ 1 м'],
+                [0, 1, '→ 1 м'],
+              ] as const
+            ).map(([north, east, label]) => (
+              <button
+                key={label}
+                type="button"
+                className="btn-secondary btn-mini"
+                onClick={() => {
+                  const center = featureCenter(selectedZone),
+                    next = nudgeLatLng(center[1], center[0], north, east);
+                  moveZoneGroup(selectedZone.properties.id, [next.lng - center[0], next.lat - center[1]]);
+                }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           {layout ? (
             <div className="overlay-controls">
@@ -1185,7 +1117,7 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                 />
               </label>
               <label>
-                Высота (м)
+                Длина (м)
                 <input
                   type="number"
                   value={Math.round(layout.heightMeters)}
@@ -1217,32 +1149,44 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                   }}
                 />
               </label>
-              <div className="overlay-nudge-grid">
-                <button type="button" className="btn-mini" onClick={() => {
-                  const c = nudgeLatLng(layout.center.lat, layout.center.lng, 1, 0);
-                  const nextLayout = { ...layout, center: c };
-                  updateZone(selectedZone.properties.id, (f) => ({
-                    ...f, properties: { ...f.properties, layout: nextLayout }, geometry: rectToPolygon(nextLayout),
-                  }));
-                }}>↑1м</button>
-                <button type="button" className="btn-mini" onClick={() => {
-                  const c = nudgeLatLng(layout.center.lat, layout.center.lng, 0, 1);
-                  const nextLayout = { ...layout, center: c };
-                  updateZone(selectedZone.properties.id, (f) => ({
-                    ...f, properties: { ...f.properties, layout: nextLayout }, geometry: rectToPolygon(nextLayout),
-                  }));
-                }}>→1м</button>
-              </div>
             </div>
           ) : (
-            <button type="button" className="btn-secondary btn-mini" onClick={convertZoneToRect}>
-              Преобразовать в прямоугольник
-            </button>
+            <div className="map-transform-tools">
+              <span className="hint">Поворот и масштаб с сохранением формы:</span>
+              <button
+                type="button"
+                className="btn-secondary btn-mini"
+                onClick={() => rotateZoneGroup(selectedZone, 5, 1)}
+              >
+                ↶ 5°
+              </button>
+              <button
+                type="button"
+                className="btn-secondary btn-mini"
+                onClick={() => rotateZoneGroup(selectedZone, -5, 1)}
+              >
+                ↷ 5°
+              </button>
+              <button
+                type="button"
+                className="btn-secondary btn-mini"
+                onClick={() => rotateZoneGroup(selectedZone, 0, 0.95)}
+              >
+                Уменьшить на 5%
+              </button>
+              <button
+                type="button"
+                className="btn-secondary btn-mini"
+                onClick={() => rotateZoneGroup(selectedZone, 0, 1.05)}
+              >
+                Увеличить на 5%
+              </button>
+            </div>
           )}
         </div>
       ) : null}
 
-      {activeSelection && selectedPath ? (
+      {!preview && activeSelection && selectedPath ? (
         <div className="map-draw-props">
           <h3>Линия: {selectedPath.properties.name ?? selectedPath.properties.id}</h3>
           <div className="grid">
@@ -1265,14 +1209,32 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
                 onChange={(e) =>
                   updatePath(selectedPath.properties.id, (f) => ({
                     ...f,
-                    properties: { ...f.properties, pathKind: e.target.value as MapPathProperties['pathKind'] },
+                    properties: {
+                      ...f.properties,
+                      pathKind: e.target.value as MapPathProperties['pathKind'],
+                    },
                   }))
                 }
               >
                 {Object.entries(PATH_KIND_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
+            </label>
+            <label className="map-draw-checkbox">
+              <input
+                type="checkbox"
+                checked={selectedPath.properties.routingOnly === true}
+                onChange={(e) =>
+                  updatePath(selectedPath.properties.id, (f) => ({
+                    ...f,
+                    properties: { ...f.properties, routingOnly: e.target.checked },
+                  }))
+                }
+              />
+              Только для навигации (не рисовать дорогу)
             </label>
             <label className="map-draw-checkbox">
               <input
@@ -1291,17 +1253,177 @@ export function MapDrawEditor({ config, zones: initialZones, paths: initialPaths
         </div>
       ) : null}
 
-      <form action={saveAction} className="map-draw-save">
-        <input type="hidden" name="mapZones" value={JSON.stringify(zones)} />
-        <input type="hidden" name="mapPaths" value={JSON.stringify(paths)} />
-        <button type="submit" className="btn-primary" disabled={!dirty}>
-          {dirty ? 'Сохранить слои карты' : 'Нет изменений'}
-        </button>
-        <span className="hint">
-          Зон: {zones.features.length} · Линий: {paths.features.length}
+      {!preview && selectedPoi && (
+        <div className="map-draw-props">
+          <h3>Точка: {selectedPoi.properties.name}</h3>
+          <div className="grid">
+            <label>
+              Название точки
+              <input
+                value={selectedPoi.properties.name}
+                onChange={(e) => {
+                  setPois((prev) => ({
+                    ...prev,
+                    features: prev.features.map((f) =>
+                      f.properties.id === selectedPoi.properties.id
+                        ? { ...f, properties: { ...f.properties, name: e.target.value } }
+                        : f,
+                    ),
+                  }));
+                  markDirty();
+                }}
+              />
+            </label>
+            <label>
+              Категория точки
+              <select
+                value={selectedPoi.properties.category}
+                onChange={(e) => {
+                  setPois((prev) => ({
+                    ...prev,
+                    features: prev.features.map((f) =>
+                      f.properties.id === selectedPoi.properties.id
+                        ? {
+                            ...f,
+                            properties: {
+                              ...f.properties,
+                              category: e.target.value as typeof f.properties.category,
+                            },
+                          }
+                        : f,
+                    ),
+                  }));
+                  markDirty();
+                }}
+              >
+                {Object.entries(POI_CATEGORIES).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Статус точки
+              <select
+                value={selectedPoi.properties.status ?? 'unknown'}
+                onChange={(e) => {
+                  setPois((prev) => ({
+                    ...prev,
+                    features: prev.features.map((f) =>
+                      f.properties.id === selectedPoi.properties.id
+                        ? {
+                            ...f,
+                            properties: {
+                              ...f.properties,
+                              status: e.target.value as typeof f.properties.status,
+                            },
+                          }
+                        : f,
+                    ),
+                  }));
+                  markDirty();
+                }}
+              >
+                <option value="open">Открыто</option>
+                <option value="closed">Закрыто</option>
+                <option value="unknown">Не указан</option>
+              </select>
+            </label>
+            {(['lng', 'lat'] as const).map((axis, index) => (
+              <label key={axis}>
+                {axis === 'lng' ? 'Долгота точки' : 'Широта точки'}
+                <input
+                  type="number"
+                  step="0.000001"
+                  value={Number(selectedPoi.geometry.coordinates[index].toFixed(6))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    if (!Number.isFinite(value) || Math.abs(value) > (axis === 'lng' ? 180 : 85)) return;
+                    setPois((prev) => ({
+                      ...prev,
+                      features: prev.features.map((f) =>
+                        f.properties.id === selectedPoi.properties.id
+                          ? {
+                              ...f,
+                              geometry: {
+                                type: 'Point',
+                                coordinates: f.geometry.coordinates.map((v, i) => (i === index ? value : v)),
+                              },
+                            }
+                          : f,
+                      ),
+                    }));
+                    markDirty();
+                  }}
+                />
+              </label>
+            ))}
+            {selectedPoi.properties.sourceZoneId && (
+              <p className="hint">
+                Связана со зданием:{' '}
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => selectObject('zone', selectedPoi.properties.sourceZoneId!)}
+                >
+                  Открыть объект
+                </button>
+                . На карте гостей отображается здание без дублирующей метки.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      {!preview && (selectedZone || selectedPoi) && (
+        <div className="map-access-controls">
+          <button
+            type="button"
+            className="btn-secondary"
+            aria-pressed={pickingAccess}
+            onClick={() => setPickingAccess((v) => !v)}
+          >
+            {pickingAccess ? 'Отменить выбор входа' : 'Указать вход на карте'}
+          </button>
+          <span className="hint">
+            Вход используется для маршрута и может находиться у дорожки отдельно от центра здания.
+          </span>
+        </div>
+      )}
+      <MapOperationsEditor
+        zones={zones}
+        paths={paths}
+        pois={pois}
+        selection={selection}
+        onRoute={setRoutes}
+      />
+      <form
+        action={async (formData) => {
+          setSubmitted(true);
+          try {
+            await saveAction(formData);
+          } finally {
+            setSubmitted(false);
+          }
+        }}
+        className="map-draw-save"
+      >
+        <input type="hidden" name="mapZones" value={zonesJson} />
+        <input type="hidden" name="mapPaths" value={pathsJson} />
+        <input type="hidden" name="mapPois" value={poisJson} />
+        {dirty ? (
+          <SubmitButton>Сохранить карту</SubmitButton>
+        ) : (
+          <button type="button" className="btn-primary" disabled>
+            Нет изменений
+          </button>
+        )}
+        <span className="hint" role="status">
+          {dirty ? 'Есть несохранённые изменения · ' : ''}Зон: {zones.features.length} · Линий:{' '}
+          {paths.features.length} · Точек: {pois.features.length}
         </span>
-      <ContentRevision />
-</form>
+        <ContentRevision />
+      </form>
     </div>
   );
 }

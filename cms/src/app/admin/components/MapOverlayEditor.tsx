@@ -1,25 +1,9 @@
 'use client';
 
 import { ContentRevision } from './ContentRevision';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { overlayToYandexLayoutBounds } from '@/lib/map-overlay-georef';
-import {
-  applySchemeOverlayStyle,
-  ensureAdminMapStyles,
-  removeMapChildren,
-  upsertImageOverlay,
-  syncPathFeatures,
-  syncZoneFeatures,
-} from '@/lib/admin-yandex-map-layers';
-import { YANDEX_MAPS_API_KEY } from '@/lib/yandex-maps-config';
-import { loadYandexMaps, type YandexMapsBundle } from '@/lib/yandex-maps-loader';
-import { useLatestRef } from '@/hooks/useLatestRef';
-import type {
-  FestivalMapConfig,
-  MapAdminOverlay,
-  MapPathsGeoJson,
-  MapZonesGeoJson,
-} from '@/types';
+import { useCallback, useMemo, useState } from 'react';
+import { AdminMapCanvas, type MapHandle } from './AdminMapCanvas';
+import type { FestivalMapConfig, MapAdminOverlay, MapPathsGeoJson, MapZonesGeoJson } from '@/types';
 
 type Props = {
   config: FestivalMapConfig;
@@ -96,7 +80,9 @@ function FineControl({
 }: FineControlProps) {
   return (
     <div className="overlay-fine-control">
-      <span className="overlay-fine-label">{label}</span>
+      <label className="overlay-fine-label" htmlFor={`overlay-${label}`}>
+        {label}
+      </label>
       <div className="overlay-fine-row">
         {nudge.map((item) => (
           <button
@@ -110,6 +96,7 @@ function FineControl({
         ))}
         <input
           type="number"
+          id={`overlay-${label}`}
           className="overlay-number"
           min={min}
           max={max}
@@ -123,6 +110,7 @@ function FineControl({
         <span className="overlay-value">{display ?? `${value}${unit}`}</span>
       </div>
       <input
+        aria-label={`${label}: ползунок`}
         type="range"
         min={min}
         max={max}
@@ -143,200 +131,49 @@ export function MapOverlayEditor({
   saveGeorefAction,
   removeOverlayAction,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<YandexMapInstance | null>(null);
-  const bundleRef = useRef<YandexMapsBundle | null>(null);
-  const zoneRef = useRef<YandexMapEntity[]>([]);
-  const pathRef = useRef<YandexMapEntity[]>([]);
-  const overlayRef = useRef<YandexMapEntity | null>(null);
-  const dragMarkerRef = useRef<YandexMapEntity | null>(null);
-  const draggingRef = useRef(false);
-  const dragCenterRef = useRef<{ lat: number; lng: number } | null>(null);
-  const [ready, setReady] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
   const [showVectors, setShowVectors] = useState(true);
   const [state, setState] = useState(() => buildInitialState(config, overlay));
-  const stateRef = useLatestRef(state);
 
   const patchState = useCallback((patch: Partial<GeorefState>) => {
     setState((prev) => ({ ...prev, ...patch }));
   }, []);
 
   const imageUrl = overlay?.imageUrl;
-  const georefPreview = useMemo(
+  const previewOverlay = useMemo(
     () =>
-      overlayToYandexLayoutBounds({
-        center: { lat: state.centerLat, lng: state.centerLng },
-        widthMeters: state.widthMeters,
-        aspectRatio: state.aspectRatio,
-      }),
-    [state.centerLat, state.centerLng, state.widthMeters, state.aspectRatio],
+      imageUrl
+        ? {
+            imageUrl,
+            center: { lat: state.centerLat, lng: state.centerLng },
+            widthMeters: state.widthMeters,
+            aspectRatio: state.aspectRatio,
+            rotation: state.rotation,
+            opacity: state.opacity,
+          }
+        : undefined,
+    [imageUrl, state],
   );
-
-  useEffect(() => {
-    if (!YANDEX_MAPS_API_KEY || !containerRef.current || mapRef.current) return;
-
-    ensureAdminMapStyles();
-    containerRef.current.classList.add('admin-yandex-map');
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const bundle = await loadYandexMaps();
-        if (cancelled || !containerRef.current) return;
-
-        bundleRef.current = bundle;
-        const { ymaps3 } = bundle;
-        const map = new ymaps3.YMap(
-          containerRef.current,
-          {
-            location: {
-              center: [config.center.lng, config.center.lat],
-              zoom: config.defaultZoom,
+  const handles = useMemo<MapHandle[]>(
+    () =>
+      imageUrl
+        ? [
+            {
+              id: 'overlay-center',
+              coordinate: [state.centerLng, state.centerLat],
+              title: 'Перетащить схему',
+              onCommit: (c) => patchState({ centerLng: c[0], centerLat: c[1] }),
             },
-            showScaleInCopyrights: true,
-            behaviors: ['drag', 'scrollZoom', 'pinchZoom', 'dblClick'],
-          },
-          [
-            new ymaps3.YMapDefaultSchemeLayer({ theme: 'dark' }),
-            new ymaps3.YMapDefaultFeaturesLayer({}),
-          ],
-        );
-
-        mapRef.current = map;
-        setReady(true);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Не удалось загрузить Yandex Maps';
-        if (!cancelled) setInitError(message);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      setReady(false);
-      const map = mapRef.current;
-      if (map) {
-        /* eslint-disable react-hooks/exhaustive-deps -- Yandex map entities are torn down on unmount */
-        const zones = zoneRef.current;
-        const paths = pathRef.current;
-        /* eslint-enable react-hooks/exhaustive-deps */
-        if (overlayRef.current) map.removeChild(overlayRef.current);
-        if (dragMarkerRef.current) map.removeChild(dragMarkerRef.current);
-        removeMapChildren(map, zones);
-        removeMapChildren(map, paths);
-        map.destroy?.();
-      }
-      mapRef.current = null;
-      bundleRef.current = null;
-      overlayRef.current = null;
-      dragMarkerRef.current = null;
-    };
-  }, [config.center.lat, config.center.lng, config.defaultZoom]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const bundle = bundleRef.current;
-    if (!map || !ready || !bundle) return;
-
-    if (showVectors) {
-      syncZoneFeatures(map, bundle, zones, zoneRef.current);
-      syncPathFeatures(map, bundle, paths, pathRef.current);
-    } else {
-      removeMapChildren(map, zoneRef.current);
-      removeMapChildren(map, pathRef.current);
-    }
-  }, [ready, zones, paths, showVectors]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const bundle = bundleRef.current;
-    if (!map || !ready || !bundle || !imageUrl) {
-      if (overlayRef.current && map) {
-        map.removeChild(overlayRef.current);
-        overlayRef.current = null;
-      }
-      return;
-    }
-
-    if (draggingRef.current) return;
-
-    applySchemeOverlayStyle(containerRef.current, {
-      opacity: state.opacity,
-      rotation: state.rotation,
-    });
-    overlayRef.current = upsertImageOverlay(map, bundle, overlayRef.current, {
-      bounds: georefPreview,
-      imageUrl,
-    });
-
-    if (dragMarkerRef.current) {
-      const handle = dragMarkerRef.current;
-      map.removeChild(handle);
-      map.addChild(handle);
-    }
-  }, [ready, imageUrl, georefPreview, state.opacity, state.rotation]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const bundle = bundleRef.current;
-    if (!map || !ready || !bundle || !imageUrl) {
-      if (dragMarkerRef.current && map) {
-        map.removeChild(dragMarkerRef.current);
-        dragMarkerRef.current = null;
-      }
-      return;
-    }
-
-    if (!dragMarkerRef.current) {
-      const el = document.createElement('div');
-      el.className = 'overlay-drag-handle';
-      el.title = 'Перетащите схему';
-
-      const marker = new bundle.ymaps3.YMapMarker(
-        {
-          coordinates: [state.centerLng, state.centerLat],
-          draggable: true,
-          zIndex: 2500,
-          blockBehaviors: true,
-          onDragStart: () => {
-            draggingRef.current = true;
-          },
-          onDragMove: (coordinates: YandexLngLat) => {
-            dragMarkerRef.current?.update?.({ coordinates });
-            dragCenterRef.current = { lat: coordinates[1], lng: coordinates[0] };
-            const s = stateRef.current;
-            overlayRef.current?.update?.({
-              bounds: overlayToYandexLayoutBounds({
-                center: dragCenterRef.current,
-                widthMeters: s.widthMeters,
-                aspectRatio: s.aspectRatio,
-              }),
-              imageUrl: imageUrl!,
-            });
-          },
-          onDragEnd: () => {
-            draggingRef.current = false;
-            const center = dragCenterRef.current;
-            if (center) {
-              setState((prev) => ({ ...prev, centerLat: center.lat, centerLng: center.lng }));
-            }
-          },
-        },
-        el,
-      );
-      map.addChild(marker);
-      dragMarkerRef.current = marker;
-    } else if (!draggingRef.current) {
-      dragMarkerRef.current.update?.({ coordinates: [state.centerLng, state.centerLat] });
-    }
-  }, [ready, imageUrl, state.centerLat, state.centerLng, stateRef]);
+          ]
+        : [],
+    [imageUrl, state.centerLng, state.centerLat, patchState],
+  );
 
   return (
     <div className="panel overlay-editor">
       <h2>PNG-схема на карте</h2>
       <p className="hint">
-        Перетащите жёлтый маркер на карте. Для точной подгонки используйте числовые поля и кнопки
-        ± — шаг поворота 0.1°, сдвига 1 м.
+        Перетащите жёлтый маркер на карте. Для точной подгонки используйте числовые поля и кнопки ± — шаг
+        поворота 0.1°, сдвига 1 м.
       </p>
 
       <div className="overlay-editor-toolbar">
@@ -358,8 +195,8 @@ export function MapOverlayEditor({
           <button type="submit" className="btn-secondary">
             Загрузить
           </button>
-        <ContentRevision />
-</form>
+          <ContentRevision />
+        </form>
 
         {imageUrl ? (
           <>
@@ -375,21 +212,20 @@ export function MapOverlayEditor({
               <button type="submit" className="link-button danger">
                 Удалить схему
               </button>
-            <ContentRevision />
-</form>
+              <ContentRevision />
+            </form>
           </>
         ) : null}
       </div>
 
-      {!YANDEX_MAPS_API_KEY ? (
-        <div className="map-preview map-preview--loading overlay-editor-map">
-          Задайте NEXT_PUBLIC_YANDEX_MAPS_API_KEY в cms/.env
-        </div>
-      ) : initError ? (
-        <div className="map-preview map-preview--loading overlay-editor-map">{initError}</div>
-      ) : (
-        <div ref={containerRef} className="map-preview overlay-editor-map admin-yandex-map" />
-      )}
+      <AdminMapCanvas
+        config={config}
+        zones={showVectors ? zones : undefined}
+        paths={showVectors ? paths : undefined}
+        overlay={previewOverlay}
+        handles={handles}
+        className="overlay-editor-map"
+      />
 
       {imageUrl ? (
         <form action={saveGeorefAction} className="overlay-controls">
@@ -520,8 +356,8 @@ export function MapOverlayEditor({
           <button type="submit" className="btn-primary">
             Сохранить привязку
           </button>
-        <ContentRevision />
-</form>
+          <ContentRevision />
+        </form>
       ) : (
         <p className="hint">Схема ещё не загружена. Выберите PNG/JPEG файл.</p>
       )}

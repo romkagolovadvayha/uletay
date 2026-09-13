@@ -778,6 +778,8 @@ export async function saveMapLayersAction(formData: FormData) {
   data.mapZones = parseGeoJson<MapZonesGeoJson>(formData.get('mapZones'), 'зоны');
   data.mapPaths = parseGeoJson<MapPathsGeoJson>(formData.get('mapPaths'), 'дорожки');
 
+  if (formData.has('mapPois')) data.mapPois = parseGeoJson<MapPoisGeoJson>(formData.get('mapPois'), 'точки карты');
+
   await saveAdminSnapshot(data, formData);
   redirect('/admin?tab=map&ok=1');
 }

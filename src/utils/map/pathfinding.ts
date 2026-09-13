@@ -1,18 +1,16 @@
 import { nearestPointOnLine } from '@turf/nearest-point-on-line';
 import { lineString, point } from '@turf/helpers';
 import type { LatLng, MapPathProperties, MapPathsGeoJson, MapZonesGeoJson } from '../../types/map';
-import { fetchWalkingRoute, type RouteRequestOptions, walkingDurationSeconds } from './externalRouting';
 import {
   extractFencePaths,
   extractFenceZones,
-  fenceAvoidZonesParam,
   routeCrossesFencePaths,
   routeCrossesFenceZones,
   routableDrawnFeatures,
   visitorPathFeatures,
   type FenceZones,
 } from './fenceRouting';
-import { haversineMeters, coordToLatLng } from './geo';
+import { haversineMeters, coordToLatLng, walkingDurationSeconds } from './geo-math';
 import { splitPathJunctions } from './pathJunctions';
 
 type GraphNode = {
@@ -52,7 +50,6 @@ const VIRTUAL_FEATURE = -1;
 type RouteContext = {
   fenceZones: FenceZones;
   fencePaths: ReturnType<typeof extractFencePaths>;
-  routeOptions: RouteRequestOptions;
 };
 
 function createRouteContext(mapZones?: MapZonesGeoJson, mapPaths?: MapPathsGeoJson): RouteContext {
@@ -60,7 +57,6 @@ function createRouteContext(mapZones?: MapZonesGeoJson, mapPaths?: MapPathsGeoJs
   return {
     fenceZones,
     fencePaths: extractFencePaths(mapPaths),
-    routeOptions: { avoidZones: fenceAvoidZonesParam(fenceZones) },
   };
 }
 
@@ -319,103 +315,11 @@ function runAStar(
   return null;
 }
 
-function assignComponents(
-  nodes: Map<string, GraphNode>,
-  adjacency: Map<string, GraphEdge[]>,
-): Map<string, number> {
-  const component = new Map<string, number>();
-  let compId = 0;
-
-  for (const startNode of nodes.keys()) {
-    if (component.has(startNode)) continue;
-    const queue = [startNode];
-    component.set(startNode, compId);
-    while (queue.length > 0) {
-      const current = queue.pop()!;
-      for (const edge of adjacency.get(current) ?? []) {
-        if (!component.has(edge.to)) {
-          component.set(edge.to, compId);
-          queue.push(edge.to);
-        }
-      }
-    }
-    compId += 1;
-  }
-
-  return component;
-}
-
-function dijkstraAll(
-  nodes: Map<string, GraphNode>,
-  adjacency: Map<string, GraphEdge[]>,
-  startId: string,
-) {
-  const dist = new Map<string, number>();
-  const cameFrom = new Map<string, CameFromEntry>();
-  for (const id of nodes.keys()) dist.set(id, Infinity);
-  dist.set(startId, 0);
-  cameFrom.set(startId, { prev: null, edge: null });
-
-  const open = new Set<string>([startId]);
-  const visited = new Set<string>();
-
-  while (open.size > 0) {
-    const current = [...open].sort((a, b) => (dist.get(a) ?? Infinity) - (dist.get(b) ?? Infinity))[0];
-    open.delete(current);
-    if (visited.has(current)) continue;
-    visited.add(current);
-
-    for (const edge of adjacency.get(current) ?? []) {
-      const tentative = (dist.get(current) ?? Infinity) + edge.weight;
-      if (tentative < (dist.get(edge.to) ?? Infinity)) {
-        cameFrom.set(edge.to, { prev: current, edge });
-        dist.set(edge.to, tentative);
-        open.add(edge.to);
-      }
-    }
-  }
-
-  return { dist, cameFrom };
-}
-
-function expandPathBetween(
-  cameFrom: Map<string, CameFromEntry>,
-  startId: string,
-  endId: string,
-  nodes: Map<string, GraphNode>,
-  features: GeoJSON.Feature<GeoJSON.LineString, MapPathProperties>[],
-): [number, number][] | null {
-  if (startId === endId) {
-    const node = nodes.get(startId)!;
-    return [[node.lng, node.lat]];
-  }
-
-  const chain: string[] = [];
-  let current: string | null = endId;
-  while (current) {
-    chain.unshift(current);
-    current = cameFrom.get(current)?.prev ?? null;
-  }
-  if (chain[0] !== startId) return null;
-
-  return expandNodeChain(chain, cameFrom, nodes, features);
-}
-
 function appendUnique(coords: [number, number][], next: [number, number]) {
   const last = coords[coords.length - 1];
   if (!last || haversineMeters(coordToLatLng(last), coordToLatLng(next)) > 0.5) {
     coords.push(next);
   }
-}
-
-function stitchCoords(...parts: [number, number][][]): [number, number][] {
-  const result: [number, number][] = [];
-  for (const part of parts) {
-    for (const coord of part) {
-      appendUnique(result, coord);
-    }
-  }
-  return result;
 }
 
 function pathLengthMeters(coordinates: [number, number][]): number {
@@ -498,90 +402,6 @@ async function tryGraphRouteAsync(
   return composeRouteAsync(start, startSnap, drawnCoords, endSnap, end, ctx);
 }
 
-export async function tryBridgedRouteAsync(
-  paths: MapPathsGeoJson,
-  start: LatLng,
-  end: LatLng,
-  mergeM: number,
-  ctx: RouteContext,
-): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
-  const { nodes, adjacency, features } = buildGraph(paths, mergeM);
-  if (nodes.size === 0) return null;
-
-  const connectedPaths: MapPathsGeoJson = { type: 'FeatureCollection', features };
-  const startSnap = nearestPointOnPaths(connectedPaths, start);
-  const endSnap = nearestPointOnPaths(connectedPaths, end);
-  if (!startSnap || !endSnap) return null;
-
-  const startId = attachSnapToGraph(nodes, adjacency, startSnap, mergeM);
-  const endId = attachSnapToGraph(nodes, adjacency, endSnap, mergeM);
-
-  const direct = runAStar(nodes, adjacency, features, startId, endId, end);
-  if (direct) {
-    if (routeCrossesFenceZones(direct, ctx.fenceZones)) return null;
-    return composeRouteAsync(start, startSnap, direct, endSnap, end, ctx);
-  }
-
-  const components = assignComponents(nodes, adjacency);
-  const startComp = components.get(startId);
-  const endComp = components.get(endId);
-  if (startComp === undefined || endComp === undefined || startComp === endComp) {
-    return null;
-  }
-
-  const fromStart = dijkstraAll(nodes, adjacency, startId);
-  const fromEnd = dijkstraAll(nodes, adjacency, endId);
-
-  const candidates: { nodeA: string; nodeB: string; total: number }[] = [];
-
-  for (const [nodeA, compA] of components) {
-    if (compA !== startComp) continue;
-    const distA = fromStart.dist.get(nodeA) ?? Infinity;
-    if (!Number.isFinite(distA)) continue;
-
-    for (const [nodeB, compB] of components) {
-      if (compB !== endComp) continue;
-      const distB = fromEnd.dist.get(nodeB) ?? Infinity;
-      if (!Number.isFinite(distB)) continue;
-      const coordA = nodes.get(nodeA)!;
-      const coordB = nodes.get(nodeB)!;
-      const bridge = haversineMeters(
-        { lat: coordA.lat, lng: coordA.lng },
-        { lat: coordB.lat, lng: coordB.lng },
-      );
-      candidates.push({ nodeA, nodeB, total: distA + bridge + distB });
-    }
-  }
-
-  candidates.sort((a, b) => a.total - b.total);
-
-  for (const candidate of candidates.slice(0, 8)) {
-    const pathToBridge = expandPathBetween(fromStart.cameFrom, startId, candidate.nodeA, nodes, features);
-    const pathFromBridge = expandPathBetween(fromEnd.cameFrom, endId, candidate.nodeB, nodes, features);
-    if (!pathToBridge || !pathFromBridge) continue;
-
-    const bridgeFrom = nodes.get(candidate.nodeA)!;
-    const bridgeTo = nodes.get(candidate.nodeB)!;
-    const bridgeRoute = await fetchWalkingRoute(
-      { lat: bridgeFrom.lat, lng: bridgeFrom.lng },
-      { lat: bridgeTo.lat, lng: bridgeTo.lng },
-      ctx.routeOptions,
-    );
-
-    const drawnCoords = stitchCoords(
-      pathToBridge,
-      bridgeRoute.coordinates,
-      [...pathFromBridge].reverse(),
-    );
-    if (routeCrossesFenceZones(drawnCoords, ctx.fenceZones)) continue;
-
-    const composed = await composeRouteAsync(start, startSnap, drawnCoords, endSnap, end, ctx);
-    if (composed) return composed;
-  }
-
-  return null;
-}
-
 /** Route strictly along the connected visitor path network. */
 export async function findInternalPathAsync(
   paths: MapPathsGeoJson | undefined,
@@ -606,4 +426,4 @@ export async function findInternalPathAsync(
   return null;
 }
 
-export { walkingDurationSeconds } from './externalRouting';
+export { walkingDurationSeconds } from './geo-math';

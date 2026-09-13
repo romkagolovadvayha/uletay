@@ -1,13 +1,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-// Keep the ESM worker and its shared module together. Metro cannot rewrite
-// their import.meta.url references as part of the application bundle.
-function prepareMapLibreWeb() {
-  const packagePath = require.resolve('maplibre-gl/package.json');
+// Keep the ESM worker and its shared module together. Application bundlers
+// must not rewrite their import.meta.url references (Metro or Next webpack).
+function prepareMapLibreWeb(projectRoot = path.resolve(__dirname, '..')) {
+  const packagePath = require.resolve('maplibre-gl/package.json', { paths: [projectRoot] });
   const { version } = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
   const source = path.join(path.dirname(packagePath), 'dist');
-  const destination = path.resolve(__dirname, '..', 'public', 'vendor', 'maplibre', version);
+  const destination = path.join(projectRoot, 'public', 'vendor', 'maplibre', version);
   fs.mkdirSync(destination, { recursive: true });
   const license = fs.readFileSync(path.join(path.dirname(packagePath), 'LICENSE.txt'));
   const licenseTarget = path.join(destination, 'LICENSE.txt');
@@ -23,4 +23,4 @@ function prepareMapLibreWeb() {
 }
 
 module.exports = { prepareMapLibreWeb };
-if (require.main === module) prepareMapLibreWeb();
+if (require.main === module) prepareMapLibreWeb(process.argv.includes('--cms') ? path.resolve(__dirname, '..', 'cms') : undefined);

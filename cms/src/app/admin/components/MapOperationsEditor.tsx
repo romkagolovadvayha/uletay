@@ -1,195 +1,160 @@
 'use client';
 
-import { ContentRevision } from './ContentRevision';
-import { useMemo, useState } from 'react';
-import type {
-  FestivalMapConfig,
-  MapPoiCategory,
-  MapPoiProperties,
-  MapPoisGeoJson,
-  MapPathsGeoJson,
-} from '@/types';
-
-type PoiFeature = GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>;
-
-const CATEGORIES: { value: MapPoiCategory; label: string }[] = [
-  { value: 'stage', label: 'Сцена' },
-  { value: 'foodcourt', label: 'Фудкорт' },
-  { value: 'toilet', label: 'Туалет' },
-  { value: 'water', label: 'Вода' },
-  { value: 'medical', label: 'Медпункт' },
-  { value: 'security', label: 'Охрана' },
-  { value: 'entrance', label: 'Вход' },
-  { value: 'parking', label: 'Парковка' },
-  { value: 'info', label: 'Информация' },
-  { value: 'shower', label: 'Душ' },
-  { value: 'custom', label: 'Другое' },
-];
-
-function distanceMeters(a: [number, number], b: [number, number]) {
-  const lat = ((a[1] + b[1]) / 2) * Math.PI / 180;
-  return Math.hypot((a[0] - b[0]) * Math.cos(lat) * 111_320, (a[1] - b[1]) * 111_320);
-}
-
-function distanceToSegmentMeters(
-  point: [number, number],
-  start: [number, number],
-  end: [number, number],
-) {
-  const lat = point[1] * Math.PI / 180;
-  const scaleX = Math.cos(lat) * 111_320;
-  const px = point[0] * scaleX;
-  const py = point[1] * 111_320;
-  const ax = start[0] * scaleX;
-  const ay = start[1] * 111_320;
-  const bx = end[0] * scaleX;
-  const by = end[1] * 111_320;
-  const lengthSquared = (bx - ax) ** 2 + (by - ay) ** 2;
-  if (lengthSquared === 0) return Math.hypot(px - ax, py - ay);
-  const t = Math.max(0, Math.min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / lengthSquared));
-  return Math.hypot(px - (ax + t * (bx - ax)), py - (ay + t * (by - ay)));
-}
-
-function graphComponentCount(paths: MapPathsGeoJson) {
-  const endpoints = paths.features
-    .filter((path) => path.properties.pathKind !== 'fence' && !path.properties.closed)
-    .map((path) => {
-      const coordinates = path.geometry.coordinates as [number, number][];
-      return [coordinates[0], coordinates[coordinates.length - 1]] as const;
-    });
-  if (!endpoints.length) return 0;
-  const parent = endpoints.map((_, index) => index);
-  const find = (value: number): number => parent[value] === value ? value : (parent[value] = find(parent[value]));
-  for (let a = 0; a < endpoints.length; a += 1) {
-    for (let b = a + 1; b < endpoints.length; b += 1) {
-      if (endpoints[a].some((x) => endpoints[b].some((y) => distanceMeters(x, y) <= 3))) {
-        const rootA = find(a);
-        const rootB = find(b);
-        if (rootA !== rootB) parent[rootB] = rootA;
-      }
-    }
-  }
-  return new Set(endpoints.map((_, index) => find(index))).size;
-}
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { buildGraph, findInternalPathAsync } from '../../../../../src/utils/map/pathfinding';
+import { visitorPathFeatures } from '../../../../../src/utils/map/fenceRouting';
+import { zoneTargetPoint } from '../../../../../src/utils/map/zoneGeo';
+import { formatDistance, formatDuration } from '../../../../../src/utils/map/geo-math';
+import { selectionFeature, type MapSelection } from '@/lib/admin-map-model';
+import type { MapPathsGeoJson, MapPoisGeoJson, MapZonesGeoJson } from '@/types';
+import type { RouteSegment } from '../../../../../src/types/map';
 
 export function MapOperationsEditor({
-  config,
-  initialPois,
+  zones,
   paths,
-  saveAction,
+  pois,
+  selection,
+  onRoute,
 }: {
-  config: FestivalMapConfig;
-  initialPois: MapPoisGeoJson;
+  zones: MapZonesGeoJson;
   paths: MapPathsGeoJson;
-  saveAction: (formData: FormData) => void | Promise<void>;
+  pois: MapPoisGeoJson;
+  selection: MapSelection;
+  onRoute: (route: RouteSegment[] | undefined) => void;
 }) {
-  const [pois, setPois] = useState<PoiFeature[]>(initialPois.features as PoiFeature[]);
-  const routablePaths = useMemo(
-    () => paths.features.filter((path) => path.properties.pathKind !== 'fence' && !path.properties.closed),
-    [paths.features],
+  const entrances = pois.features.filter(
+    (p) => p.properties.category === 'entrance' && p.properties.status !== 'closed',
   );
+  const [entranceId, setEntranceId] = useState('');
+  const [result, setResult] = useState('');
+  const [busy, setBusy] = useState(false);
+  const generation = useRef(0);
   const validation = useMemo(() => {
-    const segments = routablePaths.flatMap((path) => {
-      const coordinates = path.geometry.coordinates as [number, number][];
-      return coordinates.slice(0, -1).map((start, index) => [start, coordinates[index + 1]] as const);
-    });
-    return {
-      components: graphComponentCount(paths),
-      farPois: pois.filter((poi) => {
-        const coordinate = poi.properties.accessPoint
-          ? [poi.properties.accessPoint.lng, poi.properties.accessPoint.lat] as [number, number]
-          : poi.geometry.coordinates as [number, number];
-        return !segments.length || Math.min(
-          ...segments.map(([start, end]) => distanceToSegmentMeters(coordinate, start, end)),
-        ) > 25;
-      }),
+    const visitor = { type: 'FeatureCollection' as const, features: visitorPathFeatures(paths, zones) };
+    const { nodes, adjacency } = buildGraph(visitor, 3);
+    const visited = new Set<string>();
+    let components = 0;
+    for (const node of nodes.keys()) {
+      if (visited.has(node)) continue;
+      components++;
+      const queue = [node];
+      visited.add(node);
+      while (queue.length)
+        for (const edge of adjacency.get(queue.pop()!) ?? [])
+          if (!visited.has(edge.to)) {
+            visited.add(edge.to);
+            queue.push(edge.to);
+          }
+    }
+    return { components, paths: visitor.features.length };
+  }, [zones, paths]);
+  const selected = selectionFeature(selection, zones, paths, pois);
+  const restricted =
+    selected && (('accessRestricted' in selected.properties && selected.properties.accessRestricted) || ('status' in selected.properties && selected.properties.status === 'closed'));
+
+  useEffect(() => {
+    // Invalidate the async route result when the user edits its graph or destination.
+    generation.current++;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResult('');
+    setBusy(false);
+    onRoute(undefined);
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- generation is an async request token, not a DOM ref
+      generation.current++;
     };
-  }, [paths, pois, routablePaths]);
+  }, [zones, paths, pois, selection, entranceId, onRoute]);
 
-  const update = (
-    index: number,
-    patch: Partial<PoiFeature['properties']> & { lat?: number; lng?: number },
-  ) => {
-    setPois((current) => current.map((poi, currentIndex) => {
-      if (currentIndex !== index) return poi;
-      const lng = patch.lng ?? poi.geometry.coordinates[0];
-      const lat = patch.lat ?? poi.geometry.coordinates[1];
-      const { lng: _lng, lat: _lat, ...properties } = patch;
-      return {
-        ...poi,
-        geometry: { type: 'Point', coordinates: [lng, lat] },
-        properties: { ...poi.properties, ...properties },
+  async function checkRoute() {
+    if (!selected || selection?.kind === 'path') return;
+    const entrance = entrances.find((p) => p.properties.id === entranceId) ?? entrances[0];
+    if (!entrance) return;
+    const run = ++generation.current;
+    setBusy(true);
+    setResult('');
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    try {
+      const from = entrance.properties.accessPoint ?? {
+        lng: entrance.geometry.coordinates[0],
+        lat: entrance.geometry.coordinates[1],
       };
-    }));
-  };
-
-  const addPoi = () => {
-    const id = `poi-${Date.now()}`;
-    setPois((current) => [...current, {
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [config.center.lng, config.center.lat] },
-      properties: {
-        id,
-        name: 'Новая точка',
-        category: 'info',
-        status: 'open',
-        link: { type: 'none' },
-      },
-    }]);
-  };
-
-  const collection: MapPoisGeoJson = { type: 'FeatureCollection', features: pois };
-  const walkwayCount = routablePaths.filter((path) => path.properties.pathKind === 'walkway').length;
+      const target =
+        selected.geometry.type === 'Polygon'
+          ? zoneTargetPoint(selected as MapZonesGeoJson['features'][number])
+          : (('accessPoint' in selected.properties ? selected.properties.accessPoint : undefined) ?? {
+              lng: (selected.geometry as GeoJSON.Point).coordinates[0],
+              lat: (selected.geometry as GeoJSON.Point).coordinates[1],
+            });
+      const route = restricted ? null : await findInternalPathAsync(paths, from, target, zones);
+      if (run !== generation.current) return;
+      setResult(
+        route
+          ? `${formatDistance(route.distanceMeters)} · ${formatDuration(route.durationSeconds)} пешком. Маршрут показан на карте.`
+          : 'Маршрут недоступен. Проверьте вход у дорожки, соединения дорог и закрытые зоны.',
+      );
+      onRoute(route ? [{ ...route, kind: 'internal' }] : undefined);
+    } catch {
+      if (run === generation.current) setResult('Не удалось проверить маршрут. Проверьте геометрию дорожек.');
+    } finally {
+      if (run === generation.current) setBusy(false);
+    }
+  }
 
   return (
-    <section className="panel map-operations">
-      <div className="panel-heading">
-        <div>
-          <h2>Точки и проверка маршрутов</h2>
-          <p>Исправьте красные предупреждения до публикации карты.</p>
-        </div>
-        <button type="button" className="btn-secondary" onClick={addPoi}>+ Добавить точку</button>
+    <details id="map-navigation" className="advanced-panel map-route-check">
+      <summary>
+        Проверка навигации · {validation.components}{' '}
+        {validation.components === 1 ? 'связная сеть' : 'отдельных сетей'}
+      </summary>
+      <p className="hint">
+        {validation.paths} участков для посетителей. Учитываются пересечения дорожек, закрытые участки и
+        заборы — по алгоритму приложения.
+      </p>
+      {validation.components > 1 && (
+        <p className="map-validation-error">
+          Есть отдельные сети дорожек. Проверьте маршрут к нужному объекту: число сетей само по себе не
+          определяет его доступность.
+        </p>
+      )}
+      <div className="map-route-controls">
+        <label>
+          Начальная точка
+          <select
+            value={entrances.some(p => p.properties.id === entranceId) ? entranceId : entrances[0]?.properties.id || ''}
+            onChange={(e) => setEntranceId(e.target.value)}
+          >
+            {entrances.map((p) => (
+              <option key={p.properties.id} value={p.properties.id}>
+                {p.properties.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="btn-secondary"
+          disabled={
+            busy || !entrances.length || !selected || selection?.kind === 'path' || Boolean(restricted)
+          }
+          onClick={() => void checkRoute()}
+        >
+          {busy ? 'Проверяем…' : 'Проверить маршрут к выбранному объекту'}
+        </button>
       </div>
-      <div className="map-validation-grid">
-        <div className={validation.components <= 1 ? 'map-check map-check-ok' : 'map-check map-check-error'}>
-          <strong>{validation.components}</strong><span>связных сетей</span>
-        </div>
-        <div className={validation.farPois.length === 0 ? 'map-check map-check-ok' : 'map-check map-check-error'}>
-          <strong>{validation.farPois.length}</strong><span>точек далеко от троп</span>
-        </div>
-        <div className={walkwayCount > 0 ? 'map-check map-check-ok' : 'map-check map-check-error'}>
-          <strong>{walkwayCount}</strong><span>пешеходных троп</span>
-        </div>
-      </div>
-      {validation.components > 1 ? (
-        <p className="map-validation-error">Сеть разорвана. Соедините концы дорожек с точностью до 3 м — приложение не будет рисовать мост через поле.</p>
-      ) : null}
-      {validation.farPois.length ? (
-        <p className="map-validation-error">Укажите вход у дорожки: {validation.farPois.map((poi) => poi.properties.name).join(', ')}.</p>
-      ) : null}
-      <div className="map-poi-list">
-        {pois.map((poi, index) => (
-          <div className="map-poi-row" key={poi.properties.id}>
-            <input aria-label="Название точки" value={poi.properties.name} onChange={(event) => update(index, { name: event.target.value })} />
-            <select aria-label="Категория точки" value={poi.properties.category} onChange={(event) => update(index, { category: event.target.value as MapPoiCategory })}>
-              {CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
-            </select>
-            <input aria-label="Широта" type="number" step="0.000001" value={poi.geometry.coordinates[1]} onChange={(event) => update(index, { lat: Number(event.target.value) })} />
-            <input aria-label="Долгота" type="number" step="0.000001" value={poi.geometry.coordinates[0]} onChange={(event) => update(index, { lng: Number(event.target.value) })} />
-            <select aria-label="Статус точки" value={poi.properties.status ?? 'unknown'} onChange={(event) => update(index, { status: event.target.value as MapPoiProperties['status'] })}>
-              <option value="open">Открыто</option>
-              <option value="closed">Закрыто</option>
-              <option value="unknown">Не указан</option>
-            </select>
-            <button type="button" className="btn-danger" onClick={() => setPois((current) => current.filter((_, itemIndex) => itemIndex !== index))}>Удалить</button>
-          </div>
-        ))}
-      </div>
-      <form action={saveAction}>
-        <input type="hidden" name="mapPois" value={JSON.stringify(collection)} />
-        <button type="submit" className="btn-primary">Сохранить точки карты</button>
-      <ContentRevision />
-</form>
-    </section>
+      <p className="hint">
+        {restricted
+          ? 'Объект закрыт для посетителей.'
+          : !entrances.length
+            ? 'Добавьте открытую точку категории «Вход / КПП».'
+            : !selected || selection?.kind === 'path'
+              ? 'Выберите здание или точку на карте.'
+              : `Назначение: ${selected.properties.name}`}
+      </p>
+      {result && (
+        <p role="status" className="map-route-result">
+          {result}
+        </p>
+      )}
+    </details>
   );
 }

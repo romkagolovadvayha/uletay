@@ -1,4 +1,5 @@
-import { version } from 'maplibre-gl/package.json';
+import mapLibrePackage from 'maplibre-gl/package.json';
+const { version } = mapLibrePackage;
 
 type MapApi = typeof import('maplibre-gl');
 declare global { interface Window { __uletayMapLibre?: MapApi } }

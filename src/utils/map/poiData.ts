@@ -6,7 +6,7 @@ import type {
   MapZoneProperties,
   MapZonesGeoJson,
 } from '../../types/map';
-import { haversineMeters } from './geo';
+import { haversineMeters } from './geo-math';
 import { zoneTargetPoint } from './zoneGeo';
 
 type PoiFeature = GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>;

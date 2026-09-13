@@ -5,20 +5,12 @@ import {
   saveMapConfigAction,
   saveMapGeoJsonAction,
   saveMapLayersAction,
-  saveMapPoisAction,
   saveMapOverlayGeorefAction,
   uploadMapSchemeAction,
 } from '../actions';
 import { MapDrawEditor } from './MapDrawEditor';
 import { MapOverlayEditor } from './MapOverlayEditor';
-import { MapOperationsEditor } from './MapOperationsEditor';
-import type {
-  AppData,
-  FestivalMapConfig,
-  MapPathsGeoJson,
-  MapPoisGeoJson,
-  MapZonesGeoJson,
-} from '@/types';
+import type { AppData, FestivalMapConfig, MapPathsGeoJson, MapPoisGeoJson, MapZonesGeoJson } from '@/types';
 
 type Props = {
   data: AppData;
@@ -45,13 +37,23 @@ export function MapEditor({ data }: Props) {
   return (
     <>
       <nav className="map-section-tabs" aria-label="Разделы редактора карты">
-        <a href="#map-objects">Объекты и дорожки</a>
-        <a href="#map-navigation">Точки и навигация</a>
+        <a href="#map-objects">Редактор карты</a>
+        <a href="#map-navigation">Проверка маршрутов</a>
         <a href="#map-settings">Настройки</a>
         <a href="/map" target="_blank" rel="noreferrer">
           Открыть карту ↗
         </a>
       </nav>
+      <section id="map-objects" className="map-editor-section">
+        <MapDrawEditor
+          config={config}
+          zones={zones}
+          paths={paths}
+          pois={pois}
+          overlay={config.adminOverlay}
+          saveAction={saveMapLayersAction}
+        />
+      </section>
       <LazyMapPanel>
         <MapOverlayEditor
           config={config}
@@ -63,23 +65,6 @@ export function MapEditor({ data }: Props) {
           removeOverlayAction={removeMapSchemeAction}
         />
       </LazyMapPanel>
-      <section id="map-objects" className="map-editor-section">
-        <MapDrawEditor
-          config={config}
-          zones={zones}
-          paths={paths}
-          overlay={config.adminOverlay}
-          saveAction={saveMapLayersAction}
-        />
-      </section>
-      <section id="map-navigation" className="map-editor-section">
-        <MapOperationsEditor
-          config={config}
-          initialPois={pois}
-          paths={paths}
-          saveAction={saveMapPoisAction}
-        />
-      </section>
       <details id="map-settings" className="advanced-panel map-editor-section">
         <summary>Настройки отображения карты</summary>
         <form action={saveMapConfigAction} className="panel">
@@ -95,67 +80,31 @@ export function MapEditor({ data }: Props) {
             </label>
             <label>
               Масштаб при открытии
-              <input
-                name="defaultZoom"
-                type="number"
-                defaultValue={config.defaultZoom}
-                min={1}
-                max={20}
-              />
+              <input name="defaultZoom" type="number" defaultValue={config.defaultZoom} min={1} max={20} />
             </label>
             <label>
               Центр — широта
-              <input
-                name="centerLat"
-                type="number"
-                step="0.000001"
-                defaultValue={config.center.lat}
-              />
+              <input name="centerLat" type="number" step="0.000001" defaultValue={config.center.lat} />
             </label>
             <label>
               Центр — долгота
-              <input
-                name="centerLng"
-                type="number"
-                step="0.000001"
-                defaultValue={config.center.lng}
-              />
+              <input name="centerLng" type="number" step="0.000001" defaultValue={config.center.lng} />
             </label>
             <label>
               Юго-запад — широта
-              <input
-                name="swLat"
-                type="number"
-                step="0.000001"
-                defaultValue={bounds?.sw.lat ?? ''}
-              />
+              <input name="swLat" type="number" step="0.000001" defaultValue={bounds?.sw.lat ?? ''} />
             </label>
             <label>
               Юго-запад — долгота
-              <input
-                name="swLng"
-                type="number"
-                step="0.000001"
-                defaultValue={bounds?.sw.lng ?? ''}
-              />
+              <input name="swLng" type="number" step="0.000001" defaultValue={bounds?.sw.lng ?? ''} />
             </label>
             <label>
               Северо-восток — широта
-              <input
-                name="neLat"
-                type="number"
-                step="0.000001"
-                defaultValue={bounds?.ne.lat ?? ''}
-              />
+              <input name="neLat" type="number" step="0.000001" defaultValue={bounds?.ne.lat ?? ''} />
             </label>
             <label>
               Северо-восток — долгота
-              <input
-                name="neLng"
-                type="number"
-                step="0.000001"
-                defaultValue={bounds?.ne.lng ?? ''}
-              />
+              <input name="neLng" type="number" step="0.000001" defaultValue={bounds?.ne.lng ?? ''} />
             </label>
           </div>
           <button type="submit" className="btn-primary">
@@ -168,8 +117,7 @@ export function MapEditor({ data }: Props) {
         <form action={saveMapGeoJsonAction} className="panel-inner">
           <ContentRevision />
           <p className="hint">
-            Ручное редактирование FeatureCollection. Координаты: [lng, lat]. Предпочтительно —
-            редактор выше.
+            Ручное редактирование FeatureCollection. Координаты: [lng, lat]. Предпочтительно — редактор выше.
           </p>
           <label className="full">
             Зоны (Polygon)
