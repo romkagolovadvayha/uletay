@@ -3,5 +3,5 @@
   "compilerOptions": {
     "strict": true
   },
-  "exclude": ["scripts", "cms", "tmp"]
+  "exclude": ["node_modules", "scripts", "cms", "tmp", "dist*/**", "public/vendor", "artifacts", "android", "ios"]
 }

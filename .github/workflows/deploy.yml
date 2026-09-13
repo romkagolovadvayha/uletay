@@ -133,6 +133,7 @@ jobs:
           npm run test:sw
           npm run test:api-url
           npm run test:map
+          npm run test:map:renderer
           npm run test:map:layout
           npm run test:map:routing
           npm run test:push-reminders --prefix cms

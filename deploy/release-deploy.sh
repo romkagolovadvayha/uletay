@@ -44,7 +44,7 @@ if [[ -f "$previous/cms/.env" ]]; then
 fi
 
 # Retain prior hashed chunks/fonts for open browser tabs, without replacing new assets.
-for assets in dist/_expo dist/assets cms/.next/static; do
+for assets in dist/_expo dist/assets dist/vendor/maplibre cms/.next/static; do
   if [[ -d "$previous/$assets" ]]; then
     mkdir -p "$DEPLOY_PATH/$assets"
     cp -a -n "$previous/$assets/." "$DEPLOY_PATH/$assets/"

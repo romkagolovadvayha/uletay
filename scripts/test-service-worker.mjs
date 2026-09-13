@@ -99,7 +99,7 @@ await productionWorker.dispatchLifecycle('install');
 await productionWorker.dispatchLifecycle('activate');
 const productionState = productionWorker.getState();
 
-assert.deepEqual(productionState.openedCaches, ['uletay-shell-v5']);
+assert.deepEqual(productionState.openedCaches, ['uletay-shell-v6']);
 assert.deepEqual(productionState.deletedCaches, [
   'uletay-shell-v2',
   'uletay-data-v2',
@@ -108,5 +108,14 @@ assert.equal(productionState.claimed, 1);
 assert.equal(productionState.unregistered, 0);
 assert.equal(productionWorker.handlers.has('push'), true);
 assert.equal(productionWorker.handlers.has('notificationclick'), true);
+
+let mapAssetResponse;
+productionWorker.handlers.get('fetch')({
+  request: new Request('http://uletayapp.ru:4174/vendor/maplibre/6.9.0/entry.mjs'),
+  respondWith(value) { mapAssetResponse = value; },
+  waitUntil() {},
+});
+assert.ok(mapAssetResponse, 'The map module participates in offline shell caching');
+assert.equal((await mapAssetResponse).status, 200);
 
 console.log('Service worker: local cleanup and production offline cache behavior OK');

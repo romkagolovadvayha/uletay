@@ -1,6 +1,7 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('node:path');
 const fs = require('node:fs');
+require('./scripts/prepare-maplibre-web.cjs').prepareMapLibreWeb();
 
 const config = getDefaultConfig(__dirname);
 

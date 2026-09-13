@@ -9,11 +9,11 @@ import { landscapeRoad } from './map-landscape-layout.mjs';
 const output = path.resolve('tmp/map-test-runtime.cjs');
 await fs.mkdir(path.dirname(output), {recursive:true});
 // Only the platform link adapter is stubbed; geometry, routing and filters are real.
-await build({stdin:{contents:`export * from './src/utils/map/pathfinding'; export * from './src/utils/map/combinedRoute'; export * from './src/utils/map/geo'; export * from './src/utils/map/zoneGeo'; export * from './src/utils/map/poiData'; export * from './src/utils/map/layerStyles'; export * from './src/utils/map/fenceRouting'; export * from './src/utils/map/placeMarkers'; export * from './src/components/map/nativeYandexMapHtml';`,resolveDir:process.cwd()},
+await build({stdin:{contents:`export * from './src/utils/map/pathfinding'; export * from './src/utils/map/combinedRoute'; export * from './src/utils/map/geo'; export * from './src/utils/map/zoneGeo'; export * from './src/utils/map/poiData'; export * from './src/utils/map/layerStyles'; export * from './src/utils/map/fenceRouting'; export * from './src/utils/map/placeMarkers';`,resolveDir:process.cwd()},
   bundle:true,platform:'node',format:'cjs',outfile:output,define:{__DEV__:'false'},
   plugins:[{name:'platform-link-adapter',setup(b){b.onResolve({filter:/^react-native$/},()=>({path:'platform',namespace:'test'}));
     b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:`export const Platform={OS:'web'}; export const Linking={openURL(){throw Error('Unexpected navigation in geometry test')}};` }));}}]});
-const {buildCombinedRouteToTarget,buildGoogleMapsRouteUrl,buildYandexRouteUrl,findInternalPathAsync,zoneTargetPoint,withOperationalPois,getMapFilters,filterZoneFeatures,routeCrossesFencePaths,extractFencePaths,buildMapPlaceMarkers,clusterMapPlaces,buildNativeYandexMapHtml} = await import(pathToFileURL(output).href);
+const {buildCombinedRouteToTarget,buildGoogleMapsRouteUrl,buildYandexRouteUrl,findInternalPathAsync,zoneTargetPoint,withOperationalPois,getMapFilters,filterZoneFeatures,routeCrossesFencePaths,extractFencePaths,buildMapPlaceMarkers,clusterMapPlaces} = await import(pathToFileURL(output).href);
 const data = process.argv.includes('--local') ? await (await fetch('http://localhost:3000/api/data')).json() : JSON.parse(await fs.readFile('cms/seed/content.json','utf8'));
 const planOrigin=planCoordinate(0,0),planX=planCoordinate(1,0),planY=planCoordinate(0,1);
 const planDx=planX[0]-planOrigin[0],planDy=planX[1]-planOrigin[1],planEx=planY[0]-planOrigin[0],planEy=planY[1]-planOrigin[1],planDet=planDx*planEy-planEx*planDy;
@@ -69,9 +69,6 @@ for(const zoom of [12,15,17,20]) {
   assert.ok(groups.filter(g=>g.places[0].pinned).every(g=>g.places.length===1));
 }
 assert.ok(clusterMapPlaces(placeMarkers,20).length>clusterMapPlaces(placeMarkers,15).length,'Zooming in separates nearby places');
-const nativeScript=buildNativeYandexMapHtml('test',{lat:56,lng:53},15).match(/<script>\s*([\s\S]*?)<\/script>/)?.[1];
-assert.ok(nativeScript);
-new Function(nativeScript); // Verify the emitted WebView script, including the shared grouping function.
 const p=(x,y)=>({lng:53+x/61000,lat:56+y/111320});
 const line=(id,points,extras={})=>({type:'Feature',properties:{id,pathKind:'walkway',...extras},geometry:{type:'LineString',coordinates:points.map(([x,y])=>{const q=p(x,y);return[q.lng,q.lat]})}});
 const paths=(...features)=>({type:'FeatureCollection',features});

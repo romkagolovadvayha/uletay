@@ -212,10 +212,10 @@ export function FestivalMapScreen({ route }: Props) {
     if (mapLoaded || mapLoadError || mapRenderError || !mapConfig?.enabled) {
       return undefined;
     }
-    // Don't keep the spinner forever if native load events are missed.
-    const timer = setTimeout(() => setMapLoaded(true), 8_000);
+    // Readiness comes from the renderer. A timeout offers a real retry.
+    const timer = setTimeout(() => setMapLoadError(true), 30_000);
     return () => clearTimeout(timer);
-  }, [mapLoaded, mapLoadError, mapRenderError, mapConfig?.enabled]);
+  }, [mapLoaded, mapLoadError, mapRenderError, mapConfig?.enabled, mapAttempt]);
 
   const handleLocate = useCallback(async () => {
     setFollowUser(true);
@@ -230,7 +230,8 @@ export function FestivalMapScreen({ route }: Props) {
   const handleFestivalCenter = useCallback(() => {
     setFollowUser(false);
     if (mapConfig) {
-      mapApi.current?.flyTo(mapConfig.center.lat, mapConfig.center.lng, mapConfig.defaultZoom);
+      if (mapApi.current?.showFestival) mapApi.current.showFestival();
+      else mapApi.current?.flyTo(mapConfig.center.lat, mapConfig.center.lng, mapConfig.defaultZoom);
     }
   }, [mapConfig]);
 
@@ -238,7 +239,7 @@ export function FestivalMapScreen({ route }: Props) {
     if (selectedZone) {
       const layout = zoneImageLayout(selectedZone);
       const size = Math.max(layout.widthMeters, layout.heightMeters, 1);
-      const scale = 156543.03392 * Math.cos(layout.center.lat * Math.PI / 180);
+      const scale = 78271.51696 * Math.cos(layout.center.lat * Math.PI / 180);
       const zoom = Math.max(13, Math.min(selectedZone.properties.parentZoneId ? 20 : 18, Math.log2(scale * 240 / size)));
       mapApi.current?.flyTo(layout.center.lat, layout.center.lng, zoom);
     }
@@ -399,6 +400,8 @@ export function FestivalMapScreen({ route }: Props) {
                 selectedPoiId={pickedPoiId}
                 filter={filter}
                 followUser={followUser}
+                coordinatePicking={Boolean(placingMarkerKind)}
+                onMapInteraction={() => setFollowUser(false)}
                 onZonePress={(zone) => {
                   setNearbyPlaces([]);
                   setMapInfoVisible(false);

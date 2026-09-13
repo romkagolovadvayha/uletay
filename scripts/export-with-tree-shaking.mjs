@@ -38,6 +38,7 @@ if (withSourceMaps) {
   exportArgs.push('--source-maps');
 }
 
+run(process.execPath, [path.join(root, 'prepare-maplibre-web.cjs')]);
 run(process.execPath, [expoCli, ...exportArgs.slice(1)]);
 run(process.execPath, [path.join(root, 'copy-public-static.mjs')]);
 run(process.execPath, [path.join(root, 'flatten-web-font-assets.mjs')]);

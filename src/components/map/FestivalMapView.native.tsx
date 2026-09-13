@@ -1,258 +1,100 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../../theme/colors';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
-import { resolveMediaUrl } from '../../config/api';
-import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
+import { Camera, GeoJSONSource, ImageSource, Layer, Map as NativeMap, type CameraRef } from '@maplibre/maplibre-react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet } from 'react-native';
 import { useLatestRef } from '../../hooks/useLatestRef';
-import type { MapPoiProperties, MapZoneProperties } from '../../types/map';
-import { filterPoiFeatures, filterZoneFeatures } from '../../utils/map/layerStyles';
-import { overlayToYandexLayoutBounds } from '../../utils/map/overlayGeoref';
-import { buildNativeYandexMapHtml } from './nativeYandexMapHtml';
+import { useMapMotion } from './MapMotionConfig';
+import { configureNativeMapCache } from './map-cache.native';
+import { clampZoom, dispatchMapPress, festivalBounds, mapPadding, routeBounds, validCoordinate, type SceneImage, type SceneSource } from './map-scene';
+import { festivalMapStyle, MAP_MAX_ZOOM, MAP_MIN_ZOOM } from './map-style';
+import { useMapCamera } from './use-map-camera';
+import { useMapScene } from './use-map-scene';
 import type { FestivalMapViewProps } from './types';
-import { buildMapPlaceMarkers, type MapPlaceMarker } from '../../utils/map/placeMarkers';
 
-const MAP_BASE_URL = 'https://uletayapp.ru/';
-
-type BridgeMessage =
-  | { type: 'loaded' }
-  | { type: 'error'; message?: string }
-  | { type: 'zonePress'; zoneId: string }
-  | { type: 'poiPress'; poiId: string }
-  | { type: 'placesPress'; places: MapPlaceMarker[] }
-  | { type: 'mapPress'; coordinate?: { lat: number; lng: number } };
-
-export function FestivalMapView({
-  config,
-  zones,
-  pois,
-  paths,
-  userLocation,
-  userMarkers,
-  routeSegments,
-  selectedZoneId,
-  selectedPoiId,
-  filter,
-  followUser,
-  onZonePress,
-  onPoiPress,
-  onPlacesPress,
-  onMapPress,
-  onMapCoordinatePress,
-  onMapReady,
-  onMapLoaded,
-  onMapLoadError,
-}: FestivalMapViewProps) {
-  const webRef = useRef<WebView>(null);
-  const bridgeReadyRef = useRef(false);
-  const onZonePressRef = useLatestRef(onZonePress);
-  const onPoiPressRef = useLatestRef(onPoiPress);
-  const onPlacesPressRef = useLatestRef(onPlacesPress);
-  const onMapPressRef = useLatestRef(onMapPress);
-  const onMapCoordinatePressRef = useLatestRef(onMapCoordinatePress);
-  const zonesRef = useLatestRef(zones);
-  const poisRef = useLatestRef(pois);
-
-  const filteredZones = useMemo(
-    () => filterZoneFeatures(zones?.features ?? [], filter),
-    [zones, filter],
-  );
-  const filteredPois = useMemo(
-    () =>
-      filterPoiFeatures(pois?.features ?? [], filter).filter(
-        (poi) => !poi.properties.sourceZoneId,
-      ),
-    [pois, filter],
-  );
-
-  const html = useMemo(() => {
-    if (!YANDEX_MAPS_API_KEY) return '';
-    return buildNativeYandexMapHtml(
-      YANDEX_MAPS_API_KEY,
-      config.center,
-      config.defaultZoom,
-    );
-  }, [config.center, config.defaultZoom]);
-
-  const bridgeState = useMemo(() => {
-    const overlay = config.adminOverlay;
-    const overlayUrl = overlay ? resolveMediaUrl(overlay.imageUrl) : undefined;
-    return {
-      filter,
-      placeMarkers: buildMapPlaceMarkers(filteredZones, filteredPois, selectedZoneId, selectedPoiId),
-      center: config.center,
-      defaultZoom: config.defaultZoom,
-      selectedZoneId: selectedZoneId ?? null,
-      selectedPoiId: selectedPoiId ?? null,
-      followUser,
-      userLocation: userLocation
-        ? { lat: userLocation.lat, lng: userLocation.lng }
-        : null,
-      userMarkers: userMarkers ?? [],
-      paths: paths ?? null,
-      routeSegments: routeSegments ?? [],
-      overlay:
-        overlay && overlayUrl
-          ? {
-              url: overlayUrl,
-              bounds: overlayToYandexLayoutBounds(overlay),
-              opacity: overlay.opacity ?? 0.85,
-              rotation: overlay.rotation ?? 0,
-            }
-          : null,
-      zones: filteredZones.map((feature) => ({
-        type: 'Feature' as const,
-        geometry: feature.geometry,
-        properties: {
-          ...feature.properties,
-          fillImageUrl: resolveMediaUrl(feature.properties.fillImageUrl) ?? null,
-        },
-      })),
-      pois: filteredPois.map((feature) => ({
-        type: 'Feature' as const,
-        geometry: feature.geometry,
-        properties: feature.properties,
-      })),
-    };
-  }, [
-    filter,
-    config.adminOverlay,
-    config.center,
-    config.defaultZoom,
-    filteredZones,
-    followUser,
-    paths,
-    filteredPois,
-    routeSegments,
-    selectedZoneId,
-    selectedPoiId,
-    userLocation,
-    userMarkers,
-  ]);
-
-  const inject = (js: string) => {
-    webRef.current?.injectJavaScript(`${js}; true;`);
-  };
-
-  const pushState = () => {
-    if (!bridgeReadyRef.current) return;
-    inject(`window.__festApply && window.__festApply(${JSON.stringify(bridgeState)})`);
-  };
-
-  useEffect(() => {
-    pushState();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- push when bridge state changes
-  }, [bridgeState]);
-
-  useEffect(() => {
-    onMapReady?.({
-      zoomBy: (delta) => {
-        inject(`window.__festCmd && window.__festCmd(${JSON.stringify({ type: 'zoomBy', delta })})`);
-      },
-      flyTo: (lat, lng, zoom = config.defaultZoom) => {
-        inject(
-          `window.__festCmd && window.__festCmd(${JSON.stringify({ type: 'flyTo', lat, lng, zoom })})`,
-        );
-      },
-      fitRoute: (coordinates) => {
-        inject(
-          `window.__festCmd && window.__festCmd(${JSON.stringify({ type: 'fitRoute', coordinates })})`,
-        );
-      },
-    });
-  }, [onMapReady, config.defaultZoom]);
-
-  const onMessage = (event: WebViewMessageEvent) => {
-    let msg: BridgeMessage;
-    try {
-      msg = JSON.parse(event.nativeEvent.data) as BridgeMessage;
-    } catch {
-      return;
-    }
-
-    if (msg.type === 'loaded') {
-      bridgeReadyRef.current = true;
-      pushState();
-      onMapLoaded?.();
-      return;
-    }
-
-    if (msg.type === 'error') {
-      console.error('[FestivalMapView.native]', msg.message);
-      onMapLoadError?.();
-      return;
-    }
-
-    if (msg.type === 'zonePress') {
-      const zone = zonesRef.current?.features.find((f) => f.properties.id === msg.zoneId) as
-        | GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>
-        | undefined;
-      if (zone) onZonePressRef.current(zone);
-      return;
-    }
-
-    if (msg.type === 'poiPress') {
-      const poi = poisRef.current?.features.find((f) => f.properties.id === msg.poiId) as
-        | GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>
-        | undefined;
-      if (poi) onPoiPressRef.current(poi);
-      return;
-    }
-
-    if (msg.type === 'mapPress') {
-      if (msg.coordinate) {
-        onMapCoordinatePressRef.current?.(msg.coordinate);
-      } else {
-        onMapPressRef.current?.();
-      }
-    }
-
-    if (msg.type === 'placesPress') {
-      onPlacesPressRef.current?.(msg.places);
-      return;
-    }
-  };
-
-  if (!YANDEX_MAPS_API_KEY) {
-    return (
-      <View style={styles.fill}>
-        <Text style={styles.error}>
-          Задайте EXPO_PUBLIC_YANDEX_MAPS_API_KEY для отображения карты
-        </Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.fill}>
-      <WebView
-        ref={webRef}
-        style={styles.fill}
-        originWhitelist={['*']}
-        source={{ html, baseUrl: MAP_BASE_URL }}
-        onMessage={onMessage}
-        onError={() => onMapLoadError?.()}
-        onHttpError={() => onMapLoadError?.()}
-        javaScriptEnabled
-        domStorageEnabled
-        setSupportMultipleWindows={false}
-        allowsInlineMediaPlayback
-        mediaPlaybackRequiresUserAction={false}
-        mixedContentMode="always"
-        // Hardware layer: software rendering skips Yandex raster tiles (tile_manager OOM on emulator).
-        androidLayerType="hardware"
-        cacheEnabled
-        thirdPartyCookiesEnabled
-      />
-    </View>
-  );
+const captureFeatures = () => {}; // The source enriches the single bubbling Map press event.
+const Source = React.memo(function Source({ id, data, layers }: SceneSource) {
+  return <GeoJSONSource id={id} data={data} tolerance={0}
+    onPress={id === 'zones' || id === 'places' ? captureFeatures : undefined}>
+    {layers.map(layer => <Layer key={layer.id} {...layer} />)}
+  </GeoJSONSource>;
+});
+function MapImage({ image }: { image: SceneImage }) {
+  return <ImageSource id={image.id} url={image.url} coordinates={image.coordinates}>
+    <Layer id={`${image.id}-raster`} type="raster" paint={{ 'raster-opacity': image.opacity, 'raster-fade-duration': 0 }} />
+  </ImageSource>;
 }
 
-const styles = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: colors.background },
-  error: {
-    color: colors.text,
-    textAlign: 'center',
-    padding: 16,
-  },
-});
+export function FestivalMapView(props: FestivalMapViewProps) {
+  const camera = useRef<CameraRef>(null);
+  const size = useRef({ width: 390, height: 700 });
+  const latest = useLatestRef(props);
+  const [initialized, setInitialized] = useState(false);
+  const loaded = useRef(false);
+  const zoom = useRef(clampZoom(props.config.defaultZoom));
+  const [labelZoom, setLabelZoom] = useState(clampZoom(props.config.defaultZoom));
+  const scene = useMapScene(props, labelZoom);
+  const { reduceMotion } = useMapMotion();
+  const motion = useLatestRef(reduceMotion);
+  const attachCamera = useMapCamera(props.onMapReady);
+  const style = useMemo(() => JSON.stringify(festivalMapStyle()), []);
+  const [initialView] = useState(() => ({ center: [props.config.center.lng, props.config.center.lat] as [number, number], zoom: clampZoom(props.config.defaultZoom) }));
+
+  useEffect(() => { void configureNativeMapCache(); }, []);
+  useEffect(() => {
+    if (!initialized) return;
+    const showFestival = () => {
+      const config = latest.current.config, bounds = festivalBounds(config);
+      if (bounds) camera.current?.fitBounds(bounds, { padding: mapPadding(size.current.width, size.current.height), duration: 0 });
+      else camera.current?.jumpTo({ center: [config.center.lng, config.center.lat], zoom: clampZoom(config.defaultZoom) });
+    };
+    showFestival();
+    attachCamera({
+      showFestival,
+      zoomBy: delta => { zoom.current = clampZoom(zoom.current + delta); camera.current?.zoomTo(zoom.current, { duration: motion.current ? 0 : 250 }); },
+      flyTo: (lat, lng, nextZoom = latest.current.config.defaultZoom) => {
+        if (!validCoordinate({ lat, lng })) return;
+        zoom.current = clampZoom(nextZoom);
+        camera.current?.easeTo({ center: [lng, lat], zoom: zoom.current, duration: motion.current ? 0 : 350 });
+      },
+      fitRoute: coordinates => {
+        const bounds = routeBounds(coordinates);
+        if (!bounds) return;
+        camera.current?.fitBounds(bounds, { padding: mapPadding(size.current.width, size.current.height, true), duration: motion.current ? 0 : 350 });
+      },
+    });
+    return () => attachCamera(null);
+  }, [initialized, attachCamera, latest, motion]);
+
+  const lat = props.userLocation?.lat, lng = props.userLocation?.lng;
+  useEffect(() => {
+    if (!initialized || !props.followUser || lat == null || lng == null || !validCoordinate({ lat, lng })) return;
+    camera.current?.easeTo({ center: [lng, lat], zoom: Math.max(16, zoom.current), duration: reduceMotion ? 0 : 350 });
+  }, [initialized, props.followUser, lat, lng, reduceMotion]);
+
+  return <NativeMap mapStyle={style} style={styles.fill} attribution logo={false} compass
+    attributionPosition={{ bottom: 72, left: 8 }} compassPosition={{ bottom: 150, left: 16 }}
+    dragPan touchZoom touchRotate
+    onLayout={event => { size.current = event.nativeEvent.layout; }}
+    onDidFinishLoadingStyle={() => setInitialized(true)}
+    onDidFinishRenderingMapFully={() => {
+      if (loaded.current) return;
+      loaded.current = true; latest.current.onMapLoaded?.();
+    }}
+    onDidFailLoadingMap={() => { if (!loaded.current) latest.current.onMapLoadError?.(); }}
+    onRegionWillChange={event => { if (event.nativeEvent.userInteraction) latest.current.onMapInteraction?.(); }}
+    onRegionDidChange={event => {
+      zoom.current = event.nativeEvent.zoom;
+      setLabelZoom(Math.floor(zoom.current * 4) / 4);
+    }}
+    onPress={event => {
+      const [pressLng, pressLat] = event.nativeEvent.lngLat;
+      const features = 'features' in event.nativeEvent ? event.nativeEvent.features : [];
+      dispatchMapPress(latest.current, scene.labels, features, { lat: pressLat, lng: pressLng });
+    }}>
+    <Camera ref={camera} initialViewState={initialView} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} />
+    {scene.images.filter(image => image.id === 'festival-plan').map(image => <MapImage key={image.id} image={image} />)}
+    <Source {...scene.sources[0]} />
+    {scene.images.filter(image => image.id !== 'festival-plan').map(image => <MapImage key={image.id} image={image} />)}
+    {scene.sources.slice(1).map(source => <Source key={source.id} {...source} />)}
+  </NativeMap>;
+}
+const styles = StyleSheet.create({ fill: { flex: 1, minHeight: 0 } });

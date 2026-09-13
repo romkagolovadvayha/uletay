@@ -1,5 +1,5 @@
 /* Offline shell + API cache. Bump CACHE_VERSION on every deploy that must invalidate clients. */
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const SHELL_CACHE = `uletay-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `uletay-data-${CACHE_VERSION}`;
 const APP_SHELL = ['/', '/api/data'];
@@ -122,7 +122,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/_expo/')) {
+  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/_expo/') || url.pathname.startsWith('/vendor/maplibre/')) {
     event.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
   }
 });

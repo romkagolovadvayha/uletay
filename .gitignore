@@ -64,6 +64,7 @@ scripts/fest-artist-sync-report.json
 
 # Local build and QA scratch files
 /tmp/
+/public/vendor/maplibre/
 .seo-cache/
 /artifacts/map-audit/*.json
 /artifacts/map-audit/*.png

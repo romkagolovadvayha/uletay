@@ -24,6 +24,8 @@ export type FestivalMapViewProps = {
   selectedPoiId?: string | null;
   filter: MapFilterId;
   followUser: boolean;
+  coordinatePicking?: boolean;
+  onMapInteraction?: () => void;
   onZonePress: (zone: GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>) => void;
   onPoiPress: (poi: GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>) => void;
   onPlacesPress?: (places: MapPlaceMarker[]) => void;
@@ -37,6 +39,7 @@ export type FestivalMapViewProps = {
 };
 
 export type FestivalMapApi = {
+  showFestival?: () => void;
   zoomBy?: (delta: number) => void;
   flyTo: (lat: number, lng: number, zoom?: number) => void;
   fitRoute: (coordinates: [number, number][]) => void;

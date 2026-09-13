@@ -58,7 +58,7 @@ export function MapSavedPlacesPanel({
                 <Ionicons name={meta.icon} size={20} color={colors.primary} />
               </View>
               <View style={styles.placeText}>
-                <Text style={styles.placeTitle}>{marker ? `Моя ${meta.title}` : `Запомнить ${meta.title}`}</Text>
+                <Text style={styles.placeTitle}>{marker ? (kind === 'car' ? 'Моя машина' : 'Моя палатка') : `Запомнить ${meta.title}`}</Text>
                 <Text style={styles.placeCaption}>
                   {marker
                     ? distance == null
