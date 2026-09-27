@@ -129,6 +129,7 @@ jobs:
           npx expo install --check
           npm run lint
           npm run typecheck
+          npx tsx --test scripts/test-radio.ts
           npm run test:rustore-push-config
           npm run test:audit-fixes
           npm run test:sw
