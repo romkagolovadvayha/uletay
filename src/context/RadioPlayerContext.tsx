@@ -10,7 +10,6 @@ import React, {
 } from 'react';
 import {
   fetchRadioNowPlaying,
-  RadioHistoryItem,
   RadioNowPlaying,
 } from '../api/radioNowPlayingApi';
 import { useAppData } from './DataContext';
@@ -27,7 +26,10 @@ type RadioPlayerContextValue = {
   error: string | null;
   lastUpdatedAt: number | null;
   nowPlaying: RadioNowPlaying | null;
-  recentTracks: RadioHistoryItem[];
+  upcomingTracks: RadioNowPlaying[];
+  previousTrack: RadioNowPlaying | null;
+  isMetadataStale: boolean;
+  stationAvailable: boolean | null;
   matchedHeadliner: Headliner | null;
   togglePlayback: () => void;
   play: () => void;
@@ -45,7 +47,9 @@ const LazyRadioAudioEngine = React.lazy(() =>
 export function RadioPlayerProvider({ children }: { children: React.ReactNode }) {
   const { data } = useAppData();
   const [nowPlaying, setNowPlaying] = useState<RadioNowPlaying | null>(null);
-  const [recentTracks, setRecentTracks] = useState<RadioHistoryItem[]>([]);
+  const [upcomingTracks, setUpcomingTracks] = useState<RadioNowPlaying[]>([]);
+  const [previousTrack, setPreviousTrack] = useState<RadioNowPlaying | null>(null);
+  const [stationAvailable, setStationAvailable] = useState<boolean | null>(null);
   const [metadataError, setMetadataError] = useState<string | null>(null);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
@@ -56,6 +60,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
   const [isBuffering, setIsBuffering] = useState(false);
   const engineRef = useRef<{ play: () => void; pause: () => void } | null>(null);
   const pendingPlayRef = useRef(false);
+  const metadataRequestRef = useRef<Promise<void> | null>(null);
 
   const matchedHeadliner = useMemo(
     () =>
@@ -65,19 +70,28 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
     [data.headliners, nowPlaying],
   );
 
-  const refreshNowPlaying = useCallback(async () => {
+  const refreshNowPlaying = useCallback((): Promise<void> => {
+    if (metadataRequestRef.current) return metadataRequestRef.current;
     setIsMetadataLoading(true);
-    try {
-      const next = await fetchRadioNowPlaying();
-      setNowPlaying(next);
-      setRecentTracks(next.recent);
-      setMetadataError(null);
-      setLastUpdatedAt(Date.now());
-    } catch {
-      setMetadataError('Не удалось обновить информацию об эфире');
-    } finally {
-      setIsMetadataLoading(false);
-    }
+    const request = (async () => {
+      try {
+        const next = await fetchRadioNowPlaying();
+        setNowPlaying(next.raw ? next : null);
+        setUpcomingTracks(next.queue);
+        setPreviousTrack(next.previous);
+        setStationAvailable(next.available);
+        setMetadataError(null);
+        setLastUpdatedAt(Date.parse(next.updatedAt) || Date.now());
+      } catch {
+        setMetadataError('Не удалось обновить информацию об эфире');
+        setUpcomingTracks([]);
+      } finally {
+        setIsMetadataLoading(false);
+        metadataRequestRef.current = null;
+      }
+    })();
+    metadataRequestRef.current = request;
+    return request;
   }, []);
 
   useEffect(() => {
@@ -144,7 +158,10 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       error: playbackError ?? metadataError,
       lastUpdatedAt,
       nowPlaying,
-      recentTracks,
+      upcomingTracks,
+      previousTrack,
+      isMetadataStale: Boolean(metadataError),
+      stationAvailable,
       matchedHeadliner,
       togglePlayback,
       play,
@@ -161,7 +178,9 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
       matchedHeadliner,
       metadataError,
       nowPlaying,
-      recentTracks,
+      upcomingTracks,
+      previousTrack,
+      stationAvailable,
       pause,
       play,
       playbackError,

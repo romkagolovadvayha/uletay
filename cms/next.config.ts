@@ -8,7 +8,9 @@ const nextConfig: NextConfig = {
   // a running local API server (and vice versa).
   distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
   output: 'standalone',
-  outputFileTracingRoot: path.join(__dirname),
+  // The CMS shares validation and radio contracts with the Expo application.
+  turbopack: { root: process.env.NODE_ENV === 'development' ? path.join(__dirname, '..') : __dirname },
+  outputFileTracingRoot: process.env.NODE_ENV === 'development' ? path.join(__dirname, '..') : __dirname,
   outputFileTracingIncludes: {
     '/admin': ['./data/**/*'],
   },

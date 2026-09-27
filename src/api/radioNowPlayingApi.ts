@@ -1,43 +1,24 @@
 import { API_BASE_URL } from '../config/api';
+import { RADIO_STATION_ID } from '../config/radio';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
-import { fetchRadioNowPlayingFromStream, RadioNowPlaying } from '../utils/radioIcy';
+import type { RadioSnapshot } from '../utils/radioSnapshot';
 
-export type { RadioNowPlaying };
-export type RadioHistoryItem = RadioNowPlaying & { playedAt: string };
-export type RadioSnapshot = RadioNowPlaying & { recent: RadioHistoryItem[] };
-
-const FETCH_TIMEOUT_MS = 10_000;
-
-async function fetchRadioNowPlayingFromApi(): Promise<RadioSnapshot | null> {
-  try {
-    const response = await fetchWithTimeout(
-      `${API_BASE_URL}/radio/now-playing`,
-      { headers: { Accept: 'application/json' } },
-      FETCH_TIMEOUT_MS,
-    );
-
-    const contentType = response.headers.get('content-type') ?? '';
-    if (!response.ok || !contentType.includes('application/json')) {
-      return null;
-    }
-
-    const result = (await response.json()) as RadioSnapshot;
-    return { ...result, recent: Array.isArray(result.recent) ? result.recent.slice(0, 20) : [] };
-  } catch {
-    return null;
-  }
-}
+export type { RadioNowPlaying, RadioSnapshot } from '../utils/radioSnapshot';
 
 export async function fetchRadioNowPlaying(): Promise<RadioSnapshot> {
-  const fromApi = await fetchRadioNowPlayingFromApi();
-  if (fromApi?.raw || fromApi?.title || fromApi?.artist) {
-    return fromApi;
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/radio/now-playing`,
+    { headers: { Accept: 'application/json' }, cache: 'no-store' },
+    10_000,
+  );
+  if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+    throw new Error('Radio service unavailable');
   }
-
-  const fromStream = await fetchRadioNowPlayingFromStream().catch(() => null);
-  if (fromStream?.raw || fromStream?.title || fromStream?.artist) {
-    return { ...fromStream, recent: [] };
+  const result = await response.json() as RadioSnapshot;
+  // Reject old CMS/ICY responses during deployment: never mix stations.
+  if (result.source !== 'liscase' || result.stationId !== RADIO_STATION_ID
+    || typeof result.available !== 'boolean' || !Array.isArray(result.queue)) {
+    throw new Error('Invalid radio station response');
   }
-
-  throw new Error('Не удалось получить название трека');
+  return result;
 }

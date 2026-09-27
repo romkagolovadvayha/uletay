@@ -35,11 +35,11 @@ function buildLockScreenMetadata(
 ): AudioMetadata {
   const metadata: AudioMetadata = {
     title: nowPlaying?.title || 'В эфире',
-    artist: matchedHeadliner?.name || nowPlaying?.artist || RADIO_STATION_NAME,
+    artist: nowPlaying?.artist || matchedHeadliner?.name || RADIO_STATION_NAME,
     albumTitle: RADIO_STATION_NAME,
   };
 
-  const artworkUrl = resolveLockScreenArtworkUrl(matchedHeadliner?.imageUrl);
+  const artworkUrl = resolveLockScreenArtworkUrl(nowPlaying?.artworkUrl || matchedHeadliner?.imageUrl);
   if (artworkUrl) {
     metadata.artworkUrl = artworkUrl;
   }
@@ -81,6 +81,8 @@ export function RadioAudioEngine({
   useEffect(() => {
     engineRef.current = {
       play: () => {
+        // Reconnect at the live edge after a pause or a network failure.
+        player.replace({ uri: RADIO_STREAM_URL });
         player.play();
       },
       pause: () => {

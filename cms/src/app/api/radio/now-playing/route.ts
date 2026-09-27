@@ -1,4 +1,4 @@
-import { getRadioSnapshot } from '@/lib/radio-icy';
+import { getRadioSnapshot } from '@/lib/radio-liscase';
 import { jsonResponse, optionsResponse } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
@@ -9,14 +9,12 @@ export async function OPTIONS() {
 
 export async function GET() {
   try {
-    const nowPlaying = await getRadioSnapshot();
-    if (!nowPlaying) {
-      return jsonResponse({ error: 'Metadata unavailable' }, 502);
-    }
-
-    return jsonResponse(nowPlaying);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Server error';
-    return jsonResponse({ error: message }, 500);
+    const response = jsonResponse(await getRadioSnapshot());
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
+  } catch {
+    const response = jsonResponse({ error: 'Не удалось обновить информацию об эфире' }, 502);
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
   }
 }

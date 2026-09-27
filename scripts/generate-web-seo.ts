@@ -183,7 +183,15 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     { path: '/schedule/full', routeName: 'FullSchedule' },
     { path: '/autographs', routeName: 'AutographsMain' },
     { path: '/favorites', routeName: 'FavoritesTab' },
-    { path: '/playlist', routeName: 'PlaylistTab' },
+    {
+      path: '/playlist', routeName: 'PlaylistTab', heading: 'Улетай радио — слушать рок онлайн',
+      details: [
+        'Рок станция (Улетай) — любимая музыка и артисты фестиваля в прямом эфире.',
+        'Слушайте бесплатно на телефоне и компьютере без регистрации. Названия песен, исполнители, обложки и очередь следующих треков обновляются автоматически.',
+        'Нажмите «Слушать эфир», чтобы включить радио. Сохраняйте понравившиеся песни в избранное на своём устройстве.',
+      ],
+      links: [{ href: '/headliners', label: 'Артисты фестиваля Улетай' }],
+    },
     { path: '/headliners', routeName: 'HeadlinersMain' },
     { path: '/foodcourt', routeName: 'FoodCourtMain' },
     { path: '/about', routeName: 'FestivalAbout' },

@@ -1,4 +1,5 @@
 import type { AppData, FestivalInfo } from '../types';
+import { RADIO_STREAM_URL } from '../config/radio';
 import { FESTIVAL_WEBSITE, LEGAL_OPERATOR } from '../constants/legal';
 import { getCanonicalUrl, type SeoMeta } from './routeSeo';
 import { DEFAULT_SOCIAL_IMAGE_URL, SITE_URL } from './site';
@@ -111,6 +112,22 @@ function festivalNode(data: AppData): JsonLdNode {
 }
 
 function pageEntity(meta: SeoMeta, data: AppData, canonical: string): JsonLdNode | null {
+  if (meta.path === '/playlist') {
+    return {
+      '@type': 'RadioBroadcastService',
+      '@id': `${canonical}#radio`,
+      name: 'Улетай радио',
+      alternateName: 'Рок станция (Улетай)',
+      description: meta.description,
+      url: canonical,
+      inLanguage: 'ru',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'RUB' },
+      potentialAction: {
+        '@type': 'ListenAction',
+        target: RADIO_STREAM_URL,
+      },
+    };
+  }
   const performanceId = routeEntityId(meta.path, '/schedule/live/');
   if (performanceId) {
     const performance = data.schedule.find((item) => item.id === performanceId);
