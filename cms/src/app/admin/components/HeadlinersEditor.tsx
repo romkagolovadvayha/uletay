@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { upsertHeadlinerAction } from '../actions';
 import { AdminImageUpload } from './AdminImageUpload';
 import { HeadlinersSortableTable } from './HeadlinersSortableTable';
+import { HeadlinerMusicRefresh } from './HeadlinerMusicRefresh';
 import type { Headliner } from '@/types';
 import { presetHint } from '@/lib/image-presets';
 import { resolveAdminImageSrc } from '@/lib/resolve-admin-image';
@@ -91,6 +92,7 @@ export function HeadlinersEditor({ items, editId, query = '', yearFilter }: Prop
           {!isNew && editing ? <input type="hidden" name="id" value={editing.id} /> : null}
 
           <div className="panel-body grid">
+            {editing && <HeadlinerMusicRefresh artist={editing} />}
             <label className="span-2">
               Имя артиста
               <input name="name" defaultValue={editing?.name ?? ''} required />
@@ -166,6 +168,7 @@ export function HeadlinersEditor({ items, editId, query = '', yearFilter }: Prop
             <HeadlinersSortableTable
               key={tableItems.map((item) => item.id).join('|')}
               items={tableItems}
+              allItems={items.map(({ id, name }) => ({ id, name }))}
               listHref={listHref}
               sortable={!query && !yearFilter}
             />

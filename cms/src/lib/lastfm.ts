@@ -11,6 +11,12 @@ import { lastFmFetch, resolveLastFmProxyUrl } from './lastfm-fetch';
 
 const API_BASE = 'https://ws.audioscrobbler.com/2.0/';
 
+export class LastFmApiError extends Error {
+  constructor(public readonly code: number, message: string) {
+    super(message);
+  }
+}
+
 type LastFmImage = { '#text': string; size: string };
 type LastFmTag = { name: string; url: string };
 type LastFmSimilarArtist = { name: string; url: string };
@@ -164,7 +170,7 @@ async function callLastFm<T>(params: Record<string, string>): Promise<T> {
 
   const payload = (await response.json()) as { error?: number; message?: string } & T;
   if (payload.error) {
-    throw new Error(payload.message ?? `Last.fm error ${payload.error}`);
+    throw new LastFmApiError(payload.error, payload.message ?? `Last.fm error ${payload.error}`);
   }
 
   return payload;
@@ -278,6 +284,7 @@ export function buildLastFmSearchQueries(name: string): string[] {
 
 export async function resolveLastFmProfileForHeadliner(
   headlinerName: string,
+  options: { strict?: boolean } = {},
 ): Promise<HeadlinerLastFmProfile | null> {
   const queries = buildLastFmSearchQueries(headlinerName);
 
@@ -288,7 +295,7 @@ export async function resolveLastFmProfileForHeadliner(
         return direct;
       }
     } catch (error) {
-      if (isFatalLastFmError(error)) {
+      if (isFatalLastFmError(error) || (options.strict && !(error instanceof LastFmApiError && error.code === 6))) {
         throw error;
       }
     }
@@ -302,7 +309,7 @@ export async function resolveLastFmProfileForHeadliner(
         }
       }
     } catch (error) {
-      if (isFatalLastFmError(error)) {
+      if (isFatalLastFmError(error) || (options.strict && !(error instanceof LastFmApiError && error.code === 6))) {
         throw error;
       }
     }

@@ -38,6 +38,7 @@ import { defaultOverlayFromBounds } from '@/lib/map-overlay-georef';
 import { sendPushBroadcast, type PushAudience } from '@/lib/push';
 import { parseFoodcourtMenu } from '@/lib/foodcourt-menu-input';
 import { adminSaveRedirect } from '@/lib/admin-navigation';
+import { refreshHeadlinerMusic, type HeadlinerRefreshResult } from '@/lib/headliner-refresh';
 
 async function requireSession(): Promise<number> {
   const session = await getSession();
@@ -562,6 +563,17 @@ export async function upsertHeadlinerAction(formData: FormData) {
 
   await saveAdminSnapshot(data, formData);
   redirect(adminSaveRedirect('headliners', String(formData.get('_returnTo') ?? '')));
+}
+
+export async function refreshHeadlinerMusicAction(
+  id: string,
+  revision?: string,
+): Promise<HeadlinerRefreshResult> {
+  const session = await getSession();
+  if (!session.adminUserId) {
+    return { ok: false, error: 'Войдите в админку, чтобы обновить данные.', stopBatch: true };
+  }
+  return refreshHeadlinerMusic(id, revision);
 }
 
 export async function deleteHeadlinerAction(formData: FormData) {

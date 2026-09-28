@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test:admin": "tsx scripts/test-admin-workspace.ts && tsx scripts/test-admin-map.ts",
+    "test:admin": "tsx scripts/test-admin-workspace.ts && tsx scripts/test-admin-map.ts && tsx scripts/test-headliner-refresh.ts",
     "predev": "node ../scripts/prepare-maplibre-web.cjs --cms",
     "prebuild": "node ../scripts/prepare-maplibre-web.cjs --cms",
     "dev": "next dev -p 3000",
