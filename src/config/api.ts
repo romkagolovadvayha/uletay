@@ -33,8 +33,8 @@ function getNativeApiBaseUrl(): string {
 export const API_BASE_URL =
   Platform.OS === 'web' ? getWebApiBaseUrl() : getNativeApiBaseUrl();
 
-export const APP_DATA_REFRESH_INTERVAL_MS = 3 * 60 * 1000;
-export const APP_DATA_RETRY_INTERVAL_MS = 30_000;
+// Conditional requests transfer the catalog only when its revision changes.
+export const APP_DATA_REFRESH_INTERVAL_MS = 30_000;
 
 function getSiteOrigin(): string {
   return API_BASE_URL.replace(/\/api\/?$/, '') || 'https://uletayapp.ru';

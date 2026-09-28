@@ -119,6 +119,10 @@ export async function getClientAppData(): Promise<AppData> {
   return structuredClone(cache.client);
 }
 
+export async function getAppDataRevision(): Promise<string> {
+  return (await ensureAppDataCache()).revision;
+}
+
 export class AppDataConflictError extends Error {
   constructor() { super('Данные уже изменены. Обновите страницу и повторите правку.'); }
 }

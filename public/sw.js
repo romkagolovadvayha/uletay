@@ -51,16 +51,23 @@ self.addEventListener('message', (event) => {
   }
 });
 
-async function networkFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
+async function networkFirst(request, cacheName, isApiData = false) {
+  // Cache Storage can be unavailable/full even while the network works.
+  const cache = await caches.open(cacheName).catch(() => null);
   try {
-    const response = await fetch(request);
-    if (response.ok) {
-      await cache.put(request, response.clone());
+    const response = await fetch(request, isApiData ? { cache: 'no-store' } : undefined);
+    if (response.ok && cache) {
+      await cache.put(request, response.clone()).catch(() => {});
     }
     return response;
   } catch {
-    return (await cache.match(request)) ?? Response.error();
+    const cached = await cache?.match(request).catch(() => undefined);
+    if (cached && isApiData) {
+      const headers = new Headers(cached.headers);
+      headers.set('X-Uletay-Offline', '1');
+      return new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers });
+    }
+    return cached ?? Response.error();
   }
 }
 
@@ -106,7 +113,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname === '/api/data') {
-    event.respondWith(networkFirst(request, DATA_CACHE));
+    event.respondWith(networkFirst(request, DATA_CACHE, true));
     return;
   }
 

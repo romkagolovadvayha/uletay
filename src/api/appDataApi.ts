@@ -79,7 +79,8 @@ function needsRefresh(cache: CachedAppData | null, force: boolean): boolean {
   if (!cache) {
     return true;
   }
-  return Date.now() - cache.fetchedAt >= APP_DATA_REFRESH_INTERVAL_MS;
+  const age = Date.now() - cache.fetchedAt;
+  return age < 0 || age >= APP_DATA_REFRESH_INTERVAL_MS;
 }
 
 export async function readCachedAppData(): Promise<CachedAppData | null> {
@@ -93,7 +94,7 @@ export async function readCachedAppData(): Promise<CachedAppData | null> {
   return storageCache;
 }
 
-async function fetchRemoteAppData(): Promise<AppData> {
+async function fetchRemoteAppData(): Promise<{ data: AppData; offline: boolean }> {
   let lastError: unknown = new Error('API unavailable');
 
   for (let attempt = 0; attempt < FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
@@ -105,18 +106,21 @@ async function fetchRemoteAppData(): Promise<AppData> {
     try {
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/data`,
-        { headers: { Accept: 'application/json', ...(memoryCache?.data.revision ? { 'If-None-Match': `"${memoryCache.data.revision}"` } : {}) } },
+        {
+          cache: 'no-store',
+          headers: { Accept: 'application/json', ...(memoryCache?.data.revision ? { 'If-None-Match': `"${memoryCache.data.revision}"` } : {}) },
+        },
         FETCH_TIMEOUT_MS,
       );
 
-      if (response.status === 304 && memoryCache) return memoryCache.data;
+      if (response.status === 304 && memoryCache) return { data: memoryCache.data, offline: false };
       if (!response.ok) {
         throw new ApiResponseError(response.status);
       }
 
       const payload: unknown = await response.json();
       if (!validateAppData(payload)) throw new ApiResponseError(422);
-      return payload;
+      return { data: payload, offline: response.headers.get('X-Uletay-Offline') === '1' };
     } catch (error) {
       lastError = error;
       const lastAttempt = attempt === FETCH_RETRY_DELAYS_MS.length - 1;
@@ -131,13 +135,23 @@ async function fetchRemoteAppData(): Promise<AppData> {
 
 export async function fetchAndCacheAppData(): Promise<CachedAppData | null> {
   try {
-    const remote = await fetchRemoteAppData();
-    const data = remote.revision && remote.revision === memoryCache?.data.revision
+    const { data: remote, offline } = await fetchRemoteAppData();
+    if (offline) {
+      // A worker's fallback can be older than AsyncStorage. Never roll back an
+      // existing snapshot or mark an unverified offline response as freshly fetched.
+      if (!memoryCache) {
+        memoryCache = { data: normalizeAppData(remote), fetchedAt: 0 };
+        await writeStorageCache(memoryCache).catch(() => {});
+      }
+      return null;
+    }
+    const unchanged = Boolean(remote.revision && remote.revision === memoryCache?.data.revision);
+    const data = unchanged && memoryCache
       ? memoryCache.data : normalizeAppData(remote);
     const cache: CachedAppData = { data, fetchedAt: Date.now() };
     memoryCache = cache;
     try {
-      await writeStorageCache(cache);
+      if (!unchanged) await writeStorageCache(cache);
     } catch {
       // Quota / private mode on mobile Safari: keep the in-memory snapshot for this session.
     }
@@ -155,6 +169,7 @@ export async function refreshAppDataInBackground(
     return { status: 'not-needed', cached: cached! };
   }
 
+  const joinedInFlight = Boolean(inFlight);
   if (!inFlight) {
     inFlight = fetchAndCacheAppData().finally(() => {
       inFlight = null;
@@ -167,10 +182,12 @@ export async function refreshAppDataInBackground(
   }
 
   // Explicit pull-to-refresh should not stick to a failed shared in-flight from startup.
-  if (force) {
-    inFlight = fetchAndCacheAppData().finally(() => {
-      inFlight = null;
-    });
+  if (force && joinedInFlight) {
+    if (!inFlight) {
+      inFlight = fetchAndCacheAppData().finally(() => {
+        inFlight = null;
+      });
+    }
     fresh = await inFlight;
     if (fresh) {
       return { status: 'fresh', cached: fresh };
