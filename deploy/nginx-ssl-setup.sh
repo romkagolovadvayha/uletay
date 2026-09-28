@@ -205,8 +205,8 @@ verify_https() {
     "https://127.0.0.1/api/data"
   grep -qi '^content-encoding: gzip' "$asset_headers_check" \
     || { echo "API JSON is not gzip-compressed"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
-  grep -qi '^cache-control:.*max-age=60' "$asset_headers_check" \
-    || { echo "API cache policy is missing or too aggressive"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
+  grep -qi '^cache-control:.*no-cache' "$asset_headers_check" \
+    || { echo "API responses must require revalidation (Cache-Control: no-cache)"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
   rm -f "$html_check" "$headers_check" "$asset_headers_check"
 
   curl -fsS -k "https://127.0.0.1/about" -H "Host: ${DOMAIN}" -o "$seo_check" \
