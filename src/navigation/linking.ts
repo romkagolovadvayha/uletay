@@ -29,7 +29,7 @@ export function setHeadlinersInMoreTab(value: boolean) {
 }
 
 function getHeadlinersStateFromPath(path: string): PartialState<NavigationState> | undefined {
-  const normalized = path.replace(/\/+$/, '') || '/';
+  const normalized = path.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
   const detailMatch = normalized.match(/^\/headliners\/([^/]+)$/);
   const tabName = headlinersInMoreTab ? 'MoreTab' : 'HeadlinersTab';
 
@@ -192,7 +192,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
     },
   },
   getStateFromPath(path, options) {
-    const normalized = path.replace(/\/+$/, '') || '/';
+    const normalized = path.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
     if (normalized === '/more') {
       return {
         routes: [{ name: 'HomeTab' }],

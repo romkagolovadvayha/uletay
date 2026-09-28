@@ -141,9 +141,16 @@ jobs:
           npm run test:push-reminders --prefix cms
           npm run test:admin --prefix cms
           node scripts/test-deployed-map.mjs
+          npx tsx scripts/test-web-linking.mjs
           test -f deploy/setup-push-reminders-cron.sh
           for script in deploy/*.sh scripts/test-release-deploy.sh; do bash -n "$script"; done
           bash scripts/test-release-deploy.sh
+
+      - name: Check direct web navigation with nginx
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx
+          node scripts/test-web-routes.mjs
 
       - name: Build and verify web app
         run: |

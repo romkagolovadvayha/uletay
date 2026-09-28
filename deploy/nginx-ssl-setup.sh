@@ -267,4 +267,8 @@ verify_https() {
     echo "Custom 404 page expected (404), got ${code}"
     exit 1
   fi
+
+  # Include current CMS entities, not only the build-time sitemap: newly added
+  # cards must survive direct entry and refresh before another web build.
+  node "${DEPLOY_PATH}/deploy/check-web-routes.mjs" "https://${DOMAIN}" 127.0.0.1
 }
