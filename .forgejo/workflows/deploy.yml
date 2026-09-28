@@ -1,0 +1,36 @@
+name: Deploy production
+'on':
+  push:
+    branches:
+    - master
+  workflow_dispatch: null
+concurrency:
+  group: uletay-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: gitlub-deploy
+    timeout-minutes: 110
+    steps:
+    - name: Build and deploy exact pushed commit
+      shell: bash
+      env:
+        DEPLOY_BRANCH: ${{ forgejo.ref_name }}
+        DEPLOY_COMMIT: ${{ forgejo.sha }}
+        DEPLOY_RUN: ${{ forgejo.run_id }}
+        DEPLOY_ATTEMPT: ${{ forgejo.run_attempt }}
+        SSH_HOST: ${{ vars.BUILD_SSH_HOST }}
+        SSH_KEY: ${{ secrets.BUILD_SSH_PRIVATE_KEY }}
+        SSH_KNOWN: ${{ secrets.BUILD_SSH_KNOWN_HOSTS }}
+        ACTION_VARIABLES: ${{ toJSON(vars) }}
+        ACTION_SECRETS: ${{ toJSON(secrets) }}
+      run: "set -euo pipefail\numask 077\ndirectory=$(mktemp -d)\ntrap 'rm -f \"$directory/key\" \"$directory/known_hosts\" \"$directory/settings.json\"\
+        ; rmdir \"$directory\"' EXIT\nprintf '%s\\n' \"$SSH_KEY\" > \"$directory/key\"\nprintf '%s\\n' \"$SSH_KNOWN\" > \"$directory/known_hosts\"\npython3\
+        \ - <<'PY' > \"$directory/settings.json\"\nimport json,os,sys\nvariables=json.loads(os.environ['ACTION_VARIABLES']);secrets=json.loads(os.environ['ACTION_SECRETS'])\n\
+        json.dump({'variables':{k.removeprefix('PRODUCTION_'):v for k,v in variables.items() if k.startswith('PRODUCTION_')},\n           'secrets':{k.removeprefix('PRODUCTION_'):v\
+        \ for k,v in secrets.items() if k.startswith('PRODUCTION_') and not k.startswith('PRODUCTION_SSH_')}},sys.stdout)\nPY\n[[ \"$DEPLOY_COMMIT\" =~\
+        \ ^[0-9a-f]{40}$ ]]\nDEPLOY_ATTEMPT=\"${DEPLOY_ATTEMPT:-$(date +%s)}\"\n[[ \"$DEPLOY_RUN\" =~ ^[0-9]+$ && \"$DEPLOY_ATTEMPT\" =~ ^[0-9]+$ ]]\ntest\
+        \ \"$DEPLOY_BRANCH\" = master\ncommand=\"deploy master $DEPLOY_COMMIT $DEPLOY_COMMIT-$DEPLOY_RUN-$DEPLOY_ATTEMPT\"\nunset ACTION_SECRETS\nunset\
+        \ SSH_KEY SSH_KNOWN\nssh -T -i \"$directory/key\" -o IdentitiesOnly=yes -o BatchMode=yes \\\n  -o StrictHostKeyChecking=yes -o UserKnownHostsFile=\"\
+        $directory/known_hosts\" \\\n  -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=15 \\\n  \"root@$SSH_HOST\" \"$command\" <\
+        \ \"$directory/settings.json\"\n"

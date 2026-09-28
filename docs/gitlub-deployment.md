@@ -1,0 +1,29 @@
+# Деплой и синхронизация через Gitlub
+
+Репозиторий: https://gitlub.prostoj.store/romkagolovadvayha/uletay.
+Push в `master` запускает `.forgejo/workflows/deploy.yml`.
+Проверки, Expo web и Next.js CMS собираются на 147.45.235.170 под `gitlub-ci`,
+Node 24.19.0, с ограничением 4 ГБ RAM и 150% CPU, отдельно от рабочих сайтов.
+Production 212.193.26.91 получает готовый архив с SHA-256. Прежний
+`deploy/release-deploy.sh` сохраняет переключение между портами, миграции,
+uploads, уведомления, проверку карты/маршрутов и откат при неготовности релиза.
+
+В Settings → Actions → Variables/Secrets параметры окружения production имеют
+префикс `PRODUCTION_`. `PRODUCTION_DEPLOY_ENV` содержит исходный CMS .env;
+одноимённые отдельные параметры переопределяют его значения. LASTFM_API_KEY
+хранится в Secrets. Сохранены действующие ключи Web Push. SSH-ключи заменены
+ограниченными ключами без passphrase; прежний SSH_KEY_PASSPHRASE больше не нужен.
+BUILD_SSH_* соединяют runner с сервером сборки; PRODUCTION_SSH_* используются
+заданиями синхронизации. Копия production-ключа также установлена у root сборщика.
+
+Sync Last.fm запускается ежедневно в 01:00 UTC (04:00 МСК) и вручную.
+Sync headliner web images запускается вручную. Оба workflow работают через
+ограниченный SSH-вход на production и используют текущий активный CMS, локальную
+MySQL и общий uploads. Туннель MySQL не требуется. Поддержаны dry_run, force,
+limit. Общая блокировка синхронизации и переключения релиза предотвращает гонки.
+При переносе задания проверяются в dry-run без изменения базы и изображений.
+
+Обработчики: `/usr/local/sbin/gitlub-uletay-build` на сборщике и
+`/usr/local/sbin/gitlub-uletay-production` на production. Целевые адреса и путь
+закреплены в них; изменения инфраструктуры требуют обновить их вместе с Secrets.
+Старые GitHub workflow отключаются после успешной проверки новых заданий.
