@@ -39,6 +39,16 @@ const lumenMeta = resolveSeoMeta(
   },
   data,
 );
+for (const year of [2027, 2026]) {
+  const meta = resolveSeoMeta(
+    { routes: [{ name: 'HeadlinersMain', params: { year: String(year) } }], index: 0 },
+    data,
+  );
+  assert(meta.path === `/headliners/${year}`, `year ${year} has wrong path`);
+  assert(meta.title.startsWith(`Хедлайнеры ${year}`), `year ${year} has wrong title`);
+  assert(!meta.noIndex, `year ${year} is not indexable`);
+}
+assert(lumenMeta.path === '/headliners/hl-lumen', 'indexed artist URL changed');
 assert(lumenMeta.description.startsWith('LUMEN —'), 'artist name is missing from description');
 assert(
   lumenMeta.description.includes('фестиваля УЛЕТАЙ'),

@@ -7,11 +7,18 @@ apply_nginx_template() {
   local output_path="${2:-/etc/nginx/sites-available/uletay}"
   local enabled_path="${3:-/etc/nginx/sites-enabled/uletay}"
   local www_domain="www.${DOMAIN}"
+  local festival_year
+  festival_year="$(tr -d '\r\n' < "${DEPLOY_PATH}/dist/festival-year.txt")"
+  if [[ ! "$festival_year" =~ ^[0-9]{4}$ ]]; then
+    echo "Invalid festival year in dist/festival-year.txt: ${festival_year}" >&2
+    return 1
+  fi
   local sed_args=(
     -e "s|__DOMAIN__|${DOMAIN}|g"
     -e "s|__WWW_DOMAIN__|${www_domain}|g"
     -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g"
     -e "s|__CMS_PORT__|${CMS_PORT}|g"
+    -e "s|__FESTIVAL_YEAR__|${festival_year}|g"
   )
 
   sed "${sed_args[@]}" \
@@ -219,7 +226,9 @@ verify_https() {
 
   curl -fsS -k "https://127.0.0.1/sitemap.xml" -H "Host: ${DOMAIN}" -o "$sitemap_check" \
     || { echo "sitemap.xml is not available"; rm -f "$sitemap_check"; exit 1; }
-  grep -Fq "<loc>https://${DOMAIN}/headliners</loc>" "$sitemap_check" \
+  local festival_year
+  festival_year="$(tr -d '\r\n' < "${DEPLOY_PATH}/dist/festival-year.txt")"
+  grep -Fq "<loc>https://${DOMAIN}/headliners/${festival_year}</loc>" "$sitemap_check" \
     || { echo "sitemap.xml does not contain public routes"; rm -f "$sitemap_check"; exit 1; }
   rm -f "$sitemap_check"
 

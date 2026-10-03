@@ -1,6 +1,8 @@
 import { Headliner } from '../types';
 import { findHeadlinerByRadioArtist } from './matchRadioArtist';
 import { getHeadlinerGroupPopularity } from './headlinerGroups';
+import { getHeadlinerYears } from './headlinerYears';
+export { getHeadlinerYears, getSelectableHeadlinerYears } from './headlinerYears';
 
 function compareHeadlinerPopularity(a: Headliner, b: Headliner, allHeadliners: Headliner[]): number {
   const aStats = getHeadlinerGroupPopularity(a, allHeadliners);
@@ -107,16 +109,6 @@ export function resolveSimilarHeadliners(
   return sortHeadlinersByPopularity(result);
 }
 
-export function getHeadlinerYears(headliners: Headliner[]): number[] {
-  const years = new Set<number>();
-  for (const headliner of headliners) {
-    for (const year of headliner.years) {
-      years.add(year);
-    }
-  }
-  return [...years].sort((a, b) => b - a);
-}
-
 export function getLatestHeadlinerYear(headliners: Headliner[]): number | undefined {
   return getHeadlinerYears(headliners)[0];
 }
@@ -134,18 +126,6 @@ export function getDefaultHeadlinerYear(headliners: Headliner[], festivalYear: n
 
   // Prefer the freshest year that has headliners (e.g. 2027 over 2026).
   return years[0];
-}
-
-/** Years for the filter: all years with headliners, plus festival year even if empty. */
-export function getSelectableHeadlinerYears(
-  headliners: Headliner[],
-  festivalYear: number,
-): number[] {
-  const years = getHeadlinerYears(headliners);
-  if (years.includes(festivalYear)) {
-    return years;
-  }
-  return [festivalYear, ...years].sort((a, b) => b - a);
 }
 
 /** Up to `limit` prior years that already have headliners (newest first). */

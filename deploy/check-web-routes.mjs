@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 const fixedRoutes = [
   '/', '/map', '/schedule', '/schedule/full', '/autographs', '/favorites',
-  '/playlist', '/headliners', '/foodcourt', '/about', '/rules', '/settings', '/legal', '/help',
+  '/playlist', '/foodcourt', '/about', '/rules', '/settings', '/legal', '/help',
 ];
 const detailRoutes = [
   ['headliners', '/headliners/'], ['schedule', '/schedule/live/'],
@@ -58,6 +58,12 @@ export async function checkWebRoutes(origin, { connectHost } = {}) {
     const sitemapUrls = [...sitemap.body.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => new URL(match[1].replaceAll('&amp;', '&')));
     if (!sitemapUrls.length) throw new Error('sitemap.xml has no routes');
     const data = JSON.parse(api.body);
+    const festivalYear = data.festival?.year;
+    if (!Number.isInteger(festivalYear)) throw new Error('/api/data has no festival year');
+    const currentHeadliners = `/headliners/${festivalYear}`;
+    if (!sitemapUrls.some((url) => url.pathname === currentHeadliners)) {
+      failures.push(`sitemap.xml is missing ${currentHeadliners}`);
+    }
     const routes = new Set(fixedRoutes);
     for (const url of sitemapUrls) {
       if (url.origin !== base) throw new Error(`Foreign sitemap URL: ${url.href}`);
@@ -105,6 +111,13 @@ export async function checkWebRoutes(origin, { connectHost } = {}) {
       const response = await get(pathname);
       if (response.status !== 301 || new URL(response.headers.location ?? '', base).href !== base + '/') {
         failures.push(`${pathname}: expected a redirect to /`);
+      }
+    }
+    for (const pathname of ['/headliners', '/headliners/']) {
+      const response = await get(pathname + '?route_check=redirect');
+      const target = new URL(response.headers.location ?? '/', base);
+      if (response.status !== 301 || target.href !== base + currentHeadliners + '?route_check=redirect') {
+        failures.push(`${pathname}: expected a permanent redirect to ${currentHeadliners}`);
       }
     }
     return { routes: routes.size, requests, failures };

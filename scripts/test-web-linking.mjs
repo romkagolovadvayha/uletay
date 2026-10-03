@@ -39,5 +39,13 @@ for (const inMore of [true, false]) {
     assert.equal(linking.getStateFromPath('/more' + suffix, linking.config).routes[0].name, 'HomeTab');
     checks += 2;
   }
+  for (const year of ['2027', '2026']) {
+    const path = `/headliners/${year}`;
+    const state = linking.getStateFromPath(path, linking.config);
+    assert.equal(state.routes[0].state.routes[0].name, 'HeadlinersMain');
+    assert.equal(state.routes[0].state.routes[0].params.year, year);
+    assert.equal(linking.getPathFromState(state, linking.config), path);
+    checks++;
+  }
 }
 console.log(`test-web-linking: ${checks} route round trips passed`);

@@ -27,10 +27,12 @@ try {
   const encodedArtist = '/headliners/hl-%D0%B0%D1%80%D0%B8%D1%8F';
   await file('dist/index.html', document('App shell'));
   await file('dist/404.html', document('Not found'));
-  await file('dist/headliners/index.html', document('Artists'));
+  await file('dist/headliners/2027/index.html', document('Artists 2027'));
+  await file('dist/headliners/2026/index.html', document('Artists 2026'));
   await file('dist' + encodedArtist + '/index.html', document('Ария SEO'));
-  await file('dist/sitemap.xml', `<urlset><url><loc>${origin}/</loc></url><url><loc>${origin}/headliners</loc></url><url><loc>${origin}${encodedArtist}</loc></url></urlset>`);
+  await file('dist/sitemap.xml', `<urlset><url><loc>${origin}/</loc></url><url><loc>${origin}/headliners/2027</loc></url><url><loc>${origin}/headliners/2026</loc></url><url><loc>${origin}${encodedArtist}</loc></url></urlset>`);
   await file('dist/api/data', JSON.stringify({
+    festival: { year: 2027 },
     headliners: [{ id: 'hl-чайф' }, { id: 'hl-ария' }],
     schedule: [{ id: 'ren-tv-2026-07-09-16:00-КАЛИНОВ МОСТ' }],
     autographs: [{ id: 'auto-2026-07-09-18:00-F.P.G.' }],
@@ -40,7 +42,7 @@ try {
   }));
   for (const name of ['nginx.security-headers.conf', 'nginx.spa-routes.map', 'nginx.spa-locations.conf']) {
     const content = await readFile(new URL('../deploy/' + name, import.meta.url), 'utf8');
-    await file('deploy/' + name, content.replaceAll('__DEPLOY_PATH__', nginxPath(temporary)));
+    await file('deploy/' + name, content.replaceAll('__DEPLOY_PATH__', nginxPath(temporary)).replaceAll('__FESTIVAL_YEAR__', '2027'));
   }
   await file('logs/.keep', '');
   await file('temp/.keep', '');

@@ -153,9 +153,12 @@ jobs:
           node scripts/test-web-routes.mjs
 
       - name: Build and verify web app
+        env:
+          SEO_REQUIRE_LIVE_DATA: '1'
         run: |
           npm run build:web
           npm run seo:check
+          node scripts/check-indexed-routes.mjs
           npm run test:push-web
           test -f dist/index.html
           test -f dist/404.html

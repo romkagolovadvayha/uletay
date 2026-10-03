@@ -7,6 +7,7 @@ const projectRoot = path.resolve(scriptDir, '..');
 const distDir = path.join(projectRoot, process.env.DIST_DIR ?? 'dist');
 const sitemapPath = path.join(distDir, 'sitemap.xml');
 const robotsPath = path.join(distDir, 'robots.txt');
+const festivalYearPath = path.join(distDir, 'festival-year.txt');
 
 function fail(message) {
   console.error(`check-web-seo: ${message}`);
@@ -39,6 +40,17 @@ if (!existsSync(sitemapPath)) {
   }
   if (new Set(urls).size !== urls.length) {
     fail('sitemap.xml contains duplicate URLs');
+  }
+  const festivalYear = existsSync(festivalYearPath)
+    ? readFileSync(festivalYearPath, 'utf8').trim()
+    : '';
+  if (!/^\d{4}$/.test(festivalYear)) {
+    fail('dist/festival-year.txt is missing or invalid');
+  } else if (!urls.includes(`https://uletayapp.ru/headliners/${festivalYear}`)) {
+    fail(`sitemap.xml is missing the current headliners year ${festivalYear}`);
+  }
+  if (urls.includes('https://uletayapp.ru/headliners')) {
+    fail('redirecting /headliners URL must not be in sitemap.xml');
   }
 
   for (const privateUrl of [
@@ -136,6 +148,22 @@ if (!existsSync(sitemapPath)) {
       }
       canonicals.add(canonical);
     }
+  }
+
+  for (const yearUrl of urls.filter((url) => /\/headliners\/\d{4}$/.test(url))) {
+    const year = new URL(yearUrl).pathname.split('/').at(-1);
+    const html = readFileSync(routeFile(yearUrl), 'utf8');
+    if (!html.includes(`<h1>Хедлайнеры ${year}</h1>`)) {
+      fail(`${yearUrl} does not have the requested year heading`);
+    }
+    const question = Number(year) === Number(festivalYear)
+      ? `Кто будет на Улетай ${year}?`
+      : `Кто был на Улетай ${year}?`;
+    if (!html.includes(question)) fail(`${yearUrl} does not have the year-specific question`);
+  }
+  const home = readFileSync(path.join(distDir, 'index.html'), 'utf8');
+  if (!home.includes('Официальный сайт фестиваля') || !home.includes('Билеты у билетного партнёра')) {
+    fail('homepage is missing useful visitor links in static HTML');
   }
 
   console.log(`check-web-seo: checked ${urls.length} sitemap URLs`);

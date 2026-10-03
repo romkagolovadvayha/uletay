@@ -14,6 +14,7 @@ import { colors } from '../theme/colors';
 import { screenHeaderStyle } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { isDateWithinFestival } from '../seo/seoRouteUtils';
 import {
   filterByFestivalDay,
   getFestivalDates,
@@ -44,6 +45,9 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
     () => sortByStartTime(filterByFestivalDay(data.schedule, selectedDate)),
     [data.schedule, selectedDate],
   );
+  const hasPublishedSchedule = data.schedule.some((item) =>
+    isDateWithinFestival(item.date, data.festival),
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -57,6 +61,9 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
 
       <ScheduleStageGrid
         performances={dayPerformances}
+        emptyMessage={hasPublishedSchedule
+          ? 'Нет выступлений в этот день'
+          : `Расписание Улетай ${data.festival.year} ещё не опубликовано. Следите за обновлениями.`}
         stages={data.stages}
         selectedDate={selectedDate}
         now={now}

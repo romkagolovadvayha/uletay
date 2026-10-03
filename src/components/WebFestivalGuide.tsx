@@ -5,6 +5,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
+import { FESTIVAL_WEBSITE } from '../constants/legal';
 import { formatFestivalDateRange, getFestivalDisplayName } from '../utils/festivalContent';
 import { AppRouteLink } from './AppRouteLink';
 import { DeferredIonicons } from './DeferredIonicons';
@@ -64,7 +65,7 @@ export function WebFestivalGuide({
       </Text>
       <Text style={[styles.note, variant === 'compact' && styles.compactNote]}>
         Состав участников и время выступлений могут меняться. Перед поездкой
-        проверьте раздел «Расписание».
+        проверьте раздел «Расписание» и официальный сайт фестиваля: {FESTIVAL_WEBSITE}.
       </Text>
 
       <View style={styles.links}>
@@ -110,8 +111,8 @@ export function WebFestivalGuide({
               Где смотреть актуальное расписание?
             </SemanticHeading>
             <Text style={styles.body}>
-              Откройте раздел «Расписание»: там выступления собраны по дням и сценам.
-              Если новый сезон ещё не опубликован, приложение покажет доступные данные.
+              Откройте раздел «Расписание»: опубликованные выступления собраны по дням и сценам.
+              Если программа нового сезона ещё не опубликована, появится сообщение об этом.
             </Text>
           </View>
 
