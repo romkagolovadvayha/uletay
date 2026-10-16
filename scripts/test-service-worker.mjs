@@ -30,7 +30,10 @@ function createWorker(hostname, options = {}) {
         return {
           async addAll() {},
           async match() { return options.cached?.clone(); },
-          async put() { if (options.putError) throw new Error('Quota exceeded'); },
+          async put(_request, response) {
+            if (response.status === 206) throw new TypeError('Partial responses cannot be cached');
+            if (options.putError) throw new Error('Quota exceeded');
+          },
         };
       },
       async match() { return undefined; },
@@ -102,7 +105,7 @@ await productionWorker.dispatchLifecycle('install');
 await productionWorker.dispatchLifecycle('activate');
 const productionState = productionWorker.getState();
 
-assert.deepEqual(productionState.openedCaches, ['uletay-shell-v6']);
+assert.deepEqual(productionState.openedCaches, ['uletay-shell-v7']);
 assert.deepEqual(productionState.deletedCaches, [
   'uletay-shell-v2',
   'uletay-data-v2',
@@ -120,6 +123,28 @@ productionWorker.handlers.get('fetch')({
 });
 assert.ok(mapAssetResponse, 'The map module participates in offline shell caching');
 assert.equal((await mapAssetResponse).status, 200);
+
+let rangeIntercepted = false;
+productionWorker.handlers.get('fetch')({
+  request: new Request('http://uletayapp.ru:4174/assets/background.webm', { headers: { Range: 'bytes=0-1023' } }),
+  respondWith() { rangeIntercepted = true; },
+});
+assert.equal(rangeIntercepted, false, 'Video byte ranges must go directly to the network');
+
+async function requestAsset(worker) {
+  let response;
+  worker.handlers.get('fetch')({
+    request: new Request('http://uletayapp.ru:4174/assets/test.js'),
+    respondWith(value) { response = value; },
+  });
+  return response;
+}
+const partialAsset = createWorker('uletayapp.ru', { fetch: async () => new Response('partial', { status: 206 }) });
+assert.equal((await requestAsset(partialAsset)).status, 206, 'Partial responses must survive an unavailable cache');
+for (const options of [{ openError: true }, { putError: true }]) {
+  const worker = createWorker('uletayapp.ru', { ...options, fetch: async () => new Response('asset') });
+  assert.equal(await (await requestAsset(worker)).text(), 'asset', 'Cache failures must not hide assets');
+}
 
 async function requestData(worker) {
   let response;
@@ -153,4 +178,4 @@ for (const options of [{ openError: true }, { putError: true }]) {
 const unchanged = createWorker('uletayapp.ru', { fetch: async () => new Response(null, { status: 304 }) });
 assert.equal((await requestData(unchanged)).status, 304, 'Conditional API responses pass through');
 
-console.log('Service worker: local cleanup, API revalidation, offline fallback and storage failure behavior OK');
+console.log('Service worker: API revalidation, offline fallback, video ranges and storage failure behavior OK');

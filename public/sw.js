@@ -1,5 +1,5 @@
 /* Offline shell + API cache. Bump CACHE_VERSION on every deploy that must invalidate clients. */
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const SHELL_CACHE = `uletay-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `uletay-data-${CACHE_VERSION}`;
 const APP_SHELL = ['/', '/api/data'];
@@ -73,12 +73,12 @@ async function networkFirst(request, cacheName, isApiData = false) {
 
 /** Prefer cache for speed, but refresh in background so deploys stick. */
 async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
+  const cache = await caches.open(cacheName).catch(() => null);
+  const cached = await cache?.match(request).catch(() => undefined);
   const networkPromise = fetch(request)
     .then(async (response) => {
-      if (response.ok) {
-        await cache.put(request, response.clone());
+      if (response.status === 200 && cache) {
+        await cache.put(request, response.clone()).catch(() => {});
       }
       return response;
     })
@@ -99,6 +99,12 @@ self.addEventListener('fetch', (event) => {
 
   const request = event.request;
   if (request.method !== 'GET') {
+    return;
+  }
+
+  // Browsers stream video with Range requests. Cache Storage rejects 206 responses;
+  // let the browser handle byte ranges instead of returning a cached full response.
+  if (request.headers.has('range')) {
     return;
   }
 
