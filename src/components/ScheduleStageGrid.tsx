@@ -35,6 +35,7 @@ const NOW_RULE_HEIGHT = 2;
 
 type Props = {
   performances: SchedulePerformance[];
+  emptyMessage?: string;
   stages: Stage[];
   selectedDate: string;
   now: Date;
@@ -45,6 +46,7 @@ type Props = {
 
 export function ScheduleStageGrid({
   performances,
+  emptyMessage = 'Нет выступлений в этот день',
   stages,
   selectedDate,
   now,
@@ -119,7 +121,7 @@ export function ScheduleStageGrid({
   if (performances.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>Нет выступлений в этот день</Text>
+        <Text style={styles.emptyText}>{emptyMessage}</Text>
       </View>
     );
   }

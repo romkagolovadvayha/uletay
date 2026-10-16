@@ -6,17 +6,12 @@ if [[ "${1:-}" != "--env-stdin" ]]; then
   echo "Usage: release-deploy.sh --env-stdin"
   exit 1
 fi
-for name in DOMAIN DEPLOY_PATH LE_EMAIL CMS_PORT DB_HOST DB_NAME DB_USER DB_PASS \
-  ADMIN_USER ADMIN_PASSWORD SESSION_SECRET NEXT_PUBLIC_YANDEX_MAPS_API_KEY \
-  LASTFM_API_KEY LASTFM_PROXY_URL VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
-  EXPO_PUSH_ACCESS_TOKEN RUSTORE_PUSH_PROJECT_ID RUSTORE_PUSH_SERVICE_TOKEN DB_PORT VK_APP_ID VK_REDIRECT_URI RELEASE_SHA RELEASE_ID; do
-  IFS= read -r -d '' value || { echo "Missing deployment field: $name"; exit 1; }
-  printf -v "$name" '%s' "$value"
-  export "$name"
-done
+source "$(dirname "$0")/read-deployment-env.sh"
+read_deployment_env release
 
 [[ "$DEPLOY_PATH" =~ ^/[A-Za-z0-9_./-]+$ && "$DEPLOY_PATH" != / && "$DEPLOY_PATH" != *..* ]] || exit 1
 [[ "$RELEASE_ID" =~ ^[a-f0-9]{40}-[0-9]+-[0-9]+$ ]] || exit 1
+[[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
 [[ "$CMS_PORT" =~ ^[0-9]+$ ]] && ((CMS_PORT > 0 && CMS_PORT < 65535)) || exit 1
 export SHARED_ROOT="$DEPLOY_PATH"
 export DEPLOY_PATH="$SHARED_ROOT/releases/$RELEASE_ID"

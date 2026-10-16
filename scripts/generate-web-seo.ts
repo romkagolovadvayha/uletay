@@ -16,6 +16,8 @@ import { encodeSeoRouteId, isDateWithinFestival } from '../src/seo/seoRouteUtils
 import { LEGAL_SECTIONS } from '../src/constants/legalContent';
 import { getSelectableHeadlinerYears } from '../src/utils/headlinerYears';
 import { writeAiDiscovery } from './ai-discovery';
+import { FESTIVAL_WEBSITE, TICKET_VENDOR_URL } from '../src/constants/legal';
+import { formatFestivalDateRange } from '../src/utils/festivalContent';
 
 type SeedData = Partial<AppData> & {
   festival: AppData['festival'];
@@ -141,6 +143,11 @@ async function loadBuildData(): Promise<AppData> {
   let data = { ...seed, headliners } as AppData;
 
   const apiBase = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+  const requireLiveData = process.env.SEO_REQUIRE_LIVE_DATA === '1'
+    || (apiBase === 'https://uletayapp.ru/api' && process.env.SEO_FETCH_LIVE_DATA !== '0');
+  if (requireLiveData && (!apiBase || process.env.SEO_FETCH_LIVE_DATA === '0')) {
+    throw new Error('Production SEO build requires a live API URL');
+  }
   if (!apiBase || process.env.SEO_FETCH_LIVE_DATA === '0') {
     return data;
   }
@@ -166,6 +173,9 @@ async function loadBuildData(): Promise<AppData> {
     };
     console.log(`generate-web-seo: using live content from ${apiBase}/data`);
   } catch (error) {
+    if (requireLiveData) {
+      throw error;
+    }
     console.warn(
       `generate-web-seo: live content unavailable (${error instanceof Error ? error.message : error}); using repository data`,
     );
@@ -180,12 +190,46 @@ function stageName(stages: Stage[], stageId: string): string {
 
 function makeRouteSpecs(data: AppData): RouteSpec[] {
   const currentHeadlinersPath = `/headliners/${data.festival.year}`;
+  const festivalDates = formatFestivalDateRange(data.festival);
+  const festivalPlace = data.festival.locationShort || data.festival.location;
+  const hasCurrentSchedule = data.schedule.some((item) => isDateWithinFestival(item.date, data.festival));
+  const hasCurrentAutographs = data.autographs.some((item) => isDateWithinFestival(item.date, data.festival));
   const common: RouteSpec[] = [
-    { path: '/', routeName: 'HomeTab', heading: `${data.festival.name} ${data.festival.year}` },
-    { path: '/map', routeName: 'MapTab' },
-    { path: '/schedule', routeName: 'ScheduleMain' },
+    {
+      path: '/', routeName: 'HomeTab', heading: `Фестиваль УЛЕТАЙ ${data.festival.year}`,
+      details: [
+        `Даты фестиваля: ${festivalDates}. Место: ${festivalPlace}. Возрастное ограничение: ${data.festival.ageRating}.`,
+        `В цифровом гиде собраны объявленные артисты, расписание, карта площадки, правила посещения, автограф-сессии и фудкорт.`,
+        hasCurrentSchedule
+          ? 'Опубликованное расписание выступлений доступно по дням и сценам.'
+          : `Расписание выступлений УЛЕТАЙ ${data.festival.year} пока не опубликовано. Оно появится после объявления программы.`,
+        `Состав участников и время выступлений могут измениться. Перед поездкой проверьте обновления и информацию на официальном сайте фестиваля.`,
+      ],
+      links: [
+        { href: currentHeadlinersPath, label: `Кто будет на УЛЕТАЙ ${data.festival.year}` },
+        { href: '/schedule', label: 'Расписание концертов' },
+        { href: '/map', label: 'Карта площадки' },
+        { href: '/rules', label: 'Правила посещения' },
+        { href: FESTIVAL_WEBSITE, label: 'Официальный сайт фестиваля' },
+        { href: TICKET_VENDOR_URL, label: 'Билеты у билетного партнёра' },
+      ],
+    },
+    { path: '/map', routeName: 'MapTab', details: [
+      `Площадка фестиваля находится в ${festivalPlace}. На интерактивной карте отмечены сцены, фудкорт и сервисные зоны.`,
+      'Откройте карту в приложении, чтобы изучить точки и проложить маршрут по территории.',
+    ] },
+    { path: '/schedule', routeName: 'ScheduleMain', heading: `Расписание УЛЕТАЙ ${data.festival.year}`, details: [
+      `Даты фестиваля: ${festivalDates}. Место: ${festivalPlace}.`,
+      hasCurrentSchedule
+        ? 'Выступления представлены по дням и сценам. Время и участники могут измениться.'
+        : `Расписание концертов УЛЕТАЙ ${data.festival.year} ещё не опубликовано. Проверяйте эту страницу по мере объявления программы.`,
+    ], links: [{ href: currentHeadlinersPath, label: `Объявленные артисты ${data.festival.year}` }] },
     { path: '/schedule/full', routeName: 'FullSchedule' },
-    { path: '/autographs', routeName: 'AutographsMain' },
+    { path: '/autographs', routeName: 'AutographsMain', heading: `Автограф-сессии УЛЕТАЙ ${data.festival.year}`, details: [
+      hasCurrentAutographs
+        ? 'Опубликованные встречи с артистами показаны по дням, с местом и временем проведения.'
+        : `Расписание автограф-сессий УЛЕТАЙ ${data.festival.year} ещё не опубликовано. Следите за обновлениями.`,
+    ] },
     { path: '/favorites', routeName: 'FavoritesTab' },
     {
       path: '/playlist', routeName: 'PlaylistTab', heading: 'Улетай радио — слушать рок онлайн',
@@ -197,7 +241,16 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
       links: [{ href: currentHeadlinersPath, label: 'Артисты фестиваля Улетай' }],
     },
     { path: '/foodcourt', routeName: 'FoodCourtMain' },
-    { path: '/about', routeName: 'FestivalAbout' },
+    { path: '/about', routeName: 'FestivalAbout', heading: `О фестивале УЛЕТАЙ ${data.festival.year}`, details: [
+      `УЛЕТАЙ ${data.festival.year} пройдёт ${festivalDates} в ${festivalPlace}. Возрастное ограничение: ${data.festival.ageRating}.`,
+      'На этом сайте работает цифровой гид для гостей: артисты по годам, программа по мере публикации, карта территории, фудкорт, правила и контакты.',
+      'Сведения о билетах и организационные новости доступны на официальном сайте фестиваля. Покупка билетов проходит на внешнем сайте билетного партнёра.',
+    ], links: [
+      { href: FESTIVAL_WEBSITE, label: 'Официальный сайт фестиваля' },
+      { href: TICKET_VENDOR_URL, label: 'Билеты у партнёра' },
+      { href: currentHeadlinersPath, label: `Артисты ${data.festival.year}` },
+      { href: '/rules', label: 'Правила посещения' },
+    ] },
     { path: '/rules', routeName: 'FestivalRules' },
     { path: '/legal', routeName: 'Legal' },
     { path: '/settings', routeName: 'Settings' },
@@ -244,11 +297,16 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     params: { headlinerId: headliner.id },
     heading: headliner.name,
     details: [
-      headliner.description,
+      plainText(headliner.description).toLocaleLowerCase('ru-RU') === headliner.name.toLocaleLowerCase('ru-RU')
+        ? `${headliner.name} — участник фестиваля УЛЕТАЙ.`
+        : headliner.description,
       headliner.years?.length
         ? `Участие в фестивале: ${[...headliner.years].sort((a, b) => b - a).join(', ')}`
         : '',
+      ...data.schedule.filter((item) => item.headlinerId === headliner.id).slice(0, 3)
+        .map((item) => `Выступление ${item.date}: ${item.startTime}–${item.endTime}, ${stageName(data.stages, item.stageId)}.`),
     ].filter(Boolean),
+    links: headliner.years.map((year) => ({ href: `/headliners/${year}`, label: `Артисты УЛЕТАЙ ${year}` })),
   }));
 
   const headlinerYears = getSelectableHeadlinerYears(data.headliners, data.festival.year);
@@ -257,9 +315,12 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     routeName: 'HeadlinersMain',
     params: { year: String(year) },
     heading: `Хедлайнеры ${year}`,
-    details: [year === data.festival.year
-      ? `Кто будет на Улетай ${year}?`
-      : `Кто был на Улетай ${year}?`],
+    details: [
+      year === data.festival.year ? `Кто будет на Улетай ${year}?` : `Кто был на Улетай ${year}?`,
+      year === data.festival.year
+        ? `Список участников обновляется по мере официальных объявлений. Фестиваль пройдёт ${festivalDates} в ${festivalPlace}.`
+        : `Архив артистов фестиваля УЛЕТАЙ ${year}. Выберите имя, чтобы посмотреть годы участия и доступные сведения о выступлениях.`,
+    ],
     links: [
       ...headlinerYears.filter((item) => item !== year).map((item) => ({
         href: `/headliners/${item}`,
@@ -269,6 +330,7 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
         href: `/headliners/${encodeSeoRouteId(headliner.id)}`,
         label: headliner.name,
       })),
+      ...(year === data.festival.year ? [{ href: '/schedule', label: `Расписание УЛЕТАЙ ${year}` }] : []),
     ],
   }));
 
@@ -287,7 +349,7 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
   const enrichedCommon = common.map((route) => {
     switch (route.path) {
       case '/schedule':
-        return { ...route, links: scheduleLinks };
+        return { ...route, links: [...(route.links ?? []), ...scheduleLinks] };
       case '/autographs':
         return { ...route, links: autographLinks };
       case '/foodcourt':
@@ -380,7 +442,7 @@ function fallbackMarkup(route: GeneratedRoute, festivalYear: number): string {
     ? `<section><h2>Страницы раздела</h2><ul>${links
         .map(
           (item) =>
-            `<li><a href="${htmlEscape(encodedPathname(item.href))}">${htmlEscape(item.label)}</a></li>`,
+            `<li><a href="${htmlEscape(/^https:\/\//.test(item.href) ? item.href : encodedPathname(item.href))}">${htmlEscape(item.label)}</a></li>`,
         )
         .join('')}</ul></section>`
     : '';

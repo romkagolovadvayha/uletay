@@ -58,12 +58,16 @@ export async function checkWebRoutes(origin, { connectHost } = {}) {
     const sitemapUrls = [...sitemap.body.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => new URL(match[1].replaceAll('&amp;', '&')));
     if (!sitemapUrls.length) throw new Error('sitemap.xml has no routes');
     const data = JSON.parse(api.body);
-    const routes = new Set(fixedRoutes);
     const festivalYear = data.festival?.year;
     if (!Number.isInteger(festivalYear)) throw new Error('/api/data has no festival year');
-    routes.add(`/headliners/${festivalYear}`);
+    const currentHeadliners = `/headliners/${festivalYear}`;
+    if (!sitemapUrls.some((url) => url.pathname === currentHeadliners)) {
+      failures.push(`sitemap.xml is missing ${currentHeadliners}`);
+    }
+    const routes = new Set(fixedRoutes);
+    routes.add(currentHeadliners);
     for (const headliner of data.headliners ?? []) {
-      for (const year of headliner.years ?? []) routes.add(`/headliners/${year}`);
+      for (const year of headliner.years ?? []) routes.add('/headliners/' + year);
     }
     for (const url of sitemapUrls) {
       if (url.origin !== base) throw new Error(`Foreign sitemap URL: ${url.href}`);
@@ -115,8 +119,9 @@ export async function checkWebRoutes(origin, { connectHost } = {}) {
     }
     for (const pathname of ['/headliners', '/headliners/']) {
       const response = await get(pathname + '?route_check=redirect');
-      if (response.status !== 301 || new URL(response.headers.location ?? '', base).href !== `${base}/headliners/${festivalYear}?route_check=redirect`) {
-        failures.push(`${pathname}: expected a redirect to /headliners/${festivalYear}`);
+      const target = new URL(response.headers.location ?? '/', base);
+      if (response.status !== 301 || target.href !== base + currentHeadliners + '?route_check=redirect') {
+        failures.push(`${pathname}: expected a permanent redirect to ${currentHeadliners}`);
       }
     }
     return { routes: routes.size, requests, failures };

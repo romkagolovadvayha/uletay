@@ -156,6 +156,22 @@ if (!existsSync(sitemapPath)) {
     }
   }
 
+  for (const yearUrl of urls.filter((url) => /\/headliners\/\d{4}$/.test(url))) {
+    const year = new URL(yearUrl).pathname.split('/').at(-1);
+    const html = readFileSync(routeFile(yearUrl), 'utf8');
+    if (!html.includes(`<h1>Хедлайнеры ${year}</h1>`)) {
+      fail(`${yearUrl} does not have the requested year heading`);
+    }
+    const question = Number(year) === Number(festivalYear)
+      ? `Кто будет на Улетай ${year}?`
+      : `Кто был на Улетай ${year}?`;
+    if (!html.includes(question)) fail(`${yearUrl} does not have the year-specific question`);
+  }
+  const home = readFileSync(path.join(distDir, 'index.html'), 'utf8');
+  if (!home.includes('Официальный сайт фестиваля') || !home.includes('Билеты у билетного партнёра')) {
+    fail('homepage is missing useful visitor links in static HTML');
+  }
+
   console.log(`check-web-seo: checked ${urls.length} sitemap URLs`);
 
   for (const pathname of ['/favorites', '/settings', '/schedule/full']) {

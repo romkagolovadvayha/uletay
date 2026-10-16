@@ -44,4 +44,7 @@ run(process.execPath, [path.join(root, 'copy-public-static.mjs')]);
 run(process.execPath, [path.join(root, 'flatten-web-font-assets.mjs')]);
 run(process.execPath, [tsxCli, path.join(root, 'generate-web-seo.ts')]);
 run(process.execPath, [path.join(root, 'check-web-seo.mjs')]);
+if (process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') === 'https://uletayapp.ru/api') {
+  run(process.execPath, [path.join(root, 'check-indexed-routes.mjs')]);
+}
 run(process.execPath, [path.join(root, 'prune-dist-assets.mjs')]);

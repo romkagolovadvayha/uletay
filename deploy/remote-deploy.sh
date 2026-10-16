@@ -1,32 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-read_nul_env() {
-  local name="$1"
-  local value
-
-  if ! IFS= read -r -d '' value; then
-    echo "Missing ${name} in deployment input"
-    exit 1
-  fi
-
-  printf -v "$name" '%s' "$value"
-  export "$name"
-}
-
 if [[ "${1:-}" == "--env-stdin" ]]; then
-  for name in \
-    DOMAIN DEPLOY_PATH LE_EMAIL CMS_PORT \
-    DB_HOST DB_NAME DB_USER DB_PASS \
-    ADMIN_USER ADMIN_PASSWORD SESSION_SECRET \
-    NEXT_PUBLIC_YANDEX_MAPS_API_KEY \
-    LASTFM_API_KEY LASTFM_PROXY_URL \
-    VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
-    EXPO_PUSH_ACCESS_TOKEN RUSTORE_PUSH_PROJECT_ID RUSTORE_PUSH_SERVICE_TOKEN \
-    DB_PORT VK_APP_ID VK_REDIRECT_URI \
-    RELEASE_SHA; do
-    read_nul_env "$name"
-  done
+  source "$(dirname "$0")/read-deployment-env.sh"
+  read_deployment_env remote
   shift
 fi
 
@@ -164,6 +141,7 @@ write_env() {
 }
 
 write_env DB_HOST "$DB_HOST"
+DB_PORT="${DB_PORT:-$(read_existing_env DB_PORT)}"
 write_env DB_PORT "${DB_PORT:-3306}"
 write_env VK_APP_ID "${VK_APP_ID:-$(read_existing_env VK_APP_ID)}"
 write_env VK_REDIRECT_URI "${VK_REDIRECT_URI:-$(read_existing_env VK_REDIRECT_URI)}"

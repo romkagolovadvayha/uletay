@@ -21,6 +21,7 @@
 | `assets`, `public` | Изображения, шрифты и статические файлы |
 | `scripts`, `plugins`, `patches` | Сборка, проверки и настройка нативных модулей |
 | `deploy`, `docs` | Конфигурация сервера и документация поддержки |
+| `.forgejo` | Проверки, сборка и выпуск на действующий сервер через Gitlub |
 
 Стек: Expo SDK 57, React Native 0.86, React 19, Next.js 16, MySQL 8 / MariaDB 10.4+. Используйте Node.js **24 LTS**; версия разработки записана в `.nvmrc`. PHP и Apache приложению не нужны. XAMPP можно использовать локально для MySQL.
 
@@ -157,6 +158,8 @@ npm run handover       # Архив исходников без ключей и 
 
 Для Android/iOS нужен development/production build; Expo Go не содержит используемые нативные модули. Проверки JavaScript не заменяют запуск release-сборки на устройствах. Сборки и патчи описаны в [руководстве разработчика](docs/DEVELOPMENT.md).
 
-Подробнее: [архитектура](docs/ARCHITECTURE.md) · [эксплуатация и резервные копии](docs/OPERATIONS.md) · [API](docs/API.md) · [GitHub Actions](deploy/README.md) · [результаты подготовки](docs/HANDOVER.md).
+Действующий сервер обновляется после push в `master` через [Gitlub](docs/gitlub-deployment.md). Ручная установка выше предназначена для нового сервера. Настройки `.github` сохранены для прежнего процесса выпуска.
+
+Подробнее: [архитектура](docs/ARCHITECTURE.md) · [эксплуатация и резервные копии](docs/OPERATIONS.md) · [API](docs/API.md) · [выпуск и откат](deploy/README.md) · [результаты подготовки](docs/HANDOVER.md).
 
 При обновлении действующего сервера сохраняйте БД, uploads и push-ключи; не заполняйте рабочую БД повторно из seed. [Проверка обратной совместимости с установленными приложениями](docs/COMPATIBILITY.md).

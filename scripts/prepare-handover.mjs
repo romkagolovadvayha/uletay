@@ -39,6 +39,7 @@ const entries = [
   'docs',
   'deploy',
   '.github',
+  '.forgejo',
   'cms/package.json',
   'cms/package-lock.json',
   'cms/.env.example',

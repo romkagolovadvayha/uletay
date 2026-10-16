@@ -1,0 +1,43 @@
+name: Sync headliner web images
+'on':
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Dry run (no DB or file writes)
+        type: boolean
+        default: false
+      force:
+        description: Replace existing images
+        type: boolean
+        default: false
+      limit:
+        description: Max groups to process (empty = all)
+        required: false
+        default: ''
+concurrency:
+  group: uletay-production
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: gitlub-deploy
+    timeout-minutes: 180
+    steps:
+    - name: Run sync-images
+      shell: bash
+      env:
+        DEPLOY_BRANCH: ${{ forgejo.ref_name }}
+        DEPLOY_COMMIT: ${{ forgejo.sha }}
+        DEPLOY_RUN: ${{ forgejo.run_id }}
+        DEPLOY_ATTEMPT: ${{ forgejo.run_attempt }}
+        SSH_HOST: ${{ vars.PRODUCTION_SSH_HOST }}
+        SSH_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+        SSH_KNOWN: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+        INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        INPUT_FORCE: ${{ inputs.force }}
+        INPUT_LIMIT: ${{ inputs.limit }}
+      run: "set -euo pipefail\numask 077\ndirectory=$(mktemp -d)\ntrap 'rm -f \"$directory/key\" \"$directory/known_hosts\" \"$directory/settings.json\"\
+        ; rmdir \"$directory\"' EXIT\nprintf '%s\\n' \"$SSH_KEY\" > \"$directory/key\"\nprintf '%s\\n' \"$SSH_KNOWN\" > \"$directory/known_hosts\"\npython3\
+        \ - <<'PY' > \"$directory/settings.json\"\nimport json,os,sys\njson.dump({k:os.environ.get('INPUT_'+k.upper(),'') for k in ['dry_run','force','limit']},sys.stdout)\n\
+        PY\ncommand=sync-images\nunset SSH_KEY SSH_KNOWN\nssh -T -i \"$directory/key\" -o IdentitiesOnly=yes -o BatchMode=yes \\\n  -o StrictHostKeyChecking=yes\
+        \ -o UserKnownHostsFile=\"$directory/known_hosts\" \\\n  -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=15 \\\n  \"root@$SSH_HOST\"\
+        \ \"$command\" < \"$directory/settings.json\"\n"

@@ -2,6 +2,7 @@ import type { AppData } from '../types';
 import { encodeSeoRouteId, isDateWithinFestival } from './seoRouteUtils';
 import { DEFAULT_DESCRIPTION, DEFAULT_FESTIVAL_YEAR, getSiteName, SITE_NAME, SITE_URL } from './site';
 import { getSelectableHeadlinerYears } from '../utils/headlinerYears';
+import { formatFestivalDateRange } from '../utils/festivalContent';
 
 export type SeoMeta = {
   title: string;
@@ -40,15 +41,14 @@ function buildHeadlinerDescription(
       ? `${sortedYears.slice(0, 4).join(', ')} и другие годы`
       : fullYears;
   const details = [
-    'На странице собраны популярные треки, статистика прослушиваний, жанры и похожие артисты.',
-    'Популярные треки, статистика прослушиваний и похожие артисты.',
-    'Популярные треки, статистика и похожие артисты.',
+    'Здесь собраны годы участия и сведения об артисте.',
+    'Годы участия и сведения об артисте.',
   ];
 
   const introductions = sortedYears.length > 1
     ? [
-        `${headliner.name} — хэдлайнер фестиваля УЛЕТАЙ. Годы выступлений: ${fullYears}.`,
-        `${headliner.name} — хэдлайнер фестиваля УЛЕТАЙ. Годы выступлений: ${recentYears}.`,
+        `${headliner.name} — участник фестиваля УЛЕТАЙ. Годы участия: ${fullYears}.`,
+        `${headliner.name} — участник фестиваля УЛЕТАЙ. Годы участия: ${recentYears}.`,
       ]
     : sortedYears.length === 1
       ? [`${headliner.name} — участник фестиваля УЛЕТАЙ ${sortedYears[0]} года.`]
@@ -73,7 +73,7 @@ export type NavState = {
 
 const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: string }> = {
   HomeTab: {
-    title: `Приложение фестиваля — ${SITE_NAME}`,
+    title: `Фестиваль УЛЕТАЙ — даты, артисты и гид | ${SITE_NAME}`,
     description: DEFAULT_DESCRIPTION,
     path: '/',
   },
@@ -285,7 +285,9 @@ export function resolveSeoMeta(
       : data.festival.year;
     const available = getSelectableHeadlinerYears(data.headliners, data.festival.year).includes(year);
     return {
-      title: `Хедлайнеры ${year} — ${siteName}`,
+      title: year === data.festival.year
+        ? `Хедлайнеры ${year} — ${siteName}`
+        : `Хедлайнеры ${year} — артисты фестиваля УЛЕТАЙ`,
       siteName,
       description: year === data.festival.year
         ? `Кто будет на Улетай ${year}: хедлайнеры и артисты фестиваля, поиск по участникам и состав по мере объявления.`
@@ -293,6 +295,31 @@ export function resolveSeoMeta(
       path: `/headliners/${year}`,
       noIndex: !available,
       provisional: !available,
+    };
+  }
+
+  if (routeName === 'HomeTab') {
+    return {
+      title: `Фестиваль УЛЕТАЙ ${data.festival.year} — даты, артисты и гид`,
+      siteName,
+      description: `УЛЕТАЙ ${data.festival.year}: ${formatFestivalDateRange(data.festival)}, ${data.festival.locationShort || data.festival.location}. Артисты, расписание по мере публикации, карта и правила фестиваля.`,
+      path: '/',
+    };
+  }
+
+  if (routeName === 'ScheduleMain' || routeName === 'AutographsMain') {
+    const isSchedule = routeName === 'ScheduleMain';
+    const published = (isSchedule ? data.schedule : data.autographs).some((item) =>
+      isDateWithinFestival(item.date, data.festival),
+    );
+    const subject = isSchedule ? 'Расписание концертов' : 'Автограф-сессии';
+    return {
+      title: `${subject} УЛЕТАЙ ${data.festival.year}`,
+      siteName,
+      description: published
+        ? `${subject} фестиваля УЛЕТАЙ ${data.festival.year}: дни, время и участники. Данные обновляются по мере публикации.`
+        : `${subject} фестиваля УЛЕТАЙ ${data.festival.year} ещё не опубликованы. Даты фестиваля: ${formatFestivalDateRange(data.festival)}. Следите за обновлениями.`,
+      path: isSchedule ? '/schedule' : '/autographs',
     };
   }
 
@@ -374,7 +401,9 @@ export function resolveSeoMeta(
     const headliner = data.headliners.find((item) => item.id === params.headlinerId);
     const name = headliner?.name ?? 'Хэдлайнер';
     return {
-      title: `${name} — хэдлайнер | ${siteName}`,
+      title: headliner?.years.includes(data.festival.year)
+        ? `${name} — участник УЛЕТАЙ ${data.festival.year}`
+        : `${name} — участник фестиваля УЛЕТАЙ`,
       siteName,
       description: headliner
         ? buildHeadlinerDescription(headliner)

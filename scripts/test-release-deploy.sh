@@ -12,8 +12,9 @@ trap cleanup EXIT
 sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 release_id="$sha-1-1"
 
+for transport in original extended; do
 for scenario in success prepare-failure health-failure; do
-  export TEST_CASE="$test_root/$scenario"
+  export TEST_CASE="$test_root/$transport-$scenario"
   export SCENARIO="$scenario"
   mkdir -p "$TEST_CASE/bin" "$TEST_CASE/etc/nginx/sites-available" "$TEST_CASE/etc/nginx/sites-enabled" \
     "$TEST_CASE/etc/cron.d" "$TEST_CASE/etc/logrotate.d"
@@ -63,8 +64,13 @@ rm -f "$TEST_CASE/etc/nginx/sites-enabled/default"
 MOCK
   # Redirect only system configuration paths in the test copy; production source is unchanged.
   sed "s|/etc/|$TEST_CASE/etc/|g" "$repo/deploy/release-deploy.sh" > "$TEST_CASE/release.sh"
+  cp "$repo/deploy/read-deployment-env.sh" "$TEST_CASE/read-deployment-env.sh"
   printf '%s\0' test.invalid "$root" test@example.invalid 3000 127.0.0.1 test test \
-    '' admin '' '' '' '' '' '' '' '' '' '' '' 3306 '' '' "$sha" "$release_id" > "$TEST_CASE/input"
+    '' admin '' '' '' '' '' '' '' '' '' '' '' > "$TEST_CASE/input"
+  if [[ "$transport" == extended ]]; then
+    printf '%s\0' 3306 '' '' >> "$TEST_CASE/input"
+  fi
+  printf '%s\0' "$sha" "$release_id" >> "$TEST_CASE/input"
   status=0
   PATH="$TEST_CASE/bin:$PATH" bash "$TEST_CASE/release.sh" --env-stdin < "$TEST_CASE/input" || status=$?
   test -f "$candidate/dist/_expo/old.js"
@@ -88,5 +94,6 @@ MOCK
     ! grep -q '^pm2 delete uletay-cms-bbbbb' "$TEST_CASE/operations"
     grep -q "^pm2 delete uletay-cms-$release_id" "$TEST_CASE/operations"
   fi
-  echo "Release scenario passed: $scenario"
+  echo "Release scenario passed: $transport / $scenario"
+done
 done

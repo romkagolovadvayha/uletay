@@ -16,6 +16,7 @@ import { screenHeaderStyle } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { getAutographHighlight, type AutographHighlight } from '../utils/autographHelpers';
+import { isDateWithinFestival } from '../seo/seoRouteUtils';
 import {
   filterByFestivalDay,
   formatSoonCountdown,
@@ -43,6 +44,9 @@ export function AutographsScreen({ navigation }: Props) {
   const daySessions = useMemo(
     () => sortByStartTime(filterByFestivalDay(data.autographs, selectedDate)),
     [data.autographs, selectedDate],
+  );
+  const hasPublishedSessions = data.autographs.some((item) =>
+    isDateWithinFestival(item.date, data.festival),
   );
 
   const sessionHighlights = useMemo(
@@ -91,7 +95,11 @@ export function AutographsScreen({ navigation }: Props) {
           })
         ) : (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>Нет автограф-сессий в этот день</Text>
+            <Text style={styles.emptyText}>
+              {hasPublishedSessions
+                ? 'Нет автограф-сессий в этот день'
+                : `Автограф-сессии Улетай ${data.festival.year} ещё не опубликованы. Следите за обновлениями.`}
+            </Text>
           </View>
         )}
       </ScrollView>
