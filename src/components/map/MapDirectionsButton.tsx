@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { DeferredIonicons } from '../DeferredIonicons';
 import { MotionPressable } from '../MotionPressable';
 import { colors } from '../../theme/colors';
+import { mapControlLayout } from '../../theme/map';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { appFont } from '../../theme/typography';
@@ -26,10 +27,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.screen,
     right: spacing.screen,
-    // Keep the bottom-left attribution icon and its expanded links unobstructed.
-    bottom: 56,
+    bottom: mapControlLayout.directionsBottom,
     zIndex: 24,
-    minHeight: 52,
+    minHeight: mapControlLayout.directionsHeight,
     borderRadius: radius.lg,
     backgroundColor: colors.primary,
     flexDirection: 'row',

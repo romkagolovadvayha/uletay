@@ -45,6 +45,10 @@ function FoodCourtThumbnail({ vendor, large }: { vendor: FoodCourtVendor; large?
         source={source}
         style={[styles.thumb, { width: size, height: size, borderRadius: large ? radius.xl : radius.md }]}
         contentFit="cover"
+        allowDownscaling
+        cachePolicy="disk"
+        decodeFormat={large ? 'argb' : 'rgb'}
+        recyclingKey={`${vendor.id}:${useFull ? 'full' : 'list'}`}
         accessibilityLabel={vendor.name}
         alt={vendor.name}
         priority={large ? 'high' : 'low'}

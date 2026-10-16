@@ -167,6 +167,10 @@ export function FavoriteNotificationsCard() {
           <Text style={styles.subtitle}>{getDisabledSubtitle(permission)}</Text>
         </View>
       </View>
+      <Text style={styles.subtitle}>
+        Для доставки новостей идентификатор push-подписки передаётся на сервер приложения и сервисам уведомлений.
+        В веб-версии также передаётся избранное для напоминаний. Уведомления можно отключить в любой момент.
+      </Text>
       <EnableButton
         busy={busy}
         disabled={enableDisabled}

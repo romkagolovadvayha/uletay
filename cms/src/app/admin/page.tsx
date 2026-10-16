@@ -11,7 +11,10 @@ import { HeadlinersEditor } from './components/HeadlinersEditor';
 import { MapEditor } from './components/MapEditor';
 import { ScheduleEditor } from './components/ScheduleEditor';
 import { PushEditor } from './components/PushEditor';
-import { loadAdminData, logoutAction, saveFestivalAction, saveStagesAction } from './actions';
+import { loadAdminData, saveFestivalAction, saveStagesAction } from './actions';
+import { logoutAction } from './auth-actions';
+import { getCurrentAdmin } from '@/lib/session';
+import { AccessEditor } from './components/AccessEditor';
 import type { AdminTab } from '@/types';
 import { presetHint } from '@/lib/image-presets';
 import {
@@ -32,6 +35,7 @@ const TABS: Record<AdminTab, string> = {
   foodcourt: 'Фудкорт',
   map: 'Карта',
   push: 'Push',
+  access: 'Доступы',
 };
 
 export default async function AdminPage({
@@ -54,23 +58,23 @@ export default async function AdminPage({
   const tab = (params.tab ?? 'overview') as AdminTab;
   const activeTab = Object.hasOwn(TABS, tab) ? tab : 'overview';
 
-  let data;
-  try {
-    data = await loadAdminData();
-  } catch {
-    redirect('/admin/login');
-  }
+  const admin = await getCurrentAdmin();
+  if (!admin) redirect('/admin/login');
+  if (activeTab === 'access' && admin.role !== 'owner') redirect('/admin');
+  const data = await loadAdminData();
 
   return (
     <ContentRevisionProvider key={data.revision} value={data.revision}>
       <AdminShell
         activeTab={activeTab}
+        admin={admin}
         logoutAction={logoutAction}
-        searchItems={buildAdminSearch(data)}
+        searchItems={buildAdminSearch(data).filter((item) => admin.role === 'owner' || item.href !== '/admin?tab=access')}
         festivalName={data.festival.name}
         festivalYear={data.festival.year}
       >
         {activeTab === 'overview' && <AdminOverview data={data} />}
+        {activeTab === 'access' && <AccessEditor />}
         {params.ok ? <AdminNotice tone="success">Изменения сохранены</AdminNotice> : null}
         {params.error ? <AdminNotice tone="error">{params.error}</AdminNotice> : null}
 

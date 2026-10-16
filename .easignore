@@ -43,7 +43,7 @@ yarn-error.*
 # local env files
 .env*.local
 cms/.env
-uploads/
+/uploads/
 
 # cms build
 cms/.next/
@@ -58,9 +58,6 @@ scripts/fest-artist-sync-report.json
 # generated native folders
 /ios
 /android
-
-# Superdesign session scratch files
-.superdesign/tmp/
 
 # Local build and QA scratch files
 /tmp/

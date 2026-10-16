@@ -15,7 +15,7 @@ export async function verifyAdminCredentials(
   if (!username || username.length > 64 || !password || password.length > 256) return null;
   const pool = getPool();
   const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id, password_hash FROM admin_users WHERE username = ? LIMIT 1',
+    'SELECT id, password_hash FROM admin_users WHERE username = ? AND is_active = TRUE AND vk_id IS NULL LIMIT 1',
     [username],
   );
 
@@ -31,10 +31,13 @@ export async function verifyAdminCredentials(
 export async function createAdminSession(userId: number): Promise<string> {
   const token = randomBytes(32).toString('hex');
   const pool = getPool();
-  await pool.query(
-    'INSERT INTO admin_sessions (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))',
-    [userId, 'sha256:' + createHash('sha256').update(token).digest('hex')],
+  await pool.query('DELETE FROM admin_sessions WHERE expires_at < NOW()');
+  const [result] = await pool.query<import('mysql2').ResultSetHeader>(
+    `INSERT INTO admin_sessions (user_id, token, expires_at)
+     SELECT id, ?, DATE_ADD(NOW(), INTERVAL 7 DAY) FROM admin_users WHERE id = ? AND is_active = TRUE`,
+    ['sha256:' + createHash('sha256').update(token).digest('hex'), userId],
   );
+  if (!result.affectedRows) throw new Error('Unauthorized');
   return token;
 }
 
@@ -48,13 +51,24 @@ export async function verifyBearerToken(authHeader: string | null): Promise<bool
   const digest = 'sha256:' + createHash('sha256').update(token).digest('hex');
   const pool = getPool();
   const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id, token FROM admin_sessions WHERE token IN (?, ?) AND expires_at > NOW() LIMIT 1',
+    `SELECT s.id, s.token FROM admin_sessions s JOIN admin_users u ON u.id = s.user_id
+     WHERE s.token IN (?, ?) AND s.expires_at > NOW() AND u.is_active = TRUE LIMIT 1`,
     [digest, token],
   );
   if (rows[0]?.token === token) {
-    await pool.query('UPDATE admin_sessions SET token = ? WHERE id = ? AND token = ?', [digest, rows[0].id, token]);
+    await pool.query('UPDATE admin_sessions SET token = ? WHERE id = ? AND token = ?', [
+      digest,
+      rows[0].id,
+      token,
+    ]);
   }
   return rows.length > 0;
+}
+
+export async function deleteAdminSession(token: string): Promise<void> {
+  await getPool().execute('DELETE FROM admin_sessions WHERE token = ?', [
+    'sha256:' + createHash('sha256').update(token).digest('hex'),
+  ]);
 }
 
 export async function loginWithCredentials(

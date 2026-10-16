@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import './globals.css';
-import './workspace.css';
+import './styles/base.css';
+import './styles/workspace.css';
+import './styles/theme.css';
 
 export const metadata: Metadata = {
   title: 'УЛЕТАЙ — админка',

@@ -8,6 +8,7 @@ const basePath = env('BASE_PATH').replace(/\/$/, '');
 
 export const config = {
   dbHost: env('DB_HOST', '127.0.0.1'),
+  dbPort: Number(env('DB_PORT', '3306')),
   dbName: env('DB_NAME', 'uletay'),
   dbUser: env('DB_USER', 'root'),
   dbPass: env('DB_PASS'),

@@ -64,6 +64,10 @@ export const adminSections = [
     group: 'Управление',
     description: 'Название, даты, место проведения и оформление.',
   },
+  {
+    key: 'access', label: 'Доступы', icon: 'users', group: 'Управление',
+    description: 'Команда, вход через VK и управление доступом к админке.',
+  },
 ] as const;
 
 export type AdminSearchItem = { title: string; detail: string; href: string; keywords?: string };

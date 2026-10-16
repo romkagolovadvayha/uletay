@@ -23,6 +23,7 @@ if [[ "${1:-}" == "--env-stdin" ]]; then
     LASTFM_API_KEY LASTFM_PROXY_URL \
     VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
     EXPO_PUSH_ACCESS_TOKEN RUSTORE_PUSH_PROJECT_ID RUSTORE_PUSH_SERVICE_TOKEN \
+    DB_PORT VK_APP_ID VK_REDIRECT_URI \
     RELEASE_SHA; do
     read_nul_env "$name"
   done
@@ -163,6 +164,9 @@ write_env() {
 }
 
 write_env DB_HOST "$DB_HOST"
+write_env DB_PORT "${DB_PORT:-3306}"
+write_env VK_APP_ID "${VK_APP_ID:-$(read_existing_env VK_APP_ID)}"
+write_env VK_REDIRECT_URI "${VK_REDIRECT_URI:-$(read_existing_env VK_REDIRECT_URI)}"
 write_env DB_NAME "$DB_NAME"
 write_env DB_USER "$DB_USER"
 write_env DB_PASS "$DB_PASS"

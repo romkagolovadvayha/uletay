@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AppDataConflictError, AppDataValidationError, getClientAppData, saveAppData, validateAppData } from '@/lib/app-data';
+import { AppDataConflictError, AppDataValidationError, getAppDataRevision, getClientAppData, saveAppData, validateAppData } from '@/lib/app-data';
 import { verifyBearerToken } from '@/lib/auth';
 import { corsHeaders, jsonResponse, optionsResponse } from '@/lib/api-response';
 import { readRequestJson, RequestJsonError } from '@/lib/request-json';
@@ -10,17 +10,17 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   try {
-    const data = await getClientAppData();
-    const etag = `"${data.revision}"`;
+    const etag = `"${await getAppDataRevision()}"`;
     if (request.headers.get('if-none-match') === etag) {
       return new NextResponse(null, { status: 304, headers: { ...corsHeaders(), ETag: etag, 'Cache-Control': 'no-cache' } });
     }
+    const data = await getClientAppData();
     return NextResponse.json(data, {
       status: 200,
       headers: {
         ...corsHeaders(),
-        ETag: etag,
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        ETag: `"${data.revision}"`,
+        'Cache-Control': 'no-cache',
       },
     });
   } catch (error) {

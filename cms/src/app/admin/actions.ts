@@ -1,8 +1,6 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
-import { RateLimitError, requestSource } from '@/lib/rate-limit';
 import {
   buildAutographId,
   buildFoodcourtId,
@@ -10,7 +8,6 @@ import {
   uniqueId,
 } from '@/lib/admin-ids';
 import { AppDataConflictError, AppDataValidationError, getAppData, saveAppData } from '@/lib/app-data';
-import { verifyAdminCredentials } from '@/lib/auth';
 import { buildHeadlinerId, collectHeadlinerYears } from '@/lib/headliners';
 import {
   applyBidirectionalHeadlinerLinks,
@@ -19,7 +16,7 @@ import {
 } from '@/lib/headliner-groups';
 import type { ImagePreset } from '@/lib/image-presets';
 import { ImageUploadError, saveUploadedImage, saveUploadedMapScheme } from '@/lib/upload';
-import { getSession } from '@/lib/session';
+import { getCurrentAdmin } from '@/lib/session';
 import { capPerformanceEndTime } from '@/lib/schedule-time';
 import type {
   AdminTab,
@@ -38,13 +35,14 @@ import { defaultOverlayFromBounds } from '@/lib/map-overlay-georef';
 import { sendPushBroadcast, type PushAudience } from '@/lib/push';
 import { parseFoodcourtMenu } from '@/lib/foodcourt-menu-input';
 import { adminSaveRedirect } from '@/lib/admin-navigation';
+import { refreshHeadlinerMusic, type HeadlinerRefreshResult } from '@/lib/headliner-refresh';
 
 async function requireSession(): Promise<number> {
-  const session = await getSession();
-  if (!session.adminUserId) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
     redirect('/admin/login');
   }
-  return session.adminUserId;
+  return admin.id;
 }
 
 async function optionalImageUrl(
@@ -122,33 +120,6 @@ async function saveAdminSnapshot(data: AppData, formData: FormData): Promise<voi
   }
 }
 
-
-export async function loginAction(formData: FormData) {
-  const username = String(formData.get('username') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
-
-  let userId: number | null;
-  try {
-    userId = await verifyAdminCredentials(username, password, requestSource(await headers()));
-  } catch (error) {
-    if (error instanceof RateLimitError) redirect('/admin/login?error=rate');
-    throw error;
-  }
-  if (!userId) {
-    redirect('/admin/login?error=1');
-  }
-
-  const session = await getSession();
-  session.adminUserId = userId;
-  await session.save();
-  redirect('/admin');
-}
-
-export async function logoutAction() {
-  const session = await getSession();
-  session.destroy();
-  redirect('/admin/login');
-}
 
 export async function sendPushBroadcastAction(formData: FormData) {
   const adminUserId = await requireSession();
@@ -562,6 +533,17 @@ export async function upsertHeadlinerAction(formData: FormData) {
 
   await saveAdminSnapshot(data, formData);
   redirect(adminSaveRedirect('headliners', String(formData.get('_returnTo') ?? '')));
+}
+
+export async function refreshHeadlinerMusicAction(
+  id: string,
+  revision?: string,
+): Promise<HeadlinerRefreshResult> {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    return { ok: false, error: 'Войдите в админку, чтобы обновить данные.', stopBatch: true };
+  }
+  return refreshHeadlinerMusic(id, revision);
 }
 
 export async function deleteHeadlinerAction(formData: FormData) {

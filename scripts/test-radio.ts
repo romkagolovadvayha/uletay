@@ -10,6 +10,21 @@ const state = (changes = {}) => ({ success: true, data: {
   queue: [{ ...current, id: 170, title: 'Следующая' }], previous: { ...current, id: 164 }, ...changes,
 } });
 
+test('jingle has its own title and logo, never appears in queue or previous song', () => {
+  const jingle = { id: 0, kind: 'jingle', artist: '', title: 'Рекламная пауза',
+    cover: 'https://api.prostoj.store/v1/radio/jingle-cover?id=1', duration: 21, position: 3 };
+  const snapshot = parseLiscaseRadioSnapshot(state({ current: jingle, queue: [jingle, current], previous: jingle }));
+  assert.equal(snapshot.kind, 'jingle');
+  assert.equal(snapshot.title, 'Рекламная пауза');
+  assert.equal(snapshot.artworkUrl, jingle.cover);
+  assert.equal(snapshot.position, 3);
+  assert.deepEqual(snapshot.queue.map(track => track.id), [current.id]);
+  assert.equal(snapshot.previous, null);
+  const renamed = parseLiscaseRadioSnapshot(state({ current: { ...jingle, title: 'Новости фестиваля', cover: 'https://example.test/logo2.jpg' } }));
+  assert.equal(renamed.title, 'Новости фестиваля');
+  assert.equal(renamed.artworkUrl, 'https://example.test/logo2.jpg');
+});
+
 test('current, artwork, previous and exact queue order come from station six', () => {
   const snapshot = parseLiscaseRadioSnapshot(state());
   assert.equal(snapshot.stationId, 6);

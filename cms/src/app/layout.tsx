@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
   title: 'УЛЕТАЙ CMS',
@@ -14,9 +15,10 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const theme = (await cookies()).get('uletay_admin_theme')?.value === 'light' ? 'light' : 'dark';
   return (
-    <html lang="ru">
+    <html lang="ru" data-admin-theme={theme}>
       <body>{children}</body>
     </html>
   );

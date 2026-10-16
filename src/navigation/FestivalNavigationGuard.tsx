@@ -21,6 +21,7 @@ function readGuardState(): {
   }
 
   const state = navigationRef.getRootState();
+  if (!state) return { currentTab: undefined, moreNestedRoute: null };
   const route = state.routes[state.index];
   const currentTab = route?.name as keyof RootTabParamList | undefined;
 

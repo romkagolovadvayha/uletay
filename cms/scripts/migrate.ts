@@ -1,7 +1,9 @@
+import './load-env';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import mysql from 'mysql2/promise';
 import { schemaForDatabase } from './database-schema';
+import { migrateAdminAccess } from './migrations/admin-access';
 
 async function main() {
   const dbHost = process.env.DB_HOST || '127.0.0.1';
@@ -12,6 +14,7 @@ async function main() {
 
   const root = await mysql.createConnection({
     host: dbHost,
+    port: Number(process.env.DB_PORT || 3306),
     user: dbUser,
     password: dbPass,
     multipleStatements: true,
@@ -19,6 +22,7 @@ async function main() {
 
   const schema = await schemaForDatabase(dbName);
   await root.query(schema);
+  await migrateAdminAccess(root);
   await root.end();
 
   await mkdir(path.join(uploadDir, 'images'), { recursive: true });

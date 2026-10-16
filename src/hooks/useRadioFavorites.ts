@@ -16,11 +16,12 @@ export function useRadioFavorites() {
 
   const isFavorite = useCallback(
     (track?: RadioNowPlaying | null) =>
-      Boolean(track?.raw && favorites.some((item) => item.raw === track.raw)),
+      Boolean(track?.raw && track.kind !== 'jingle' && favorites.some((item) => item.raw === track.raw)),
     [favorites],
   );
 
   const toggleFavorite = useCallback((track: RadioNowPlaying) => {
+    if (track.kind === 'jingle') return;
     setFavorites((current) => {
       const exists = current.some((item) => item.raw === track.raw);
       const next = exists

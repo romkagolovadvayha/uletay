@@ -13,6 +13,9 @@ import { getCanonicalUrl, resolveSeoMeta, type NavState, type SeoMeta } from '..
 import { DEFAULT_SOCIAL_IMAGE_URL } from '../src/seo/site';
 import { buildWebStructuredData } from '../src/seo/structuredData';
 import { encodeSeoRouteId, isDateWithinFestival } from '../src/seo/seoRouteUtils';
+import { LEGAL_SECTIONS } from '../src/constants/legalContent';
+import { getSelectableHeadlinerYears } from '../src/utils/headlinerYears';
+import { writeAiDiscovery } from './ai-discovery';
 
 type SeedData = Partial<AppData> & {
   festival: AppData['festival'];
@@ -176,6 +179,7 @@ function stageName(stages: Stage[], stageId: string): string {
 }
 
 function makeRouteSpecs(data: AppData): RouteSpec[] {
+  const currentHeadlinersPath = `/headliners/${data.festival.year}`;
   const common: RouteSpec[] = [
     { path: '/', routeName: 'HomeTab', heading: `${data.festival.name} ${data.festival.year}` },
     { path: '/map', routeName: 'MapTab' },
@@ -190,9 +194,8 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
         'Слушайте бесплатно на телефоне и компьютере без регистрации. Названия песен, исполнители, обложки и очередь следующих треков обновляются автоматически.',
         'Нажмите «Слушать эфир», чтобы включить радио. Сохраняйте понравившиеся песни в избранное на своём устройстве.',
       ],
-      links: [{ href: '/headliners', label: 'Артисты фестиваля Улетай' }],
+      links: [{ href: currentHeadlinersPath, label: 'Артисты фестиваля Улетай' }],
     },
-    { path: '/headliners', routeName: 'HeadlinersMain' },
     { path: '/foodcourt', routeName: 'FoodCourtMain' },
     { path: '/about', routeName: 'FestivalAbout' },
     { path: '/rules', routeName: 'FestivalRules' },
@@ -248,6 +251,27 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     ].filter(Boolean),
   }));
 
+  const headlinerYears = getSelectableHeadlinerYears(data.headliners, data.festival.year);
+  const headlinerYearRoutes: RouteSpec[] = headlinerYears.map((year) => ({
+    path: `/headliners/${year}`,
+    routeName: 'HeadlinersMain',
+    params: { year: String(year) },
+    heading: `Хедлайнеры ${year}`,
+    details: [year === data.festival.year
+      ? `Кто будет на Улетай ${year}?`
+      : `Кто был на Улетай ${year}?`],
+    links: [
+      ...headlinerYears.filter((item) => item !== year).map((item) => ({
+        href: `/headliners/${item}`,
+        label: `Хедлайнеры ${item}`,
+      })),
+      ...data.headliners.filter((headliner) => headliner.years.includes(year)).map((headliner) => ({
+        href: `/headliners/${encodeSeoRouteId(headliner.id)}`,
+        label: headliner.name,
+      })),
+    ],
+  }));
+
   const scheduleLinks = performanceRoutes.map((route) => ({
     href: route.path,
     label: `${route.heading} — ${route.details?.[0] ?? ''}`,
@@ -260,11 +284,6 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     href: route.path,
     label: route.heading ?? route.path,
   }));
-  const headlinerLinks = headlinerRoutes.map((route) => ({
-    href: route.path,
-    label: route.heading ?? route.path,
-  }));
-
   const enrichedCommon = common.map((route) => {
     switch (route.path) {
       case '/schedule':
@@ -273,8 +292,6 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
         return { ...route, links: autographLinks };
       case '/foodcourt':
         return { ...route, links: foodcourtLinks };
-      case '/headliners':
-        return { ...route, links: headlinerLinks };
       default:
         return route;
     }
@@ -285,6 +302,7 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     ...performanceRoutes,
     ...autographRoutes,
     ...foodcourtRoutes,
+    ...headlinerYearRoutes,
     ...headlinerRoutes,
   ];
 }
@@ -313,7 +331,7 @@ function setMeta(
     : html.replace('</head>', `  ${tag}\n</head>`);
 }
 
-function setLink(html: string, rel: string, href: string, hreflang?: string): string {
+function setLink(html: string, rel: string, href: string, hreflang?: string, type?: string): string {
   const hreflangSelector = hreflang
     ? `(?=[^>]*hreflang=["']${hreflang.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'])`
     : '';
@@ -321,29 +339,38 @@ function setLink(html: string, rel: string, href: string, hreflang?: string): st
     `<link\\s+${hreflangSelector}[^>]*rel=["']${rel}["'][^>]*>`,
     'i',
   );
-  const tag = `<link rel="${htmlEscape(rel)}"${hreflang ? ` hreflang="${htmlEscape(hreflang)}"` : ''} href="${htmlEscape(href)}" />`;
+  const tag = `<link rel="${htmlEscape(rel)}"${hreflang ? ` hreflang="${htmlEscape(hreflang)}"` : ''}${type ? ` type="${htmlEscape(type)}"` : ''} href="${htmlEscape(href)}" />`;
   return expression.test(html)
     ? html.replace(expression, tag)
     : html.replace('</head>', `  ${tag}\n</head>`);
 }
 
-const primaryNavigation = [
+const primaryNavigation = (festivalYear: number) => [
   { href: '/', label: 'Главная' },
   { href: '/schedule', label: 'Расписание' },
-  { href: '/headliners', label: 'Хэдлайнеры' },
+  { href: `/headliners/${festivalYear}`, label: 'Хэдлайнеры' },
   { href: '/map', label: 'Карта' },
   { href: '/autographs', label: 'Автографы' },
   { href: '/foodcourt', label: 'Фудкорт' },
   { href: '/about', label: 'О фестивале' },
 ];
 
-function fallbackMarkup(route: GeneratedRoute): string {
+function fallbackMarkup(route: GeneratedRoute, festivalYear: number): string {
+  if (route.path === '/legal') {
+    const sections = LEGAL_SECTIONS.map((section) => `<section id="${htmlEscape(section.id)}">
+      <h2>${htmlEscape(section.title)}</h2>
+      ${section.paragraphs.map((text) => `<p>${htmlEscape(text)}</p>`).join('')}
+      ${section.bullets ? `<ul>${section.bullets.map((text) => `<li>${htmlEscape(text)}</li>`).join('')}</ul>` : ''}
+      ${(section.afterBullets ?? []).map((text) => `<p>${htmlEscape(text)}</p>`).join('')}
+    </section>`).join('');
+    return `<main id="seo-fallback"><a href="/">← УЛЕТАЙ</a><h1>Правовая информация</h1>${sections}</main>`;
+  }
   const details = route.details?.filter(Boolean) ?? [];
   const links = route.links ?? [];
   const heading = plainText(
     route.heading || route.meta.title.replace(` — ${route.meta.siteName}`, ''),
   );
-  const nav = primaryNavigation
+  const nav = primaryNavigation(festivalYear)
     .map((item) => `<a href="${htmlEscape(encodedPathname(item.href))}">${htmlEscape(item.label)}</a>`)
     .join(' · ');
   const detailMarkup = details.length
@@ -378,6 +405,12 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
     .replace(/\s*<script\b[^>]*\bid=["']seo-jsonld["'][^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/\s*<style\b[^>]*\bid=["']seo-fallback-style["'][^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<html(?:\s+lang=["'][^"']*["'])?>/i, '<html lang="ru">');
+  // The public policy must remain readable without JavaScript and must not be
+  // replaced by an older cached app bundle during a policy-only deployment.
+  if (route.path === '/legal') {
+    html = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+    html = html.replace(/(<(?:div|main)\s+id=["']root["'][^>]*>)[\s\S]*?(<\/(?:div|main)>)/i, '$1$2');
+  }
   html = setTitle(html, route.meta.title);
   html = setMeta(html, 'name', 'description', truncate(plainText(route.meta.description), 160));
   html = setMeta(html, 'name', 'robots', route.meta.noIndex ? 'noindex, nofollow' : 'index, follow');
@@ -403,12 +436,13 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
   html = setLink(html, 'canonical', route.canonical);
   html = setLink(html, 'alternate', route.canonical, 'ru');
   html = setLink(html, 'alternate', route.canonical, 'x-default');
+  html = setLink(html, 'describedby', new URL('/llms.txt', route.canonical).href, undefined, 'text/plain');
+  html = setLink(html, 'ai-catalog', new URL('/.well-known/ai-catalog.json', route.canonical).href, undefined, 'application/ai-catalog+json');
 
   const jsonLd = JSON.stringify(structuredData(route, data)).replaceAll('<', '\\u003c');
   // Render useful no-JS content. React replaces this section when the app mounts.
   const bootStyle = [
-    'html,body{overflow:hidden;overflow:clip}',
-    'body{position:fixed;inset:0;width:100%}',
+    route.path === '/legal' ? 'html,body{overflow:auto!important;height:auto!important}body{position:static!important}' : 'html,body{overflow:hidden;overflow:clip}body{position:fixed;inset:0;width:100%}',
     'html,body,#root{background:#000;color:#f5f5f7;margin:0;min-height:100%}',
     '#seo-fallback{box-sizing:border-box;max-width:960px;margin:0 auto;padding:32px 20px;font:16px/1.6 system-ui,sans-serif}',
     '#seo-fallback a{color:#ffc107}#seo-fallback h1,#seo-fallback h2{line-height:1.2}',
@@ -419,7 +453,7 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
   );
   html = html.replace(
     /<(div|main)\s+id=["']root["']\s*><\/\1>/i,
-    (_match, tag: string) => `<${tag} id="root">${fallbackMarkup(route)}</${tag}>`,
+    (_match, tag: string) => `<${tag} id="root">${fallbackMarkup(route, data.festival.year)}</${tag}>`,
   );
   return html;
 }
@@ -464,6 +498,8 @@ async function main() {
   }
 
   writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml(routes), 'utf8');
+  writeFileSync(path.join(distDir, 'festival-year.txt'), `${data.festival.year}\n`, 'utf8');
+  writeAiDiscovery(data, distDir);
   console.log(
     `generate-web-seo: wrote ${routes.length} route documents and sitemap.xml`,
   );

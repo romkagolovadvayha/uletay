@@ -64,7 +64,7 @@ export function RadioPlayerProvider({ children }: { children: React.ReactNode })
 
   const matchedHeadliner = useMemo(
     () =>
-      nowPlaying
+      nowPlaying && nowPlaying.kind !== 'jingle'
         ? findHeadlinerByRadioArtist(data.headliners, nowPlaying.artist, nowPlaying.title)
         : null,
     [data.headliners, nowPlaying],

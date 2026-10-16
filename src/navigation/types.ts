@@ -20,12 +20,12 @@ export type MoreStackParamList = {
   FestivalRules: undefined;
   Settings: undefined;
   Legal: undefined;
-  HeadlinersMain: undefined;
+  HeadlinersMain: { year?: string } | undefined;
   HeadlinerDetail: { headlinerId: string };
 };
 
 export type HeadlinersStackParamList = {
-  HeadlinersMain: undefined;
+  HeadlinersMain: { year?: string } | undefined;
   HeadlinerDetail: { headlinerId: string };
 };
 

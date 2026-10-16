@@ -7,6 +7,7 @@ export function getPool(): mysql.Pool {
   if (!pool) {
     pool = mysql.createPool({
       host: config.dbHost,
+      port: config.dbPort,
       database: config.dbName,
       user: config.dbUser,
       password: config.dbPass,

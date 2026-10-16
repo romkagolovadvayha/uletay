@@ -4,13 +4,14 @@
     "slug": "romkadvayha",
     "scheme": "uletay",
     "owner": "romkadvayhas-team",
-    "version": "1.0.12",
+    "version": "1.0.16",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#000000",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "ru.uletay.app",
@@ -20,13 +21,13 @@
       },
       "infoPlist": {
         "CADisableMinimumFrameDurationOnPhone": true,
-        "NSLocationWhenInUseUsageDescription": "Приложению нужен доступ к геолокации, чтобы показать ваше положение на карте площадки фестиваля «Улетай». Координаты используются только на устройстве и не передаются на сервер.",
+        "NSLocationWhenInUseUsageDescription": "Приложению нужен доступ к геолокации, чтобы показать ваше положение на карте площадки фестиваля «Улетай». При построении внешнего маршрута координаты передаются сервису маршрутизации, в том числе через сервер приложения.",
         "NSUserNotificationsUsageDescription": "Приложению нужны уведомления, чтобы напоминать о начале избранных выступлений и автограф-сессий, которые вы добавили в расписание."
       }
     },
     "android": {
       "package": "ru.uletay.app",
-      "versionCode": 5,
+      "versionCode": 40,
       "permissions": [
         "SCHEDULE_EXACT_ALARM"
       ],
@@ -90,6 +91,8 @@
         }
       ],
       "expo-asset",
+      "expo-system-ui",
+      "./plugins/with-android-release-optimization",
       [
         "expo-build-properties",
         {

@@ -1,6 +1,7 @@
 import { Camera, GeoJSONSource, ImageSource, Layer, Map as NativeMap, type CameraRef } from '@maplibre/maplibre-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
+import { mapControlLayout } from '../../theme/map';
 import { useLatestRef } from '../../hooks/useLatestRef';
 import { useMapMotion } from './MapMotionConfig';
 import { configureNativeMapCache } from './map-cache.native';
@@ -75,7 +76,8 @@ export function FestivalMapView(props: FestivalMapViewProps) {
   }, [initialized, props.followUser, lat, lng, reduceMotion]);
 
   return <NativeMap mapStyle={style} style={styles.fill} attribution logo={false} compass
-    attributionPosition={{ bottom: 8, left: 8 }} compassPosition={{ bottom: 150, left: 16 }}
+    attributionPosition={{ bottom: mapControlLayout.attributionBottom, left: 8 }}
+    compassPosition={{ bottom: mapControlLayout.compassBottom, left: 16 }}
     dragPan touchZoom touchRotate
     onLayout={event => { size.current = event.nativeEvent.layout; }}
     onDidFinishLoadingStyle={() => setInitialized(true)}

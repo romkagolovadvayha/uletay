@@ -52,7 +52,7 @@ function routeEntityId(path: string, prefix: string): string | null {
   return segment && !segment.includes('/') ? decodeSeoRouteParam(segment) : null;
 }
 
-function breadcrumbItems(meta: SeoMeta, canonical: string): JsonLdNode[] {
+function breadcrumbItems(meta: SeoMeta, canonical: string, data: AppData): JsonLdNode[] {
   const items: JsonLdNode[] = [
     { '@type': 'ListItem', position: 1, name: 'Главная', item: siteRoot },
   ];
@@ -61,14 +61,22 @@ function breadcrumbItems(meta: SeoMeta, canonical: string): JsonLdNode[] {
     return items;
   }
 
+  const headlinerId = /^\/headliners\/\d{4}$/.test(meta.path)
+    ? null
+    : routeEntityId(meta.path, '/headliners/');
+  const headliner = data.headliners.find((item) => item.id === headlinerId);
+  const headlinerYear = headliner?.years.length
+    ? Math.max(...headliner.years)
+    : data.festival.year;
+
   const section = meta.path.startsWith('/schedule/')
     ? { name: 'Расписание', path: '/schedule' }
     : meta.path.startsWith('/autographs/')
       ? { name: 'Автограф-сессии', path: '/autographs' }
       : meta.path.startsWith('/foodcourt/')
         ? { name: 'Фудкорт', path: '/foodcourt' }
-        : meta.path.startsWith('/headliners/')
-          ? { name: 'Хэдлайнеры', path: '/headliners' }
+        : meta.path.startsWith('/headliners/') && !/^\/headliners\/\d{4}$/.test(meta.path)
+          ? { name: `Хедлайнеры ${headlinerYear}`, path: `/headliners/${headlinerYear}` }
           : null;
 
   if (section && meta.path !== section.path) {
@@ -294,7 +302,7 @@ export function buildWebStructuredData(meta: SeoMeta, data: AppData): JsonLdNode
     {
       '@type': 'BreadcrumbList',
       '@id': breadcrumbId,
-      itemListElement: breadcrumbItems(meta, canonical),
+      itemListElement: breadcrumbItems(meta, canonical, data),
     },
     festivalNode(data),
   ];

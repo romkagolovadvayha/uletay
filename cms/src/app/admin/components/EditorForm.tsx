@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { AdminIcon } from './AdminIcon';
 
 const DirtyContext = createContext(false);
+export const useEditorDirty = () => useContext(DirtyContext);
 const EditorChangeContext = createContext<() => void>(() => {});
 export const useEditorChange = () => useContext(EditorChangeContext);
 

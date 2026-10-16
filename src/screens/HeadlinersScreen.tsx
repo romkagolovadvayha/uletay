@@ -11,7 +11,6 @@ import { HeadlinersStackParamList, MoreStackParamList } from '../navigation/type
 import {
   buildHeadlinerYearCategories,
   filterHeadlinersList,
-  getDefaultHeadlinerYear,
   getPreviousHeadlinerYears,
   getSelectableHeadlinerYears,
   type HeadlinerSortMode,
@@ -26,22 +25,20 @@ type Props = NativeStackScreenProps<
   'HeadlinersMain'
 >;
 
-export function HeadlinersScreen({ navigation }: Props) {
+export function HeadlinersScreen({ navigation, route }: Props) {
   const { data } = useAppData();
   const isDesktop = useIsDesktopWeb();
   const years = useMemo(
     () => getSelectableHeadlinerYears(data.headliners, data.festival.year),
     [data.festival.year, data.headliners],
   );
-  const defaultYear = useMemo(
-    () => getDefaultHeadlinerYear(data.headliners, data.festival.year),
-    [data.festival.year, data.headliners],
-  );
-  const [selectedYear, setSelectedYear] = useState(String(defaultYear));
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<HeadlinerSortMode>('popularity');
 
-  const activeYear = years.includes(Number(selectedYear)) ? selectedYear : String(defaultYear);
+  const activeYear = route.params?.year && /^\d{4}$/.test(route.params.year)
+    ? route.params.year
+    : String(data.festival.year);
+  const isCurrentYear = Number(activeYear) === data.festival.year;
 
   const yearCategories = useMemo(() => buildHeadlinerYearCategories(years), [years]);
   const activeYearHasHeadliners = useMemo(
@@ -69,10 +66,18 @@ export function HeadlinersScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={[styles.header, isDesktop && styles.headerDesktop]}>
-        {isDesktop ? <Text style={styles.desktopKicker}>АРХИВ ФЕСТИВАЛЯ / ИМЕНА</Text> : null}
-        <ScreenTitle style={[styles.title, isDesktop ? styles.titleDesktop : {}]}>ХЭДЛАЙНЕРЫ</ScreenTitle>
+        <Text style={styles.desktopKicker}>
+          {isCurrentYear ? `Кто будет на Улетай ${activeYear}?` : `Кто был на Улетай ${activeYear}?`}
+        </Text>
+        <ScreenTitle style={[styles.title, isDesktop ? styles.titleDesktop : {}]}>
+          Хедлайнеры {activeYear}
+        </ScreenTitle>
         {isDesktop ? (
-          <Text style={styles.desktopLead}>Музыканты, которые уже выходили на сцены «Улетая».</Text>
+          <Text style={styles.desktopLead}>
+            {isCurrentYear
+              ? 'Артисты фестиваля «Улетай» этого года.'
+              : `Музыканты, выступавшие на фестивале «Улетай» в ${activeYear} году.`}
+          </Text>
         ) : null}
       </View>
 
@@ -82,7 +87,7 @@ export function HeadlinersScreen({ navigation }: Props) {
           onSearchQueryChange={setSearchQuery}
           selectedYear={activeYear}
           yearOptions={yearCategories}
-          onYearChange={setSelectedYear}
+          onYearChange={(year) => navigation.setParams({ year })}
           sortMode={sortMode}
           onSortModeChange={setSortMode}
         />
@@ -148,6 +153,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.screenTitle,
     color: colors.text,
+    textTransform: 'none',
   },
   titleDesktop: {
     ...appFont('black'),
@@ -158,8 +164,8 @@ const styles = StyleSheet.create({
   desktopKicker: {
     ...appFont('bold'),
     color: colors.primary,
-    fontSize: 9,
-    letterSpacing: 1.7,
+    fontSize: 12,
+    letterSpacing: 0.3,
     marginBottom: 10,
   },
   desktopLead: {

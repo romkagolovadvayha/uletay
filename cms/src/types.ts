@@ -165,4 +165,5 @@ export type AdminTab =
   | 'headliners'
   | 'foodcourt'
   | 'map'
-  | 'push';
+  | 'push'
+  | 'access';

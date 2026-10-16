@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { Map as WebMap } from 'maplibre-gl';
+import { mapControlLayout } from '../../theme/map';
 import { useLatestRef } from '../../hooks/useLatestRef';
 import { loadMapLibre } from './maplibre-loader.web';
 import { festivalMapStyle, MAP_MAX_ZOOM, MAP_MIN_ZOOM } from './map-style';
@@ -45,7 +46,7 @@ export function FestivalMapView(props: FestivalMapViewProps) {
       active.addControl(new api.NavigationControl({ showZoom: false, showCompass: true }), 'bottom-left');
       const controls = host.querySelector<HTMLElement>('.maplibregl-ctrl-bottom-left');
       if (controls) {
-        controls.style.bottom = '8px'; controls.style.left = '8px';
+        controls.style.bottom = `${mapControlLayout.attributionBottom}px`; controls.style.left = '8px';
         controls.style.maxWidth = 'calc(100% - 16px)';
         const attribution = controls.querySelector<HTMLElement>('.maplibregl-ctrl-attrib');
         if (attribution) {
@@ -60,7 +61,8 @@ export function FestivalMapView(props: FestivalMapViewProps) {
         }
         const compass = controls.querySelector<HTMLElement>('.maplibregl-ctrl-group');
         if (compass) {
-          compass.style.position = 'absolute'; compass.style.bottom = '142px';
+          compass.style.position = 'absolute';
+          compass.style.bottom = `${mapControlLayout.compassBottom - mapControlLayout.attributionBottom}px`;
           compass.style.left = '8px'; compass.style.margin = '0';
         }
       }

@@ -39,7 +39,7 @@ function buildLockScreenMetadata(
     albumTitle: RADIO_STATION_NAME,
   };
 
-  const artworkUrl = resolveLockScreenArtworkUrl(nowPlaying?.artworkUrl || matchedHeadliner?.imageUrl);
+  const artworkUrl = resolveLockScreenArtworkUrl(nowPlaying?.artworkUrl || (nowPlaying?.kind === 'jingle' ? undefined : matchedHeadliner?.imageUrl));
   if (artworkUrl) {
     metadata.artworkUrl = artworkUrl;
   }

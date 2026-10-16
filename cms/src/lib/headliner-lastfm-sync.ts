@@ -9,12 +9,13 @@ const REQUEST_DELAY_MS = 350;
 export async function resolveAndMergeLastFmForHeadliner(
   headliner: Headliner,
   allHeadliners: Headliner[],
+  options: { strict?: boolean } = {},
 ): Promise<Headliner['lastfm'] | null> {
   const names = collectGroupIdentityNames(headliner, allHeadliners);
   const profiles = [];
 
   for (const name of names) {
-    const profile = await resolveLastFmProfileForHeadliner(name);
+    const profile = await resolveLastFmProfileForHeadliner(name, options);
     if (profile) {
       profiles.push(profile);
     }

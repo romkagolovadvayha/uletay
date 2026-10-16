@@ -82,12 +82,13 @@ export function PlaylistScreen() {
   const [showQueue, setShowQueue] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const isJingle = nowPlaying?.kind === 'jingle';
   const displayArtist = nowPlaying?.artist || 'Рок станция (Улетай)';
   const displayTitle = nowPlaying?.title || (stationAvailable === false ? 'Эфир временно недоступен' : 'Музыка, которая объединяет');
   const documentTitle = nowPlaying?.raw && !isMetadataStale ? `${nowPlaying.raw} | Улетай радио` : null;
   const artworkSource = nowPlaying?.artworkUrl
     ? { uri: nowPlaying.artworkUrl }
-    : resolveArtistImageSource(matchedHeadliner?.imageUrl, matchedHeadliner?.name ?? nowPlaying?.artist ?? '');
+    : isJingle ? null : resolveArtistImageSource(matchedHeadliner?.imageUrl, matchedHeadliner?.name ?? nowPlaying?.artist ?? '');
 
   useFocusEffect(useCallback(() => {
     setPlaylistActive(true);
@@ -149,7 +150,7 @@ export function PlaylistScreen() {
                 <Text style={styles.stationLabel}>Рок станция (Улетай)</Text>
               </View>
               <View style={styles.currentCopy}>
-                <Text style={styles.eyebrow}>{isMetadataStale && nowPlaying ? 'ПОСЛЕДНИЙ ИЗВЕСТНЫЙ ТРЕК' : nowPlaying ? 'СЕЙЧАС ИГРАЕТ' : 'ВКЛЮЧАЙ НАСТРОЕНИЕ'}</Text>
+                <Text style={styles.eyebrow}>{isMetadataStale && nowPlaying ? 'ПОСЛЕДНИЙ ЭФИР' : isJingle ? 'ПАУЗА МЕЖДУ ПЕСНЯМИ' : nowPlaying ? 'СЕЙЧАС ИГРАЕТ' : 'ВКЛЮЧАЙ НАСТРОЕНИЕ'}</Text>
                 <Text selectable style={[styles.trackTitle, wide && styles.trackTitleWide]}>{displayTitle}</Text>
                 <Text selectable style={styles.trackArtist}>{displayArtist}</Text>
               </View>
@@ -161,8 +162,8 @@ export function PlaylistScreen() {
                   <Text style={styles.playButtonText}>{isBuffering ? 'Подключаемся' : isPlaying ? 'Остановить' : 'Слушать эфир'}</Text>
                 </MotionPressable>
                 <MotionPressable accessibilityRole="button" accessibilityLabel={isFavorite(nowPlaying) ? 'Убрать трек из избранного' : 'Добавить трек в избранное'}
-                  aria-pressed={isFavorite(nowPlaying)} disabled={!nowPlaying?.raw} onPress={() => nowPlaying && toggleFavorite(nowPlaying)}
-                  style={[styles.roundAction, !nowPlaying?.raw && styles.disabled]}>
+                  aria-pressed={isFavorite(nowPlaying)} disabled={!nowPlaying?.raw || isJingle} onPress={() => nowPlaying && toggleFavorite(nowPlaying)}
+                  style={[styles.roundAction, (!nowPlaying?.raw || isJingle) && styles.disabled]}>
                   <Ionicons name={isFavorite(nowPlaying) ? 'heart' : 'heart-outline'} size={24} color={colors.primary} />
                 </MotionPressable>
                 <MotionPressable accessibilityRole="button" accessibilityLabel="Поделиться радио" onPress={() => void shareTrack()} style={styles.roundAction}>
@@ -175,7 +176,7 @@ export function PlaylistScreen() {
               </View> : null}
               {stationAvailable === false && !error ? <Text style={styles.caption}>Станция восстанавливает трансляцию. Информация обновится автоматически.</Text> : null}
               <View style={styles.secondaryActions}>
-                {nowPlaying?.raw ? <MotionPressable accessibilityRole="button" onPress={() => void openMusic(nowPlaying)} style={styles.textButton}>
+                {nowPlaying?.raw && !isJingle ? <MotionPressable accessibilityRole="button" onPress={() => void openMusic(nowPlaying)} style={styles.textButton}>
                   <Ionicons name="musical-notes-outline" size={18} color={colors.textSecondary} />
                   <Text style={styles.textButtonLabel}>Найти трек</Text>
                 </MotionPressable> : null}

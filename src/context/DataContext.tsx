@@ -9,7 +9,6 @@ import {
 } from '../api/appDataApi';
 import {
   APP_DATA_REFRESH_INTERVAL_MS,
-  APP_DATA_RETRY_INTERVAL_MS,
   CachedAppData,
 } from '../config/api';
 import { AppData } from '../types';
@@ -156,10 +155,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    let appIsActive = AppState.currentState === 'active';
+    let appIsActive = AppState.currentState == null || AppState.currentState === 'active';
 
-    const tryRefresh = async () => {
-      const result = await refreshAppDataInBackground();
+    const tryRefresh = async (force = false) => {
+      const result = await refreshAppDataInBackground(force);
       if (cancelled) {
         return;
       }
@@ -167,42 +166,42 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     void (async () => {
-      const cached = await applyCachedSnapshot();
+      await applyCachedSnapshot();
       if (cancelled) {
         return;
       }
       setIsHydrated(true);
 
-      if (cached) {
-        void tryRefresh();
-        return;
-      }
-
-      await tryRefresh();
+      // Show the offline snapshot immediately, but always verify it on launch.
+      await tryRefresh(true);
     })();
 
     const refreshInterval = setInterval(() => {
-      if (appIsActive) void tryRefresh();
+      if (appIsActive) void tryRefresh(true);
     }, APP_DATA_REFRESH_INTERVAL_MS);
-
-    const retryInterval = setInterval(() => {
-      if (!appIsActive) {
-        return;
-      }
-      void tryRefresh();
-    }, APP_DATA_RETRY_INTERVAL_MS);
 
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       const becameActive = !appIsActive && nextState === 'active';
       appIsActive = nextState === 'active';
-      if (becameActive) void tryRefresh();
+      if (becameActive) void tryRefresh(true);
     });
+
+    const resumeWeb = () => {
+      if (document.visibilityState !== 'hidden') void tryRefresh(true);
+    };
+    if (Platform.OS === 'web') {
+      window.addEventListener('online', resumeWeb);
+      window.addEventListener('focus', resumeWeb);
+    }
 
     return () => {
       cancelled = true;
       clearInterval(refreshInterval);
-      clearInterval(retryInterval);
       appStateSubscription.remove();
+      if (Platform.OS === 'web') {
+        window.removeEventListener('online', resumeWeb);
+        window.removeEventListener('focus', resumeWeb);
+      }
     };
   }, [applyCachedSnapshot, applyRefreshResult]);
 

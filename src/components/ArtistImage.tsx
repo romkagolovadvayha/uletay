@@ -63,6 +63,10 @@ function ArtistImageResolved({
         source={source}
         style={style}
         contentFit={contentFit}
+        allowDownscaling
+        cachePolicy="disk"
+        decodeFormat={preferList ? 'rgb' : 'argb'}
+        recyclingKey={`${imageUrl ?? artist ?? 'artist'}:${index}`}
         accessibilityLabel={imageAlt}
         alt={imageAlt}
         priority={preferList ? 'low' : 'high'}

@@ -1,5 +1,8 @@
 type AdminIconName =
   | 'grid'
+  | 'users'
+  | 'sun'
+  | 'moon'
   | 'search'
   | 'external'
   | 'arrow'
@@ -24,6 +27,9 @@ type Props = {
 };
 
 const paths: Record<AdminIconName, React.ReactNode> = {
+  users: <><circle cx="9" cy="7" r="4" /><path d="M2 21v-3a7 7 0 0 1 14 0v3M17 3a4 4 0 0 1 0 8M22 21v-3a7 7 0 0 0-4-6" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" /></>,
+  moon: <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />,
   grid: (
     <>
       <rect x="3" y="3" width="7" height="7" rx="1.5" />

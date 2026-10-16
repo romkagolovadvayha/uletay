@@ -5,4 +5,4 @@ export const RADIO_STATE_URL = `https://api.prostoj.store/v1/radio/state?id=${RA
 
 export const RADIO_STATION_NAME = 'Улетай радио';
 
-export const RADIO_NOW_PLAYING_POLL_MS = 10_000;
+export const RADIO_NOW_PLAYING_POLL_MS = 3_000;

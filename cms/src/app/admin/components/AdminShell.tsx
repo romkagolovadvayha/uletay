@@ -6,9 +6,12 @@ import type { AdminTab } from '@/types';
 import { adminSections, type AdminSearchItem } from '@/lib/admin-navigation';
 import { AdminIcon } from './AdminIcon';
 import { AdminSearch } from './AdminSearch';
+import { ThemeToggle } from './ThemeToggle';
+import type { AdminUser } from '@/lib/admin-access';
 
 type Props = {
   activeTab: AdminTab;
+  admin: AdminUser;
   children: ReactNode;
   logoutAction: () => void | Promise<void>;
   searchItems: AdminSearchItem[];
@@ -17,6 +20,7 @@ type Props = {
 };
 export function AdminShell({
   activeTab,
+  admin,
   children,
   logoutAction,
   searchItems,
@@ -26,6 +30,7 @@ export function AdminShell({
   const menu = useRef<HTMLDialogElement>(null);
   const meta = adminSections.find((item) => item.key === activeTab)!;
   const groups = [...new Set(adminSections.map((item) => item.group))];
+  const sections = adminSections.filter((item) => item.key !== 'access' || admin.role === 'owner');
   function navigation() {
     return (
       <>
@@ -48,7 +53,7 @@ export function AdminShell({
           {groups.map((group) => (
             <div className="admin-nav-group" key={group}>
               <p>{group}</p>
-              {adminSections
+              {sections
                 .filter((item) => item.group === group)
                 .map((item) => (
                   <Link
@@ -67,6 +72,15 @@ export function AdminShell({
           ))}
         </nav>
         <div className="admin-sidebar-footer">
+          <div className="admin-account">
+            <span className="admin-account-avatar">
+              {admin.displayName.slice(0, 1).toUpperCase()}
+            </span>
+            <div>
+              <strong>{admin.displayName}</strong>
+              <small>{admin.role === 'owner' ? 'Владелец' : 'Администратор'}</small>
+            </div>
+          </div>
           <a className="admin-site-link" href="/" target="_blank" rel="noreferrer">
             <AdminIcon name="external" size={18} />
             Открыть приложение
@@ -114,6 +128,7 @@ export function AdminShell({
             <strong>{meta.label}</strong>
           </div>
           <AdminSearch items={searchItems} />
+          <ThemeToggle />
         </header>
         <main className="admin-content" id="admin-content" tabIndex={-1}>
           <div className="admin-page-heading">

@@ -1,8 +1,10 @@
+import './load-env';
 import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import mysql from 'mysql2/promise';
 import { hashPassword } from '../src/lib/auth';
 import { schemaForDatabase } from './database-schema';
+import { migrateAdminAccess } from './migrations/admin-access';
 
 async function main() {
   const dbHost = process.env.DB_HOST || '127.0.0.1';
@@ -16,6 +18,7 @@ async function main() {
 
   const root = await mysql.createConnection({
     host: dbHost,
+    port: Number(process.env.DB_PORT || 3306),
     user: dbUser,
     password: dbPass,
     multipleStatements: true,
@@ -27,10 +30,13 @@ async function main() {
 
   const pool = await mysql.createConnection({
     host: dbHost,
+    port: Number(process.env.DB_PORT || 3306),
     database: dbName,
     user: dbUser,
     password: dbPass,
   });
+
+  await migrateAdminAccess(pool);
 
   const [rows] = await pool.query('SELECT id FROM app_content WHERE id = 1 LIMIT 1');
   const hasContent = Array.isArray(rows) && rows.length > 0;
@@ -47,7 +53,7 @@ async function main() {
   const passwordHash = await hashPassword(adminPassword);
   await pool.query(
     `INSERT INTO admin_users (username, password_hash) VALUES (?, ?)
-     ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash)`,
+     ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), is_active = TRUE`,
     [adminUser, passwordHash],
   );
   await pool.query('DELETE FROM admin_sessions WHERE user_id IN (SELECT id FROM admin_users WHERE username = ?)', [adminUser]);

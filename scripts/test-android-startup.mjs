@@ -18,6 +18,10 @@ const serial = option('serial');
 assert(serial, 'Specify the test device: --serial emulator-5580');
 const packageName = 'ru.uletay.app';
 const apk = option('apk');
+// Some animated home screens never satisfy UI Automator's fixed idle timeout.
+// This mode verifies process survival and foreground focus, and produces a
+// screenshot that MUST be reviewed separately before accepting a release.
+const visualReview = args.includes('--visual-review');
 const outputDir = path.resolve(option('out', 'tmp/android-startup'));
 const sdkRoot = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT ||
   (process.platform === 'win32' && process.env.LOCALAPPDATA
@@ -45,6 +49,7 @@ const report = {
   android: await adb('shell', 'getprop', 'ro.build.version.release'),
   sdk: await adb('shell', 'getprop', 'ro.build.version.sdk'),
   startedAt: new Date().toISOString(), passed: false,
+  visualReviewRequired: visualReview,
 };
 const packageInfo = await adb('shell', 'dumpsys', 'package', packageName);
 report.versionName = packageInfo.match(/versionName=(\S+)/)?.[1];
@@ -52,6 +57,8 @@ report.versionCode = packageInfo.match(/versionCode=(\d+)/)?.[1];
 assert(report.versionName, `${packageName} is not installed`);
 
 await adb('shell', 'am', 'force-stop', packageName);
+await adb('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP');
+await adb('shell', 'wm', 'dismiss-keyguard');
 // Stream fresh errors without clearing the device's existing log buffers.
 let errors = '';
 const logger = spawn(adbPath, [
@@ -76,17 +83,24 @@ try {
   let hierarchy = '';
   const dumps = [];
   // The animated hero can briefly prevent UI Automator from reaching idle.
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; !visualReview && attempt < 3; attempt += 1) {
     dumps.push(await adb('shell', 'uiautomator', 'dump', '--compressed', hierarchyPath));
     hierarchy = await adb('shell', 'cat', hierarchyPath).catch(() => '');
-    if (hierarchy.includes('Главная')) break;
+    if (/Главная|Домой/.test(hierarchy) && hierarchy.includes(`package="${packageName}"`)) break;
     await delay(1_000);
   }
   await writeFile(path.join(outputDir, 'ui-dump.txt'), dumps.join('\n'));
   await writeFile(path.join(outputDir, 'hierarchy.xml'), hierarchy);
   await adb('shell', 'rm', '-f', hierarchyPath);
-  assert(hierarchy.includes(`package="${packageName}"`), 'App is not visible');
-  assert(hierarchy.includes('Главная'), 'Home navigation did not render after the splash screen');
+  if (visualReview) {
+    const windows = await adb('shell', 'dumpsys', 'window');
+    await writeFile(path.join(outputDir, 'window-focus.txt'), windows);
+    assert(windows.split('\n').some((line) => line.includes('mCurrentFocus=') && line.includes(`${packageName}/`)), 'App does not have foreground focus');
+  } else {
+    assert(hierarchy, 'UI Automator returned no hierarchy. For an animated screen, use --visual-review and review the captured screenshot separately.');
+    assert(hierarchy.includes(`package="${packageName}"`), 'App is not visible');
+    assert(/Главная|Домой/.test(hierarchy), 'Home navigation did not render after the splash screen');
+  }
   assert(!errors.includes(`Process: ${packageName}`), 'Android reported an app crash; see logcat.txt');
   assert.equal(await adb('shell', 'pidof', packageName), pid, 'App process restarted during the test');
 
@@ -95,7 +109,7 @@ try {
   });
   await writeFile(path.join(outputDir, 'home.png'), screenshot.stdout);
   report.passed = true;
-  console.log(`PASS: ${packageName} ${report.versionName} (${report.versionCode}), Android ${report.android}: home rendered and process survived.`);
+  console.log(`PASS: ${packageName} ${report.versionName} (${report.versionCode}), Android ${report.android}: ${visualReview ? 'foreground process survived; manual home screenshot review REQUIRED' : 'home rendered and process survived'}.`);
 } catch (error) {
   report.error = error instanceof Error ? error.message : String(error);
   console.error(`FAIL: ${report.error}`);

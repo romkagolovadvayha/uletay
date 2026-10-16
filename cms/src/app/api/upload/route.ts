@@ -3,14 +3,17 @@ import { verifyBearerToken } from '@/lib/auth';
 import type { ImagePreset } from '@/lib/image-presets';
 import { ImageUploadError, saveUploadedImage, saveUploadedMapScheme } from '@/lib/upload';
 import { jsonResponse, optionsResponse } from '@/lib/api-response';
-import { getSession } from '@/lib/session';
+import { getCurrentAdmin } from '@/lib/session';
+import { isSameOriginRequest } from '@/lib/request-origin';
 
 async function isAuthorized(request: NextRequest): Promise<boolean> {
   if (await verifyBearerToken(request.headers.get('authorization'))) {
     return true;
   }
-  const session = await getSession();
-  return Boolean(session.adminUserId);
+  const admin = await getCurrentAdmin();
+  if (!admin) return false;
+  // A cookie alone must not authorize an upload from another origin.
+  return isSameOriginRequest(request);
 }
 
 export async function OPTIONS() {

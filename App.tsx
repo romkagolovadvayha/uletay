@@ -21,6 +21,7 @@ import { navigationRef } from './src/navigation/navigationRef';
 import { syncHeadlinersNavigationTarget, syncNestedStacksWithActiveTab } from './src/navigation/scheduleNavigation';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { WebSeoManager } from './src/components/WebSeoManager';
+import { WebMcpBridge } from './src/components/WebMcpBridge';
 import { syncWebSeo } from './src/seo/syncWebSeo';
 import { colors } from './src/theme/colors';
 import { installExternalLinkRel } from './src/utils/installExternalLinkRel';
@@ -122,6 +123,7 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <DataProvider>
+          <WebMcpBridge />
           <DemoModeProvider>
             <RadioPlayerProvider>
               <FavoritesProvider>

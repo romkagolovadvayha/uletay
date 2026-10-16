@@ -1,6 +1,7 @@
 import type { AppData } from '../types';
 import { encodeSeoRouteId, isDateWithinFestival } from './seoRouteUtils';
-import { DEFAULT_DESCRIPTION, getSiteName, SITE_NAME, SITE_URL } from './site';
+import { DEFAULT_DESCRIPTION, DEFAULT_FESTIVAL_YEAR, getSiteName, SITE_NAME, SITE_URL } from './site';
+import { getSelectableHeadlinerYears } from '../utils/headlinerYears';
 
 export type SeoMeta = {
   title: string;
@@ -150,12 +151,6 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: st
       'Помощь по приложению фестиваля УЛЕТАЙ: расписание, карта, уведомления и ответы на частые вопросы.',
     path: '/help',
   },
-  HeadlinersMain: {
-    title: `Хэдлайнеры — ${SITE_NAME}`,
-    description:
-      'Хэдлайнеры фестиваля УЛЕТАЙ по годам: состав участников, артисты прошлых фестивалей, поиск и сортировка по популярности, история выступлений музыкантов.',
-    path: '/headliners',
-  },
 };
 
 function getDeepestRoute(state: NavState | undefined): RouteNode | null {
@@ -221,7 +216,7 @@ function buildPath(chain: RouteNode[]): string {
     case 'Settings':
       return '/settings';
     case 'HeadlinersMain':
-      return '/headliners';
+      return `/headliners/${params.year && /^\d{4}$/.test(params.year) ? params.year : DEFAULT_FESTIVAL_YEAR}`;
     case 'HeadlinerDetail':
       return params.headlinerId
         ? `/headliners/${encodeSeoRouteId(params.headlinerId)}`
@@ -283,6 +278,23 @@ export function resolveSeoMeta(
   const routeName = active?.name ?? 'HomeTab';
   const params = (active?.params ?? {}) as Record<string, string | undefined>;
   const path = chain.length ? buildPath(chain) : '/';
+
+  if (routeName === 'HeadlinersMain') {
+    const year = params.year && /^\d{4}$/.test(params.year)
+      ? Number(params.year)
+      : data.festival.year;
+    const available = getSelectableHeadlinerYears(data.headliners, data.festival.year).includes(year);
+    return {
+      title: `Хедлайнеры ${year} — ${siteName}`,
+      siteName,
+      description: year === data.festival.year
+        ? `Кто будет на Улетай ${year}: хедлайнеры и артисты фестиваля, поиск по участникам и состав по мере объявления.`
+        : `Кто был на Улетай ${year}: хедлайнеры и артисты фестиваля, история выступлений и поиск по участникам.`,
+      path: `/headliners/${year}`,
+      noIndex: !available,
+      provisional: !available,
+    };
+  }
 
   if (routeName === 'LiveDetail' && params.performanceId) {
     const performance = data.schedule.find((item) => item.id === params.performanceId);

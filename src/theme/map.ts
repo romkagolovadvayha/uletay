@@ -1,3 +1,15 @@
+import { spacing } from './spacing';
+
+const directionsBottom = spacing.lg;
+const directionsHeight = 52;
+
+export const mapControlLayout = {
+  directionsBottom,
+  directionsHeight,
+  attributionBottom: directionsBottom + directionsHeight + spacing.sm,
+  compassBottom: 150,
+} as const;
+
 /* ds-allow-hardcode:start -- Central map color token definitions. */
 export const mapColors = {
   userDot: '#0A84FF',

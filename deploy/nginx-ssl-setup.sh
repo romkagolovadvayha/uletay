@@ -7,11 +7,18 @@ apply_nginx_template() {
   local output_path="${2:-/etc/nginx/sites-available/uletay}"
   local enabled_path="${3:-/etc/nginx/sites-enabled/uletay}"
   local www_domain="www.${DOMAIN}"
+  local festival_year
+  festival_year="$(tr -d '\r\n' < "${DEPLOY_PATH}/dist/festival-year.txt")"
+  if [[ ! "$festival_year" =~ ^[0-9]{4}$ ]]; then
+    echo "Invalid festival year in dist/festival-year.txt: ${festival_year}" >&2
+    return 1
+  fi
   local sed_args=(
     -e "s|__DOMAIN__|${DOMAIN}|g"
     -e "s|__WWW_DOMAIN__|${www_domain}|g"
     -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g"
     -e "s|__CMS_PORT__|${CMS_PORT}|g"
+    -e "s|__FESTIVAL_YEAR__|${festival_year}|g"
   )
 
   sed "${sed_args[@]}" \
@@ -205,8 +212,8 @@ verify_https() {
     "https://127.0.0.1/api/data"
   grep -qi '^content-encoding: gzip' "$asset_headers_check" \
     || { echo "API JSON is not gzip-compressed"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
-  grep -qi '^cache-control:.*max-age=60' "$asset_headers_check" \
-    || { echo "API cache policy is missing or too aggressive"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
+  grep -qi '^cache-control:.*no-cache' "$asset_headers_check" \
+    || { echo "API cache policy must require revalidation (no-cache)"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
   rm -f "$html_check" "$headers_check" "$asset_headers_check"
 
   curl -fsS -k "https://127.0.0.1/about" -H "Host: ${DOMAIN}" -o "$seo_check" \
@@ -219,7 +226,9 @@ verify_https() {
 
   curl -fsS -k "https://127.0.0.1/sitemap.xml" -H "Host: ${DOMAIN}" -o "$sitemap_check" \
     || { echo "sitemap.xml is not available"; rm -f "$sitemap_check"; exit 1; }
-  grep -Fq "<loc>https://${DOMAIN}/headliners</loc>" "$sitemap_check" \
+  local festival_year
+  festival_year="$(tr -d '\r\n' < "${DEPLOY_PATH}/dist/festival-year.txt")"
+  grep -Fq "<loc>https://${DOMAIN}/headliners/${festival_year}</loc>" "$sitemap_check" \
     || { echo "sitemap.xml does not contain public routes"; rm -f "$sitemap_check"; exit 1; }
   rm -f "$sitemap_check"
 
@@ -267,4 +276,8 @@ verify_https() {
     echo "Custom 404 page expected (404), got ${code}"
     exit 1
   fi
+
+  # Include current CMS entities, not only the build-time sitemap: newly added
+  # cards must survive direct entry and refresh before another web build.
+  node "${DEPLOY_PATH}/deploy/check-web-routes.mjs" "https://${DOMAIN}" 127.0.0.1
 }

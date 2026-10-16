@@ -1,6 +1,7 @@
 import { RADIO_STATION_ID } from '../config/radio';
 
 export type RadioNowPlaying = {
+  kind?: 'track' | 'jingle';
   id?: number;
   title: string;
   artist: string;
@@ -40,6 +41,7 @@ function track(value: unknown): RadioNowPlaying | null {
     if (cover.protocol === 'https:') artworkUrl = cover.href;
   } catch { /* Missing artwork uses the festival artist image or station artwork. */ }
   return {
+    kind: item.kind === 'jingle' ? 'jingle' : 'track',
     id: typeof item.id === 'number' ? item.id : undefined,
     title, artist, raw: [artist, title].filter(Boolean).join(' — '), artworkUrl,
     duration: seconds(item.duration), position: seconds(item.position),
@@ -62,7 +64,7 @@ export function parseLiscaseRadioSnapshot(value: unknown, now = new Date()): Rad
     source: 'liscase', stationId: RADIO_STATION_ID, available,
     updatedAt: typeof state.updatedAt === 'string' && Number.isFinite(Date.parse(state.updatedAt))
       ? state.updatedAt : now.toISOString(),
-    queue: available ? state.queue.slice(0, 100).map(track).filter((item): item is RadioNowPlaying => item !== null) : [],
-    previous: track(state.previous),
+    queue: available ? state.queue.slice(0, 100).map(track).filter((item): item is RadioNowPlaying => item !== null && item.kind !== 'jingle') : [],
+    previous: record(state.previous)?.kind === 'jingle' ? null : track(state.previous),
   };
 }

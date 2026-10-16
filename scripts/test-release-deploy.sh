@@ -64,7 +64,7 @@ MOCK
   # Redirect only system configuration paths in the test copy; production source is unchanged.
   sed "s|/etc/|$TEST_CASE/etc/|g" "$repo/deploy/release-deploy.sh" > "$TEST_CASE/release.sh"
   printf '%s\0' test.invalid "$root" test@example.invalid 3000 127.0.0.1 test test \
-    '' admin '' '' '' '' '' '' '' '' '' '' '' "$sha" "$release_id" > "$TEST_CASE/input"
+    '' admin '' '' '' '' '' '' '' '' '' '' '' 3306 '' '' "$sha" "$release_id" > "$TEST_CASE/input"
   status=0
   PATH="$TEST_CASE/bin:$PATH" bash "$TEST_CASE/release.sh" --env-stdin < "$TEST_CASE/input" || status=$?
   test -f "$candidate/dist/_expo/old.js"

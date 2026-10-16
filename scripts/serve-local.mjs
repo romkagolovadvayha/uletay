@@ -23,6 +23,8 @@ const mime = {
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.ttf': 'font/ttf',
@@ -44,6 +46,11 @@ const server = createServer((request, response) => {
     request.pipe(upstream);
     return;
   }
+  const discoveryFiles = ['/llms.txt', '/ai-guide.md', '/ai-catalog.json', '/.well-known/ai-catalog.json', '/webmcp.json'];
+  if (discoveryFiles.includes(pathname) && !existsSync(path.join(root, pathname.slice(1)))) {
+    response.writeHead(404).end('Not found');
+    return;
+  }
   let target = path.resolve(root, `.${pathname}`);
   if (!target.startsWith(root)) {
     response.writeHead(403).end('Forbidden');
@@ -51,13 +58,21 @@ const server = createServer((request, response) => {
   }
   if (existsSync(target) && statSync(target).isDirectory()) target = path.join(target, 'index.html');
   if (!existsSync(target)) target = path.join(root, 'index.html');
-  const contentType = pathname === '/api/data'
+  const contentType = pathname.endsWith('/ai-catalog.json')
+    ? 'application/ai-catalog+json; charset=utf-8'
+    : pathname === '/api/data'
     ? 'application/json; charset=utf-8'
     : mime[path.extname(target)] ?? 'application/octet-stream';
   response.setHeader('Content-Type', contentType);
   response.setHeader('Cache-Control', 'no-cache');
   if (productionCsp) response.setHeader('Content-Security-Policy', productionCsp);
-  createReadStream(target).pipe(response);
+  const file = createReadStream(target);
+  file.on('error', () => {
+    if (response.headersSent) response.destroy();
+    else response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '1' })
+      .end('Local build is temporarily unavailable');
+  });
+  file.pipe(response);
 });
 
 server.listen({ port, host: '::', ipv6Only: false }, () => {

@@ -1,0 +1,15 @@
+[Unit]
+Description=Health checks and bounded recovery for Uletay and TaxiGR
+After=network-online.target nginx.service mysql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/sbin/uletay-host-watchdog.py --recover
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=PM2_HOME=/root/.pm2
+TimeoutStartSec=240
+UMask=0077
+Nice=10
+StandardOutput=journal
+StandardError=journal

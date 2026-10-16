@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test:admin": "tsx scripts/test-admin-workspace.ts && tsx scripts/test-admin-map.ts",
+    "test:auth:http": "tsx scripts/test-admin-http.ts",
+    "test:admin": "tsx scripts/test-admin-workspace.ts && tsx scripts/test-admin-map.ts && tsx scripts/test-headliner-refresh.ts",
     "predev": "node ../scripts/prepare-maplibre-web.cjs --cms",
     "prebuild": "node ../scripts/prepare-maplibre-web.cjs --cms",
     "dev": "next dev -p 3000",
-    "build": "next build --webpack",
+    "build": "next build --webpack && node scripts/prepare-standalone.mjs",
     "start": "next start -p 3000",
     "db:install": "tsx scripts/install.ts",
     "db:migrate": "tsx scripts/migrate.ts",
@@ -56,18 +57,23 @@
     "images:generate-list:dry": "node scripts/generate-list-images.mjs --dry",
     "push:reminders": "tsx scripts/send-favorite-reminders.ts",
     "test:push-reminders": "tsx scripts/test-favorite-reminders.ts",
-    "test:push-favorites": "tsx scripts/test-push-favorites-integration.ts"
+    "test:push-favorites": "tsx scripts/test-push-favorites-integration.ts",
+    "typecheck": "tsc --noEmit",
+    "test:auth": "tsx scripts/test-vk-auth.ts && tsx scripts/test-public-images.ts",
+    "test:auth:db": "tsx scripts/test-admin-auth-db.ts",
+    "dev:local": "next dev --hostname 127.0.0.1 -p 3000"
   },
   "dependencies": {
+    "@next/env": "^16.4.2",
     "bcryptjs": "^3.0.2",
     "iron-session": "^8.0.4",
     "maplibre-gl": "6.9.0",
     "mysql2": "^3.24.4",
-    "next": "^16.3.4",
+    "next": "^16.4.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "sharp": "^0.35.4",
-    "undici": "^7.29.0",
+    "sharp": "^0.35.5",
+    "undici": "^7.30.1",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
@@ -78,5 +84,8 @@
     "@types/web-push": "^3.6.4",
     "tsx": "^4.22.5",
     "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

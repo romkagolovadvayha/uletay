@@ -1,0 +1,39 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Приложение фестиваля УЛЕТАЙ",
+    "documentationUrl": "https://uletayapp.ru/ai-guide.md"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:uletayapp.ru:guide:overview",
+      "displayName": "Обзор приложения УЛЕТАЙ",
+      "type": "text/plain",
+      "url": "https://uletayapp.ru/llms.txt",
+      "description": "Краткий обзор и ссылки на публичные источники фестиваля в формате llms.txt."
+    },
+    {
+      "identifier": "urn:air:uletayapp.ru:dataset:festival",
+      "displayName": "Публичный каталог фестиваля",
+      "type": "application/json",
+      "url": "https://uletayapp.ru/api/data",
+      "description": "Текущие опубликованные данные: фестиваль, исполнители, расписание, фудкорт, карта и правила. Только чтение.",
+      "tags": [
+        "dataset",
+        "read-only"
+      ]
+    },
+    {
+      "identifier": "urn:air:uletayapp.ru:webmcp:visitor-tools",
+      "displayName": "Инструменты посетителя WebMCP",
+      "type": "application/json",
+      "url": "https://uletayapp.ru/webmcp.json",
+      "description": "Описание браузерных инструментов и JSON Schema параметров. Для вызова откройте сайт в браузере с поддержкой WebMCP.",
+      "tags": [
+        "WebMCP",
+        "browser",
+        "read-only"
+      ]
+    }
+  ]
+}

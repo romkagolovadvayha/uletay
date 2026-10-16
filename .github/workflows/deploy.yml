@@ -33,6 +33,9 @@ jobs:
       CMS_PORT: ${{ vars.CMS_PORT || secrets.CMS_PORT || '3000' }}
       ADMIN_USER: ${{ vars.ADMIN_USER || secrets.ADMIN_USER || 'admin' }}
       DB_HOST: ${{ vars.DB_HOST || secrets.DB_HOST }}
+      DB_PORT: ${{ vars.DB_PORT || '3306' }}
+      VK_APP_ID: ${{ vars.VK_APP_ID }}
+      VK_REDIRECT_URI: ${{ vars.VK_REDIRECT_URI }}
       DB_NAME: ${{ vars.DB_NAME || secrets.DB_NAME }}
       DB_USER: ${{ vars.DB_USER || secrets.DB_USER }}
       DB_PASS: ${{ secrets.DB_PASS }}
@@ -133,6 +136,7 @@ jobs:
           npm run test:audit-fixes
           npm run test:sw
           npm run test:api-url
+          npm run test:compat
           npm run test:map
           npm run test:map:renderer
           npm run test:map:layout
@@ -140,9 +144,16 @@ jobs:
           npm run test:push-reminders --prefix cms
           npm run test:admin --prefix cms
           node scripts/test-deployed-map.mjs
+          npx tsx scripts/test-web-linking.mjs
           test -f deploy/setup-push-reminders-cron.sh
           for script in deploy/*.sh scripts/test-release-deploy.sh; do bash -n "$script"; done
           bash scripts/test-release-deploy.sh
+
+      - name: Check direct web navigation with nginx
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx
+          node scripts/test-web-routes.mjs
 
       - name: Build and verify web app
         run: |
@@ -214,6 +225,9 @@ jobs:
               "$EXPO_PUSH_ACCESS_TOKEN" \
               "$RUSTORE_PUSH_PROJECT_ID" \
               "$RUSTORE_PUSH_SERVICE_TOKEN" \
+              "$DB_PORT" \
+              "$VK_APP_ID" \
+              "$VK_REDIRECT_URI" \
               "$GITHUB_SHA" \
               "$RELEASE_ID"
           } | ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" \

@@ -89,10 +89,33 @@ try {
   assert.equal((await app.getClientAppData()).festival.name, 'Maintenance update', 'external writes invalidate cache without timestamp resolution limits');
   assert.equal(JSON.parse(stored).revision, undefined, 'revision is transport metadata, not persisted JSON');
 
+  const apiRoute = await bundle('cms/src/app/api/data/route.ts', 'data-route', [mockDb, {
+    name: 'http-response', setup(builder) {
+      builder.onResolve({ filter: /^next\/server$/ }, () => ({ path: 'response', namespace: 'http-response' }));
+      builder.onLoad({ filter: /.*/, namespace: 'http-response' }, () => ({ contents: 'export const NextResponse = Response;' }));
+    },
+  }]);
+  const response = await apiRoute.GET(new Request('https://app.example/api/data'));
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('cache-control'), 'no-cache', 'HTTP caches must revalidate catalog data');
+  const etag = response.headers.get('etag');
+  assert.equal(etag, `"${await app.getAppDataRevision()}"`);
+  const unchanged = await apiRoute.GET(new Request('https://app.example/api/data', { headers: { 'If-None-Match': etag } }));
+  assert.equal(unchanged.status, 304);
+  assert.equal(await unchanged.text(), '', 'Unchanged catalogs do not transfer a JSON body');
+  const changed = await app.getAppData();
+  changed.festival.name = 'New content after admin save';
+  await app.saveAppData(changed);
+  const afterSave = await apiRoute.GET(new Request('https://app.example/api/data', { headers: { 'If-None-Match': etag } }));
+  assert.equal(afterSave.status, 200, 'An admin save invalidates every previous ETag');
+  assert.notEqual(afterSave.headers.get('etag'), etag);
+  assert.equal((await afterSave.json()).festival.name, changed.festival.name);
+
   let storedToken = '';
   globalThis.__auditPool = { async query(sql, args) {
-    if (sql.startsWith('INSERT INTO admin_sessions')) { storedToken = args[1]; return [{}]; }
-    if (sql.startsWith('SELECT id, token')) return [args.includes(storedToken) ? [{ id: 1, token: storedToken }] : []];
+    if (sql.startsWith('DELETE FROM admin_sessions')) return [{}];
+    if (sql.startsWith('INSERT INTO admin_sessions')) { storedToken = args[0]; return [{ affectedRows: 1 }]; }
+    if (sql.includes('SELECT s.id, s.token')) return [args.includes(storedToken) ? [{ id: 1, token: storedToken }] : []];
     if (sql.startsWith('UPDATE admin_sessions')) { assert.equal(args[2], storedToken); storedToken = args[0]; return [{}]; }
     throw new Error(`Unexpected auth operation: ${sql}`);
   }};

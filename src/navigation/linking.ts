@@ -16,6 +16,7 @@ import {
   decodeSeoRouteParam,
   encodeSeoRouteId,
 } from '../seo/seoRouteUtils';
+import { DEFAULT_FESTIVAL_YEAR } from '../seo/site';
 
 const prefixes = [
   Linking.createURL('/'),
@@ -29,9 +30,20 @@ export function setHeadlinersInMoreTab(value: boolean) {
 }
 
 function getHeadlinersStateFromPath(path: string): PartialState<NavigationState> | undefined {
-  const normalized = path.replace(/\/+$/, '') || '/';
+  const normalized = path.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
   const detailMatch = normalized.match(/^\/headliners\/([^/]+)$/);
   const tabName = headlinersInMoreTab ? 'MoreTab' : 'HeadlinersTab';
+
+  const yearMatch = normalized.match(/^\/headliners\/(\d{4})$/);
+  if (yearMatch) {
+    return {
+      routes: [{
+        name: tabName,
+        state: { routes: [{ name: 'HeadlinersMain', params: { year: yearMatch[1] } }], index: 0 },
+      }],
+      index: 0,
+    };
+  }
 
   if (detailMatch) {
     return {
@@ -192,7 +204,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
     },
   },
   getStateFromPath(path, options) {
-    const normalized = path.replace(/\/+$/, '') || '/';
+    const normalized = path.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
     if (normalized === '/more') {
       return {
         routes: [{ name: 'HomeTab' }],
@@ -213,7 +225,8 @@ export const linking: LinkingOptions<RootTabParamList> = {
       return '/';
     }
     if (active?.name === 'HeadlinersMain') {
-      return '/headliners';
+      const year = (active.params as { year?: string } | undefined)?.year;
+      return `/headliners/${year && /^\d{4}$/.test(year) ? year : DEFAULT_FESTIVAL_YEAR}`;
     }
     if (active?.name === 'HeadlinerDetail') {
       const headlinerId = (active.params as { headlinerId?: string } | undefined)?.headlinerId;

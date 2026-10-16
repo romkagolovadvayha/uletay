@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import './test-app-data-cache.mjs';
 
 const workerSource = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
 
-function createWorker(hostname) {
+function createWorker(hostname, options = {}) {
   const handlers = new Map();
   const deletedCaches = [];
   const openedCaches = [];
@@ -25,16 +26,18 @@ function createWorker(hostname) {
       },
       async open(key) {
         openedCaches.push(key);
+        if (options.openError) throw new Error('Cache storage blocked');
         return {
           async addAll() {},
-          async match() { return undefined; },
-          async put() {},
+          async match() { return options.cached?.clone(); },
+          async put() { if (options.putError) throw new Error('Quota exceeded'); },
         };
       },
       async match() { return undefined; },
     },
-    fetch: async () => new Response('{}', { status: 200 }),
+    fetch: options.fetch ?? (async () => new Response('{}', { status: 200 })),
     Response,
+    Headers,
     self: {
       location: { hostname, origin: `http://${hostname}:4174` },
       clients: {
@@ -118,4 +121,36 @@ productionWorker.handlers.get('fetch')({
 assert.ok(mapAssetResponse, 'The map module participates in offline shell caching');
 assert.equal((await mapAssetResponse).status, 200);
 
-console.log('Service worker: local cleanup and production offline cache behavior OK');
+async function requestData(worker) {
+  let response;
+  worker.handlers.get('fetch')({
+    request: new Request('http://uletayapp.ru:4174/api/data'),
+    respondWith(value) { response = value; },
+  });
+  return response;
+}
+
+const offline = createWorker('uletayapp.ru', {
+  cached: new Response('{"revision":"old"}', { headers: { ETag: '"old"' } }),
+  fetch: async (_request, init) => {
+    assert.equal(init.cache, 'no-store', 'API checks must bypass the browser HTTP cache');
+    throw new Error('Offline');
+  },
+});
+const fallback = await requestData(offline);
+assert.equal(fallback.headers.get('X-Uletay-Offline'), '1');
+assert.equal(fallback.headers.get('ETag'), '"old"');
+assert.equal((await fallback.json()).revision, 'old');
+
+for (const options of [{ openError: true }, { putError: true }]) {
+  const worker = createWorker('uletayapp.ru', {
+    ...options,
+    cached: new Response('{"revision":"old"}'),
+    fetch: async () => new Response('{"revision":"new"}'),
+  });
+  assert.equal((await (await requestData(worker)).json()).revision, 'new', 'Storage failure must not hide fresh API data');
+}
+const unchanged = createWorker('uletayapp.ru', { fetch: async () => new Response(null, { status: 304 }) });
+assert.equal((await requestData(unchanged)).status, 304, 'Conditional API responses pass through');
+
+console.log('Service worker: local cleanup, API revalidation, offline fallback and storage failure behavior OK');

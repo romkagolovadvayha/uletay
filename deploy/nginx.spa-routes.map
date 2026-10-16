@@ -1,17 +1,20 @@
 # Valid client-side routes for the Expo web app.
 # Keep in sync with src/navigation/linking.ts
+# Detail routes must work even when CMS content was added after the web build.
+# Dots in entity IDs are escaped as ~2E; missing static files must remain 404.
 map $uri $is_spa_route {
     default 0;
     ~^/$ 1;
     ~^/map(?:/[^/]+)?/?$ 1;
     ~^/schedule/?$ 1;
+    ~^/schedule/live/[^/.]+/?$ 1;
     ~^/schedule/full(?:/[^/]+)?/?$ 1;
-    ~^/autographs/?$ 1;
+    ~^/autographs(?:/[^/.]+)?/?$ 1;
     ~^/favorites/?$ 1;
     ~^/playlist/?$ 1;
-    ~^/headliners/?$ 1;
+    ~^/headliners(?:/[^/.]+)?/?$ 1;
     ~^/more/?$ 1;
-    ~^/foodcourt/?$ 1;
+    ~^/foodcourt(?:/[^/.]+)?/?$ 1;
     ~^/about/?$ 1;
     ~^/rules/?$ 1;
     ~^/settings/?$ 1;
@@ -23,4 +26,11 @@ map $uri $is_spa_route {
 # across Windows development and Linux production filesystems.
 map $request_uri $seo_static_uri {
     ~^([^?]*) $1;
+}
+
+# Redirect from the original encoded URI, not decoded location captures.
+# Otherwise Cyrillic, spaces and reserved characters are corrupted in Location.
+map $request_uri $spa_canonical_uri {
+    default $request_uri;
+    ~^/+(?<spa_path_without_slash>[^?]+?)/+(?<spa_query>\?.*)?$ /$spa_path_without_slash$spa_query;
 }

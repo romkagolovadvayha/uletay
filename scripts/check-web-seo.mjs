@@ -7,6 +7,7 @@ const projectRoot = path.resolve(scriptDir, '..');
 const distDir = path.join(projectRoot, process.env.DIST_DIR ?? 'dist');
 const sitemapPath = path.join(distDir, 'sitemap.xml');
 const robotsPath = path.join(distDir, 'robots.txt');
+const festivalYearPath = path.join(distDir, 'festival-year.txt');
 
 function fail(message) {
   console.error(`check-web-seo: ${message}`);
@@ -40,6 +41,17 @@ if (!existsSync(sitemapPath)) {
   if (new Set(urls).size !== urls.length) {
     fail('sitemap.xml contains duplicate URLs');
   }
+  const festivalYear = existsSync(festivalYearPath)
+    ? readFileSync(festivalYearPath, 'utf8').trim()
+    : '';
+  if (!/^\d{4}$/.test(festivalYear)) {
+    fail('dist/festival-year.txt is missing or invalid');
+  } else if (!urls.includes(`https://uletayapp.ru/headliners/${festivalYear}`)) {
+    fail(`sitemap.xml is missing the current headliners year ${festivalYear}`);
+  }
+  if (urls.includes('https://uletayapp.ru/headliners')) {
+    fail('redirecting /headliners URL must not be in sitemap.xml');
+  }
 
   for (const privateUrl of [
     'https://uletayapp.ru/favorites',
@@ -67,6 +79,12 @@ if (!existsSync(sitemapPath)) {
 
     if (!title) fail(`${url} has no title`);
     if (!description) fail(`${url} has no meta description`);
+    if (!html.includes('rel="describedby" type="text/plain"') || !html.includes('/llms.txt"')) {
+      fail(`${url} has no llms.txt discovery link`);
+    }
+    if (!html.includes('rel="ai-catalog" type="application/ai-catalog+json"') || !html.includes('/.well-known/ai-catalog.json"')) {
+      fail(`${url} has no AI Catalog discovery link`);
+    }
     if (canonical !== url) fail(`${url} canonical mismatch: ${canonical ?? 'missing'}`);
     if (robots !== 'index, follow') fail(`${url} is not indexable: ${robots ?? 'missing'}`);
     if (!viewport || !/\bwidth\s*=\s*device-width\b/i.test(viewport)) {
@@ -165,6 +183,7 @@ if (!existsSync(robotsPath)) {
   const robots = readFileSync(robotsPath, 'utf8');
   if (!/^User-agent:\s*\*/im.test(robots)) fail('robots.txt has no default user-agent');
   if (!/^Allow:\s*\/$/im.test(robots)) fail('robots.txt does not allow public crawling');
+  if (!/^Allow:\s*\/api\/data\$$/m.test(robots)) fail('robots.txt does not allow the public catalog endpoint');
   if (!/^Sitemap:\s*https?:\/\/.+\/sitemap\.xml$/im.test(robots)) {
     fail('robots.txt has no absolute sitemap URL');
   }
@@ -174,6 +193,18 @@ if (!existsSync(robotsPath)) {
     }
   }
 }
+
+for (const filename of ['llms.txt', 'ai-guide.md', 'ai-catalog.json', '.well-known/ai-catalog.json', 'webmcp.json']) {
+  if (!existsSync(path.join(distDir, filename))) fail(`missing AI discovery file: ${filename}`);
+}
+try {
+  const catalog = JSON.parse(readFileSync(path.join(distDir, 'ai-catalog.json'), 'utf8'));
+  const wellKnown = JSON.parse(readFileSync(path.join(distDir, '.well-known/ai-catalog.json'), 'utf8'));
+  if (JSON.stringify(catalog) !== JSON.stringify(wellKnown)) fail('AI Catalog copies differ');
+  if (catalog.specVersion !== '1.0' || !Array.isArray(catalog.entries) || !catalog.entries.length) fail('invalid AI Catalog');
+  const tools = JSON.parse(readFileSync(path.join(distDir, 'webmcp.json'), 'utf8')).tools;
+  if (tools.length !== 6 || tools.some(tool => !tool.annotations.readOnlyHint)) fail('invalid WebMCP manifest');
+} catch (error) { fail(`AI discovery JSON: ${error.message}`); }
 
 if (process.exitCode) {
   process.exit(process.exitCode);
