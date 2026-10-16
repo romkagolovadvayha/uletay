@@ -105,7 +105,7 @@ await productionWorker.dispatchLifecycle('install');
 await productionWorker.dispatchLifecycle('activate');
 const productionState = productionWorker.getState();
 
-assert.deepEqual(productionState.openedCaches, ['uletay-shell-v7']);
+assert.deepEqual(productionState.openedCaches, ['uletay-shell-v8']);
 assert.deepEqual(productionState.deletedCaches, [
   'uletay-shell-v2',
   'uletay-data-v2',
@@ -130,6 +130,14 @@ productionWorker.handlers.get('fetch')({
   respondWith() { rangeIntercepted = true; },
 });
 assert.equal(rangeIntercepted, false, 'Video byte ranges must go directly to the network');
+
+for (const pathname of ['/admin', '/admin?tab=access', '/admin/login']) {
+  let intercepted = false;
+  const request = new Request('http://uletayapp.ru:4174' + pathname);
+  Object.defineProperty(request, 'mode', { value: 'navigate' });
+  productionWorker.handlers.get('fetch')({ request, respondWith() { intercepted = true; } });
+  assert.equal(intercepted, false, 'Authenticated pages must not enter the offline navigation cache');
+}
 
 async function requestAsset(worker) {
   let response;

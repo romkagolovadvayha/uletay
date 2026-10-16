@@ -1,5 +1,5 @@
 /* Offline shell + API cache. Bump CACHE_VERSION on every deploy that must invalidate clients. */
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const SHELL_CACHE = `uletay-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `uletay-data-${CACHE_VERSION}`;
 const APP_SHELL = ['/', '/api/data'];
@@ -110,6 +110,11 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Authenticated pages must always be checked by the server, including after logout.
+  if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) {
     return;
   }
 
