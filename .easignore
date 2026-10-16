@@ -69,3 +69,12 @@ scripts/fest-artist-sync-report.json
 
 # Exclude local review and store presentation artifacts from native builds
 /artifacts/
+
+# Runtime settings and private local files
+.env
+.env.production
+cms/.env.production
+*.ppk
+id_rsa
+__pycache__/
+*.pyc
