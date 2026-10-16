@@ -30,6 +30,8 @@ Expo Go не содержит MapLibre и используемые интегр�
 
 Исправление RuStore также заменяет закрытый 30 сентября 2026 года Maven-репозиторий VK Partner на `https://nexus-external.rustore.ru/repository/maven-rustore-exposed`. Версия SDK сохраняется. Адрес указан в [официальном уведомлении RuStore](https://www.rustore.ru/help/sdk/pay/unity/history/9-0-2). После установки зависимостей запустите `npm run test:rustore-push-config`.
 
+Для двух транзитивных зависимостей Tracer (`tracer-manifest`, `tracer-lite-crash-report`) явно выбрана версия `1.0.4`: прежняя `1.0.1` отсутствует в новых репозиториях. Это первая версия этой ветки в Maven Central; [документация Tracer по переносу](https://apptracer.ru/doc/android/migrate/). При обновлении RuStore SDK проверьте, нужны ли ещё эти зависимости.
+
 Для Firebase нужен `google-services.json`, для публикации — ранее использованные ключи подписи и служебные учётные записи. Эти файлы в архив исходников не включаются. Проверка Android Push: `npm run push:check-android`. Запуск release APK: `npm run test:android-startup -- --serial <adb-device> --apk <release.apk> --out tmp/android-startup`.
 
 Дополнительно проверьте карту, радио и системную обложку, возвращение из фона, push-переходы, работу без сети и повторный запуск после завершения процесса системой. Успешные TypeScript и web-сборка этого не подтверждают.

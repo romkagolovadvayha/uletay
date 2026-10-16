@@ -13,6 +13,9 @@ assert(paramsClass, 'RuStore SDK must declare its reflection-loaded initializer'
 const sdkGradle = await readFile(require.resolve('react-native-rustore-push/android/build.gradle'), 'utf8');
 assert(sdkGradle.includes('https://nexus-external.rustore.ru/repository/maven-rustore-exposed'), 'RuStore dependencies must use the current official Maven repository');
 assert(!sdkGradle.includes('artifactory-external.vkpartner.ru'), 'The retired RuStore Maven repository must not remain in the SDK');
+for (const module of ['tracer-manifest', 'tracer-lite-crash-report']) {
+  assert(sdkGradle.includes(`implementation "ru.ok.tracer:${module}:1.0.4"`), 'RuStore Tracer dependencies must resolve from Maven Central');
+}
 
 const temporaryRoot = path.resolve(os.tmpdir());
 const projectRoot = await mkdtemp(path.join(temporaryRoot, 'uletay-rustore-prebuild-'));
