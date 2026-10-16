@@ -10,6 +10,9 @@ const withRuStorePush = require('../plugins/with-rustore-push');
 const sdkManifest = await readFile(require.resolve('react-native-rustore-push/android/src/main/AndroidManifest.xml'), 'utf8');
 const paramsClass = sdkManifest.match(/android:name="ru\.rustore\.sdk\.pushclient\.params_class"\s+android:value="([^"]+)"/)?.[1];
 assert(paramsClass, 'RuStore SDK must declare its reflection-loaded initializer');
+const sdkGradle = await readFile(require.resolve('react-native-rustore-push/android/build.gradle'), 'utf8');
+assert(sdkGradle.includes('https://nexus-external.rustore.ru/repository/maven-rustore-exposed'), 'RuStore dependencies must use the current official Maven repository');
+assert(!sdkGradle.includes('artifactory-external.vkpartner.ru'), 'The retired RuStore Maven repository must not remain in the SDK');
 
 const temporaryRoot = path.resolve(os.tmpdir());
 const projectRoot = await mkdtemp(path.join(temporaryRoot, 'uletay-rustore-prebuild-'));

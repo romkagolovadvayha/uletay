@@ -28,3 +28,24 @@ if (source.includes(oldSignature)) {
     'RuStore Push SDK onNewIntent signature changed; review the compatibility patch',
   );
 }
+
+// RuStore retired its VK Partner Artifactory on 30 September 2026. The SDK
+// still declares that repository, so point Gradle at its official replacement.
+const gradlePath = path.join(rootDir, 'node_modules', 'react-native-rustore-push', 'android', 'build.gradle');
+const gradle = await readFile(gradlePath, 'utf8');
+const retiredRepositories = [
+  'https://artifactory-external.vkpartner.ru/artifactory/maven-rustore-exposed',
+  'https://artifactory-external.vkpartner.ru/artifactory/maven',
+];
+const repository = 'https://nexus-external.rustore.ru/repository/maven-rustore-exposed';
+let patchedGradle = gradle;
+for (const retired of retiredRepositories) {
+  patchedGradle = patchedGradle.replaceAll(retired, repository);
+}
+if (!patchedGradle.includes(repository)) {
+  throw new Error('RuStore Push SDK Maven repository changed; review the compatibility patch');
+}
+if (patchedGradle !== gradle) {
+  await writeFile(gradlePath, patchedGradle, 'utf8');
+  console.log('Updated RuStore Push SDK Maven repository');
+}
