@@ -3,6 +3,7 @@ import { AppDataConflictError, AppDataValidationError, getAppDataRevision, getCl
 import { verifyBearerToken } from '@/lib/auth';
 import { corsHeaders, jsonResponse, optionsResponse } from '@/lib/api-response';
 import { readRequestJson, RequestJsonError } from '@/lib/request-json';
+import { matchesIfNoneMatch } from '@/lib/http-cache';
 
 export async function OPTIONS() {
   return optionsResponse();
@@ -11,7 +12,7 @@ export async function OPTIONS() {
 export async function GET(request: NextRequest) {
   try {
     const etag = `"${await getAppDataRevision()}"`;
-    if (request.headers.get('if-none-match') === etag) {
+    if (matchesIfNoneMatch(request.headers.get('if-none-match'), etag)) {
       return new NextResponse(null, { status: 304, headers: { ...corsHeaders(), ETag: etag, 'Cache-Control': 'no-cache' } });
     }
     const data = await getClientAppData();

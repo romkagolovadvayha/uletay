@@ -9,6 +9,7 @@ npx expo install --check
 npm run lint
 npm run typecheck
 npm run cms:typecheck
+npm run test:http-cache --prefix cms
 npm run test:ai
 npm run test:compat
 npm run test:auth --prefix cms

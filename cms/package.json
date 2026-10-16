@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "test:http-cache": "tsx scripts/test-http-cache.ts",
     "test:auth:http": "tsx scripts/test-admin-http.ts",
     "test:admin": "tsx scripts/test-admin-workspace.ts && tsx scripts/test-admin-map.ts && tsx scripts/test-headliner-refresh.ts",
     "predev": "node ../scripts/prepare-maplibre-web.cjs --cms",

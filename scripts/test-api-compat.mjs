@@ -32,10 +32,12 @@ if (origin) {
   const data = await response.json();
   assert.equal(acceptsLegacyData(data), true, 'The new server response is accepted by the released validator.');
   const etag = response.headers.get('etag');
-  assert.equal(etag, `"${data.revision}"`);
-  const conditional = await request('/api/data', { headers: { 'If-None-Match': etag } });
-  assert.equal(conditional.status, 304);
-  assert.equal(await conditional.text(), '');
+  assert.equal(etag?.replace(/^W\//, ''), `"${data.revision}"`);
+  for (const validator of [etag, `"${data.revision}"`, `W/"${data.revision}"`, `"older-revision", ${etag}`]) {
+    const conditional = await request('/api/data', { headers: { 'If-None-Match': validator } });
+    assert.equal(conditional.status, 304, validator);
+    assert.equal(await conditional.text(), '');
+  }
   const unknownRevision = await request('/api/data', { headers: { 'If-None-Match': '"' + '0'.repeat(64) + '"' } });
   assert.equal(unknownRevision.status, 200);
   const preflight = await request('/api/data', { method: 'OPTIONS' });
