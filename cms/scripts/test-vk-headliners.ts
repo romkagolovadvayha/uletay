@@ -4,6 +4,7 @@ import type { AppData, Headliner } from '../src/types';
 import { syncAppHeadliners } from '../src/lib/headliners';
 import { validateAppData } from '../../shared/app-data-validation';
 import { festivalCountdown, headlinerSubtitle, isVkMusicUrl, selectVkHeadliners } from '../../shared/vk-headliners';
+import { buildCommunityWidget, VK_HEADLINERS_APP_ID, VK_HEADLINERS_APP_URL, widgetSetupContext } from '../../shared/vk-community-widget';
 
 const data = JSON.parse(readFileSync(new URL('../seed/content.json', import.meta.url), 'utf8')) as AppData;
 const artist: Headliner = { id: 'a', name: 'Артист', description: '', imageTint: '#000', years: [2027], vkMusicUrl: 'https://vk.ru/artist/test', vkSubtitle: 'Фолк · Рок' };
@@ -39,3 +40,31 @@ const finished = festivalCountdown('2027-07-07', '2027-07-11', Date.parse('2027-
 assert.equal(finished.state, 'after');
 assert.equal(finished.days + finished.hours + finished.minutes + finished.seconds, 0);
 console.log('Countdown: Udmurtia midnight, second precision, festival start/end and nonnegative values passed.');
+
+const communityCards = ['hl-мураками', 'hl-княzz', 'hl-пилот', 'hl-f-p-g', 'hl-план-ломоносова', 'hl-аффинаж'].map((id, i) => ({ ...cards[i], id }));
+const native = buildCommunityWidget(communityCards, '7–11 июля', 2027);
+const payload = JSON.parse(native.code.slice(7, -1));
+assert.equal(native.type, 'tiles');
+assert.equal(payload.tiles.length, 6);
+assert(payload.tiles.every((tile: { icon_id: string }) => /^club\d+$/.test(tile.icon_id)));
+assert.equal(payload.more_url, VK_HEADLINERS_APP_URL);
+for (const tile of payload.tiles) {
+  assert.equal(new URL(tile.link_url).hostname, 'vk.com');
+  assert.equal(new URL(tile.url).pathname, `/app${VK_HEADLINERS_APP_ID}`);
+}
+assert.equal(buildCommunityWidget(communityCards.slice(0, 2), '7 июля', 2027).type, 'compact_list', 'VK tiles require three items');
+const unknown = buildCommunityWidget(cards, '7 июля', 2027);
+assert.equal(unknown.type, 'compact_list');
+assert(!unknown.code.includes('icon_id'), 'Do not mix unknown and official community portraits');
+assert.throws(() => buildCommunityWidget([], '7 июля', 2027));
+const hostile = buildCommunityWidget([{ ...communityCards[0], name: '"}; API.wall.post({}); //', musicUrl: 'https://evil.test/', subtitle: '🌞'.repeat(80) }], '7 июля', 2027);
+const hostileRow = JSON.parse(hostile.code.slice(7, -1)).rows[0];
+assert.equal(hostileRow.title, '"}; API.wall.post({}); //', 'CMS strings stay JSON values');
+assert(hostileRow.descr.length <= 100);
+assert.equal(new URL(hostileRow.button_url).hostname, 'vk.com');
+assert.equal(widgetSetupContext('', '').visible, false);
+assert.equal(widgetSetupContext('', '#setup').inApp, false);
+assert.equal(widgetSetupContext('?vk_app_id=1&vk_group_id=242402250&vk_viewer_group_role=admin', '').visible, false);
+assert.equal(widgetSetupContext('?vk_app_id=54831337&vk_group_id=242402250&vk_viewer_group_role=member', '').visible, false);
+assert.equal(widgetSetupContext('?vk_app_id=54831337&vk_group_id=242402250&vk_viewer_group_role=admin', '').inTestGroup, true);
+console.log('Native VK widget: app binding, six tiles, safe VKScript, VK-only links, fallback layout and admin UI context passed.');

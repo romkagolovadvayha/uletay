@@ -6,6 +6,7 @@ const response = await fetch(origin, { signal: AbortSignal.timeout(20000) });
 assert.equal(response.status, 200, 'Showcase must return HTTP 200');
 const html = await response.text();
 assert(html.includes('data-vk-headliners="true"'), 'The showcase, not the main site, must be served');
+assert(html.includes('data-vk-app-id="54831337"'), 'Showcase must use the dedicated VK Mini App');
 if (expectedRelease) assert(html.includes(`data-release="${expectedRelease}"`), 'Showcase release does not match candidate');
 const cards = [...html.matchAll(/data-artist-id="([^"]+)"/g)];
 assert(cards.length <= 6, 'At most six artists may be displayed');

@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import type { selectVkHeadliners } from '../../../../shared/vk-headliners';
 import { festivalCountdown } from '../../../../shared/vk-headliners';
+import { VK_HEADLINERS_APP_ID, VK_HEADLINERS_APP_URL } from '../../../../shared/vk-community-widget';
+import { WidgetSetup } from './widget-setup';
 
 type Card = ReturnType<typeof selectVkHeadliners>[number];
 type Props = {
@@ -47,7 +49,7 @@ function Countdown({ startDate, endDate, initialNow }: Pick<Props, 'startDate' |
 
 function ArtistCard({ card }: { card: Card }) {
   const [failed, setFailed] = useState(false);
-  return <article className="vh-card" data-artist-id={card.id}>
+  return <article className="vh-card" id={`artist-${card.id}`} data-artist-id={card.id}>
     <a className="vh-photo" href={card.detailUrl} target="_blank" rel="noopener noreferrer" aria-label={`Об артисте: ${card.name}`}>
       {card.imageUrl && !failed
         ? <Image src={card.imageUrl} alt={card.name} width={640} height={480} unoptimized onError={() => setFailed(true)} />
@@ -68,7 +70,7 @@ function ArtistCard({ card }: { card: Card }) {
 
 export function HeadlinersShowcase(props: Props) {
   useEffect(() => {
-    if (!/^\d+$/.test(new URLSearchParams(window.location.search).get('vk_app_id') || '')) return;
+    if (Number(new URLSearchParams(window.location.search).get('vk_app_id')) !== VK_HEADLINERS_APP_ID) return;
     let disposed = false;
     let cleanup = () => {};
     void import('@vkontakte/vk-bridge').then(async ({ default: bridge }) => {
@@ -103,7 +105,18 @@ export function HeadlinersShowcase(props: Props) {
     return () => { disposed = true; cleanup(); };
   }, []);
 
-  return <main className="vh-page" data-vk-headliners="true" data-release={props.release}>
+  useEffect(() => {
+    const followArtist = () => {
+      const artist = new URLSearchParams(window.location.hash.slice(1)).get('artist');
+      if (artist) document.getElementById(`artist-${artist}`)?.scrollIntoView({ block: 'center' });
+    };
+    followArtist();
+    window.addEventListener('hashchange', followArtist);
+    return () => window.removeEventListener('hashchange', followArtist);
+  }, []);
+
+  return <main className="vh-page" data-vk-headliners="true" data-vk-app-id={VK_HEADLINERS_APP_ID} data-release={props.release}>
+    <WidgetSetup cards={props.cards} dates={props.dates} year={props.year} />
     <div className="vh-topline">
       <span className="vh-brand">УЛЕТАЙ<span> / {props.year}</span></span>
       <span className="vh-age">{props.ageRating}</span>
@@ -127,6 +140,6 @@ export function HeadlinersShowcase(props: Props) {
         Купить билет
       </a>
     </nav>
-    <p className="vh-footer">Встретимся на поле.</p>
+    <p className="vh-footer">Встретимся на поле. <a href={VK_HEADLINERS_APP_URL} target="_blank" rel="noopener noreferrer">Открыть в VK ↗</a></p>
   </main>;
 }
