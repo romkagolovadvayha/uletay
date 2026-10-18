@@ -36,6 +36,7 @@ import { sendPushBroadcast, type PushAudience } from '@/lib/push';
 import { parseFoodcourtMenu } from '@/lib/foodcourt-menu-input';
 import { adminSaveRedirect } from '@/lib/admin-navigation';
 import { refreshHeadlinerMusic, type HeadlinerRefreshResult } from '@/lib/headliner-refresh';
+import { isVkMusicUrl } from '../../../../shared/vk-headliners';
 
 async function requireSession(): Promise<number> {
   const admin = await getCurrentAdmin();
@@ -485,6 +486,11 @@ export async function upsertHeadlinerAction(formData: FormData) {
   const manualYears = parseYearsInput(String(formData.get('years') ?? ''));
   const alternateNames = parseAlternateNamesInput(String(formData.get('alternateNames') ?? ''));
   const linkedHeadlinerIds = parseLinkedHeadlinerIds(formData);
+  const vkSubtitle = String(formData.get('vkSubtitle') ?? existing?.vkSubtitle ?? '').trim();
+  const vkMusicUrl = String(formData.get('vkMusicUrl') ?? existing?.vkMusicUrl ?? '').trim();
+  if (vkSubtitle.length > 70 || (vkMusicUrl && !isVkMusicUrl(vkMusicUrl))) {
+    redirect('/admin?tab=headliners&error=' + encodeURIComponent('Подпись ВК: до 70 символов. Музыкальная ссылка: HTTPS-адрес артиста или плейлиста VK Музыки.'));
+  }
 
   if (!name) {
     redirect('/admin?tab=headliners&error=' + encodeURIComponent('Укажите имя артиста'));
@@ -514,6 +520,8 @@ export async function upsertHeadlinerAction(formData: FormData) {
     ...(imageUrl ? { imageUrl } : {}),
     ...(alternateNames.length ? { alternateNames } : {}),
     ...(linkedHeadlinerIds.length ? { linkedHeadlinerIds } : {}),
+    ...(vkSubtitle ? { vkSubtitle } : {}),
+    ...(vkMusicUrl ? { vkMusicUrl } : {}),
   };
 
   if (isNew) {

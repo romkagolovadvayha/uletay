@@ -5,7 +5,7 @@
   "scripts": {
     "test:http-cache": "tsx scripts/test-http-cache.ts",
     "test:auth:http": "tsx scripts/test-admin-http.ts",
-    "test:admin": "tsx scripts/test-admin-workspace.ts && tsx scripts/test-admin-map.ts && tsx scripts/test-headliner-refresh.ts",
+    "test:admin": "tsx scripts/test-admin-workspace.ts && tsx scripts/test-admin-map.ts && tsx scripts/test-headliner-refresh.ts && tsx scripts/test-vk-headliners.ts",
     "predev": "node ../scripts/prepare-maplibre-web.cjs --cms",
     "prebuild": "node ../scripts/prepare-maplibre-web.cjs --cms",
     "dev": "next dev -p 3000",
@@ -66,6 +66,7 @@
   },
   "dependencies": {
     "@next/env": "^16.4.2",
+    "@vkontakte/vk-bridge": "3.0.2",
     "bcryptjs": "^3.0.2",
     "iron-session": "^8.0.4",
     "maplibre-gl": "6.9.0",

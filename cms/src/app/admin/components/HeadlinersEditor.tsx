@@ -13,6 +13,7 @@ import { presetHint } from '@/lib/image-presets';
 import { resolveAdminImageSrc } from '@/lib/resolve-admin-image';
 import { formatHeadlinerYears } from '@/lib/headliner-helpers';
 import { formatAlternateNamesInput } from '@/lib/headliner-groups';
+import { VERIFIED_VK_MUSIC } from '../../../../../shared/vk-headliners';
 
 type Props = {
   items: Headliner[];
@@ -101,6 +102,20 @@ export function HeadlinersEditor({ items, editId, query = '', yearFilter }: Prop
               Описание
               <textarea name="description" rows={3} defaultValue={editing?.description ?? ''} />
             </label>
+            <details className="advanced-panel span-2" open>
+              <summary>Карточка для ВКонтакте</summary>
+              <label>
+                Подпись под названием
+                <input name="vkSubtitle" maxLength={70} defaultValue={editing?.vkSubtitle ?? ''} placeholder="Панк-рок · Фолк" />
+                <span className="hint">Если оставить пустым, покажем до двух музыкальных жанров.</span>
+              </label>
+              <label>
+                Ссылка на VK Музыку
+                <input name="vkMusicUrl" type="url" maxLength={1000} defaultValue={editing?.vkMusicUrl ?? (editing ? VERIFIED_VK_MUSIC[editing.id] : '') ?? ''} placeholder="https://vk.ru/artist/…" />
+                <span className="hint">Страница артиста, альбом или плейлист. Без ссылки доступен поиск по имени в VK Музыке.</span>
+              </label>
+              <p className="hint">На vk-headliners.uletayapp.ru показаны первые шесть участников текущего года в порядке каталога.</p>
+            </details>
             <details className="advanced-panel span-2">
               <summary>Другие названия и связанные артисты</summary>
               <label>

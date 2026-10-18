@@ -53,6 +53,8 @@ function migrateHeadliner(raw: Headliner & { year?: number }): Headliner {
     description: raw.description?.trim() || raw.name.trim(),
     imageTint: raw.imageTint || IMAGE_TINTS[0],
     imageUrl: raw.imageUrl?.trim() || undefined,
+    vkSubtitle: raw.vkSubtitle?.trim() || undefined,
+    vkMusicUrl: raw.vkMusicUrl?.trim() || undefined,
     years: years.sort((a, b) => b - a),
     alternateNames: raw.alternateNames?.map((name) => name.trim()).filter(Boolean),
     linkedHeadlinerIds: raw.linkedHeadlinerIds?.filter(Boolean),
@@ -77,6 +79,8 @@ function mergeHeadlinersByName(headliners: Headliner[]): Headliner[] {
       ...existing,
       description: existing.description || item.description,
       imageUrl: existing.imageUrl ?? item.imageUrl,
+      vkSubtitle: existing.vkSubtitle ?? item.vkSubtitle,
+      vkMusicUrl: existing.vkMusicUrl ?? item.vkMusicUrl,
       imageTint: existing.imageTint || item.imageTint,
       years: [...new Set([...existing.years, ...item.years])].sort((a, b) => b - a),
       alternateNames: [

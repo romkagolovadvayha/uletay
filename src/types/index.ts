@@ -72,6 +72,8 @@ export interface Headliner {
   description: string;
   imageTint: string;
   imageUrl?: string;
+  vkSubtitle?: string;
+  vkMusicUrl?: string;
   years: number[];
   /** Дополнительные названия для поиска в Last.fm */
   alternateNames?: string[];

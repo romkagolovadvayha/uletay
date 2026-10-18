@@ -16,6 +16,7 @@ apply_nginx_template() {
   local sed_args=(
     -e "s|__DOMAIN__|${DOMAIN}|g"
     -e "s|__WWW_DOMAIN__|${www_domain}|g"
+    -e "s|__VK_HEADLINERS_DOMAIN__|vk-headliners.${DOMAIN}|g"
     -e "s|__DEPLOY_PATH__|${DEPLOY_PATH}|g"
     -e "s|__CMS_PORT__|${CMS_PORT}|g"
     -e "s|__FESTIVAL_YEAR__|${festival_year}|g"
@@ -142,10 +143,38 @@ setup_https_nginx() {
   fi
 
   ensure_ssl_params
-  apply_nginx_template "${deploy_root}/deploy/nginx.site.ssl.conf.template"
+  setup_headliners_https "$deploy_root"
 
   ensure_certbot
   sudo certbot renew --quiet --deploy-hook "systemctl reload nginx" || true
+}
+
+setup_headliners_https() {
+  local deploy_root="$1"
+  local host="vk-headliners.${DOMAIN}"
+  local certificate="/etc/letsencrypt/live/${host}/fullchain.pem"
+  local combined
+  combined="$(mktemp)"
+  if [[ ! -f "$certificate" ]]; then
+    cat "${deploy_root}/deploy/nginx.site.ssl.conf.template" \
+      "${deploy_root}/deploy/nginx.vk-headliners.http.conf.template" > "$combined"
+    apply_nginx_template "$combined"
+    ensure_certbot
+    if ! sudo certbot certonly --webroot -w /var/www/certbot --cert-name "$host" \
+      -d "$host" --non-interactive --agree-tos -m "$LE_EMAIL" --no-eff-email --keep-until-expiring; then
+      rm -f "$combined"
+      echo "Certificate issuance failed for ${host}; the release will roll back." >&2
+      return 1
+    fi
+  fi
+  cat "${deploy_root}/deploy/nginx.site.ssl.conf.template" \
+    "${deploy_root}/deploy/nginx.vk-headliners.ssl.conf.template" > "$combined"
+  apply_nginx_template "$combined"
+  rm -f "$combined"
+  # Persist the reload hook for unattended renewals, not just this deploy.
+  sudo mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+  printf '#!/bin/sh\nnginx -t && systemctl reload nginx\n' | sudo tee /etc/letsencrypt/renewal-hooks/deploy/uletay-reload-nginx > /dev/null
+  sudo chmod 755 /etc/letsencrypt/renewal-hooks/deploy/uletay-reload-nginx
 }
 
 verify_https() {

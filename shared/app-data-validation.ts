@@ -1,4 +1,5 @@
 import type { AppData } from '../src/types';
+import { isVkMusicUrl } from './vk-headliners';
 
 type RecordValue = Record<string, unknown>;
 const record = (value: unknown): value is RecordValue =>
@@ -71,7 +72,8 @@ export function validateAppData(value: unknown): value is AppData {
   if (!list(value.headliners, (h) => record(h) && id(h.id) && fields(h, ['name', 'description', 'imageTint']) &&
     list(h.years, (year) => number(year) && Number.isInteger(year) && year >= 2000 && year <= 2100) &&
     optional(h.imageUrl, text) && optional(h.alternateNames, texts) && optional(h.linkedHeadlinerIds, (v) => list(v, id)) &&
-    optional(h.lastfm, lastfm)
+    optional(h.vkSubtitle, (v) => text(v) && v.length <= 70) &&
+    optional(h.vkMusicUrl, isVkMusicUrl) && optional(h.lastfm, lastfm)
   ) || !unique(value.headliners)) return false;
   const stageIds = new Set(value.stages.map((s) => (s as RecordValue).id));
   const artistIds = new Set(value.headliners.map((h) => (h as RecordValue).id));

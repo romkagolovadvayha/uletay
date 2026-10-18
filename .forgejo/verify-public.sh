@@ -13,3 +13,4 @@ node deploy/verify-map-data.mjs \
 
 node deploy/check-web-routes.mjs "https://${DOMAIN}"
 node deploy/check-public-resources.mjs "https://${DOMAIN}" "${RELEASE_SHA:-}"
+node deploy/check-vk-headliners.mjs "https://vk-headliners.${DOMAIN}" "${RELEASE_SHA:-}"

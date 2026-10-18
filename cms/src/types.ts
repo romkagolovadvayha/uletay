@@ -86,6 +86,8 @@ export interface Headliner {
   description: string;
   imageTint: string;
   imageUrl?: string;
+  vkSubtitle?: string;
+  vkMusicUrl?: string;
   years: number[];
   alternateNames?: string[];
   linkedHeadlinerIds?: string[];

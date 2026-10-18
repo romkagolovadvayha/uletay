@@ -315,6 +315,7 @@ fi
 source "$DEPLOY_PATH/deploy/nginx-ssl-setup.sh"
 setup_https_nginx "$DEPLOY_PATH"
 verify_https
+node "$DEPLOY_PATH/deploy/check-vk-headliners.mjs" "https://vk-headliners.${DOMAIN}" "$RELEASE_SHA"
 bash "$DEPLOY_PATH/deploy/setup-push-reminders-cron.sh"
 
 printf '%s\n' "$RELEASE_SHA" > "$DEPLOY_PATH/.deploy-version"
