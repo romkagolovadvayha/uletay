@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import type { selectVkHeadliners } from '../../../../shared/vk-headliners';
-import { buildCommunityWidget, isHeadlinersTestGroup, VK_HEADLINERS_APP_URL, VK_HEADLINERS_TEST_GROUP_ID, widgetSetupContext, type WidgetLayout } from '../../../../shared/vk-community-widget';
+import { buildCommunityWidget, isHeadlinersTestGroup, selectCommunityWidgetCards, VK_HEADLINERS_APP_URL, VK_HEADLINERS_TEST_GROUP_ID, widgetSetupContext, type WidgetLayout } from '../../../../shared/vk-community-widget';
 
-type Props = { cards: ReturnType<typeof selectVkHeadliners>; dates: string; year: number };
+type Props = { cards: ReturnType<typeof selectVkHeadliners>; dates: string; year: number; startDate: string; endDate: string };
 const initialContext = { visible: false, inApp: false, inTestGroup: false };
 
 function withTimeout<T>(request: Promise<T>, milliseconds: number): Promise<T> {
@@ -14,13 +14,14 @@ function withTimeout<T>(request: Promise<T>, milliseconds: number): Promise<T> {
   });
 }
 
-export function WidgetSetup({ cards, dates, year }: Props) {
+export function WidgetSetup({ cards, dates, year, startDate, endDate }: Props) {
   const [context, setContext] = useState(initialContext);
   const [layout, setLayout] = useState<WidgetLayout>('tiles');
   const [busy, setBusy] = useState(false);
   const [added, setAdded] = useState(false);
   const [message, setMessage] = useState('');
   const [failed, setFailed] = useState(false);
+  const { selected, type } = selectCommunityWidgetCards(cards, layout);
   useEffect(() => {
     const update = () => setContext(widgetSetupContext(window.location.search, window.location.hash));
     update();
@@ -50,7 +51,7 @@ export function WidgetSetup({ cards, dates, year }: Props) {
       }
       step = 'preview';
       setMessage('Открываем предпросмотр. Подтвердите установку в окне ВК.');
-      const widget = buildCommunityWidget(cards, dates, year, layout);
+      const widget = buildCommunityWidget(cards, dates, year, layout, { startDate, endDate, now: Date.now() });
       const result = await withTimeout(bridge.send('VKWebAppShowCommunityWidgetPreviewBox', { group_id: VK_HEADLINERS_TEST_GROUP_ID, ...widget }), 180000);
       // Per VK docs result=true only confirms preview display, not publication.
       setMessage(result.result ? 'Предпросмотр открыт. Сохраните виджет в окне ВК, затем проверьте страницу TEST.' : 'ВК не подтвердил открытие предпросмотра. Попробуйте ещё раз.');
@@ -71,7 +72,7 @@ export function WidgetSetup({ cards, dates, year }: Props) {
   return <section className="vh-setup" aria-labelledby="widget-setup-title">
     <p className="vh-eyebrow">Настройка сообщества TEST</p>
     <h2 id="widget-setup-title">Виджет на странице ВК</h2>
-    <p>Шесть участников с фото сообществ, жанрами и ссылками на музыку. Таймер, все участники и билеты — внутри приложения.</p>
+    <p>В сообществе — {selected.length} из {cards.length} участников по популярности. Все участники, таймер и билеты — внутри приложения.</p>
     {!context.inApp ? <a className="vh-button vh-button-primary" href={`${VK_HEADLINERS_APP_URL}#setup`} target="_blank" rel="noopener noreferrer">Открыть настройку в ВК</a> : <>
       <label className="vh-layout-label">Вид в сообществе
         <select value={layout} disabled={busy} onChange={(event) => setLayout(event.target.value as WidgetLayout)}>
@@ -79,7 +80,8 @@ export function WidgetSetup({ cards, dates, year }: Props) {
           <option value="compact_list">Компактный список</option>
         </select>
       </label>
-      <p className="vh-setup-note">Расположение плиток зависит от версии ВК. На странице приложения доступны все шесть карточек.</p>
+      <p className="vh-setup-note">{type === 'tiles' ? 'ВК разрешает до 10 плиток; их расположение зависит от версии ВК.' : 'ВК разрешает до 6 строк компактного списка.'} На странице приложения доступны все участники.</p>
+      <p className="vh-setup-note">Число дней в заголовке рассчитывается при сохранении виджета. Для обновления откройте предпросмотр и сохраните снова. Таймер внутри приложения обновляется автоматически.</p>
       <div className="vh-setup-actions">
         <button className="vh-button vh-button-primary" disabled={busy || !cards.length} onClick={() => void install(!added && !context.inTestGroup)}>
           {busy ? 'Ожидаем ВК…' : added || context.inTestGroup ? 'Показать виджет в TEST' : 'Добавить приложение и виджет'}

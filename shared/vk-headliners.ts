@@ -1,5 +1,6 @@
 import type { AppData, Headliner } from '../src/types';
 import { encodeSeoRouteId } from '../src/seo/seoRouteUtils';
+import { sortHeadlinersByPopularity } from './headliner-popularity';
 
 /** Accept music destinations only; CMS content must not introduce arbitrary redirects. */
 export function isVkMusicUrl(value: unknown): value is string {
@@ -60,7 +61,7 @@ export function headlinerSubtitle(artist: Headliner, year: number): string {
 
 export function selectVkHeadliners(data: Pick<AppData, 'festival' | 'headliners'>, siteUrl: string) {
   const year = data.festival.year;
-  return data.headliners.filter((artist) => artist.years.includes(year)).slice(0, 6).map((artist) => {
+  return sortHeadlinersByPopularity(data.headliners.filter((artist) => artist.years.includes(year))).map((artist) => {
     const configured = artist.vkMusicUrl || VERIFIED_VK_MUSIC[artist.id];
     const directMusic = isVkMusicUrl(configured);
     let imageUrl: string | null = null;

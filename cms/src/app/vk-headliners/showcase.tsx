@@ -116,15 +116,15 @@ export function HeadlinersShowcase(props: Props) {
   }, []);
 
   return <main className="vh-page" data-vk-headliners="true" data-vk-app-id={VK_HEADLINERS_APP_ID} data-release={props.release}>
-    <WidgetSetup cards={props.cards} dates={props.dates} year={props.year} />
+    <WidgetSetup cards={props.cards} dates={props.dates} year={props.year} startDate={props.startDate} endDate={props.endDate} />
     <div className="vh-topline">
       <span className="vh-brand">УЛЕТАЙ<span> / {props.year}</span></span>
       <span className="vh-age">{props.ageRating}</span>
     </div>
     <header className="vh-heading">
       <p className="vh-eyebrow">{props.dates} <span aria-hidden="true">·</span> {props.location}</p>
-      <h1><span aria-hidden="true">🔥</span> Кто едет на УЛЕТАЙ</h1>
-      <p className="vh-intro">Объявленные участники фестиваля</p>
+      <h1><span aria-hidden="true">🔥</span> Хедлайнеры УЛЕТАЙ</h1>
+      <p className="vh-intro">Все объявленные участники · {props.cards.length} · По популярности</p>
     </header>
     <Countdown startDate={props.startDate} endDate={props.endDate} initialNow={props.initialNow} />
     {props.cards.length ? <section className="vh-grid" aria-label="Участники фестиваля">

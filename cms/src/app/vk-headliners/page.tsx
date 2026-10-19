@@ -7,7 +7,7 @@ import './showcase.css';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Кто едет на УЛЕТАЙ — участники фестиваля',
+  title: 'Хедлайнеры УЛЕТАЙ — участники фестиваля',
   description: 'Знакомьтесь с участниками УЛЕТАЙ, слушайте их в VK Музыке и выбирайте билеты на фестиваль.',
   robots: { index: false, follow: true },
 };

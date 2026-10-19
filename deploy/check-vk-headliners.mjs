@@ -9,7 +9,8 @@ assert(html.includes('data-vk-headliners="true"'), 'The showcase, not the main s
 assert(html.includes('data-vk-app-id="54834082"'), 'Showcase must use the dedicated VK Mini App');
 if (expectedRelease) assert(html.includes(`data-release="${expectedRelease}"`), 'Showcase release does not match candidate');
 const cards = [...html.matchAll(/data-artist-id="([^"]+)"/g)];
-assert(cards.length <= 6, 'At most six artists may be displayed');
+assert.equal(new Set(cards.map((card) => card[1])).size, cards.length, 'Artists must not be duplicated');
+assert(html.includes('По популярности'), 'The showcase must explain its order');
 assert(html.includes('Все участники') && html.includes('Купить билет'), 'Both festival actions must be visible');
 assert(html.includes('vh-countdown'), 'Festival countdown must be present');
 assert(!response.headers.has('x-frame-options'), 'VK iframe must not be blocked');
