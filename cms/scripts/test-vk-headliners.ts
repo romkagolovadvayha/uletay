@@ -108,4 +108,6 @@ assert.equal(widgetSetupContext('?vk_app_id=1&vk_group_id=242402250&vk_viewer_gr
 assert.equal(widgetSetupContext('?vk_app_id=54831337&vk_group_id=242402250&vk_viewer_group_role=admin', '#setup').inApp, false, 'The previous app must not authorize the new installer UI');
 assert.equal(widgetSetupContext('?vk_app_id=54834082&vk_group_id=242402250&vk_viewer_group_role=member', '').visible, false);
 assert.equal(widgetSetupContext('?vk_app_id=54834082&vk_group_id=242402250&vk_viewer_group_role=admin', '').inTestGroup, true);
+assert.equal(widgetSetupContext('?vk_app_id=54834082&vk_group_id=242402250&vk_viewer_group_role=admin', '').visible, false, 'The normal app shows cards and festival buttons for admins too');
+assert.equal(widgetSetupContext('?vk_app_id=54834082&vk_group_id=242402250&vk_viewer_group_role=admin', '#setup').visible, true, 'Explicit setup remains available to the community admin');
 console.log('Native VK widget: ten-tile/six-row limits, countdown title, safe VKScript, VK-only links, fallback layout and admin UI context passed.');

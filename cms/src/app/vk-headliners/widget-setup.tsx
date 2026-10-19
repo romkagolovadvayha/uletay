@@ -72,7 +72,7 @@ export function WidgetSetup({ cards, dates, year, startDate, endDate }: Props) {
   return <section className="vh-setup" aria-labelledby="widget-setup-title">
     <p className="vh-eyebrow">Настройка сообщества TEST</p>
     <h2 id="widget-setup-title">Виджет на странице ВК</h2>
-    <p>В сообществе — {selected.length} из {cards.length} участников по популярности. Все участники, таймер и билеты — внутри приложения.</p>
+    <p>В сообществе — {selected.length} из {cards.length} участников по популярности. Все участники и билеты — внутри приложения.</p>
     {!context.inApp ? <a className="vh-button vh-button-primary" href={`${VK_HEADLINERS_APP_URL}#setup`} target="_blank" rel="noopener noreferrer">Открыть настройку в ВК</a> : <>
       <label className="vh-layout-label">Вид в сообществе
         <select value={layout} disabled={busy} onChange={(event) => setLayout(event.target.value as WidgetLayout)}>
@@ -81,7 +81,7 @@ export function WidgetSetup({ cards, dates, year, startDate, endDate }: Props) {
         </select>
       </label>
       <p className="vh-setup-note">{type === 'tiles' ? 'ВК разрешает до 10 плиток; их расположение зависит от версии ВК.' : 'ВК разрешает до 6 строк компактного списка.'} На странице приложения доступны все участники.</p>
-      <p className="vh-setup-note">Число дней в заголовке рассчитывается при сохранении виджета. Для обновления откройте предпросмотр и сохраните снова. Таймер внутри приложения обновляется автоматически.</p>
+      <p className="vh-setup-note">Число дней в заголовке рассчитывается при сохранении виджета. Для обновления откройте предпросмотр и сохраните снова.</p>
       <div className="vh-setup-actions">
         <button className="vh-button vh-button-primary" disabled={busy || !cards.length} onClick={() => void install(!added && !context.inTestGroup)}>
           {busy ? 'Ожидаем ВК…' : added || context.inTestGroup ? 'Показать виджет в TEST' : 'Добавить приложение и виджет'}

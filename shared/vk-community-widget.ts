@@ -87,7 +87,7 @@ export function widgetSetupContext(search: string, hash: string) {
   return {
     inApp,
     // UI hint only: authorization is always checked by VK's native dialogs.
-    visible: hash === '#setup' || (inApp && inTestGroup && admin),
+    visible: hash === '#setup',
     inTestGroup: inApp && inTestGroup && admin,
   };
 }

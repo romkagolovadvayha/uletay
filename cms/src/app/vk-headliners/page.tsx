@@ -18,18 +18,12 @@ export default async function VkHeadlinersPage() {
   const { festival } = data;
   const format = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
   const dates = format.formatRange(new Date(`${festival.startDate}T12:00:00Z`), new Date(`${festival.endDate}T12:00:00Z`));
-  // This dynamic server route serializes one request-time value for hydration.
-  // eslint-disable-next-line react-hooks/purity
-  const initialNow = Date.now();
   return <HeadlinersShowcase
     cards={selectVkHeadliners(data, siteUrl)}
     year={festival.year}
     startDate={festival.startDate}
     endDate={festival.endDate}
-    initialNow={initialNow}
     dates={dates}
-    location={festival.locationShort}
-    ageRating={festival.ageRating}
     allUrl={`${siteUrl}/headliners/${festival.year}`}
     ticketUrl="https://drivegrup.ru/ticket/ylet3"
     release={process.env.RELEASE_SHA || 'development'}

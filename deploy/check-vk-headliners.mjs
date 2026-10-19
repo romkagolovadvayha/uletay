@@ -10,9 +10,10 @@ assert(html.includes('data-vk-app-id="54834082"'), 'Showcase must use the dedica
 if (expectedRelease) assert(html.includes(`data-release="${expectedRelease}"`), 'Showcase release does not match candidate');
 const cards = [...html.matchAll(/data-artist-id="([^"]+)"/g)];
 assert.equal(new Set(cards.map((card) => card[1])).size, cards.length, 'Artists must not be duplicated');
-assert(html.includes('По популярности'), 'The showcase must explain its order');
 assert(html.includes('Все участники') && html.includes('Купить билет'), 'Both festival actions must be visible');
-assert(html.includes('vh-countdown'), 'Festival countdown must be present');
+for (const removed of ['vh-topline', 'vh-heading', 'vh-countdown', 'vh-footer']) {
+  assert(!html.includes(`class="${removed}"`), 'The showcase must contain only artist cards and festival actions');
+}
 assert(!response.headers.has('x-frame-options'), 'VK iframe must not be blocked');
 const policy = response.headers.get('content-security-policy') || '';
 assert(/frame-ancestors[^;]*https:\/\/vk\.com/.test(policy) && /frame-ancestors[^;]*https:\/\/vk\.ru/.test(policy), 'VK origins must be allowed');

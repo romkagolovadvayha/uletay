@@ -3,8 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import type { selectVkHeadliners } from '../../../../shared/vk-headliners';
-import { festivalCountdown } from '../../../../shared/vk-headliners';
-import { VK_HEADLINERS_APP_ID, VK_HEADLINERS_APP_URL } from '../../../../shared/vk-community-widget';
+import { VK_HEADLINERS_APP_ID } from '../../../../shared/vk-community-widget';
 import { WidgetSetup } from './widget-setup';
 
 type Card = ReturnType<typeof selectVkHeadliners>[number];
@@ -13,10 +12,7 @@ type Props = {
   year: number;
   startDate: string;
   endDate: string;
-  initialNow: number;
   dates: string;
-  location: string;
-  ageRating: string;
   allUrl: string;
   ticketUrl: string;
   release: string;
@@ -24,27 +20,6 @@ type Props = {
 
 function Arrow() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-
-function Countdown({ startDate, endDate, initialNow }: Pick<Props, 'startDate' | 'endDate' | 'initialNow'>) {
-  const [now, setNow] = useState(initialNow);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  const remaining = festivalCountdown(startDate, endDate, now);
-  return <section className="vh-countdown" aria-label="Обратный отсчёт до фестиваля" aria-live="off">
-    <div className="vh-countdown-heading">
-      <span className="vh-countdown-dot" aria-hidden="true" />
-      <div><h2>{remaining.state === 'before' ? 'До УЛЕТАЙ осталось' : remaining.state === 'during' ? 'УЛЕТАЙ уже начался' : 'До встречи на следующем УЛЕТАЙ'}</h2>
-        <p>{remaining.state === 'before' ? 'До первого дня фестиваля · время Удмуртии' : remaining.state === 'during' ? 'Встретимся у сцены!' : 'Спасибо, что были с нами!'}</p>
-      </div>
-    </div>
-    {remaining.state === 'before' && <div className="vh-clock" role="timer">
-      {([[remaining.days, 'дней'], [remaining.hours, 'часов'], [remaining.minutes, 'минут'], [remaining.seconds, 'секунд']] as const).map(([value, label]) =>
-        <div className="vh-clock-unit" key={label}><strong>{String(value).padStart(2, '0')}</strong><span>{label}</span></div>)}
-    </div>}
-  </section>;
 }
 
 function ArtistCard({ card }: { card: Card }) {
@@ -115,18 +90,8 @@ export function HeadlinersShowcase(props: Props) {
     return () => window.removeEventListener('hashchange', followArtist);
   }, []);
 
-  return <main className="vh-page" data-vk-headliners="true" data-vk-app-id={VK_HEADLINERS_APP_ID} data-release={props.release}>
+  return <main className="vh-page" aria-label="Участники фестиваля УЛЕТАЙ" data-vk-headliners="true" data-vk-app-id={VK_HEADLINERS_APP_ID} data-release={props.release}>
     <WidgetSetup cards={props.cards} dates={props.dates} year={props.year} startDate={props.startDate} endDate={props.endDate} />
-    <div className="vh-topline">
-      <span className="vh-brand">УЛЕТАЙ<span> / {props.year}</span></span>
-      <span className="vh-age">{props.ageRating}</span>
-    </div>
-    <header className="vh-heading">
-      <p className="vh-eyebrow">{props.dates} <span aria-hidden="true">·</span> {props.location}</p>
-      <h1><span aria-hidden="true">🔥</span> УЛЕТАЙ</h1>
-      <p className="vh-intro">Все объявленные участники · {props.cards.length} · По популярности</p>
-    </header>
-    <Countdown startDate={props.startDate} endDate={props.endDate} initialNow={props.initialNow} />
     {props.cards.length ? <section className="vh-grid" aria-label="Участники фестиваля">
       {props.cards.map((card) => <ArtistCard key={card.id} card={card} />)}
     </section> : <section className="vh-empty">
@@ -140,6 +105,5 @@ export function HeadlinersShowcase(props: Props) {
         Купить билет
       </a>
     </nav>
-    <p className="vh-footer">Встретимся на поле. <a href={VK_HEADLINERS_APP_URL} target="_blank" rel="noopener noreferrer">Открыть в VK ↗</a></p>
   </main>;
 }
