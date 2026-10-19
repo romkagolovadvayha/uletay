@@ -28,7 +28,7 @@ function widgetImage(card: Card, layout: WidgetLayout): string | undefined {
 }
 
 export function communityWidgetTitle(dates: string, year: number, countdown?: WidgetCountdown) {
-  const title = `🔥 Хедлайнеры УЛЕТАЙ · ${dates} ${year}`;
+  const title = `🔥 УЛЕТАЙ · ${dates} ${year}`;
   if (!countdown) return singleLine(title, 100);
   const remaining = festivalCountdown(countdown.startDate, countdown.endDate, countdown.now);
   if (remaining.state !== 'before') {

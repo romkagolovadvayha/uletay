@@ -9,6 +9,8 @@ const appId = 54834082;
 const token = process.env.VK_WIDGET_SERVICE_TOKEN;
 const dataUrl = 'https://uletayapp.ru/api/data';
 const manifestPath = new URL('../../shared/vk-widget-images.json', import.meta.url);
+const encoding = 'jpeg-mozjpeg-q72-420-v1';
+const onlyArtists = process.argv.slice(2);
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function vk(method, params = {}) {
@@ -27,7 +29,8 @@ async function vk(method, params = {}) {
 async function upload(source, imageType) {
   const size = imageType === '160x160' ? 480 : 150;
   // Matches the center crop of the site's square mobile cards; VK needs 3x resolution.
-  const jpeg = await sharp(source).rotate().resize(size, size, { fit: 'cover', position: 'centre' }).jpeg({ quality: 92 }).toBuffer();
+  const jpeg = await sharp(source).rotate().resize(size, size, { fit: 'cover', position: 'centre' })
+    .jpeg({ quality: 72, mozjpeg: true, progressive: true, chromaSubsampling: '4:2:0' }).toBuffer();
   const server = await vk('appWidgets.getAppImageUploadServer', { image_type: imageType });
   const uploadUrl = new URL(server.upload_url);
   assert(uploadUrl.protocol === 'https:' && !uploadUrl.username && !uploadUrl.password &&
@@ -41,16 +44,17 @@ async function upload(source, imageType) {
   assert(response.ok, `VK image upload HTTP ${response.status}`);
   const uploaded = await response.json();
   if (uploaded.error || !uploaded.hash) {
-    // Only report the error code and field names: upload responses can contain secrets.
+    // Never dump the full upload response: successful responses contain secrets.
     const errorCode = Number(uploaded.error?.error_code ?? uploaded.error_code);
-    throw new Error(`VK image upload failed (code ${Number.isFinite(errorCode) ? errorCode : 'unknown'}; fields: ${Object.keys(uploaded).join(', ')})`);
+    const message = String(uploaded.error_msg ?? '').replaceAll(token, '[redacted]').replace(/https?:\/\/\S+/g, '[url]').slice(0, 180);
+    throw new Error(`VK image upload failed (code ${Number.isFinite(errorCode) ? errorCode : 'unknown'}${message ? `: ${message}` : ''})`);
   }
   const saved = await vk('appWidgets.saveAppImage', {
     image: Buffer.from(JSON.stringify(uploaded)).toString('base64'), hash: String(uploaded.hash),
   });
   assert(/^\d+_\d+$/.test(saved.id) && saved.type === imageType, 'VK saved an unexpected image');
   await pause(400);
-  return saved.id;
+  return { id: saved.id, bytes: jpeg.length };
 }
 
 async function main() {
@@ -64,7 +68,9 @@ async function main() {
   const response = await fetch(dataUrl, { signal: AbortSignal.timeout(30000) });
   assert(response.ok, `CMS HTTP ${response.status}`);
   const data = await response.json();
-  const artists = data.headliners.filter((artist) => artist.years.includes(data.festival.year));
+  const artists = data.headliners.filter((artist) => artist.years.includes(data.festival.year) &&
+    (!onlyArtists.length || onlyArtists.includes(artist.id)));
+  assert(artists.length && onlyArtists.every((id) => artists.some((artist) => artist.id === id)), 'Unknown current artist ID');
   for (const artist of artists) {
     if (!artist.imageUrl) continue;
     const sourceUrl = new URL(artist.imageUrl, dataUrl);
@@ -76,10 +82,14 @@ async function main() {
     assert(bytes.length <= 10 * 1024 * 1024, 'CMS artwork is too large');
     const sourceSha256 = createHash('sha256').update(bytes).digest('hex');
     const old = manifest.images[artist.id];
-    const entry = old?.sourceUrl === sourceUrl.href && old.sourceSha256 === sourceSha256
-      ? old : { sourceUrl: sourceUrl.href, sourceSha256 };
+    const entry = old?.sourceUrl === sourceUrl.href && old.sourceSha256 === sourceSha256 && old.encoding === encoding
+      ? old : { sourceUrl: sourceUrl.href, sourceSha256, encoding, uploadBytes: {} };
     for (const [layout, imageType] of [['tiles', '160x160'], ['compact_list', '50x50']]) {
-      if (!entry[layout]) entry[layout] = await upload(bytes, imageType);
+      if (!entry[layout]) {
+        const saved = await upload(bytes, imageType);
+        entry[layout] = saved.id;
+        entry.uploadBytes[layout] = saved.bytes;
+      }
       manifest.images[artist.id] = entry;
       await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     }

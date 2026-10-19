@@ -123,7 +123,7 @@ export function HeadlinersShowcase(props: Props) {
     </div>
     <header className="vh-heading">
       <p className="vh-eyebrow">{props.dates} <span aria-hidden="true">·</span> {props.location}</p>
-      <h1><span aria-hidden="true">🔥</span> Хедлайнеры УЛЕТАЙ</h1>
+      <h1><span aria-hidden="true">🔥</span> УЛЕТАЙ</h1>
       <p className="vh-intro">Все объявленные участники · {props.cards.length} · По популярности</p>
     </header>
     <Countdown startDate={props.startDate} endDate={props.endDate} initialNow={props.initialNow} />

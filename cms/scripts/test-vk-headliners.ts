@@ -87,7 +87,7 @@ assert.equal(hostileRow.title, '"}; API.wall.post({}); //', 'CMS strings stay JS
 assert(hostileRow.descr.length <= 100);
 assert.equal(new URL(hostileRow.button_url).hostname, 'vk.com');
 const countdown = { startDate: '2027-07-07', endDate: '2027-07-11', now: Date.parse('2026-10-19T13:00:00Z') };
-assert.equal(communityWidgetTitle('7–11 июля', 2027, countdown), '🔥 Хедлайнеры УЛЕТАЙ · 7–11 июля 2027 · Через 260 дней');
+assert.equal(communityWidgetTitle('7–11 июля', 2027, countdown), '🔥 УЛЕТАЙ · 7–11 июля 2027 · Через 260 дней');
 for (const [days, phrase] of [[1, '1 день'], [2, '2 дня'], [5, '5 дней'], [11, '11 дней'], [14, '14 дней'], [21, '21 день'], [22, '22 дня']] as const) {
   assert(communityWidgetTitle('7–11 июля', 2027, { ...countdown, now: Date.parse('2027-07-06T20:00:00Z') - days * 86400000 }).endsWith(`Через ${phrase}`));
 }
