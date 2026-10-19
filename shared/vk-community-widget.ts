@@ -6,6 +6,11 @@ export const VK_HEADLINERS_APP_ID = 54834082;
 export const VK_HEADLINERS_TEST_GROUP_ID = 242402250;
 export const VK_HEADLINERS_APP_URL = `https://vk.com/app${VK_HEADLINERS_APP_ID}`;
 
+/** VK documents a string group_id; some clients return a number. */
+export function isHeadlinersTestGroup(groupId: unknown) {
+  return groupId === VK_HEADLINERS_TEST_GROUP_ID || groupId === String(VK_HEADLINERS_TEST_GROUP_ID);
+}
+
 // Official community links from murakamiband.ru, knyazz.ru, pilot's official
 // Telegram, fpg-live.ru, planlomonosova.com and affinageband.ru; resolved via VK.
 const COMMUNITY_ICONS: Record<string, number> = {
@@ -57,7 +62,7 @@ export function widgetSetupContext(search: string, hash: string) {
   const params = new URLSearchParams(search);
   const appId = Number(params.get('vk_app_id'));
   const inApp = appId === VK_HEADLINERS_APP_ID;
-  const inTestGroup = Number(params.get('vk_group_id')) === VK_HEADLINERS_TEST_GROUP_ID;
+  const inTestGroup = isHeadlinersTestGroup(params.get('vk_group_id'));
   const admin = params.get('vk_viewer_group_role') === 'admin';
   return {
     inApp,

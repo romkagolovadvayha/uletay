@@ -4,7 +4,7 @@ import type { AppData, Headliner } from '../src/types';
 import { syncAppHeadliners } from '../src/lib/headliners';
 import { validateAppData } from '../../shared/app-data-validation';
 import { festivalCountdown, headlinerSubtitle, isVkMusicUrl, selectVkHeadliners } from '../../shared/vk-headliners';
-import { buildCommunityWidget, VK_HEADLINERS_APP_ID, VK_HEADLINERS_APP_URL, widgetSetupContext } from '../../shared/vk-community-widget';
+import { buildCommunityWidget, isHeadlinersTestGroup, VK_HEADLINERS_APP_ID, VK_HEADLINERS_APP_URL, widgetSetupContext } from '../../shared/vk-community-widget';
 
 const data = JSON.parse(readFileSync(new URL('../seed/content.json', import.meta.url), 'utf8')) as AppData;
 const artist: Headliner = { id: 'a', name: 'Артист', description: '', imageTint: '#000', years: [2027], vkMusicUrl: 'https://vk.ru/artist/test', vkSubtitle: 'Фолк · Рок' };
@@ -62,6 +62,12 @@ const hostileRow = JSON.parse(hostile.code.slice(7, -1)).rows[0];
 assert.equal(hostileRow.title, '"}; API.wall.post({}); //', 'CMS strings stay JSON values');
 assert(hostileRow.descr.length <= 100);
 assert.equal(new URL(hostileRow.button_url).hostname, 'vk.com');
+for (const groupId of [242402250, '242402250']) {
+  assert(isHeadlinersTestGroup(groupId), 'Accept both documented string and numeric VK community IDs');
+}
+for (const groupId of [123, '123', -242402250, '-242402250', null, undefined, {}, [242402250], '242402250junk']) {
+  assert(!isHeadlinersTestGroup(groupId), 'A different or malformed community ID must never open the TEST widget preview');
+}
 assert.equal(widgetSetupContext('', '').visible, false);
 assert.equal(widgetSetupContext('', '#setup').inApp, false);
 assert.equal(widgetSetupContext('?vk_app_id=1&vk_group_id=242402250&vk_viewer_group_role=admin', '').visible, false);

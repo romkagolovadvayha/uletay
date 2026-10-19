@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { selectVkHeadliners } from '../../../../shared/vk-headliners';
-import { buildCommunityWidget, VK_HEADLINERS_APP_URL, VK_HEADLINERS_TEST_GROUP_ID, widgetSetupContext, type WidgetLayout } from '../../../../shared/vk-community-widget';
+import { buildCommunityWidget, isHeadlinersTestGroup, VK_HEADLINERS_APP_URL, VK_HEADLINERS_TEST_GROUP_ID, widgetSetupContext, type WidgetLayout } from '../../../../shared/vk-community-widget';
 
 type Props = { cards: ReturnType<typeof selectVkHeadliners>; dates: string; year: number };
 const initialContext = { visible: false, inApp: false, inTestGroup: false };
@@ -41,7 +41,7 @@ export function WidgetSetup({ cards, dates, year }: Props) {
         step = 'add';
         setMessage('В окне ВК выберите сообщество TEST.');
         const result = await withTimeout(bridge.send('VKWebAppAddToCommunity', { hide_success_modal: true }), 180000);
-        if (result.group_id !== VK_HEADLINERS_TEST_GROUP_ID) {
+        if (!isHeadlinersTestGroup(result.group_id)) {
           setFailed(true);
           setMessage('Выбрано другое сообщество. Виджет туда не опубликован. Повторите добавление и выберите TEST.');
           return;
