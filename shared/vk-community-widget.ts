@@ -2,7 +2,7 @@ import type { selectVkHeadliners } from './vk-headliners';
 import { isVkMusicUrl } from './vk-headliners';
 
 // This Mini App is independent of the CMS VK ID login application.
-export const VK_HEADLINERS_APP_ID = 54831337;
+export const VK_HEADLINERS_APP_ID = 54834082;
 export const VK_HEADLINERS_TEST_GROUP_ID = 242402250;
 export const VK_HEADLINERS_APP_URL = `https://vk.com/app${VK_HEADLINERS_APP_ID}`;
 
