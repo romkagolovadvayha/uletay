@@ -1,5 +1,6 @@
 import type { selectVkHeadliners } from './vk-headliners';
 import { festivalCountdown, isVkMusicUrl } from './vk-headliners';
+import artworkManifest from './vk-widget-images.json';
 
 // This Mini App is independent of the CMS VK ID login application.
 export const VK_HEADLINERS_APP_ID = 54834082;
@@ -11,27 +12,20 @@ export function isHeadlinersTestGroup(groupId: unknown) {
   return groupId === VK_HEADLINERS_TEST_GROUP_ID || groupId === String(VK_HEADLINERS_TEST_GROUP_ID);
 }
 
-// Official community links from murakamiband.ru, knyazz.ru, pilot's official
-// Telegram, fpg-live.ru, planlomonosova.com and affinageband.ru; resolved via VK.
-// Additional verified communities: stigmata.band.link, t.me/chaifru,
-// vk.com/molodost_vnutri (links back to molodostvnutri.ru), and hmirov.ru.
-const COMMUNITY_ICONS: Record<string, number> = {
-  'hl-мураками': 131128,
-  'hl-княzz': 1227,
-  'hl-пилот': 38465,
-  'hl-f-p-g': 5928257,
-  'hl-план-ломоносова': 30006666,
-  'hl-аффинаж': 43343704,
-  'hl-стигмата-stigmata': 8795,
-  'hl-чайф': 186047,
-  'hl-молодость-внутри': 147378898,
-  'hl-хмыров': 156554689,
-};
-
 type Card = ReturnType<typeof selectVkHeadliners>[number];
 export type WidgetLayout = 'tiles' | 'compact_list';
 export type WidgetCountdown = { startDate: string; endDate: string; now: number };
 const singleLine = (value: string, limit: number) => value.replace(/[\r\n]+/g, ' ').slice(0, limit).replace(/[\uD800-\uDBFF]$/, '');
+
+const artwork: Record<string, { sourceUrl: string; tiles?: string; compact_list?: string }> = artworkManifest.images;
+
+function widgetImage(card: Card, layout: WidgetLayout): string | undefined {
+  const image = artwork[card.id];
+  // Never substitute an unrelated community avatar or reuse artwork after a CMS change.
+  if (artworkManifest.appId !== VK_HEADLINERS_APP_ID || image?.sourceUrl !== card.imageUrl) return;
+  const id = image[layout];
+  return id && new RegExp(`^${VK_HEADLINERS_APP_ID}_\\d+$`).test(id) ? id : undefined;
+}
 
 export function communityWidgetTitle(dates: string, year: number, countdown?: WidgetCountdown) {
   const title = `🔥 Хедлайнеры УЛЕТАЙ · ${dates} ${year}`;
@@ -48,7 +42,7 @@ export function communityWidgetTitle(dates: string, year: number, countdown?: Wi
 /** VK permits up to ten tiles or six rows without accompanying text. */
 export function selectCommunityWidgetCards(cards: Card[], layout: WidgetLayout = 'tiles'): { type: WidgetLayout; selected: Card[] } {
   const tiles = cards.slice(0, 10);
-  if (layout === 'tiles' && tiles.length >= 3 && tiles.every((card) => COMMUNITY_ICONS[card.id])) {
+  if (layout === 'tiles' && tiles.length >= 3 && tiles.every((card) => widgetImage(card, 'tiles'))) {
     return { type: 'tiles', selected: tiles };
   }
   return { type: 'compact_list', selected: cards.slice(0, 6) };
@@ -58,7 +52,7 @@ export function selectCommunityWidgetCards(cards: Card[], layout: WidgetLayout =
 export function buildCommunityWidget(cards: Card[], dates: string, year: number, layout: WidgetLayout = 'tiles', countdown?: WidgetCountdown) {
   const { selected, type } = selectCommunityWidgetCards(cards, layout);
   if (!selected.length) throw new Error('Сначала объявите участников фестиваля.');
-  const hasIcons = selected.every((card) => COMMUNITY_ICONS[card.id]);
+  const hasIcons = selected.every((card) => widgetImage(card, type));
   const entries = selected.map((card) => {
     const url = `${VK_HEADLINERS_APP_URL}#artist=${encodeURIComponent(card.id)}`;
     const music = isVkMusicUrl(card.musicUrl) ? new URL(card.musicUrl) : new URL(`https://vk.com/audio?q=${encodeURIComponent(card.name)}`);
@@ -67,7 +61,7 @@ export function buildCommunityWidget(cards: Card[], dates: string, year: number,
     const common = {
       title: singleLine(card.name, 50),
       descr: singleLine(card.subtitle, type === 'tiles' ? 50 : 100),
-      ...(hasIcons ? { icon_id: `club${COMMUNITY_ICONS[card.id]}` } : {}),
+      ...(hasIcons ? { icon_id: widgetImage(card, type) } : {}),
     };
     return type === 'tiles'
       ? { ...common, url, link: singleLine(card.musicLabel, 50), link_url: music.href }

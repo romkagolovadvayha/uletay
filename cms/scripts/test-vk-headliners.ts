@@ -5,6 +5,7 @@ import { syncAppHeadliners } from '../src/lib/headliners';
 import { validateAppData } from '../../shared/app-data-validation';
 import { festivalCountdown, headlinerSubtitle, isVkMusicUrl, selectVkHeadliners } from '../../shared/vk-headliners';
 import { buildCommunityWidget, communityWidgetTitle, isHeadlinersTestGroup, VK_HEADLINERS_APP_ID, VK_HEADLINERS_APP_URL, widgetSetupContext } from '../../shared/vk-community-widget';
+import artworkManifest from '../../shared/vk-widget-images.json';
 
 const data = JSON.parse(readFileSync(new URL('../seed/content.json', import.meta.url), 'utf8')) as AppData;
 const artist: Headliner = { id: 'a', name: 'Артист', description: '', imageTint: '#000', years: [2027], vkMusicUrl: 'https://vk.ru/artist/test', vkSubtitle: 'Фолк · Рок' };
@@ -51,14 +52,17 @@ assert.equal(finished.state, 'after');
 assert.equal(finished.days + finished.hours + finished.minutes + finished.seconds, 0);
 console.log('Countdown: Udmurtia midnight, second precision, festival start/end and nonnegative values passed.');
 
-const communityCards = ['hl-мураками', 'hl-княzz', 'hl-пилот', 'hl-f-p-g', 'hl-план-ломоносова', 'hl-аффинаж', 'hl-стигмата-stigmata', 'hl-чайф', 'hl-молодость-внутри', 'hl-хмыров'].map((id, i) => ({ ...cards[i], id }));
+const artwork: Record<string, { sourceUrl: string; tiles: string; compact_list: string }> = artworkManifest.images;
+assert.equal(artworkManifest.appId, VK_HEADLINERS_APP_ID);
+const communityCards = ['hl-мураками', 'hl-княzz', 'hl-пилот', 'hl-f-p-g', 'hl-план-ломоносова', 'hl-аффинаж', 'hl-стигмата-stigmata', 'hl-чайф', 'hl-молодость-внутри', 'hl-хмыров'].map((id, i) => ({ ...cards[i], id, imageUrl: artwork[id].sourceUrl }));
 const native = buildCommunityWidget([...communityCards, ...cards.slice(10)], '7–11 июля', 2027);
 const payload = JSON.parse(native.code.slice(7, -1));
 assert.equal(native.type, 'tiles');
 assert.equal(payload.tiles.length, 10, 'Native tiles must use the VK maximum, without exceeding it');
 assert.deepEqual(payload.tiles.map((tile: { url: string }) => decodeURIComponent(tile.url.split('#artist=')[1])), communityCards.map(({ id }) => id), 'The native widget preserves the popularity order');
 assert.equal(payload.more, 'Все участники · 13 →', 'The footer includes artists beyond the native limit');
-assert(payload.tiles.every((tile: { icon_id: string }) => /^club\d+$/.test(tile.icon_id)));
+assert.deepEqual(payload.tiles.map((tile: { icon_id: string }) => tile.icon_id), communityCards.map((card) => artwork[card.id].tiles), 'Each tile must use the matching CMS artwork uploaded to the dedicated app');
+assert(payload.tiles.every((tile: { icon_id: string }) => /^54834082_\d+$/.test(tile.icon_id)));
 assert.equal(payload.more_url, VK_HEADLINERS_APP_URL);
 for (const tile of payload.tiles) {
   assert.equal(new URL(tile.link_url).hostname, 'vk.com');
@@ -66,11 +70,16 @@ for (const tile of payload.tiles) {
 }
 assert.equal(buildCommunityWidget(communityCards.slice(0, 2), '7 июля', 2027).type, 'compact_list', 'VK tiles require three items');
 const compact = buildCommunityWidget(communityCards, '7 июля', 2027, 'compact_list');
-assert.equal(JSON.parse(compact.code.slice(7, -1)).rows.length, 6, 'VK compact lists allow at most six rows');
+const compactRows = JSON.parse(compact.code.slice(7, -1)).rows;
+assert.equal(compactRows.length, 6, 'VK compact lists allow at most six rows');
+assert.deepEqual(compactRows.map((row: { icon_id: string }) => row.icon_id), communityCards.slice(0, 6).map((card) => artwork[card.id].compact_list), 'Compact rows require their own 50x50 image IDs');
+const changedArtwork = buildCommunityWidget([{ ...communityCards[0], imageUrl: 'https://uletayapp.ru/api/uploads/images/replacement.webp' }, ...communityCards.slice(1)], '7 июля', 2027);
+assert.equal(changedArtwork.type, 'compact_list');
+assert(!changedArtwork.code.includes('icon_id'), 'A changed CMS image must not reuse the old picture or fall back to a community avatar');
 const unknown = buildCommunityWidget(cards, '7 июля', 2027);
 assert.equal(unknown.type, 'compact_list');
 assert.equal(JSON.parse(unknown.code.slice(7, -1)).rows.length, 6);
-assert(!unknown.code.includes('icon_id'), 'Do not mix unknown and official community portraits');
+assert(!unknown.code.includes('icon_id'), 'Missing uploaded artwork must not be replaced with community portraits');
 assert.throws(() => buildCommunityWidget([], '7 июля', 2027));
 const hostile = buildCommunityWidget([{ ...communityCards[0], name: '"}; API.wall.post({}); //', musicUrl: 'https://evil.test/', subtitle: '🌞'.repeat(80) }], '7 июля', 2027);
 const hostileRow = JSON.parse(hostile.code.slice(7, -1)).rows[0];

@@ -1,0 +1,83 @@
+{
+  "appId": 54834082,
+  "images": {
+    "hl-мураками": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/%D0%BC%D1%83%D1%80%D0%B0%D0%BA%D0%B0%D0%BC%D0%B8-00f681a90db4.webp",
+      "sourceSha256": "68898fc52bb2ceffd23d8aa93e5150ac98f461db28e4a0dc78c162718050f016",
+      "tiles": "54834082_2058526",
+      "compact_list": "54834082_2058527"
+    },
+    "hl-княzz": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/%D0%BA%D0%BD%D1%8Fzz-b2cf0d556825.webp",
+      "sourceSha256": "e4831f9ccc65e38f783263cd0b4c2ff293cafea70cb9c1a81dbf6d7a96e31420",
+      "tiles": "54834082_2058528",
+      "compact_list": "54834082_2058529"
+    },
+    "hl-пилот": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/%D0%BF%D0%B8%D0%BB%D0%BE%D1%82-869cc10f00e9.webp",
+      "sourceSha256": "c072021ee2443a670a9a8465a48ed2ffe4da0139d274f0829b534763219ec092",
+      "tiles": "54834082_2058530",
+      "compact_list": "54834082_2058531"
+    },
+    "hl-f-p-g": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/f-p-g-e2bf07729ea9.webp",
+      "sourceSha256": "80132d73bc3e7708f6236d899f814409892ec8cc795e41fc3841c2f24243794d",
+      "tiles": "54834082_2058532",
+      "compact_list": "54834082_2058533"
+    },
+    "hl-план-ломоносова": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/%D0%BF%D0%BB%D0%B0%D0%BD-%D0%BB%D0%BE%D0%BC%D0%BE%D0%BD%D0%BE%D1%81%D0%BE%D0%B2%D0%B0-ab3a772f235b.webp",
+      "sourceSha256": "d687f49a8a8ffce3643d1e2729900c73b6abe79d8c620085d66c08b1f4538b1c",
+      "tiles": "54834082_2058534",
+      "compact_list": "54834082_2058535"
+    },
+    "hl-аффинаж": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/affinage-official-square-2026.webp",
+      "sourceSha256": "a50f4ea72835b0802844acb55bbaf9b3120f9ee0744573651f7ca7051db527f5",
+      "tiles": "54834082_2058536",
+      "compact_list": "54834082_2058537"
+    },
+    "hl-стигмата-stigmata": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/%D1%81%D1%82%D0%B8%D0%B3%D0%BC%D0%B0%D1%82%D0%B0-stigmata-365ae340fdb8.webp",
+      "sourceSha256": "f77afc7bb6b58fa56ed93ffbf2e690010c035c2bca53c9fd69d5f6cb96a15a5a",
+      "tiles": "54834082_2058538",
+      "compact_list": "54834082_2058539"
+    },
+    "hl-ангел-хранитель": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/%D0%B0%D0%BD%D0%B3%D0%B5%D0%BB-%D1%85%D1%80%D0%B0%D0%BD%D0%B8%D1%82%D0%B5%D0%BB%D1%8C-5257777926c3.webp",
+      "sourceSha256": "c7ac6b0584131878cf7c5e485cda112cc556944178b6de815dc6acb1678284b0",
+      "tiles": "54834082_2058540",
+      "compact_list": "54834082_2058541"
+    },
+    "hl-хмыров": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/%D1%85%D0%BC%D1%8B%D1%80%D0%BE%D0%B2-7dc70ead2f07.webp",
+      "sourceSha256": "4424f3b048c6a4591f98127df41189c09b39ecb9ca3a5dfc84073864b724d490",
+      "tiles": "54834082_2058542",
+      "compact_list": "54834082_2058543"
+    },
+    "hl-астра": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/%D0%B0%D1%81%D1%82%D1%80%D0%B0-8f926f5d04c1.webp",
+      "sourceSha256": "53c516c75719385acaecaf437cab3f1e97707cb2ceb39f8f7be594b34d597608",
+      "tiles": "54834082_2058544",
+      "compact_list": "54834082_2058545"
+    },
+    "hl-чайф": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/img_1790598315926_bxqhyktys57.webp",
+      "sourceSha256": "b80f4e0e651f8bb91ccfaf14b2aaa784cb2f3db4a7ab81ebae63c1c9e1bb1680",
+      "tiles": "54834082_2058546",
+      "compact_list": "54834082_2058547"
+    },
+    "hl-bardak": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/img_1791448587640_8h2dyzhk1qm.webp",
+      "sourceSha256": "de51154bfda0af33258b55014f08f4bba84eb5f9ce93cf10042fae407975fcdb",
+      "tiles": "54834082_2058548",
+      "compact_list": "54834082_2058549"
+    },
+    "hl-молодость-внутри": {
+      "sourceUrl": "https://uletayapp.ru/api/uploads/images/img_1792059095500_ua5f84sqkq.webp",
+      "sourceSha256": "c7c0e6d92d454fd0e9077cec32f5c54e0211ccca097f6c116b948e80db09ba95",
+      "tiles": "54834082_2058550",
+      "compact_list": "54834082_2058551"
+    }
+  }
+}
