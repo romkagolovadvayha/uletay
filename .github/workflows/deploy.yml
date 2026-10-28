@@ -129,7 +129,8 @@ jobs:
 
       - name: Run preflight checks
         run: |
-          npx expo install --check
+          # Validate against the SDK locked in this release, not newer patches from the registry.
+          EXPO_OFFLINE=1 npx expo install --check
           npm run lint
           npm run typecheck
           npm run cms:typecheck
