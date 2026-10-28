@@ -10,7 +10,8 @@ assert(html.includes('data-vk-app-id="54834082"'), 'Showcase must use the dedica
 if (expectedRelease) assert(html.includes(`data-release="${expectedRelease}"`), 'Showcase release does not match candidate');
 const cards = [...html.matchAll(/data-artist-id="([^"]+)"/g)];
 assert.equal(new Set(cards.map((card) => card[1])).size, cards.length, 'Artists must not be duplicated');
-assert(html.includes('Все участники') && html.includes('Купить билет'), 'Both festival actions must be visible');
+assert(html.includes('Все участники'), 'The artist list link must be visible');
+assert(!html.includes('Купить билет') && !html.includes('drivegrup.ru/ticket'), 'Ticket purchase links must not be exposed on the web');
 for (const removed of ['vh-topline', 'vh-heading', 'vh-countdown', 'vh-footer']) {
   assert(!html.includes(`class="${removed}"`), 'The showcase must contain only artist cards and festival actions');
 }

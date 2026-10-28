@@ -8,7 +8,7 @@ import './showcase.css';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'УЛЕТАЙ — участники фестиваля',
-  description: 'Знакомьтесь с участниками УЛЕТАЙ, слушайте их в VK Музыке и выбирайте билеты на фестиваль.',
+  description: 'Знакомьтесь с участниками УЛЕТАЙ и слушайте их в VK Музыке.',
   robots: { index: false, follow: true },
 };
 
@@ -25,7 +25,6 @@ export default async function VkHeadlinersPage() {
     endDate={festival.endDate}
     dates={dates}
     allUrl={`${siteUrl}/headliners/${festival.year}`}
-    ticketUrl="https://drivegrup.ru/ticket/ylet3"
     release={process.env.RELEASE_SHA || 'development'}
   />;
 }

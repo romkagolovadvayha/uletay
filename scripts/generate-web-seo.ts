@@ -16,7 +16,7 @@ import { encodeSeoRouteId, isDateWithinFestival } from '../src/seo/seoRouteUtils
 import { LEGAL_SECTIONS } from '../src/constants/legalContent';
 import { getSelectableHeadlinerYears } from '../src/utils/headlinerYears';
 import { writeAiDiscovery } from './ai-discovery';
-import { FESTIVAL_WEBSITE, TICKET_VENDOR_URL } from '../src/constants/legal';
+import { FESTIVAL_WEBSITE } from '../src/constants/legal';
 import { formatFestivalDateRange } from '../src/utils/festivalContent';
 
 type SeedData = Partial<AppData> & {
@@ -196,23 +196,7 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
   const hasCurrentAutographs = data.autographs.some((item) => isDateWithinFestival(item.date, data.festival));
   const common: RouteSpec[] = [
     {
-      path: '/', routeName: 'HomeTab', heading: `Фестиваль УЛЕТАЙ ${data.festival.year}`,
-      details: [
-        `Даты фестиваля: ${festivalDates}. Место: ${festivalPlace}. Возрастное ограничение: ${data.festival.ageRating}.`,
-        `В цифровом гиде собраны объявленные артисты, расписание, карта площадки, правила посещения, автограф-сессии и фудкорт.`,
-        hasCurrentSchedule
-          ? 'Опубликованное расписание выступлений доступно по дням и сценам.'
-          : `Расписание выступлений УЛЕТАЙ ${data.festival.year} пока не опубликовано. Оно появится после объявления программы.`,
-        `Состав участников и время выступлений могут измениться. Перед поездкой проверьте обновления и информацию на официальном сайте фестиваля.`,
-      ],
-      links: [
-        { href: currentHeadlinersPath, label: `Кто будет на УЛЕТАЙ ${data.festival.year}` },
-        { href: '/schedule', label: 'Расписание концертов' },
-        { href: '/map', label: 'Карта площадки' },
-        { href: '/rules', label: 'Правила посещения' },
-        { href: FESTIVAL_WEBSITE, label: 'Официальный сайт фестиваля' },
-        { href: TICKET_VENDOR_URL, label: 'Билеты у билетного партнёра' },
-      ],
+      path: '/', routeName: 'HomeTab', heading: 'Сайт закрыт просим прощения',
     },
     { path: '/map', routeName: 'MapTab', details: [
       `Площадка фестиваля находится в ${festivalPlace}. На интерактивной карте отмечены сцены, фудкорт и сервисные зоны.`,
@@ -247,7 +231,6 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
       'Сведения о билетах и организационные новости доступны на официальном сайте фестиваля. Покупка билетов проходит на внешнем сайте билетного партнёра.',
     ], links: [
       { href: FESTIVAL_WEBSITE, label: 'Официальный сайт фестиваля' },
-      { href: TICKET_VENDOR_URL, label: 'Билеты у партнёра' },
       { href: currentHeadlinersPath, label: `Артисты ${data.festival.year}` },
       { href: '/rules', label: 'Правила посещения' },
     ] },
@@ -418,6 +401,10 @@ const primaryNavigation = (festivalYear: number) => [
 ];
 
 function fallbackMarkup(route: GeneratedRoute, festivalYear: number): string {
+  if (route.path === '/') {
+    return `<section id="seo-fallback" class="site-closed"><h1>${htmlEscape(route.heading)}</h1></section>`;
+  }
+
   if (route.path === '/legal') {
     const sections = LEGAL_SECTIONS.map((section) => `<section id="${htmlEscape(section.id)}">
       <h2>${htmlEscape(section.title)}</h2>
@@ -508,6 +495,8 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
     'html,body,#root{background:#000;color:#f5f5f7;margin:0;min-height:100%}',
     '#seo-fallback{box-sizing:border-box;max-width:960px;margin:0 auto;padding:32px 20px;font:16px/1.6 system-ui,sans-serif}',
     '#seo-fallback a{color:#ffc107}#seo-fallback h1,#seo-fallback h2{line-height:1.2}',
+    '#seo-fallback.site-closed{max-width:none;height:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}',
+    '#seo-fallback.site-closed h1{margin:0;font:400 28px/40px system-ui,sans-serif}',
   ].join('');
   html = html.replace(
     '</head>',

@@ -66,6 +66,11 @@ export function ExternalLink({
   const reduceMotion = useReducedMotion();
 
   if (Platform.OS === 'web') {
+    // Ticket sales links are disabled on the website, including links from the CMS.
+    if (/^https?:\/\/(?:www\.)?drivegrup\.ru\/ticket(?:[/?#]|$)/i.test(href)) {
+      return null;
+    }
+
     const flatStyle =
       typeof style === 'function' ? style({ pressed: pointerPressed }) : style;
 

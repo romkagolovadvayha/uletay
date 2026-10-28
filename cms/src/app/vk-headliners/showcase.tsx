@@ -14,7 +14,6 @@ type Props = {
   endDate: string;
   dates: string;
   allUrl: string;
-  ticketUrl: string;
   release: string;
 };
 
@@ -100,10 +99,6 @@ export function HeadlinersShowcase(props: Props) {
     </section>}
     <nav className="vh-actions" aria-label="Фестиваль">
       <a className="vh-button vh-button-secondary" href={props.allUrl} target="_blank" rel="noopener noreferrer">Все участники <Arrow /></a>
-      <a className="vh-button vh-button-primary" href={props.ticketUrl} target="_blank" rel="noopener noreferrer">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5v3m0 3v2m0 3v3M4 5h16v4a3 3 0 0 0 0 6v4H4v-4a3 3 0 0 0 0-6V5Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        Купить билет
-      </a>
     </nav>
   </main>;
 }

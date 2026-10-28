@@ -168,8 +168,12 @@ if (!existsSync(sitemapPath)) {
     if (!html.includes(question)) fail(`${yearUrl} does not have the year-specific question`);
   }
   const home = readFileSync(path.join(distDir, 'index.html'), 'utf8');
-  if (!home.includes('Официальный сайт фестиваля') || !home.includes('Билеты у билетного партнёра')) {
-    fail('homepage is missing useful visitor links in static HTML');
+  if (!home.includes('<h1>Сайт закрыт просим прощения</h1>')) {
+    fail('homepage is missing the site closure notice');
+  }
+  const homeContent = home.match(/<section id="seo-fallback"[^>]*>([\s\S]*?)<\/section>/)?.[1] ?? '';
+  if (/<(?:a|button|nav)\b/i.test(homeContent)) {
+    fail('closed homepage must not contain links, buttons or navigation');
   }
 
   console.log(`check-web-seo: checked ${urls.length} sitemap URLs`);

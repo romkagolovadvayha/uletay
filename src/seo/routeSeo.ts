@@ -300,9 +300,9 @@ export function resolveSeoMeta(
 
   if (routeName === 'HomeTab') {
     return {
-      title: `Фестиваль УЛЕТАЙ ${data.festival.year} — даты, артисты и гид`,
+      title: `Сайт закрыт — ${siteName}`,
       siteName,
-      description: `УЛЕТАЙ ${data.festival.year}: ${formatFestivalDateRange(data.festival)}, ${data.festival.locationShort || data.festival.location}. Артисты, расписание по мере публикации, карта и правила фестиваля.`,
+      description: 'Сайт закрыт просим прощения',
       path: '/',
     };
   }

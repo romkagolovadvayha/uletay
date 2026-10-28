@@ -37,7 +37,7 @@ body { margin: 0; background: var(--vh-bg); color: var(--vh-text); font-family: 
 .vh-listen { display: flex; align-items: center; gap: 5px; min-height: 40px; width: fit-content; font-size: 12px; font-weight: 600; }
 .vh-listen > svg:first-child { color: var(--vh-accent); flex-shrink: 0; }
 .vh-external { color: var(--vh-muted); margin-left: 3px; flex-shrink: 0; }
-.vh-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 26px; }
+.vh-actions { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 26px; }
 .vh-button { min-height: 54px; padding: 14px 18px; display: flex; justify-content: center; align-items: center; gap: 10px; border: 1px solid var(--vh-line); border-radius: 10px; font-size: 15px; font-weight: 700; }
 .vh-page .vh-button-primary { color: #0b0d0b; background: var(--vh-accent); border-color: var(--vh-accent); }
 .vh-empty { border: 1px solid var(--vh-line); border-radius: 14px; padding: 40px 24px; text-align: center; }
