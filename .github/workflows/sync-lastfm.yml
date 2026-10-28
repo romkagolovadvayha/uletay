@@ -1,112 +1,42 @@
 name: Sync Last.fm
-
-on:
-  schedule:
-    # 04:00 MSK — metadata only (tracks, listeners, tags)
-    - cron: '0 1 * * *'
+'on':
   workflow_dispatch:
     inputs:
       force:
         description: Force refresh stale profiles
         type: boolean
         default: false
-
+  schedule:
+  - cron: 0 1 * * *
 permissions:
   contents: read
-
 concurrency:
-  group: sync-lastfm
+  group: uletay-production
   cancel-in-progress: false
-
 jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     environment: production
-
     env:
-      SSH_HOST: ${{ vars.SSH_HOST || secrets.SSH_HOST }}
-      SSH_USER: ${{ vars.SSH_USER || secrets.SSH_USER }}
-      SSH_PORT: ${{ vars.SSH_PORT || secrets.SSH_PORT || '22' }}
+      SSH_HOST: ${{ vars.SSH_HOST }}
+      SSH_USER: ${{ vars.SSH_USER }}
+      SSH_PORT: ${{ vars.SSH_PORT || '22' }}
       SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-      DB_NAME: ${{ vars.DB_NAME || secrets.DB_NAME }}
-      DB_USER: ${{ vars.DB_USER || secrets.DB_USER }}
-      DB_PASS: ${{ secrets.DB_PASS }}
-      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
-      LASTFM_PROXY_URL: ${{ secrets.LASTFM_PROXY_URL }}
-      DB_TUNNEL_PORT: '3307'
-
+      SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
-      - name: Validate secrets
-        run: |
-          if [ -z "$LASTFM_API_KEY" ]; then
-            echo "Set LASTFM_API_KEY in GitHub Environment production Secrets"
-            exit 1
-          fi
-          for name in SSH_HOST SSH_USER SSH_KNOWN_HOSTS DB_NAME DB_USER DB_PASS; do
-            if [ -z "${!name}" ]; then
-              echo "Missing $name in production Environment"
-              exit 1
-            fi
-          done
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: cms/package-lock.json
-
-      - name: Install CMS dependencies
-        run: npm ci --prefix cms
-
-      - name: Setup SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
-        run: bash deploy/gha-setup-ssh.sh
-
-      - name: Open MySQL SSH tunnel
-        run: |
-          TUNNEL_SOCKET="$RUNNER_TEMP/lastfm-mysql.sock"
-          ssh -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" \
-            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
-            -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
-            -M -S "$TUNNEL_SOCKET" -f -N \
-            -L "${DB_TUNNEL_PORT}:127.0.0.1:3306" "${SSH_USER}@${SSH_HOST}"
-          echo "TUNNEL_SOCKET=$TUNNEL_SOCKET" >> "$GITHUB_ENV"
-          echo "MySQL tunnel: 127.0.0.1:${DB_TUNNEL_PORT} -> ${SSH_HOST}:3306"
-
-      - name: Test Last.fm API
-        run: npm run headliners:test-lastfm --prefix cms
-        env:
-          LASTFM_API_KEY: ${{ env.LASTFM_API_KEY }}
-          LASTFM_PROXY_URL: ${{ env.LASTFM_PROXY_URL }}
-
-      - name: Sync Last.fm metadata
-        env:
-          FORCE: ${{ inputs.force }}
-          DB_HOST: 127.0.0.1
-          DB_PORT: ${{ env.DB_TUNNEL_PORT }}
-          DB_NAME: ${{ env.DB_NAME }}
-          DB_USER: ${{ env.DB_USER }}
-          DB_PASS: ${{ env.DB_PASS }}
-          LASTFM_API_KEY: ${{ env.LASTFM_API_KEY }}
-          LASTFM_PROXY_URL: ${{ env.LASTFM_PROXY_URL }}
-        run: |
-          cd cms
-          if [ "$FORCE" = "true" ]; then
-            npm run headliners:sync-lastfm -- --force
-          else
-            npm run headliners:sync-lastfm
-          fi
-
-      - name: Close SSH tunnel
-        if: always()
-        run: |
-          if [ -n "${TUNNEL_SOCKET:-}" ] && [ -S "$TUNNEL_SOCKET" ]; then
-            ssh -p "$SSH_PORT" -S "$TUNNEL_SOCKET" -O exit "${SSH_USER}@${SSH_HOST}" || true
-          fi
+    - name: Checkout
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+    - name: Setup pinned SSH connection
+      run: bash deploy/gha-setup-ssh.sh
+    - name: Run maintenance in the active production release
+      env:
+        MAINTENANCE_OPTIONS: ${{ toJSON(inputs) }}
+      run: |
+        if [ -z "$MAINTENANCE_OPTIONS" ] || [ "$MAINTENANCE_OPTIONS" = "null" ]; then
+          MAINTENANCE_OPTIONS='{}'
+        fi
+        printf '%s\n' "$MAINTENANCE_OPTIONS" | ssh -T -i "$DEPLOY_KEY_FILE" -p "$SSH_PORT" \
+          -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+          -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=15 \
+          "${SSH_USER}@${SSH_HOST}" sync-lastfm

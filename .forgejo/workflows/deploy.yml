@@ -1,8 +1,5 @@
 name: Deploy production
 'on':
-  push:
-    branches:
-    - master
   workflow_dispatch: null
 concurrency:
   group: uletay-production

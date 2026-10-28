@@ -1,5 +1,8 @@
 # Деплой и синхронизация через Gitlub
 
+> История прежней схемы. С 28 октября 2026 года основной процесс выпуска
+> возвращён на [GitHub Actions](github-deployment.md).
+
 Репозиторий: https://gitlub.prostoj.store/romkagolovadvayha/uletay.
 Push в `master` запускает `.forgejo/workflows/deploy.yml`.
 В том же релизе публикуется `https://vk-headliners.uletayapp.ru`: страница
