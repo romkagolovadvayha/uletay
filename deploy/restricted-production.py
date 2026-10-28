@@ -92,7 +92,7 @@ def deploy(commit,release_id):
             with tarfile.open(archive) as package:
                 for member in package.getmembers():
                     path=PurePosixPath(member.name)
-                    if path.is_absolute() or '..' in path.parts or path.parts[0] not in ['dist','assets','cms','deploy','shared']:
+                    if path.is_absolute() or '..' in path.parts or path.parts[0] not in ['dist','assets','cms','deploy','shared','src']:
                         raise ValueError('Unsafe archive path')
                     if not (member.isfile() or member.isdir()):
                         raise ValueError('Release archive must contain ordinary files/directories')

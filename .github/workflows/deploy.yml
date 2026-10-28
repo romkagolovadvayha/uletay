@@ -190,7 +190,8 @@ jobs:
       - name: Package release without environment files
         run: |
           tar --dereference --hard-dereference --exclude='cms/.env*' --exclude='cms/node_modules' --exclude='cms/.next/cache' \
-            -czf release.tar.gz dist assets cms deploy shared
+            -czf release.tar.gz dist assets cms deploy shared src
+          bash deploy/check-release-maintenance.sh release.tar.gz
 
       - name: Transfer and activate release with restricted SSH
         run: python3 deploy/send-release.py release.tar.gz
