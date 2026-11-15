@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 const fixedRoutes = [
   '/', '/map', '/schedule', '/schedule/full', '/autographs', '/favorites',
-  '/foodcourt', '/rules', '/settings', '/help',
+  '/foodcourt', '/rules', '/settings', '/help', '/privacy',
 ];
 const detailRoutes = [
   ['headliners', '/headliners/'], ['schedule', '/schedule/live/'],
@@ -58,6 +58,11 @@ export async function checkWebRoutes(origin, { connectHost } = {}) {
     const sitemapUrls = [...sitemap.body.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => new URL(match[1].replaceAll('&amp;', '&')));
     if (!sitemapUrls.length) throw new Error('sitemap.xml has no routes');
     const data = JSON.parse(api.body);
+    const privacy = await get('/privacy');
+    expectHtml('/privacy', privacy);
+    if (!privacy.body.includes('Политика конфиденциальности') || !privacy.body.includes('Удаление данных УЛЕТАЙ') || /<script\b/i.test(privacy.body)) {
+      failures.push('/privacy: expected the readable privacy policy without app scripts');
+    }
     const festivalYear = data.festival?.year;
     if (!Number.isInteger(festivalYear)) throw new Error('/api/data has no festival year');
     const currentHeadliners = `/headliners/${festivalYear}`;

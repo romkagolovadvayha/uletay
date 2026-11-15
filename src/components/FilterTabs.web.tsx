@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef } from 'react';
-import { colors } from '../theme/colors.web';
+import { colors } from '../theme/colors';
 import type { FilterTabsProps } from './FilterTabs';
 
 const CSS = `

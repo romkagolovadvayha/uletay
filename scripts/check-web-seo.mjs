@@ -8,6 +8,7 @@ const distDir = path.join(projectRoot, process.env.DIST_DIR ?? 'dist');
 const sitemapPath = path.join(distDir, 'sitemap.xml');
 const robotsPath = path.join(distDir, 'robots.txt');
 const festivalYearPath = path.join(distDir, 'festival-year.txt');
+const privacyPath = path.join(distDir, 'privacy', 'index.html');
 
 function fail(message) {
   console.error(`check-web-seo: ${message}`);
@@ -20,6 +21,18 @@ function routeFile(url) {
     return path.join(distDir, 'index.html');
   }
   return path.join(distDir, ...pathname.slice(1).split('/'), 'index.html');
+}
+
+if (!existsSync(privacyPath)) {
+  fail('privacy/index.html is missing');
+} else {
+  const privacy = readFileSync(privacyPath, 'utf8');
+  for (const text of ['Политика конфиденциальности', 'Firebase Installations', 'OSRM', 'Удаление данных УЛЕТАЙ', 'https://uletayapp.ru/privacy']) {
+    if (!privacy.includes(text)) fail(`privacy policy is missing ${text}`);
+  }
+  if (/<script\b/i.test(privacy) || /http-equiv=["']refresh/i.test(privacy)) {
+    fail('privacy policy must be readable without JavaScript or redirects');
+  }
 }
 
 if (!existsSync(sitemapPath)) {

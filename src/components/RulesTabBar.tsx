@@ -3,13 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useId, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
 import { LiquidSelect } from './LiquidDialog';
-import Animated, {
-  Easing,
-  FadeIn,
-  FadeOut,
-  useReducedMotion,
-  withTiming,
-} from 'react-native-reanimated';
 import { MotionPressable } from './MotionPressable';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -28,39 +21,10 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
-const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
-const REDUCED_MENU_ENTER = FadeIn.duration(140).easing(EASE_OUT);
-const REDUCED_MENU_EXIT = FadeOut.duration(100).easing(EASE_OUT);
-const MENU_ENTER = () => {
-  'worklet';
-  return {
-    initialValues: { opacity: 0, transform: [{ scale: 0.97 }] },
-    animations: {
-      opacity: withTiming(1, { duration: 160, easing: EASE_OUT }),
-      transform: [
-        { scale: withTiming(1, { duration: 160, easing: EASE_OUT }) },
-      ],
-    },
-  };
-};
-const MENU_EXIT = () => {
-  'worklet';
-  return {
-    initialValues: { opacity: 1, transform: [{ scale: 1 }] },
-    animations: {
-      opacity: withTiming(0, { duration: 120, easing: EASE_OUT }),
-      transform: [
-        { scale: withTiming(0.97, { duration: 120, easing: EASE_OUT }) },
-      ],
-    },
-  };
-};
-
 export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
   const moreId = useId();
   const [availableWidth, setAvailableWidth] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
-  const reduceMotion = useReducedMotion();
 
   const visibleCount = useMemo(() => {
     if (availableWidth <= 0) return Math.min(2, tabs.length);
@@ -140,47 +104,14 @@ export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
             <Ionicons
               name={moreOpen ? 'chevron-up' : 'chevron-down'}
               size={14}
-              color={selectedInOverflow && Platform.OS !== 'web' ? colors.primaryText : colors.text}
+              color={colors.text}
             />
           </MotionPressable>
         ) : null}
       </View>
 
-      {Platform.OS === 'web' ? (
-        <LiquidSelect open={moreOpen} onClose={() => setMoreOpen(false)} title="Разделы правил"
-          anchorId={moreId} id={`${moreId}-menu`} value={selectedId} options={overflowTabs} onChange={selectTab} />
-      ) : moreOpen && overflowTabs.length > 0 ? (
-        <Animated.View
-          accessibilityRole="menu"
-          entering={reduceMotion ? REDUCED_MENU_ENTER : MENU_ENTER}
-          exiting={reduceMotion ? REDUCED_MENU_EXIT : MENU_EXIT}
-          style={styles.menu}
-        >
-          {overflowTabs.map((tab) => {
-            const isActive = tab.id === selectedId;
-            return (
-              <MotionPressable
-                key={tab.id}
-                accessibilityRole="menuitem"
-                accessibilityState={{ selected: isActive }}
-                aria-selected={isActive}
-                onPress={() => selectTab(tab.id)}
-                style={[
-                  styles.menuItem,
-                  isActive && styles.menuItemActive,
-                ]}
-              >
-                <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
-                  {tab.label}
-                </Text>
-                {isActive ? (
-                  <Ionicons name="checkmark" size={18} color={colors.primaryText} />
-                ) : null}
-              </MotionPressable>
-            );
-          })}
-        </Animated.View>
-      ) : null}
+      <LiquidSelect open={moreOpen} onClose={() => setMoreOpen(false)} title="Разделы правил"
+        anchorId={moreId} id={`${moreId}-menu`} value={selectedId} options={overflowTabs} onChange={selectTab} />
     </View>
   );
 }

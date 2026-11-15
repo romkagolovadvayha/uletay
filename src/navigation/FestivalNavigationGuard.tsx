@@ -9,7 +9,7 @@ import { navigationRef } from './navigationRef';
 import { RootTabParamList } from './types';
 
 const FESTIVAL_ONLY_MORE_ROUTES = new Set(['FoodCourtMain', 'FoodCourtDetail']);
-const FESTIVAL_MORE_TABS = new Set<keyof RootTabParamList>(['Autographs', 'PlaylistTab']);
+const FESTIVAL_MORE_TABS = new Set<keyof RootTabParamList>(['Autographs']);
 const ALWAYS_AVAILABLE_HIDDEN_TABS = new Set<keyof RootTabParamList>(['HelpTab']);
 
 function readGuardState(): {
@@ -59,7 +59,7 @@ function shouldRedirect(
     moreNestedRoute != null &&
     FESTIVAL_ONLY_MORE_ROUTES.has(moreNestedRoute);
 
-  return shouldLeaveTab || shouldLeaveMore;
+  return shouldLeaveTab || shouldLeaveMore || (currentTab === 'MoreTab' && ['FestivalAbout', 'Legal'].includes(moreNestedRoute ?? ''));
 }
 
 export function FestivalNavigationGuard() {

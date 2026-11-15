@@ -1,164 +1,45 @@
-import { TextStyle } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
 
-/** Three Montserrat files only; heavier keys alias to Regular/Bold for LCP. */
+export const webFontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+const fontFamily = Platform.OS === 'web' ? webFontFamily : Platform.OS === 'ios' ? 'System' : 'sans-serif';
 export const fonts = {
-  regular: 'Montserrat_400Regular',
-  medium: 'Montserrat_400Regular',
-  semiBold: 'Montserrat_600SemiBold',
-  bold: 'Montserrat_700Bold',
-  extraBold: 'Montserrat_700Bold',
-  black: 'Montserrat_700Bold',
+  regular: fontFamily, medium: fontFamily, semiBold: fontFamily,
+  bold: fontFamily, extraBold: fontFamily, black: fontFamily,
 } as const;
-
-export const webFontFamily = "'Montserrat', 'Segoe UI', system-ui, sans-serif";
-
 export type FontKey = keyof typeof fonts;
+const weights = { regular: '400', medium: '500', semiBold: '600', bold: '700', extraBold: '700', black: '700' } as const;
 
-function font(key: FontKey): Pick<TextStyle, 'fontFamily'> {
-  return { fontFamily: fonts[key] };
+export function appFont(key: FontKey): Pick<TextStyle, 'fontFamily' | 'fontWeight'> {
+  return { fontFamily, fontWeight: weights[key] };
 }
 
-export function appFont(key: FontKey): Pick<TextStyle, 'fontFamily'> {
-  return font(key);
+function text(size: number, lineHeight: number, weight: FontKey = 'regular', letterSpacing = 0): TextStyle {
+  return { ...appFont(weight), fontSize: size, lineHeight, letterSpacing, textTransform: 'none' };
 }
 
 export const typography = {
-  logoTagline: {
-    ...font('bold'),
-    fontSize: 12,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  logoMain: {
-    ...font('black'),
-    fontSize: 46,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  logoYear: {
-    ...font('black'),
-    fontSize: 30,
-    letterSpacing: 0.5,
-  } satisfies TextStyle,
-  logoDates: {
-    ...font('bold'),
-    fontSize: 13,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  location: {
-    ...font('bold'),
-    fontSize: 12,
-    letterSpacing: 0.9,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  screenTitle: {
-    ...font('black'),
-    fontSize: 22,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  screenSubtitle: {
-    ...font('extraBold'),
-    fontSize: 12,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  sectionTitle: {
-    ...font('extraBold'),
-    fontSize: 12,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  sectionMuted: {
-    ...font('semiBold'),
-    fontSize: 12,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  countdownTitle: {
-    ...font('semiBold'),
-    fontSize: 12,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  countdownValue: {
-    ...font('black'),
-    fontSize: 32,
-    letterSpacing: -0.5,
-  } satisfies TextStyle,
-  countdownLabel: {
-    ...font('semiBold'),
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  button: {
-    ...font('extraBold'),
-    fontSize: 14,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  artistName: {
-    ...font('extraBold'),
-    fontSize: 17,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  artistStage: {
-    ...font('bold'),
-    fontSize: 12,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  artistTime: {
-    ...font('medium'),
-    fontSize: 13,
-    letterSpacing: 0.1,
-  } satisfies TextStyle,
-  heroArtist: {
-    ...font('black'),
-    fontSize: 36,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  heroStage: {
-    ...font('extraBold'),
-    fontSize: 13,
-    letterSpacing: 0.9,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  scheduleTime: {
-    ...font('extraBold'),
-    fontSize: 14,
-    letterSpacing: 0.1,
-  } satisfies TextStyle,
-  scheduleArtist: {
-    ...font('bold'),
-    fontSize: 13,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  tabLabel: {
-    ...font('bold'),
-    fontSize: 12,
-    letterSpacing: 0.1,
-  } satisfies TextStyle,
-  liveBadge: {
-    ...font('extraBold'),
-    fontSize: 12,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
-  body: {
-    ...font('medium'),
-    fontSize: 14,
-    letterSpacing: 0.1,
-  } satisfies TextStyle,
-  caption: {
-    ...font('semiBold'),
-    fontSize: 12,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  } satisfies TextStyle,
+  logoTagline: text(12, 16, 'semiBold', 0.4),
+  logoMain: text(46, 50, 'bold', -1.2),
+  logoYear: text(30, 36, 'bold', -0.5),
+  logoDates: text(13, 18, 'semiBold'),
+  location: text(13, 18, 'medium'),
+  screenTitle: text(34, 40, 'bold', -0.8),
+  screenSubtitle: text(15, 20, 'medium'),
+  sectionTitle: text(20, 26, 'semiBold', -0.3),
+  sectionMuted: text(13, 18, 'medium'),
+  countdownTitle: text(13, 18, 'medium'),
+  countdownValue: text(32, 38, 'bold', -0.5),
+  countdownLabel: text(12, 16),
+  button: text(17, 22, 'semiBold', -0.2),
+  artistName: text(17, 22, 'semiBold', -0.2),
+  artistStage: text(13, 18, 'medium'),
+  artistTime: text(15, 20, 'medium'),
+  heroArtist: text(36, 42, 'bold', -0.8),
+  heroStage: text(15, 20, 'semiBold'),
+  scheduleTime: text(14, 18, 'semiBold'),
+  scheduleArtist: text(14, 18, 'semiBold'),
+  tabLabel: text(11, 14, 'medium'),
+  liveBadge: text(12, 16, 'semiBold', 0.2),
+  body: text(17, 24),
+  caption: text(13, 18),
 } as const;

@@ -61,7 +61,7 @@ type SidebarItemProps = {
 function SidebarItem({ icon, iconNode, label, active, desktop, onPress }: SidebarItemProps) {
   const color = active ? colors.tabActive : colors.tabInactive;
   const outline = `${icon}-outline` as keyof typeof Ionicons.glyphMap;
-  const displayIcon = Platform.OS === 'web' && !active && icon && outline in Ionicons.glyphMap ? outline : icon;
+  const displayIcon = !active && icon && outline in Ionicons.glyphMap ? outline : icon;
 
   return (
     <Pressable
@@ -128,9 +128,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       const routes = state.routes.filter((route) =>
         mainTabRoutes.includes(route.name as keyof RootTabParamList),
       );
-      return Platform.OS === 'web'
-        ? routes.sort((a, b) => mainTabRoutes.indexOf(a.name as keyof RootTabParamList) - mainTabRoutes.indexOf(b.name as keyof RootTabParamList))
-        : routes;
+      return routes.sort((a, b) => mainTabRoutes.indexOf(a.name as keyof RootTabParamList) - mainTabRoutes.indexOf(b.name as keyof RootTabParamList));
     },
     [mainTabRoutes, state.routes],
   );
@@ -159,7 +157,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
     ...(headlinersInMore
       ? [{
           key: 'headliners',
-          icon: Platform.OS === 'web' ? 'people' as const : 'mic' as const,
+          icon: 'people' as const,
           label: 'Хэдлайнеры',
           isActive: moreNestedRoute === 'HeadlinersMain' || moreNestedRoute === 'HeadlinerDetail',
           onPress: () => openHeadlinersMain(tabNavigation),
@@ -204,15 +202,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       isActive: moreNestedRoute === 'FestivalRules',
       onPress: () => tabNavigation.navigate('MoreTab', { screen: 'FestivalRules' }),
     },
-    ...(Platform.OS !== 'web'
-      ? [{
-          key: 'about',
-          icon: 'information-circle' as const,
-          label: 'О фестивале',
-          isActive: moreNestedRoute === 'FestivalAbout',
-          onPress: () => tabNavigation.navigate('MoreTab', { screen: 'FestivalAbout' }),
-        }]
-      : []),
+
   ];
 
   const tabIcons: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
@@ -221,10 +211,10 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
     HelpTab: 'medical',
     ScheduleTab: 'calendar',
     Autographs: 'ticket',
-    FavoritesTab: Platform.OS === 'web' ? 'star' : 'heart',
+    FavoritesTab: 'star',
     PlaylistTab: 'radio',
-    HeadlinersTab: Platform.OS === 'web' ? 'people' : 'mic',
-    MoreTab: 'reorder-three',
+    HeadlinersTab: 'people',
+    MoreTab: 'ellipsis-horizontal',
   };
   const festivalStart = useMemo(
     () => parseDateTime(data.festival.startDate, '12:00'),

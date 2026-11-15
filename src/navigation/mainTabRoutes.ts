@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { Platform } from 'react-native';
 import { useAppData } from '../context/DataContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { getFestivalDayDate } from '../utils/festivalTime';
@@ -25,37 +24,10 @@ export function shouldPutHeadlinersInMoreTab(_festivalActive: boolean): boolean 
 }
 
 export function getVisibleMainTabRoutes(
-  festivalActive: boolean,
-  content: MainTabContentFlags,
+  _festivalActive: boolean,
+  _content: MainTabContentFlags,
 ): (keyof RootTabParamList)[] {
-  if (Platform.OS === 'web') {
-    return ['HomeTab', 'MapTab', 'HeadlinersTab', 'ScheduleTab', 'FavoritesTab'];
-  }
-
-  if (festivalActive) {
-    const festivalRoutes: (keyof RootTabParamList)[] = ['HomeTab'];
-    if (content.hasSchedule) {
-      festivalRoutes.push('ScheduleTab');
-    }
-    festivalRoutes.push('MapTab', 'FavoritesTab', 'HeadlinersTab', 'PlaylistTab');
-    return festivalRoutes;
-  }
-
-  const routes: (keyof RootTabParamList)[] = ['HomeTab', 'MapTab'];
-
-  if (content.hasSchedule) {
-    routes.push('ScheduleTab');
-  }
-  if (content.hasAutographs) {
-    routes.push('Autographs');
-  }
-  // Вне фестиваля хэдлайнеры остаются отдельным основным разделом.
-  if (!shouldPutHeadlinersInMoreTab(festivalActive)) {
-    routes.push('HeadlinersTab');
-  }
-
-  routes.push('PlaylistTab');
-  return routes;
+  return ['HomeTab', 'MapTab', 'HeadlinersTab', 'ScheduleTab', 'FavoritesTab'];
 }
 
 export function useMainTabContentFlags(): MainTabContentFlags {

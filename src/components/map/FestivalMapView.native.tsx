@@ -1,7 +1,7 @@
 import { Camera, GeoJSONSource, ImageSource, Layer, Map as NativeMap, type CameraRef } from '@maplibre/maplibre-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { mapControlLayout } from '../../theme/map';
+import { StyleSheet, View } from 'react-native';
+import { MapCredits } from './MapCredits';
 import { useLatestRef } from '../../hooks/useLatestRef';
 import { useMapMotion } from './MapMotionConfig';
 import { configureNativeMapCache } from './map-cache.native';
@@ -36,7 +36,7 @@ export function FestivalMapView(props: FestivalMapViewProps) {
   const { reduceMotion } = useMapMotion();
   const motion = useLatestRef(reduceMotion);
   const attachCamera = useMapCamera(props.onMapReady);
-  const style = useMemo(() => JSON.stringify(festivalMapStyle()), []);
+  const style = useMemo(() => JSON.stringify(festivalMapStyle({ dark: true })), []);
   const [initialView] = useState(() => ({ center: [props.config.center.lng, props.config.center.lat] as [number, number], zoom: clampZoom(props.config.defaultZoom), pitch: props.viewMode === '2d' ? 0 : 36 }));
 
   useEffect(() => { void configureNativeMapCache(); }, []);
@@ -75,9 +75,7 @@ export function FestivalMapView(props: FestivalMapViewProps) {
     camera.current?.easeTo({ center: [lng, lat], zoom: Math.max(16, zoom.current), duration: reduceMotion ? 0 : 350 });
   }, [initialized, props.followUser, lat, lng, reduceMotion]);
 
-  return <NativeMap mapStyle={style} style={styles.fill} attribution logo={false} compass
-    attributionPosition={{ bottom: mapControlLayout.attributionBottom, left: 8 }}
-    compassPosition={{ bottom: mapControlLayout.compassBottom, left: 16 }}
+  return <View style={styles.fill}><NativeMap mapStyle={style} style={styles.fill} attribution={false} logo={false} compass={false}
     dragPan touchZoom touchRotate
     onLayout={event => { size.current = event.nativeEvent.layout; }}
     onDidFinishLoadingStyle={() => setInitialized(true)}
@@ -102,6 +100,6 @@ export function FestivalMapView(props: FestivalMapViewProps) {
     <Source {...scene.sources[1]} />
     {scene.images.filter(image => image.id !== 'festival-plan').map(image => <MapImage key={image.id} image={image} />)}
     {scene.sources.slice(2).map(source => <Source key={source.id} {...source} />)}
-  </NativeMap>;
+  </NativeMap><MapCredits /></View>;
 }
 const styles = StyleSheet.create({ fill: { flex: 1, minHeight: 0 } });

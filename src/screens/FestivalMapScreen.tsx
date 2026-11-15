@@ -112,7 +112,7 @@ export function FestivalMapScreen({ route }: Props) {
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
   const [autocampGroupKey, setAutocampGroupKey] = useState('all');
   const [followUser, setFollowUser] = useState(false);
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>(Platform.OS === 'web' ? '2d' : '3d');
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [compactMapControls, setCompactMapControls] = useState(false);
   const [mapPopupHeight, setMapPopupHeight] = useState(0);
   const [pickedZoneId, setPickedZoneId] = useState<string | null>(null);
@@ -390,7 +390,6 @@ export function FestivalMapScreen({ route }: Props) {
   }
 
   const mapUnavailable = mapLoadError || mapRenderError;
-  const tracedPlan = data.mapZones?.features.some(zone => zone.properties.id.startsWith('plan-2026-'));
 
   return (
     <MapMotionConfig>
@@ -563,12 +562,10 @@ export function FestivalMapScreen({ route }: Props) {
               </View>
             ) : null}
             <MapFabGroup
-              onInfo={Platform.OS !== 'web' && tracedPlan && !popupVisible ? () => { dismissPopup(); setMapInfoVisible(true); } : undefined}
               viewMode={viewMode}
               onToggleView={() => setViewMode(mode => mode === '3d' ? '2d' : '3d')}
               compact={compactMapControls || popupVisible}
-              bottomOffset={popupVisible ? mapPopupHeight + 8 : Platform.OS === 'web'
-                ? mapControlLayout.attributionBottom + mapControlLayout.attributionHeight + spacing.sm : undefined}
+              bottomOffset={popupVisible ? mapPopupHeight + 8 : mapControlLayout.attributionBottom + mapControlLayout.attributionHeight + spacing.sm}
               onZoomIn={() => mapApi.current?.zoomBy?.(1)}
               onZoomOut={() => mapApi.current?.zoomBy?.(-1)}
               onLocate={handleLocate}
@@ -600,7 +597,7 @@ export function FestivalMapScreen({ route }: Props) {
           visible={popupVisible}
           onHeightChange={setMapPopupHeight}
           onClose={dismissPopup}
-          showCloseButton={!directionsVisible && !(Platform.OS === 'web' && savedPlacesVisible)}
+          showCloseButton={!directionsVisible && !savedPlacesVisible}
         >
           {nearbyPlaces.length ? (
             <ScrollView style={styles.mapInfoContent}>

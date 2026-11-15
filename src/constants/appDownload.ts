@@ -1,5 +1,5 @@
-import { colors } from '../theme/colors.web';
-import { radius } from '../theme/radius.web';
+import { colors } from '../theme/colors';
+import { radius } from '../theme/radius';
 import { webUi } from '../theme/web';
 import { AMBIENT_BACKGROUND, AMBIENT_BACKGROUND_CSS } from '../theme/ambientBackground';
 

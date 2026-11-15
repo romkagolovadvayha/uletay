@@ -1,4 +1,4 @@
-import { colors } from './colors.web';
+import { colors } from './colors';
 
 /** The regular dark material keeps text legible above moving/colourful content. */
 export const LIQUID_OVERLAY_CSS = `

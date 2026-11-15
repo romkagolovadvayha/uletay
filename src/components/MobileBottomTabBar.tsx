@@ -23,7 +23,7 @@ const MOBILE_TAB_LABELS: Partial<Record<keyof RootTabParamList, string>> = {
   HomeTab: 'Домой',
   MapTab: 'Карта',
   FavoritesTab: 'Моё',
-  HeadlinersTab: Platform.OS === 'web' ? 'Лайн-ап' : 'Лайнап',
+  HeadlinersTab: 'Лайн-ап',
   PlaylistTab: 'Радио',
   MoreTab: 'Ещё',
 };
@@ -54,9 +54,7 @@ export function MobileBottomTabBar({
         return name === 'MoreTab' || mainTabRoutes.includes(name);
       });
       const order: (keyof RootTabParamList)[] = [...mainTabRoutes, 'MoreTab'];
-      return Platform.OS === 'web'
-        ? routes.sort((a, b) => order.indexOf(a.name as keyof RootTabParamList) - order.indexOf(b.name as keyof RootTabParamList))
-        : routes;
+      return routes.sort((a, b) => order.indexOf(a.name as keyof RootTabParamList) - order.indexOf(b.name as keyof RootTabParamList));
     },
     [mainTabRoutes, state.routes],
   );
@@ -67,7 +65,7 @@ export function MobileBottomTabBar({
     focusedVisibleIndex >= 0
       ? focusedVisibleIndex
       : visibleRoutes.findIndex((route) => route.name === 'MoreTab');
-  const compactLabels = Platform.OS === 'web' && visibleRoutes.length >= 6 && barWidth < 480;
+  const compactLabels = visibleRoutes.length >= 6 && barWidth < 480;
   const tabWidth = barWidth / visibleRoutes.length;
 
   const handleLayout = (event: LayoutChangeEvent) => {

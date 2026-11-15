@@ -42,6 +42,7 @@ try {
   const encodedArtist = '/headliners/hl-%D0%B0%D1%80%D0%B8%D1%8F';
   await file('dist/index.html', document('App shell'));
   await file('dist/404.html', document('Not found'));
+  await file('dist/privacy/index.html', document('Политика конфиденциальности. Удаление данных УЛЕТАЙ'));
   await file('dist/headliners/index.html', document('Artists'));
   await file('dist/headliners/2027/index.html', document('Artists 2027'));
   await file('dist/headliners/2026/index.html', document('Artists 2026'));

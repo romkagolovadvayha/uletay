@@ -17,6 +17,8 @@ import { getSelectableHeadlinerYears } from '../src/utils/headlinerYears';
 import { writeAiDiscovery } from './ai-discovery';
 import { formatFestivalDateRange } from '../src/utils/festivalContent';
 import { APP_DOWNLOAD_CSS, APP_DOWNLOAD_SUBTITLE, APP_DOWNLOAD_TITLE, APP_STORES, APP_STORE_UNAVAILABLE } from '../src/constants/appDownload';
+import { LEGAL_SECTIONS } from '../src/constants/legalContent';
+import { PRIVACY_POLICY_URL } from '../src/constants/legal';
 
 type SeedData = Partial<AppData> & {
   festival: AppData['festival'];
@@ -485,6 +487,43 @@ function sitemapXml(routes: GeneratedRoute[]): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`;
 }
 
+// Store reviewers must be able to read the policy without starting the app.
+// Keep it independent of the retired /legal section and the SPA router.
+function writePrivacyPolicy() {
+  const policy = LEGAL_SECTIONS.find((section) => section.id === 'privacy');
+  if (!policy) throw new Error('Privacy policy content is missing');
+  const paragraphs = (values: string[]) => values.map((text) => `<p>${htmlEscape(text)}</p>`).join('\n');
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, follow">
+  <meta name="color-scheme" content="dark">
+  <title>Политика конфиденциальности — УЛЕТАЙ</title>
+  <link rel="canonical" href="${htmlEscape(PRIVACY_POLICY_URL)}">
+  <style>
+    *{box-sizing:border-box}html{background:#101114;color:#f5f5f7;font:17px/1.7 system-ui,sans-serif}
+    body{margin:0}main{max-width:820px;margin:auto;padding:48px 24px 64px}
+    h1{font-size:clamp(28px,6vw,40px);line-height:1.15;margin:32px 0;overflow-wrap:anywhere}
+    p,li{overflow-wrap:anywhere}li{margin:0 0 18px}ul{padding-left:24px}
+    a{color:#ffd34e;text-underline-offset:4px}a:focus-visible{outline:2px solid currentColor;outline-offset:6px}
+    @media(max-width:480px){main{padding:24px 20px 48px}}
+  </style>
+</head>
+<body><main>
+  <a href="/">На главную</a>
+  <h1>${htmlEscape(policy.title)}</h1>
+  ${paragraphs(policy.paragraphs)}
+  <ul>${(policy.bullets ?? []).map((text) => `<li>${htmlEscape(text)}</li>`).join('\n')}</ul>
+  ${paragraphs(policy.afterBullets ?? [])}
+</main></body>
+</html>`;
+  const outputPath = routeOutputPath('/privacy');
+  mkdirSync(path.dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, html, 'utf8');
+}
+
 async function main() {
   if (!existsSync(indexPath)) {
     throw new Error(`Missing ${indexPath}; run Expo web export first`);
@@ -519,6 +558,7 @@ async function main() {
   writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml(routes), 'utf8');
   writeFileSync(path.join(distDir, 'festival-year.txt'), `${data.festival.year}\n`, 'utf8');
   writeAiDiscovery(data, distDir);
+  writePrivacyPolicy();
   console.log(
     `generate-web-seo: wrote ${routes.length} route documents and sitemap.xml`,
   );

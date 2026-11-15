@@ -136,7 +136,7 @@ export function buildSceneImages(config: FestivalMapViewProps['config'], zones: 
 }
 
 export const sceneLayers: Record<string, SceneLayer[]> = {
-  ground: [{ id: 'fest-ground', type: 'fill', source: 'ground', paint: { 'fill-color': ['get', 'color'] } }],
+  ground: [{ id: 'fest-ground', type: 'fill', source: 'ground', filter: ['!=', ['get', 'color'], '#EDCD80'], paint: { 'fill-color': ['match', ['get', 'color'], '#8DA837', '#29382B', ['get', 'color']] } }],
   zones: [
     { id: 'fest-zone-fill', type: 'fill', source: 'zones', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': ['get', 'opacity'] } },
     { id: 'fest-zone-outline', type: 'line', source: 'zones', paint: { 'line-color': ['get', 'stroke'], 'line-width': ['get', 'width'] } },
@@ -144,11 +144,11 @@ export const sceneLayers: Record<string, SceneLayer[]> = {
       paint: { 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': 0, 'fill-extrusion-vertical-gradient': true } },
   ],
   lettering: [{ id: 'fest-roof-lettering', type: 'fill-extrusion', source: 'lettering',
-    paint: { 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-base': ['get', 'base'], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-vertical-gradient': false } }],
+    paint: { 'fill-extrusion-color': ['case', ['all', ['==', ['get', 'base'], 0], ['==', ['get', 'color'], '#263124']], '#E0E4DF', ['get', 'color']], 'fill-extrusion-base': ['get', 'base'], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-vertical-gradient': false } }],
   rows: [{ id: 'fest-rows', type: 'line', source: 'rows', paint: { 'line-color': '#C2AD78', 'line-width': 0.7, 'line-opacity': 0.5 } }],
   paths: [
     { id: 'fest-paths', type: 'line', source: 'paths', filter: ['!', ['get', 'dashed']], layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'] } },
+      paint: { 'line-color': '#90949A', 'line-width': ['get', 'width'] } },
     { id: 'fest-paths-dashed', type: 'line', source: 'paths', filter: ['get', 'dashed'], layout: { 'line-cap': 'round' },
       paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-dasharray': [1, 2] } },
     { id: 'fest-street-label', type: 'symbol', source: 'paths', filter: ['!=', ['get', 'label'], ''], minzoom: 16,

@@ -1,6 +1,6 @@
 import { webLabel } from '../theme/ios';
 import React, { useMemo } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { NavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -64,11 +64,11 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
 
       <ScheduleStageGrid
         performances={dayPerformances}
-        centerStageHeaders={Platform.OS === 'web' && !hasPublishedSchedule}
+        centerStageHeaders={!hasPublishedSchedule}
         emptyMessage={hasPublishedSchedule
           ? 'Нет выступлений в этот день'
           : `Расписание Улетай ${data.festival.year} ещё не опубликовано. Следите за обновлениями.`}
-        emptyContent={Platform.OS === 'web' ? (
+        emptyContent={(
           <View style={styles.emptyContent}>
             <Text style={styles.emptyTitle}>
               {hasPublishedSchedule ? 'Нет выступлений в этот день' : `Расписание Улетай ${data.festival.year} ещё не опубликовано`}
@@ -82,7 +82,7 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
               }} />
             </> : null}
           </View>
-        ) : undefined}
+        )}
         stages={data.stages}
         selectedDate={selectedDate}
         now={now}

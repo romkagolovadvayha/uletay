@@ -64,7 +64,7 @@ export function MapSearchPanel({
         kind: 'zone',
         id: zone.properties.id,
         name: zone.properties.name,
-        icon: Platform.OS === 'web' && zone.properties.zoneType === 'service'
+        icon: zone.properties.zoneType === 'service'
           ? getPoiIconName(zonePoiCategory(zone) ?? 'info')
           : getZoneIconName(zone.properties.zoneType),
         item: zone,

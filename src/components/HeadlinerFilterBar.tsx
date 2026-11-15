@@ -2,10 +2,7 @@ import { ios, webStyle } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useId, useMemo, useState } from 'react';
 import {
-  Modal,
   Platform,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,7 +11,6 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MotionPressable } from './MotionPressable';
 import { LiquidSelect } from './LiquidDialog';
 import { colors } from '../theme/colors';
@@ -43,7 +39,6 @@ type FilterSelectProps = {
 function FilterSelect({ value, options, onChange, accessibilityLabel, iconOnly = false, style }: FilterSelectProps) {
   const [open, setOpen] = useState(false);
   const selectId = useId();
-  const insets = useSafeAreaInsets();
   const selected = options.find((option) => option.id === value);
 
   return (
@@ -70,57 +65,9 @@ function FilterSelect({ value, options, onChange, accessibilityLabel, iconOnly =
         )}
       </MotionPressable>
 
-      {Platform.OS === 'web' ? <LiquidSelect open={open} onClose={() => setOpen(false)}
+      <LiquidSelect open={open} onClose={() => setOpen(false)}
         title={accessibilityLabel} anchorId={selectId} id={`${selectId}-menu`} value={value}
-        options={options} onChange={onChange} /> : <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <View
-          style={[
-            styles.backdrop,
-            {
-              paddingTop: insets.top + spacing.md,
-              paddingBottom: insets.bottom + spacing.md,
-            },
-          ]}
-        >
-          <Pressable style={styles.backdropPress} onPress={() => setOpen(false)} />
-          <ScrollView
-            style={styles.menuScroll}
-            contentContainerStyle={styles.menu}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-            showsVerticalScrollIndicator={options.length > 6}
-          >
-            {options.map((option) => {
-              const isActive = option.id === value;
-              return (
-                <MotionPressable
-                  key={option.id}
-                  accessibilityRole="button"
-                  aria-pressed={isActive}
-                  onPress={() => {
-                    onChange(option.id);
-                    setOpen(false);
-                  }}
-                  style={[
-                    styles.menuItem,
-                    isActive && styles.menuItemActive,
-                  ]}
-                >
-                  <Text
-                    style={[styles.menuItemLabel, isActive && styles.menuItemLabelActive]}
-                    numberOfLines={2}
-                  >
-                    {option.label}
-                  </Text>
-                  {isActive ? (
-                    <Ionicons name="checkmark" size={16} color={colors.primary} />
-                  ) : null}
-                </MotionPressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>}
+        options={options} onChange={onChange} />
     </>
   );
 }
@@ -145,7 +92,8 @@ export function HeadlinerFilterBar({
   onSortModeChange,
 }: Props) {
   const { width } = useWindowDimensions();
-  const compactSearch = Platform.OS === 'web' && width < 400 && searchQuery.length > 0;
+  const [searchFocused, setSearchFocused] = useState(false);
+  const compactSearch = width < 400 && searchQuery.length > 0;
   const sortOptions = useMemo(
     () => HEADLINER_SORT_OPTIONS.map((option) => ({ id: option.id, label: option.label })),
     [],
@@ -153,8 +101,8 @@ export function HeadlinerFilterBar({
 
   return (
     <View style={styles.row}>
-      <View nativeID={Platform.OS === 'web' ? 'headliner-search-field' : undefined} style={styles.searchWrap}>
-        {!compactSearch ? <Ionicons name="search" size={Platform.OS === 'web' ? 20 : 16} color={colors.textMuted} style={styles.searchIcon} /> : null}
+      <View nativeID={Platform.OS === 'web' ? 'headliner-search-field' : undefined} style={[styles.searchWrap, searchFocused && styles.searchFocused]}>
+        {!compactSearch ? <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} /> : null}
         <TextInput
           accessibilityLabel="Поиск хэдлайнера"
           value={searchQuery}
@@ -164,9 +112,13 @@ export function HeadlinerFilterBar({
           style={styles.searchInput}
           autoCapitalize="none"
           autoCorrect={false}
-          clearButtonMode="while-editing"
+          clearButtonMode="never"
+          selectionColor={colors.primary}
+          underlineColorAndroid="transparent"
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
         />
-        {Platform.OS === 'web' && searchQuery ? (
+        {searchQuery ? (
           <MotionPressable accessibilityRole="button" accessibilityLabel="Очистить поиск" onPress={() => onSearchQueryChange('')} style={styles.clearSearch}>
             <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
           </MotionPressable>
@@ -183,7 +135,7 @@ export function HeadlinerFilterBar({
 
       <FilterSelect
         accessibilityLabel="Сортировка"
-        iconOnly={Platform.OS === 'web'}
+        iconOnly
         value={sortMode}
         options={sortOptions}
         onChange={(id) => onSortModeChange(id as HeadlinerSortMode)}
@@ -215,6 +167,7 @@ const styles = StyleSheet.create({
     height: 44,
     ...ios.field, ...webStyle({ flexBasis: 0, paddingHorizontal: 12 }),
   },
+  searchFocused: { borderColor: 'rgba(255,255,255,.28)', backgroundColor: 'rgba(255,255,255,.085)' },
   searchIcon: {
     marginRight: spacing.xs,
   },

@@ -17,7 +17,7 @@ export const LEGAL_OPERATOR = {
 };
 
 /** Public URL for App Store Connect / Google Play privacy policy field. */
-export const PRIVACY_POLICY_URL = `${SITE_URL}/legal`;
+export const PRIVACY_POLICY_URL = `${SITE_URL}/privacy`;
 
 export const SUPPORT_URL = FESTIVAL_CONTACTS_URL;
 

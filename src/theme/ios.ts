@@ -2,13 +2,17 @@ import { Platform, type TextStyle, type ViewStyle } from 'react-native';
 import { colors } from './colors';
 import { radius } from './radius';
 
-/** Web-only refinements. Native screens retain their existing visual system. */
-export function webStyle<T extends ViewStyle | TextStyle>(style: T): T | Record<string, never> {
-  return Platform.OS === 'web' ? style : {};
+/** Shared refinements; omit browser-only effects from native styles. */
+export function webStyle<T extends ViewStyle | TextStyle>(style: T): Partial<T> {
+  if (Platform.OS === 'web') return style;
+  const native = { ...style } as Record<string, unknown>;
+  for (const key of ['backdropFilter', 'WebkitBackdropFilter', 'outlineWidth', 'outlineColor', 'outlineStyle', 'cursor']) delete native[key];
+  if (typeof native.borderRadius === 'number' && native.borderRadius < 999) native.borderCurve = 'continuous';
+  return native as T;
 }
 
-export function webLabel(label: string, nativeLabel = label.toUpperCase()): string {
-  return Platform.OS === 'web' ? label : nativeLabel;
+export function webLabel(label: string, _nativeLabel = label.toUpperCase()): string {
+  return label;
 }
 
 export const ios = {

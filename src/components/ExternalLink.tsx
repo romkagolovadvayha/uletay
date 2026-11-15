@@ -56,7 +56,7 @@ type Props = {
 
 export function isExternalLinkVisible(href: string): boolean {
   // Shared with enclosing cards so a hidden sales link leaves no empty wrapper.
-  return Platform.OS !== 'web' || !/^https?:\/\/(?:www\.)?drivegrup\.ru\/ticket(?:[/?#]|$)/i.test(href);
+  return !/^https?:\/\/(?:www\.)?drivegrup\.ru\/ticket(?:[/?#]|$)/i.test(href);
 }
 
 export function ExternalLink({
@@ -70,11 +70,9 @@ export function ExternalLink({
   const [pointerPressed, setPointerPressed] = React.useState(false);
   const reduceMotion = useReducedMotion();
 
+  if (!isExternalLinkVisible(href)) return null;
+
   if (Platform.OS === 'web') {
-    // Ticket sales links are disabled on the website, including links from the CMS.
-    if (!isExternalLinkVisible(href)) {
-      return null;
-    }
 
     const flatStyle =
       typeof style === 'function' ? style({ pressed: pointerPressed }) : style;

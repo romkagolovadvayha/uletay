@@ -4,7 +4,6 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Linking from 'expo-linking';
 import React, { useMemo, useState } from 'react';
 import {
-  Modal,
   Platform,
   ScrollView,
   Share,
@@ -13,11 +12,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { MotionPressable } from '../components/MotionPressable';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { LiquidDialog } from '../components/LiquidDialog';
-import { LEGAL_OPERATOR } from '../constants/legal';
+import { PrimaryButton } from '../components/PrimaryButton';
 import { useAppData } from '../context/DataContext';
 import { useUserLocation } from '../hooks/useUserLocation';
 import type { RootTabParamList } from '../navigation/types';
@@ -158,20 +156,7 @@ export function HelpScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {Platform.OS !== 'web' ? <View style={styles.card}>
-          <Text style={styles.cardTitle}>Организатор и потерянные вещи</Text>
-          <Text style={styles.caption}>
-            {LEGAL_OPERATOR.name} · {LEGAL_OPERATOR.phoneLabels[0]} · {LEGAL_OPERATOR.email}
-          </Text>
-          <View style={styles.twoActions}>
-            <MotionPressable accessibilityRole="button" onPress={() => void Linking.openURL(`tel:${LEGAL_OPERATOR.phones[0]}`)} style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>Позвонить</Text>
-            </MotionPressable>
-            <MotionPressable accessibilityRole="button" onPress={() => void Linking.openURL(`mailto:${LEGAL_OPERATOR.email}`)} style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>Написать</Text>
-            </MotionPressable>
-          </View>
-        </View> : null}
+
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Офлайн-инструкции</Text>
@@ -197,24 +182,12 @@ export function HelpScreen({ navigation }: Props) {
         </View>
       </ScrollView>
 
-      {Platform.OS === 'web' ? <LiquidDialog open={coordinatesVisible} onClose={() => setCoordinatesVisible(false)}
+      <LiquidDialog open={coordinatesVisible} onClose={() => setCoordinatesVisible(false)}
         title="Мои координаты" description="Сообщите эти координаты сотруднику фестиваля."
         actions={[{ label: 'Готово', tone: 'primary', onPress: () => setCoordinatesVisible(false) }]}>
         <Text selectable style={styles.webCoordinates}>{coordinatesText}</Text>
         {location?.accuracy != null ? <Text style={styles.webAccuracy}>Точность около {formatDistance(location.accuracy)}</Text> : null}
-      </LiquidDialog> : <Modal visible={coordinatesVisible} transparent animationType="fade" onRequestClose={() => setCoordinatesVisible(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.coordinatesCard}>
-            <Ionicons name="location" size={34} color={colors.primary} />
-            <Text style={styles.coordinatesLabel}>{webLabel('Мои координаты')}</Text>
-            <Text selectable style={styles.coordinates}>{coordinatesText}</Text>
-            {location?.accuracy != null ? (
-              <Text style={styles.caption}>Точность около {formatDistance(location.accuracy)}</Text>
-            ) : null}
-            <PrimaryButton label="Закрыть" onPress={() => setCoordinatesVisible(false)} />
-          </View>
-        </View>
-      </Modal>}
+      </LiquidDialog>
     </SafeAreaView>
   );
 }

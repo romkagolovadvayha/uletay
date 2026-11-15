@@ -252,7 +252,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Главная',
-          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'home-outline' : 'home'} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={!focused ? 'home-outline' : 'home'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -261,7 +261,7 @@ function RootTabs() {
         listeners={({ navigation }) => createNestedTabListeners(navigation, 'ScheduleTab')}
         options={{
           title: 'Расписание',
-          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'calendar-outline' : 'calendar'} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={!focused ? 'calendar-outline' : 'calendar'} color={color} />,
           popToTopOnBlur: true,
         }}
       />
@@ -271,7 +271,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Карта',
-          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'map-outline' : 'map'} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={!focused ? 'map-outline' : 'map'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -280,7 +280,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Помощь',
-          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'medical-outline' : 'medical'} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={!focused ? 'medical-outline' : 'medical'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -289,7 +289,7 @@ function RootTabs() {
         listeners={({ navigation }) => createNestedTabListeners(navigation, 'Autographs')}
         options={{
           title: 'Автографы',
-          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'ticket-outline' : 'ticket'} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={!focused ? 'ticket-outline' : 'ticket'} color={color} />,
           popToTopOnBlur: true,
         }}
       />
@@ -299,7 +299,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Избранное',
-          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'star-outline' : 'star'} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={!focused ? 'star-outline' : 'star'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -308,7 +308,7 @@ function RootTabs() {
         listeners={({ navigation }) => createNestedTabListeners(navigation, 'HeadlinersTab')}
         options={{
           title: 'Хэдлайнеры',
-          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' ? (focused ? 'people' : 'people-outline') : 'mic'} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'people' : 'people-outline'} color={color} />,
           popToTopOnBlur: true,
         }}
       />
@@ -334,7 +334,7 @@ function RootTabs() {
         }
         options={{
           title: 'Ещё',
-          tabBarIcon: ({ color }) => <TabIcon name={Platform.OS === 'web' ? 'ellipsis-horizontal' : 'reorder-three'} color={color} />,
+          tabBarIcon: ({ color }) => <TabIcon name={'ellipsis-horizontal'} color={color} />,
           popToTopOnBlur: true,
           tabBarButton: isTablet ? () => null : undefined,
         }}

@@ -3,7 +3,7 @@ import { ios, webStyle, webLabel } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { ScreenTitle } from '../components/ScreenTitle';
@@ -18,6 +18,7 @@ import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 import { clearOfflineAppCache } from '../utils/clearOfflineAppCache';
 import { LiquidDialog } from '../components/LiquidDialog';
+import { openExternalUrl } from '../utils/openExternalUrl';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'Settings'>;
 
@@ -98,37 +99,17 @@ export function SettingsScreen({ navigation }: Props) {
       await clearOfflineAppCache({ reload: Platform.OS === 'web' });
       if (Platform.OS !== 'web') {
         await refreshData(true);
-        Alert.alert('Готово', 'Кэш расписания очищен, данные загружены заново.');
+        setCacheMessage('Кэш расписания очищен, данные загружены заново.');
       }
     } catch {
       const message = 'Не удалось очистить кэш. Попробуйте ещё раз.';
-      if (Platform.OS === 'web') setCacheMessage(message);
-      else Alert.alert('Ошибка', message);
+      setCacheMessage(message);
     } finally {
       setClearingCache(false);
     }
   };
 
-  const handleClearCachePress = () => {
-    if (Platform.OS === 'web') {
-      setConfirmReset(true);
-      return;
-    }
-    Alert.alert(
-      'Сбросить кэш?',
-      'Будет очищен офлайн-кэш расписания и данные загрузятся с сервера заново. Избранное и настройки уведомлений сохранятся.',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Сбросить кэш',
-          style: 'destructive',
-          onPress: () => {
-            void runClearCache();
-          },
-        },
-      ],
-    );
-  };
+  const handleClearCachePress = () => setConfirmReset(true);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -173,31 +154,28 @@ export function SettingsScreen({ navigation }: Props) {
         </View>
 
         {cacheMessage ? <Text accessibilityRole="alert" style={styles.modeSubtitle}>{cacheMessage}</Text> : null}
-        <Text style={styles.sectionLabel}>{Platform.OS === 'web' ? 'Фестиваль' : 'Правовая информация'}</Text>
+        <Text style={styles.sectionLabel}>Фестиваль</Text>
         <View style={styles.section}>
-          {Platform.OS !== 'web' ? <SettingsLink
+          <SettingsLink
             icon="shield-checkmark"
-            title="Конфиденциальность и поддержка"
-            subtitle="Политика, соглашение, контакты организатора"
-            onPress={() => navigation.navigate('Legal')}
-          /> : null}
+            title="Политика конфиденциальности"
+            subtitle="Обработка данных и контакты для обращений"
+            onPress={() => openExternalUrl(PRIVACY_POLICY_URL)}
+          />
           <SettingsLink
             icon="document-text"
             title="Правила фестиваля"
             subtitle="Правила посещения, безопасность и бытовая информация"
             onPress={() => navigation.navigate('FestivalRules')}
           />
-          {Platform.OS !== 'web' ? <Text style={styles.legalNote}>
-            Политика конфиденциальности также доступна по адресу {PRIVACY_POLICY_URL}
-          </Text> : null}
         </View>
       </ScrollView>
-      {Platform.OS === 'web' ? <LiquidDialog open={confirmReset} onClose={() => setConfirmReset(false)}
-        title="Сбросить кэш?" description="Страница перезагрузится и загрузит данные заново. Избранное и настройки уведомлений сохранятся."
+      <LiquidDialog open={confirmReset} onClose={() => setConfirmReset(false)}
+        title="Сбросить кэш?" description="Данные будут загружены заново. Избранное и настройки уведомлений сохранятся."
         actions={[
           { label: 'Отмена', onPress: () => setConfirmReset(false) },
           { label: 'Сбросить', tone: 'destructive', disabled: clearingCache, onPress: () => void runClearCache() },
-        ]} /> : null}
+        ]} />
     </SafeAreaView>
   );
 }

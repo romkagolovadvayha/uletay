@@ -1,6 +1,6 @@
 import { ios, webStyle } from '../../theme/ios';
 import React, { useMemo } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../PrimaryButton';
 import { ExternalLink } from '../ExternalLink';
@@ -39,7 +39,7 @@ export function MapZoneCard({
   routeError,
 }: Props) {
   const { name, zoneType, description } = zone.properties;
-  const serviceCategory = Platform.OS === 'web' && zoneType === 'service' ? zonePoiCategory(zone) : null;
+  const serviceCategory = zoneType === 'service' ? zonePoiCategory(zone) : null;
   const icon = serviceCategory ? getPoiIconName(serviceCategory) : getZoneIconName(zoneType);
   const typeLabel = serviceCategory ? POI_CATEGORY_LABELS[serviceCategory] : ZONE_TYPE_LABELS[zoneType];
 

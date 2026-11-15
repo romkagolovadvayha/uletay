@@ -15,16 +15,13 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { DesktopFestivalHome } from '../components/DesktopFestivalHome';
-import { ExternalLink } from '../components/ExternalLink';
 import { AutographSessionRow } from '../components/AutographSessionRow';
 import { FestivalLogoImage } from '../components/FestivalLogoImage';
 import { SemanticHeading } from '../components/SemanticHeading';
-import { HomeHeadlinersWidget } from '../components/HomeHeadlinersWidget';
 import { LiveArtistCard } from '../components/LiveArtistCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionHeader } from '../components/SectionHeader';
 import { WebFestivalGuide } from '../components/WebFestivalGuide';
-import { TICKET_VENDOR_URL } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
 import {
   usePrimaryAutographSessions,
@@ -35,7 +32,7 @@ import { useDeferredHeroVideo } from '../hooks/useDeferredHeroVideo';
 import { useNow } from '../hooks/useNow';
 import { useIsDesktopWeb } from '../hooks/useIsDesktopWeb';
 import { RootTabParamList } from '../navigation/types';
-import { openHeadlinerDetail, openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
+import { openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -48,7 +45,6 @@ import {
   isStartingSoon,
   parseDateTime,
 } from '../utils/scheduleHelpers';
-import { getLatestHeadlinerYear, hasScheduleForYear } from '../utils/headlinerHelpers';
 import { HERO_POSTER_SOURCE } from '../utils/heroPosterSource';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'HomeTab'>;
@@ -172,16 +168,7 @@ export function FestivalHomeMobile({ navigation, showWebGuide = true }: Props & 
   const hasReliableFestivalData = Boolean(
     data.festival.startDate && data.festival.endDate && data.festival.year,
   );
-  const nextFestivalYear = data.festival.year + 1;
-  const hasNextYearSchedule = hasScheduleForYear(data.schedule, nextFestivalYear);
-  const showPreFestivalHeadliners = hasReliableFestivalData && festivalPhase === 'before';
-  const showPostFestivalHeadliners =
-    hasReliableFestivalData && festivalPhase === 'after' && !hasNextYearSchedule;
   const showLiveSection = hasReliableFestivalData && festivalPhase === 'during';
-  const latestHeadlinerYear = useMemo(
-    () => getLatestHeadlinerYear(data.headliners),
-    [data.headliners],
-  );
   const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');
   const hasAnySoon = stagePrimaries.some(
     (item) =>
@@ -209,13 +196,6 @@ export function FestivalHomeMobile({ navigation, showWebGuide = true }: Props & 
     openHeadlinersMain(navigation);
   }, [navigation]);
 
-  const openHeadlinerDetailScreen = useCallback(
-    (headlinerId: string) => {
-      openHeadlinerDetail(navigation, headlinerId);
-    },
-    [navigation],
-  );
-
   if (isInitialLoading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -236,7 +216,7 @@ export function FestivalHomeMobile({ navigation, showWebGuide = true }: Props & 
     );
   }
 
-  if (Platform.OS === 'web' && !showLiveSection) {
+  if (!showLiveSection) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}
         onLayout={({ nativeEvent: { layout } }) => setHomeLayout({ width: layout.width, height: layout.height })}>
@@ -284,11 +264,11 @@ export function FestivalHomeMobile({ navigation, showWebGuide = true }: Props & 
         scrollEventThrottle={16}
         onScroll={onScroll}
       >
-        <View style={[styles.heroStack, festivalPhase === 'after' && styles.heroStackCompact]}>
-          <View style={[styles.heroContent, festivalPhase === 'after' && styles.heroContentCompact]}>
+        <View style={styles.heroStack}>
+          <View style={styles.heroContent}>
             <FestivalLogoImage logoImageUrl={data.festival.logoImageUrl} style={styles.logoImage} />
             <SemanticHeading level={1} style={styles.tagline}>
-              Фестиваль УЛЕТАЙ 2027
+              Фестиваль Улетай {data.festival.year}
             </SemanticHeading>
             <Text style={styles.location}>{data.festival.location}</Text>
           </View>
@@ -301,50 +281,19 @@ export function FestivalHomeMobile({ navigation, showWebGuide = true }: Props & 
                 festivalEndDate={data.festival.endDate}
                 performances={data.schedule}
               />
-              {festivalPhase === 'before' ? (
-                <ExternalLink
-                  href={TICKET_VENDOR_URL}
-                  accessibilityLabel="Купить билет"
-                  style={styles.ticketButton}
-                >
-                  <Text style={styles.ticketButtonLabel}>Купить билет</Text>
-                </ExternalLink>
-              ) : null}
+
             </View>
           ) : null}
 
           {hasReliableFestivalData && festivalPhase === 'during' ? (
             <View style={styles.overlaySection}>
               <PrimaryButton
-                label="РАСПИСАНИЕ"
+                label="Расписание"
                 onPress={() => openScheduleTabMain(navigation)}
               />
             </View>
           ) : null}
         </View>
-
-        {showPostFestivalHeadliners && latestHeadlinerYear != null ? (
-          <View style={styles.section}>
-            <HomeHeadlinersWidget
-              year={latestHeadlinerYear}
-              limit={5}
-              moreLabel="ЕЩЁ"
-              hint=""
-              onPressHeadliner={(headliner) => openHeadlinerDetailScreen(headliner.id)}
-              onPressAll={openHeadlinersMainScreen}
-            />
-          </View>
-        ) : null}
-
-        {showPreFestivalHeadliners && latestHeadlinerYear != null ? (
-          <View style={styles.section}>
-            <HomeHeadlinersWidget
-              year={latestHeadlinerYear}
-              onPressHeadliner={(headliner) => openHeadlinerDetailScreen(headliner.id)}
-              onPressAll={openHeadlinersMainScreen}
-            />
-          </View>
-        ) : null}
 
         {showLiveSection ? (
           <View style={styles.section}>

@@ -89,9 +89,9 @@ function RouteButton({ icon, label, primary, disabled, onPress }: {
       onPress={onPress}
       style={[styles.routeButton, primary && styles.routeButtonPrimary, disabled && styles.disabled]}
     >
-      <DeferredIonicons name={icon} size={Platform.OS === 'web' ? 22 : 20} color={Platform.OS === 'web' ? colors.text : primary ? colors.background : colors.primary} />
+      <DeferredIonicons name={icon} size={22} color={colors.text} />
       <Text style={[styles.routeButtonText, primary && styles.routeButtonTextPrimary]}>{label}</Text>
-      {Platform.OS === 'web' ? <DeferredIonicons name="chevron-forward" size={16} color={colors.textMuted} /> : null}
+      <DeferredIonicons name="chevron-forward" size={16} color={colors.textMuted} />
     </MotionPressable>
   );
 }
@@ -139,7 +139,7 @@ export function MapDirectionsSheet({ center, location, onClose }: Props) {
             : 'Выберите приложение — оно построит маршрут от вашего текущего местоположения до фестиваля.'}
       </Text>
       <View style={styles.routeGroup}>
-        <RouteButton icon="navigate" label={Platform.OS === 'web' ? 'Яндекс Навигатор' : 'Проложить в Яндекс Навигаторе'} primary disabled={locating} onPress={() => void openYandexNavigator(center, routeOrigin ?? null)} />
+        <RouteButton icon="navigate" label="Яндекс Навигатор" primary disabled={locating} onPress={() => void openYandexNavigator(center, routeOrigin ?? null)} />
         <View style={styles.secondaryRow}>
         <RouteButton icon="map" label="Яндекс Карты" disabled={locating} onPress={() => openYandexMaps(center, routeOrigin ?? null)} />
         <RouteButton icon="apps" label="Другие карты" onPress={() => openSystemMaps(center, location)} />
