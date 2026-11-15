@@ -35,7 +35,7 @@ const navigationTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: colors.background,
+    background: colors.pageBackground,
     card: colors.background,
     text: colors.text,
     border: colors.borderStrong,

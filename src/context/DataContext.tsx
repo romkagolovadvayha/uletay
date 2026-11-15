@@ -3,7 +3,7 @@ import { ActivityIndicator, AppState, Platform, StyleSheet, View } from 'react-n
 import {
   APP_DATA_CACHE_KEY,
   AppDataRefreshResult,
-  isCurrentFestivalEdition,
+  parseCachedAppData,
   readCachedAppData,
   refreshAppDataInBackground,
 } from '../api/appDataApi';
@@ -12,7 +12,6 @@ import {
   CachedAppData,
 } from '../config/api';
 import { AppData } from '../types';
-import { normalizeAppData } from '../utils/appDataNormalize';
 import { defaultAppData } from '../storage/dataStore';
 import { colors } from '../theme/colors';
 
@@ -30,16 +29,7 @@ function readCachedAppDataSync(): CachedAppData | null {
   }
 
   try {
-    const raw = localStorage.getItem(APP_DATA_CACHE_KEY);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw) as { data?: AppData; fetchedAt?: number };
-    return parsed?.data &&
-      typeof parsed.fetchedAt === 'number' &&
-      isCurrentFestivalEdition(parsed.data)
-      ? { data: normalizeAppData(parsed.data), fetchedAt: parsed.fetchedAt }
-      : null;
+    return parseCachedAppData(localStorage.getItem(APP_DATA_CACHE_KEY));
   } catch {
     return null;
   }
@@ -67,7 +57,6 @@ type DataContextValue = {
   isLoading: boolean;
   /** True until the first cache/API result is ready on a cold start (no local data yet). */
   isInitialLoading: boolean;
-  error: string | null;
   refreshData: (force?: boolean) => Promise<void>;
   lastFetchedAt: number | null;
 };
@@ -85,7 +74,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     Platform.OS !== 'web' || initialData.dataSource === 'fallback',
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(initialData.fetchedAt);
 
   const applyCachedData = useCallback((cached: CachedAppData) => {
@@ -108,7 +96,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setDataSource('remote');
     setLastFetchedAt(fresh.fetchedAt);
     setIsInitialLoading(false);
-    setError(null);
   }, []);
 
   const applyRefreshResult = useCallback(
@@ -126,12 +113,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (result.cached) {
         applyCachedData(result.cached);
       } else {
-        setData(defaultAppData);
-        setDataSource('fallback');
-        setLastFetchedAt(null);
+        // Keep whatever is already on screen, even if storage was cleared while open.
         setIsInitialLoading(false);
       }
-      setError('Нет связи с сервером. Не удалось загрузить актуальные данные.');
     },
     [applyCachedData, applyFreshData],
   );
@@ -144,8 +128,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await refreshAppDataInBackground(force);
       applyRefreshResult(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить данные');
+    } catch {
+      // Background failures are silent; the last successful content stays visible.
+      setIsInitialLoading(false);
     } finally {
       if (force) {
         setIsLoading(false);
@@ -211,11 +196,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       dataSource,
       isLoading,
       isInitialLoading,
-      error,
       refreshData,
       lastFetchedAt,
     }),
-    [data, dataSource, isLoading, isInitialLoading, error, refreshData, lastFetchedAt],
+    [data, dataSource, isLoading, isInitialLoading, refreshData, lastFetchedAt],
   );
 
   if (!isHydrated) {

@@ -1,3 +1,4 @@
+import { ios, webStyle, webLabel } from '../../theme/ios';
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { DeferredIonicons } from '../DeferredIonicons';
@@ -17,7 +18,7 @@ export function MapDirectionsButton({ onPress }: { onPress: () => void }) {
       style={styles.button}
     >
       <DeferredIonicons name="navigate" size={20} color={colors.background} />
-      <Text style={styles.text}>КАК ДОБРАТЬСЯ</Text>
+      <Text style={styles.text}>{webLabel('Как добраться')}</Text>
     </MotionPressable>
   );
 }
@@ -36,11 +37,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+    ...ios.button,
   },
   text: {
     ...appFont('bold'),
     color: colors.background,
     fontSize: 14,
     letterSpacing: 0.5,
+    ...webStyle({ fontSize: 17, lineHeight: 22, letterSpacing: 0 }),
   },
 });

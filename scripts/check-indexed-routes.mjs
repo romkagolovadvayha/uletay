@@ -18,7 +18,7 @@ const oldUrls = urls(await previousResponse.text());
 if (!oldUrls.length) throw new Error('Previous sitemap has no URLs');
 
 const newUrls = new Set(urls(current));
-const intentionalRedirects = new Set(['https://uletayapp.ru/headliners']);
+const intentionalRedirects = new Set(['https://uletayapp.ru/headliners', 'https://uletayapp.ru/about', 'https://uletayapp.ru/playlist', 'https://uletayapp.ru/legal']);
 const missing = oldUrls.filter((url) => !newUrls.has(url) && !intentionalRedirects.has(url));
 if (missing.length) {
   throw new Error(`Indexed URLs would disappear from sitemap (${missing.length}):\n${missing.slice(0, 20).join('\n')}`);

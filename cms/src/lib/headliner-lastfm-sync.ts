@@ -1,26 +1,28 @@
 import type { Headliner } from '@/types';
 import { syncHeadlinerImage } from './lastfm-images';
-import { assertLastFmConfigured, resolveLastFmProfileForHeadliner, sleep } from './lastfm';
+import { assertLastFmConfigured, resolveLastFmProfileForHeadliner } from './lastfm';
 import { collectGroupIdentityNames } from './headliner-groups';
 import { mergeLastFmProfiles } from './lastfm-merge';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const REQUEST_DELAY_MS = 350;
 
 export async function resolveAndMergeLastFmForHeadliner(
   headliner: Headliner,
   allHeadliners: Headliner[],
-  options: { strict?: boolean } = {},
+  options: { strict?: boolean; signal?: AbortSignal } = {},
 ): Promise<Headliner['lastfm'] | null> {
   const names = collectGroupIdentityNames(headliner, allHeadliners);
   const profiles = [];
 
   for (const name of names) {
+    options.signal?.throwIfAborted();
     const profile = await resolveLastFmProfileForHeadliner(name, options);
     if (profile) {
       profiles.push(profile);
     }
     if (names.length > 1) {
-      await sleep(REQUEST_DELAY_MS);
+      await delay(REQUEST_DELAY_MS, undefined, { signal: options.signal });
     }
   }
 

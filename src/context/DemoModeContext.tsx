@@ -67,7 +67,6 @@ export function DemoModeProvider({ children }: { children: React.ReactNode }) {
       ...raw,
       data: demoData as AppData,
       dataSource: 'demo' as const,
-      error: null,
     };
   }, [demoData, raw]);
 

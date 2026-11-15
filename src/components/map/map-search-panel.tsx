@@ -1,6 +1,8 @@
+import { ios, webStyle } from '../../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -21,6 +23,7 @@ import type {
   MapZonesGeoJson,
 } from '../../types/map';
 import { getPoiIconName, getZoneIconName } from '../../utils/map/layerStyles';
+import { zonePoiCategory } from '../../utils/map/poiData';
 
 type ZoneFeature = GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>;
 type PoiFeature = GeoJSON.Feature<GeoJSON.Point, MapPoiProperties>;
@@ -61,7 +64,9 @@ export function MapSearchPanel({
         kind: 'zone',
         id: zone.properties.id,
         name: zone.properties.name,
-        icon: getZoneIconName(zone.properties.zoneType),
+        icon: Platform.OS === 'web' && zone.properties.zoneType === 'service'
+          ? getPoiIconName(zonePoiCategory(zone) ?? 'info')
+          : getZoneIconName(zone.properties.zoneType),
         item: zone,
       }));
     const poiResults: Result[] = (pois?.features ?? [])
@@ -86,7 +91,7 @@ export function MapSearchPanel({
 
   return (
     <View style={[styles.wrap, style]}>
-      <View style={styles.inputWrap}>
+      <View nativeID={Platform.OS === 'web' ? 'map-search-field' : undefined} style={styles.inputWrap}>
         <Ionicons name="search" size={20} color={colors.textSecondary} />
         <TextInput
           accessibilityLabel="Поиск по карте"
@@ -155,12 +160,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.borderStrong,
+    ...ios.glass, ...webStyle({ borderRadius: 999, paddingHorizontal: 16, minHeight: 52 }),
   },
   input: {
     flex: 1,
     minHeight: 46,
     ...typography.body,
     color: colors.text,
+    ...webStyle({ outlineWidth: 0 }),
   },
   clear: {
     width: 44,
@@ -176,6 +183,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.borderStrong,
+    ...ios.glass, ...webStyle({ borderRadius: 24, marginTop: 8 }),
   },
   result: {
     minHeight: 48,
@@ -185,6 +193,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
+    ...webStyle({ minHeight: 56, paddingHorizontal: 16 }),
   },
   resultIcon: {
     width: 28,

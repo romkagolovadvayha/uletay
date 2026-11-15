@@ -22,6 +22,7 @@ export function FestivalLogoImage({ logoImageUrl, style }: Props) {
       source={source}
       style={style}
       contentFit="contain"
+      cachePolicy="disk"
       accessibilityLabel="Логотип фестиваля УЛЕТАЙ"
       alt="Логотип фестиваля УЛЕТАЙ"
       priority="high"

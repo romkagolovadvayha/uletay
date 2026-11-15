@@ -1,6 +1,7 @@
 /* ds-allow-hardcode:start -- Central semantic color token definitions. */
 export const colors = {
   background: '#0B0D0B',
+  pageBackground: '#0B0D0B',
   surface: '#171A16',
   surfaceGlass: 'rgba(23, 26, 22, 0.88)',
   surfaceElevated: '#20231E',

@@ -10,7 +10,7 @@ export function isLoopbackUrl(value: string): boolean {
 }
 
 export function isLoopbackHostname(hostname: string): boolean {
-  return ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname);
+  return ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname) || hostname.endsWith('.localhost');
 }
 
 type WebApiBaseUrlOptions = {

@@ -7,7 +7,7 @@ import type {
 } from '@/lastfm-types';
 import { LASTFM_CLIENT_TOP_TRACKS_LIMIT } from './lastfm-tracks';
 import { isUsableLastFmImageUrl } from './lastfm-images';
-import { lastFmFetch, resolveLastFmProxyUrl } from './lastfm-fetch';
+import { lastFmFetch, resolveLastFmProxyUrl, type LastFmRequestOptions } from './lastfm-fetch';
 
 const API_BASE = 'https://ws.audioscrobbler.com/2.0/';
 
@@ -148,7 +148,7 @@ function mapTopTracks(tracks: LastFmTrack[] | LastFmTrack | undefined): Headline
     .map((track, index) => ({ ...track, rank: index + 1 }));
 }
 
-async function callLastFm<T>(params: Record<string, string>): Promise<T> {
+async function callLastFm<T>(params: Record<string, string>, options: LastFmRequestOptions = {}): Promise<T> {
   const url = new URL(API_BASE);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
@@ -156,7 +156,7 @@ async function callLastFm<T>(params: Record<string, string>): Promise<T> {
   url.searchParams.set('api_key', getApiKey());
   url.searchParams.set('format', 'json');
 
-  const response = await lastFmFetch(url);
+  const response = await lastFmFetch(url, options);
   if (!response.ok) {
     const body = await response.text().catch(() => '');
     if (response.status === 403) {
@@ -185,12 +185,12 @@ export async function verifyLastFmApiKey(): Promise<void> {
   });
 }
 
-export async function searchLastFmArtist(query: string): Promise<LastFmSearchArtist | null> {
+export async function searchLastFmArtist(query: string, options: LastFmRequestOptions = {}): Promise<LastFmSearchArtist | null> {
   const payload = await callLastFm<{ results?: { artistmatches?: { artist?: LastFmSearchArtist[] | LastFmSearchArtist } } }>({
     method: 'artist.search',
     artist: query,
     limit: '5',
-  });
+  }, options);
 
   const matches = asArray(payload.results?.artistmatches?.artist);
   if (!matches.length) {
@@ -203,13 +203,14 @@ export async function searchLastFmArtist(query: string): Promise<LastFmSearchArt
 export async function fetchLastFmArtistProfile(
   artistName: string,
   searchQuery?: string,
+  options: LastFmRequestOptions = {},
 ): Promise<HeadlinerLastFmProfile | null> {
   const [infoPayload, tracksPayload] = await Promise.all([
     callLastFm<{ artist?: LastFmArtistInfo }>({
       method: 'artist.getinfo',
       artist: artistName,
       autocorrect: '1',
-    }),
+    }, options),
     callLastFm<{
       toptracks?: {
         track?: LastFmTrack[] | LastFmTrack;
@@ -220,7 +221,7 @@ export async function fetchLastFmArtistProfile(
       artist: artistName,
       limit: String(LASTFM_CLIENT_TOP_TRACKS_LIMIT),
       autocorrect: '1',
-    }),
+    }, options),
   ]);
 
   const artist = infoPayload.artist;
@@ -284,31 +285,34 @@ export function buildLastFmSearchQueries(name: string): string[] {
 
 export async function resolveLastFmProfileForHeadliner(
   headlinerName: string,
-  options: { strict?: boolean } = {},
+  options: LastFmRequestOptions & { strict?: boolean } = {},
 ): Promise<HeadlinerLastFmProfile | null> {
   const queries = buildLastFmSearchQueries(headlinerName);
 
   for (const query of queries) {
+    options.signal?.throwIfAborted();
     try {
-      const direct = await fetchLastFmArtistProfile(query, query);
+      const direct = await fetchLastFmArtistProfile(query, query, options);
       if (direct) {
         return direct;
       }
     } catch (error) {
+      options.signal?.throwIfAborted();
       if (isFatalLastFmError(error) || (options.strict && !(error instanceof LastFmApiError && error.code === 6))) {
         throw error;
       }
     }
 
     try {
-      const match = await searchLastFmArtist(query);
+      const match = await searchLastFmArtist(query, options);
       if (match?.name) {
-        const profile = await fetchLastFmArtistProfile(match.name, query);
+        const profile = await fetchLastFmArtistProfile(match.name, query, options);
         if (profile) {
           return profile;
         }
       }
     } catch (error) {
+      options.signal?.throwIfAborted();
       if (isFatalLastFmError(error) || (options.strict && !(error instanceof LastFmApiError && error.code === 6))) {
         throw error;
       }

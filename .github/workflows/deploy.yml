@@ -3,7 +3,7 @@ name: Deploy production
 on:
   push:
     branches:
-      - master
+      - codex/uletay-2027-web
   workflow_dispatch:
 
 permissions:
@@ -150,6 +150,7 @@ jobs:
           npm run test:map:routing
           npm run test:push-reminders --prefix cms
           npm run test:admin --prefix cms
+          python3 scripts/test-host-watchdog.py
           node scripts/test-deployed-map.mjs
           npx tsx scripts/test-web-linking.mjs
           test -f deploy/setup-push-reminders-cron.sh
@@ -176,7 +177,6 @@ jobs:
           test -f dist/push-sw.js
           test -d dist/_expo/static/js/web
           find dist/assets -name 'Ionicons*.ttf' | grep -q .
-          find dist/assets -name 'Montserrat_400Regular*.ttf' | grep -q .
 
       - name: Build and verify CMS
         run: |

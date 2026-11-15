@@ -1,20 +1,23 @@
+import { webLabel } from '../theme/ios';
 import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import type { NavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DateTabBar } from './DateTabBar';
 import { ScheduleStageGrid } from './ScheduleStageGrid';
 import { ScreenTitle } from './ScreenTitle';
+import { PrimaryButton } from './PrimaryButton';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useFestivalSelectedDate } from '../hooks/useFestivalSelectedDate';
 import { useNow } from '../hooks/useNow';
-import { ScheduleStackParamList } from '../navigation/types';
+import { RootTabParamList, ScheduleStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { screenHeaderStyle } from '../theme/layout';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { isDateWithinFestival } from '../seo/seoRouteUtils';
+import { getFestivalDayDate } from '../utils/festivalTime';
 import {
   filterByFestivalDay,
   getFestivalDates,
@@ -22,7 +25,7 @@ import {
 } from '../utils/scheduleHelpers';
 
 type Props = {
-  navigation: Pick<NativeStackNavigationProp<ScheduleStackParamList>, 'navigate'>;
+  navigation: Pick<NativeStackNavigationProp<ScheduleStackParamList>, 'navigate' | 'getParent'>;
   initialDate?: string;
 };
 
@@ -46,13 +49,13 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
     [data.schedule, selectedDate],
   );
   const hasPublishedSchedule = data.schedule.some((item) =>
-    isDateWithinFestival(item.date, data.festival),
+    festivalDates.includes(getFestivalDayDate(item.date, item.startTime)),
   );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <ScreenTitle style={styles.title}>РАСПИСАНИЕ</ScreenTitle>
+        <ScreenTitle style={styles.title}>{webLabel('Расписание')}</ScreenTitle>
       </View>
 
       <View style={styles.tabsWrap}>
@@ -61,9 +64,25 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
 
       <ScheduleStageGrid
         performances={dayPerformances}
+        centerStageHeaders={Platform.OS === 'web' && !hasPublishedSchedule}
         emptyMessage={hasPublishedSchedule
           ? 'Нет выступлений в этот день'
           : `Расписание Улетай ${data.festival.year} ещё не опубликовано. Следите за обновлениями.`}
+        emptyContent={Platform.OS === 'web' ? (
+          <View style={styles.emptyContent}>
+            <Text style={styles.emptyTitle}>
+              {hasPublishedSchedule ? 'Нет выступлений в этот день' : `Расписание Улетай ${data.festival.year} ещё не опубликовано`}
+            </Text>
+            {!hasPublishedSchedule ? <>
+              <Text style={styles.emptyDescription}>Посмотрите, кто будет на Улетай {data.festival.year}</Text>
+              <PrimaryButton label="Хедлайнеры" style={styles.headlinersButton} onPress={() => {
+                navigation.getParent<NavigationProp<RootTabParamList>>()?.navigate('HeadlinersTab', {
+                  screen: 'HeadlinersMain', params: { year: String(data.festival.year) },
+                });
+              }} />
+            </> : null}
+          </View>
+        ) : undefined}
         stages={data.stages}
         selectedDate={selectedDate}
         now={now}
@@ -78,7 +97,7 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   header: screenHeaderStyle,
   title: {
@@ -89,4 +108,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.md,
   },
+  emptyContent: { width: '100%', maxWidth: 420, alignItems: 'center', gap: spacing.lg },
+  emptyTitle: { ...typography.sectionTitle, color: colors.text, textAlign: 'center' },
+  emptyDescription: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  headlinersButton: { width: '100%', maxWidth: 320 },
 });

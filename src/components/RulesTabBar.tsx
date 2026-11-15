@@ -1,6 +1,8 @@
+import { ios, webStyle, webLabel } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import React, { useId, useMemo, useState } from 'react';
+import { LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
+import { LiquidSelect } from './LiquidDialog';
 import Animated, {
   Easing,
   FadeIn,
@@ -55,6 +57,7 @@ const MENU_EXIT = () => {
 };
 
 export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
+  const moreId = useId();
   const [availableWidth, setAvailableWidth] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -114,7 +117,7 @@ export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
               style={[styles.pill, isActive && styles.pillActive]}
             >
               <Text numberOfLines={1} style={[styles.label, isActive && styles.labelActive]}>
-                {tab.label.toUpperCase()}
+                {webLabel(tab.label)}
               </Text>
             </MotionPressable>
           );
@@ -122,25 +125,31 @@ export function RulesTabBar({ tabs, selectedId, onSelect }: Props) {
 
         {overflowTabs.length > 0 ? (
           <MotionPressable
+            nativeID={moreId}
             accessibilityRole="button"
             accessibilityLabel="Ещё разделы"
             accessibilityState={{ expanded: moreOpen, selected: selectedInOverflow }}
             aria-expanded={moreOpen}
+            aria-haspopup={Platform.OS === 'web' ? 'dialog' : 'menu'}
+            aria-controls={`${moreId}-menu`}
             aria-pressed={selectedInOverflow}
             onPress={() => setMoreOpen((open) => !open)}
             style={[styles.pill, styles.moreButton, selectedInOverflow && styles.pillActive]}
           >
-            <Text style={[styles.label, selectedInOverflow && styles.labelActive]}>ЕЩЁ</Text>
+            <Text style={[styles.label, selectedInOverflow && styles.labelActive]}>{webLabel('Ещё')}</Text>
             <Ionicons
               name={moreOpen ? 'chevron-up' : 'chevron-down'}
               size={14}
-              color={selectedInOverflow ? colors.primaryText : colors.text}
+              color={selectedInOverflow && Platform.OS !== 'web' ? colors.primaryText : colors.text}
             />
           </MotionPressable>
         ) : null}
       </View>
 
-      {moreOpen && overflowTabs.length > 0 ? (
+      {Platform.OS === 'web' ? (
+        <LiquidSelect open={moreOpen} onClose={() => setMoreOpen(false)} title="Разделы правил"
+          anchorId={moreId} id={`${moreId}-menu`} value={selectedId} options={overflowTabs} onChange={selectTab} />
+      ) : moreOpen && overflowTabs.length > 0 ? (
         <Animated.View
           accessibilityRole="menu"
           entering={reduceMotion ? REDUCED_MENU_ENTER : MENU_ENTER}
@@ -198,10 +207,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.pillInactive,
     alignItems: 'center',
     justifyContent: 'center',
+    ...ios.chip,
   },
   pillActive: {
     backgroundColor: colors.text,
     borderColor: colors.text,
+    ...webStyle({ backgroundColor: 'rgba(68,68,74,.94)', borderColor: 'rgba(255,255,255,.2)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.07),0 2px 5px rgba(0,0,0,.15)' }),
   },
   moreButton: {
     flexDirection: 'row',
@@ -214,10 +225,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+    ...ios.chipLabel,
   },
   labelActive: {
     color: colors.primaryText,
     ...appFont('bold'),
+    ...webStyle({ color: colors.text }),
   },
   menu: {
     position: 'absolute',
@@ -234,6 +247,7 @@ const styles = StyleSheet.create({
     transformOrigin: 'top right',
     zIndex: 30,
     boxShadow: shadows.floatingMenu,
+    ...ios.glass,
   },
   menuItem: {
     minHeight: 46,
@@ -244,6 +258,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
+    ...webStyle({ minHeight: 48 }),
   },
   menuItemActive: {
     backgroundColor: colors.text,
@@ -252,6 +267,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontSize: 14,
+    ...ios.secondary,
   },
   menuLabelActive: {
     color: colors.primaryText,

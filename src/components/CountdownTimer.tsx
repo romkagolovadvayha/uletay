@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useNow } from '../hooks/useNow';
@@ -18,6 +19,7 @@ type Props = {
   festivalEndDate: string;
   performances: SchedulePerformance[];
   compact?: boolean;
+  prominent?: boolean;
 };
 
 function pad(value: number) {
@@ -30,6 +32,7 @@ export function CountdownTimer({
   festivalEndDate,
   performances,
   compact = false,
+  prominent = false,
 }: Props) {
   const now = useNow(1000);
 
@@ -72,13 +75,13 @@ export function CountdownTimer({
 
   return (
     <View>
-      <Text style={[styles.title, compact && styles.titleCompact]}>ДО ФЕСТИВАЛЯ</Text>
+      <Text style={[styles.title, compact && styles.titleCompact, prominent && styles.titleProminent, prominent && compact && styles.titleProminentCompact]}>ДО ФЕСТИВАЛЯ</Text>
       <View style={styles.row}>
         {items.map((item, index) => (
           <React.Fragment key={item.label}>
             <View style={styles.cell}>
-              <Text style={[styles.value, compact && styles.valueCompact]}>{item.value}</Text>
-              <Text style={[styles.label, compact && styles.labelCompact]}>{item.label}</Text>
+              <Text style={[styles.value, compact && styles.valueCompact, prominent && styles.valueProminent, prominent && compact && styles.valueProminentCompact]}>{item.value}</Text>
+              <Text style={[styles.label, compact && styles.labelCompact, prominent && styles.labelProminent]}>{item.label}</Text>
             </View>
             {index < items.length - 1 ? (
               <View style={[styles.divider, compact && styles.dividerCompact]} />
@@ -101,6 +104,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.2,
     marginBottom: 10,
+    ...ios.caption,
+  },
+  titleProminent: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: 0.4,
+    color: colors.text,
+    marginBottom: 14,
+  },
+  titleProminentCompact: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 10,
   },
   row: {
     flexDirection: 'row',
@@ -119,6 +135,17 @@ const styles = StyleSheet.create({
     fontSize: 24,
     letterSpacing: -0.3,
     marginBottom: 2,
+    ...webStyle({ fontSize: 24, lineHeight: 30 }),
+  },
+  valueProminent: {
+    fontSize: 42,
+    lineHeight: 48,
+    letterSpacing: -0.8,
+    marginBottom: 4,
+  },
+  valueProminentCompact: {
+    fontSize: 36,
+    lineHeight: 42,
   },
   label: {
     ...typography.countdownLabel,
@@ -127,6 +154,12 @@ const styles = StyleSheet.create({
   labelCompact: {
     fontSize: 9,
     letterSpacing: 0.45,
+    ...webStyle({ fontSize: 11, lineHeight: 15, letterSpacing: 0 }),
+  },
+  labelProminent: {
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: 0,
   },
   divider: {
     width: 1,

@@ -1,4 +1,5 @@
 import type { AppData } from '../types';
+import { APP_DOWNLOAD_DESCRIPTION, APP_DOWNLOAD_TITLE } from '../constants/appDownload';
 import { encodeSeoRouteId, isDateWithinFestival } from './seoRouteUtils';
 import { DEFAULT_DESCRIPTION, DEFAULT_FESTIVAL_YEAR, getSiteName, SITE_NAME, SITE_URL } from './site';
 import { getSelectableHeadlinerYears } from '../utils/headlinerYears';
@@ -300,9 +301,9 @@ export function resolveSeoMeta(
 
   if (routeName === 'HomeTab') {
     return {
-      title: `Сайт закрыт — ${siteName}`,
+      title: APP_DOWNLOAD_TITLE,
       siteName,
-      description: 'Сайт закрыт просим прощения',
+      description: APP_DOWNLOAD_DESCRIPTION,
       path: '/',
     };
   }

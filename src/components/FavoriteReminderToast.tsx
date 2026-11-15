@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -97,6 +98,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     boxShadow: '0 4px 10px rgba(0, 0, 0, 0.35)',
     elevation: 8,
+    ...ios.glass,
   },
   textWrap: {
     gap: 4,
@@ -119,11 +121,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    ...webStyle({ minHeight: 44, justifyContent: 'center' }),
   },
   buttonText: {
     ...typography.button,
     color: colors.primaryText,
     fontSize: 12,
     letterSpacing: 0.3,
+    ...ios.caption,
   },
 });

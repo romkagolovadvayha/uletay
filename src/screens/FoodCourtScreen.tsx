@@ -1,3 +1,4 @@
+import { webLabel, webStyle } from '../theme/ios';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -29,7 +30,7 @@ export function FoodCourtScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <ScreenTitle style={styles.title}>ФУДКОРТ</ScreenTitle>
+        <ScreenTitle style={styles.title}>{webLabel('Фудкорт')}</ScreenTitle>
       </View>
 
       <View style={styles.tabsWrap}>
@@ -63,17 +64,19 @@ export function FoodCourtScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
-  header: screenHeaderStyle,
+  header: { ...screenHeaderStyle, ...webStyle({ width: '100%', maxWidth: 960, alignSelf: 'center' }) },
   title: {
     ...typography.screenTitle,
     color: colors.text,
   },
   tabsWrap: {
+    ...webStyle({ width: '100%', maxWidth: 960, alignSelf: 'center' }),
     paddingHorizontal: spacing.screen,
   },
   content: {
+    ...webStyle({ width: '100%', maxWidth: 960, alignSelf: 'center' }),
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xxl,
   },

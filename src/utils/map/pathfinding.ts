@@ -12,6 +12,7 @@ import {
 } from './fenceRouting';
 import { haversineMeters, coordToLatLng, walkingDurationSeconds } from './geo-math';
 import { splitPathJunctions } from './pathJunctions';
+import { RouteQueue } from './routeQueue';
 
 type GraphNode = {
   id: string;
@@ -58,6 +59,27 @@ function createRouteContext(mapZones?: MapZonesGeoJson, mapPaths?: MapPathsGeoJs
     fenceZones,
     fencePaths: extractFencePaths(mapPaths),
   };
+}
+
+type RoutingNetwork = {
+  paths: MapPathsGeoJson;
+  zones?: MapZonesGeoJson;
+  context: RouteContext;
+  visitorPaths: MapPathsGeoJson;
+  graphs: Map<number, ReturnType<typeof buildGraph>>;
+};
+let preparedNetwork: RoutingNetwork | undefined;
+
+// CMS updates replace immutable collections. Reuse their validated network
+// between destinations, and discard it as soon as either collection changes.
+function routingNetwork(paths: MapPathsGeoJson, zones?: MapZonesGeoJson): RoutingNetwork {
+  if (preparedNetwork?.paths === paths && preparedNetwork.zones === zones) return preparedNetwork;
+  preparedNetwork = {
+    paths, zones, context: createRouteContext(zones, paths),
+    visitorPaths: { type: 'FeatureCollection', features: visitorPathFeatures(paths, zones) },
+    graphs: new Map(),
+  };
+  return preparedNetwork;
 }
 
 function nodeKey(lng: number, lat: number): string {
@@ -280,34 +302,32 @@ function runAStar(
     return [[node.lng, node.lat]];
   }
 
-  const open = new Set<string>([startId]);
+  const queue = new RouteQueue();
   const cameFrom = new Map<string, CameFromEntry>();
   const gScore = new Map<string, number>();
   for (const id of nodes.keys()) gScore.set(id, Infinity);
   gScore.set(startId, 0);
   cameFrom.set(startId, { prev: null, edge: null });
 
-  const fScore = new Map<string, number>();
   const heuristic = (id: string) => {
     const node = nodes.get(id)!;
     return haversineMeters({ lat: node.lat, lng: node.lng }, end);
   };
-  fScore.set(startId, heuristic(startId));
+  queue.push(heuristic(startId), startId);
 
-  while (open.size > 0) {
-    const current = [...open].sort((a, b) => (fScore.get(a) ?? Infinity) - (fScore.get(b) ?? Infinity))[0];
+  for (let item = queue.pop(); item; item = queue.pop()) {
+    const [score, current] = item;
+    if (score > (gScore.get(current) ?? Infinity) + heuristic(current)) continue;
     if (current === endId) {
       const chain = reconstructNodeChain(cameFrom, endId);
       return expandNodeChain(chain, cameFrom, nodes, features);
     }
-    open.delete(current);
     for (const edge of adjacency.get(current) ?? []) {
       const tentative = (gScore.get(current) ?? Infinity) + edge.weight;
       if (tentative < (gScore.get(edge.to) ?? Infinity)) {
         cameFrom.set(edge.to, { prev: current, edge });
         gScore.set(edge.to, tentative);
-        fScore.set(edge.to, tentative + heuristic(edge.to));
-        open.add(edge.to);
+        queue.push(tentative + heuristic(edge.to), edge.to);
       }
     }
   }
@@ -374,13 +394,21 @@ async function composeRouteAsync(
 }
 
 async function tryGraphRouteAsync(
-  paths: MapPathsGeoJson,
+  network: RoutingNetwork,
   start: LatLng,
   end: LatLng,
   mergeM: number,
   ctx: RouteContext,
 ): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
-  const { nodes, adjacency, features } = buildGraph(paths, mergeM);
+  let graph = network.graphs.get(mergeM);
+  if (!graph) {
+    graph = buildGraph(network.visitorPaths, mergeM);
+    network.graphs.set(mergeM, graph);
+  }
+  // Each request owns its temporary endpoint nodes and edges.
+  const nodes = new Map(graph.nodes);
+  const adjacency = new Map([...graph.adjacency].map(([id, edges]) => [id, [...edges]]));
+  const features = graph.features;
   if (nodes.size === 0) return null;
 
   const connectedPaths: MapPathsGeoJson = { type: 'FeatureCollection', features };
@@ -411,15 +439,14 @@ export async function findInternalPathAsync(
 ): Promise<{ coordinates: [number, number][]; distanceMeters: number; durationSeconds: number } | null> {
   if (!paths?.features.length) return null;
 
-  const ctx = createRouteContext(mapZones, paths);
+  const network = routingNetwork(paths, mapZones);
+  const ctx = network.context;
 
   if (routeCrossesFenceZones([[start.lng, start.lat]], ctx.fenceZones) || routeCrossesFenceZones([[end.lng, end.lat]], ctx.fenceZones)) return null;
   // Exclude blocked edges before searching. Rejecting just the shortest route
   // afterwards can miss an available public detour and can snap onto staff roads.
-  const visitorPaths: MapPathsGeoJson = { type: 'FeatureCollection', features: visitorPathFeatures(paths, mapZones) };
-
   for (const mergeM of MERGE_STEPS_M) {
-    const exact = await tryGraphRouteAsync(visitorPaths, start, end, mergeM, ctx);
+    const exact = await tryGraphRouteAsync(network, start, end, mergeM, ctx);
     if (exact) return exact;
   }
 

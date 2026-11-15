@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import React, { useEffect } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -97,23 +98,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 8,
+    ...ios.glass,
   },
   message: {
     ...typography.body,
     color: colors.text,
     fontSize: 13,
     flexShrink: 1,
+    ...ios.secondary,
   },
   button: {
     backgroundColor: colors.primary,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    ...webStyle({ minHeight: 44, justifyContent: 'center' }),
   },
   buttonText: {
     ...typography.button,
     color: colors.primaryText,
     fontSize: 12,
     letterSpacing: 0.3,
+    ...ios.caption,
   },
 });

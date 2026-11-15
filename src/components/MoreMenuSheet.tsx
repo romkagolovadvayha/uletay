@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
@@ -46,6 +47,7 @@ import { resolveAndroidBottomInset } from '../utils/safeArea';
 import { DeferredIonicons } from './DeferredIonicons';
 import { ScreenTitle } from './ScreenTitle';
 import { MotionPressable } from './MotionPressable';
+import { LiquidDialog } from './LiquidDialog';
 
 type MoreNavigation = BottomTabNavigationProp<RootTabParamList>;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -211,7 +213,7 @@ export function MoreMenuSheet() {
     ...(headlinersInMore
       ? [
           {
-            icon: 'mic' as const,
+            icon: Platform.OS === 'web' ? 'people' as const : 'mic' as const,
             label: 'Хэдлайнеры',
             onPress: () => {
               close();
@@ -258,14 +260,16 @@ export function MoreMenuSheet() {
         navigation.navigate('MoreTab', { screen: 'FestivalRules' });
       },
     },
-    {
-      icon: 'information-circle',
-      label: 'О фестивале',
-      onPress: () => {
-        close();
-        navigation.navigate('MoreTab', { screen: 'FestivalAbout' });
-      },
-    },
+    ...(Platform.OS !== 'web'
+      ? [{
+          icon: 'information-circle' as const,
+          label: 'О фестивале',
+          onPress: () => {
+            close();
+            navigation.navigate('MoreTab', { screen: 'FestivalAbout' });
+          },
+        }]
+      : []),
     {
       icon: 'medical',
       label: 'Экстренная помощь',
@@ -274,15 +278,30 @@ export function MoreMenuSheet() {
         navigation.navigate('HelpTab');
       },
     },
-    {
-      icon: 'help-circle',
-      label: 'Юридическая информация',
-      onPress: () => {
-        close();
-        navigation.navigate('MoreTab', { screen: 'Legal' });
-      },
-    },
+    ...(Platform.OS !== 'web'
+      ? [{
+          icon: 'help-circle' as const,
+          label: 'Юридическая информация',
+          onPress: () => {
+            close();
+            navigation.navigate('MoreTab', { screen: 'Legal' });
+          },
+        }]
+      : []),
   ];
+
+  if (Platform.OS === 'web') return (
+    <LiquidDialog open={visible} onClose={close} title="Ещё" variant="sheet">
+      <View style={styles.webGroup}>
+        {menuItems.map((item, index) => <MotionPressable key={item.label} accessibilityRole="button"
+          onPress={item.onPress} style={[styles.webRow, index < menuItems.length - 1 && styles.webRowSeparator]}>
+          <DeferredIonicons name={item.icon} size={22} color={colors.text} />
+          <Text style={styles.webLabel}>{item.label}</Text>
+          <DeferredIonicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </MotionPressable>)}
+      </View>
+    </LiquidDialog>
+  );
 
   return (
     <Animated.View
@@ -343,6 +362,10 @@ export function MoreMenuSheet() {
 }
 
 const styles = StyleSheet.create({
+  webGroup: { backgroundColor: 'rgba(255,255,255,.055)', borderRadius: 22, overflow: 'hidden' },
+  webRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 58, paddingHorizontal: 16, paddingVertical: 14 },
+  webRowSeparator: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,.09)' },
+  webLabel: { ...appFont('medium'), flex: 1, fontSize: 17, lineHeight: 22, color: colors.text },
   overlay: {
     ...StyleSheet.absoluteFill,
     justifyContent: 'flex-end',
@@ -362,12 +385,14 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
     maxHeight: '92%',
+    ...ios.glass, ...webStyle({ marginHorizontal: 10, marginBottom: 10, borderRadius: 32, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: 16 }),
   },
   handle: {
     width: 40,
     height: 4,
     borderRadius: radius.pill,
     backgroundColor: colors.borderStrong,
+    ...webStyle({ backgroundColor: 'rgba(255,255,255,0.3)' }),
   },
   handleTouch: {
     height: 44,
@@ -386,6 +411,7 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    ...ios.iconButton,
   },
   menu: {
     flexShrink: 1,
@@ -395,6 +421,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 22,
     marginBottom: spacing.md,
+    ...webStyle({ fontSize: 28, lineHeight: 34, marginTop: 8, marginBottom: 20 }),
   },
   menuRow: {
     flexDirection: 'row',
@@ -404,6 +431,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.sm,
+    ...webStyle({ minHeight: 60, borderRadius: 20, backgroundColor: colors.surfaceElevated }),
   },
   menuLabel: {
     ...typography.body,
@@ -411,5 +439,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     flex: 1,
+    ...webStyle({ fontSize: 17, lineHeight: 22 }),
   },
 });

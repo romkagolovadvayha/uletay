@@ -3,20 +3,28 @@ import { API_BASE_URL, APP_DATA_REFRESH_INTERVAL_MS, CachedAppData } from '../co
 import { AppData } from '../types';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { normalizeAppData } from '../utils/appDataNormalize';
-import { defaultAppData } from '../storage/dataStore';
 import { validateAppData } from '../../shared/app-data-validation';
 
-// v5 drops snapshots from the 2026 edition after the published festival window moved to 2027.
+// Keep this key stable: a new app/festival edition must not erase the last usable snapshot.
 export const APP_DATA_CACHE_KEY = '@uletay_api_cache_v5';
 /** Payload is ~1MB+; cold mobile links often need well over 8s. */
 const FETCH_TIMEOUT_MS = 25_000;
 const FETCH_RETRY_DELAYS_MS = [0, 1_200] as const;
 
 let memoryCache: CachedAppData | null = null;
+let persistedData: AppData | null = null;
 let inFlight: Promise<CachedAppData | null> | null = null;
 
-export function isCurrentFestivalEdition(data: AppData): boolean {
-  return data.festival.startDate >= defaultAppData.festival.startDate;
+/** Shared by synchronous web hydration and AsyncStorage on native. No expiry offline. */
+export function parseCachedAppData(raw: string | null): CachedAppData | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Number.isFinite(parsed?.fetchedAt) || !validateAppData(parsed?.data)) return null;
+    return { data: normalizeAppData(parsed.data), fetchedAt: parsed.fetchedAt };
+  } catch {
+    return null;
+  }
 }
 
 class ApiResponseError extends Error {
@@ -50,19 +58,7 @@ export type AppDataRefreshResult =
 
 async function readStorageCache(): Promise<CachedAppData | null> {
   try {
-    const raw = await AsyncStorage.getItem(APP_DATA_CACHE_KEY);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw) as CachedAppData;
-    if (
-      !parsed?.data ||
-      typeof parsed.fetchedAt !== 'number' ||
-      !isCurrentFestivalEdition(parsed.data)
-    ) {
-      return null;
-    }
-    return { data: normalizeAppData(parsed.data), fetchedAt: parsed.fetchedAt };
+    return parseCachedAppData(await AsyncStorage.getItem(APP_DATA_CACHE_KEY));
   } catch {
     return null;
   }
@@ -70,6 +66,7 @@ async function readStorageCache(): Promise<CachedAppData | null> {
 
 async function writeStorageCache(cache: CachedAppData): Promise<void> {
   await AsyncStorage.setItem(APP_DATA_CACHE_KEY, JSON.stringify(cache));
+  persistedData = cache.data;
 }
 
 function needsRefresh(cache: CachedAppData | null, force: boolean): boolean {
@@ -88,10 +85,12 @@ export async function readCachedAppData(): Promise<CachedAppData | null> {
     return memoryCache;
   }
   const storageCache = await readStorageCache();
-  if (storageCache) {
+  // A concurrent read must not replace a newer successful response.
+  if (!memoryCache && storageCache) {
     memoryCache = storageCache;
+    persistedData = storageCache.data;
   }
-  return storageCache;
+  return memoryCache;
 }
 
 async function fetchRemoteAppData(): Promise<{ data: AppData; offline: boolean }> {
@@ -135,6 +134,7 @@ async function fetchRemoteAppData(): Promise<{ data: AppData; offline: boolean }
 
 export async function fetchAndCacheAppData(): Promise<CachedAppData | null> {
   try {
+    await readCachedAppData();
     const { data: remote, offline } = await fetchRemoteAppData();
     if (offline) {
       // A worker's fallback can be older than AsyncStorage. Never roll back an
@@ -151,7 +151,8 @@ export async function fetchAndCacheAppData(): Promise<CachedAppData | null> {
     const cache: CachedAppData = { data, fetchedAt: Date.now() };
     memoryCache = cache;
     try {
-      if (!unchanged) await writeStorageCache(cache);
+      // Also retry a previously failed write after a 304 / unchanged response.
+      if (persistedData !== data) await writeStorageCache(cache);
     } catch {
       // Quota / private mode on mobile Safari: keep the in-memory snapshot for this session.
     }
@@ -199,5 +200,6 @@ export async function refreshAppDataInBackground(
 
 export function invalidateAppDataCache(): void {
   memoryCache = null;
+  persistedData = null;
   inFlight = null;
 }

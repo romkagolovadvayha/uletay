@@ -47,17 +47,6 @@ export function useAppFonts() {
     Platform.OS === 'web' ? {} : textFontsWithSwap,
   );
 
-  // Web: load all Montserrat faces immediately (font-display: swap keeps paint unblocked).
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      return;
-    }
-
-    void loadAsync(textFontsWithSwap).catch(() => {
-      // System fallback remains via font-display: swap.
-    });
-  }, []);
-
   // Load Ionicons with SWAP ASAP so DeferredIonicons can mount without racing LCP.
   useEffect(() => {
     if (Platform.OS === 'web') {

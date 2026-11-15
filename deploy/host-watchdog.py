@@ -5,6 +5,7 @@ Only local failures can cause a restart. An ISP/DNS outage must never restart
 healthy applications. Run without --recover for a read-only health snapshot.
 """
 import concurrent.futures
+from html.parser import HTMLParser
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ import re
 import subprocess
 import sys
 import time
+from urllib.parse import urljoin, urlsplit
 
 ROOT = Path('/var/www/uletay')
 STATE = Path('/var/lib/uletay-host-watchdog/state.json')
@@ -49,6 +51,49 @@ def http(url, host=None, expected=None):
     return {'ok': ok, 'retryable': True, 'code': 0}
 
 
+class AppScripts(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.sources = set()
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'script':
+            source = dict(attrs).get('src', '')
+            if source:
+                self.sources.add(source)
+
+
+def web_assets():
+    """Check boot scripts rather than accepting a fallback HTML 200."""
+    origin = 'https://uletayapp.ru/'
+    args = ['curl', '--noproxy', '*', '--silent', '--show-error', '--fail',
+            '--connect-timeout', '2', '--max-time', '5',
+            '--resolve', 'uletayapp.ru:443:127.0.0.1']
+    code, html = command(args + [origin])
+    if code:
+        return {'ok': False, 'retryable': False, 'code': code}
+    parser = AppScripts()
+    try:
+        parser.feed(html)
+        scripts = {urljoin(origin, source) for source in parser.sources}
+        scripts = {url for url in scripts if urlsplit(url).netloc == 'uletayapp.ru'
+                   and urlsplit(url).path.startswith('/_expo/static/js/web/')}
+    except ValueError:
+        return {'ok': False, 'retryable': False, 'code': 0}
+    # Expo's runtime, shared chunk and app entry must all be present.
+    if len(scripts) < 3:
+        return {'ok': False, 'retryable': False, 'code': 0}
+    for url in sorted(scripts):
+        code, result = command(args + ['--head', '--output', '/dev/null',
+                                      '--write-out', '%{http_code} %{content_type}', url])
+        status, _, mime = result.partition(' ')
+        if code or status != '200' or mime.split(';')[0].strip() not in (
+                'application/javascript', 'text/javascript'):
+            # Missing files or an HTML fallback need a release fix, not a restart.
+            return {'ok': False, 'retryable': False, 'code': code}
+    return {'ok': True, 'retryable': False, 'code': 0, 'scripts': len(scripts)}
+
+
 def active_identity():
     port = (ROOT / '.active-port').read_text().strip()
     name = (ROOT / '.active-process').read_text().strip()
@@ -66,9 +111,10 @@ def snapshot(port):
         'uletay_https': lambda: http('https://uletayapp.ru/api/health', 'uletayapp.ru', 'uletay'),
         'taxi_https': lambda: http('https://api.taxigr.ru/health/ready', 'api.taxigr.ru', 'taxi'),
         'uletay_web': lambda: http('https://uletayapp.ru/', 'uletayapp.ru'),
+        'uletay_assets': web_assets,
         'taxi_web': lambda: http('https://taxigr.ru/', 'taxigr.ru'),
     }
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=7) as pool:
         results = dict(zip(jobs, pool.map(lambda fn: fn(), jobs.values())))
     results['mysql'] = {'ok': command(['mysqladmin', '--connect-timeout=3', 'ping'])[0] == 0}
     bus_code, bus_owner = command([
@@ -83,8 +129,8 @@ def snapshot(port):
 def needs_recovery(checks):
     fronts = [checks[key] for key in ('uletay_https', 'taxi_https', 'uletay_web', 'taxi_web')]
     return {
-        'uletay': checks['mysql']['ok'] and not checks['uletay']['ok'],
-        'taxi': checks['mysql']['ok'] and not checks['taxi']['ok'],
+        'uletay': checks['mysql']['ok'] and not checks['uletay']['ok'] and checks['uletay']['retryable'],
+        'taxi': checks['mysql']['ok'] and not checks['taxi']['ok'] and checks['taxi']['retryable'],
         'nginx': checks['uletay']['ok'] and checks['taxi']['ok']
                  and any(not value['ok'] and value['retryable'] for value in fronts),
         'logind': not checks['logind']['ok'] and checks['logind']['retryable'],

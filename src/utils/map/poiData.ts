@@ -53,10 +53,10 @@ export function zonePoiCategory(zone: ZoneFeature): MapPoiCategory | null {
   }
 }
 
-function syntheticPoiFromZone(zone: ZoneFeature): PoiFeature | null {
+function syntheticPoiFromZone(zone: ZoneFeature, zones?: MapZonesGeoJson): PoiFeature | null {
   const category = zonePoiCategory(zone);
   if (!category) return null;
-  const target = zoneTargetPoint(zone);
+  const target = zoneTargetPoint(zone, zones);
   const stageId = category === 'stage' ? stageIdForName(zone.properties.name) : undefined;
 
   return {
@@ -103,7 +103,7 @@ export function withOperationalPois(
         !explicitIds.has(`zone-poi:${zone.properties.id}`) &&
         !explicitZoneIds.has(zone.properties.id),
     )
-    .map((zone) => syntheticPoiFromZone(zone as ZoneFeature))
+    .map((zone) => syntheticPoiFromZone(zone as ZoneFeature, zones))
     .filter((feature): feature is PoiFeature => feature != null);
 
   return {
@@ -112,7 +112,11 @@ export function withOperationalPois(
   };
 }
 
-export function poiCoordinate(poi: PoiFeature): LatLng {
+export function poiCoordinate(poi: PoiFeature, zones?: MapZonesGeoJson): LatLng {
+  const sourceZone = poi.properties.sourceZoneId && poi.properties.id === `zone-poi:${poi.properties.sourceZoneId}`
+    ? zones?.features.find(zone => zone.properties.id === poi.properties.sourceZoneId)
+    : undefined;
+  if (sourceZone) return zoneTargetPoint(sourceZone, zones);
   return (
     poi.properties.accessPoint ?? {
       lat: poi.geometry.coordinates[1],

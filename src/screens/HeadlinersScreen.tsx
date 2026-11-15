@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
@@ -139,7 +140,7 @@ export function HeadlinersScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   header: screenHeaderStyle,
   headerDesktop: {
@@ -149,6 +150,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingTop: 42,
     paddingBottom: 26,
+    ...webStyle({ paddingTop: 32 }),
   },
   title: {
     ...typography.screenTitle,
@@ -160,6 +162,7 @@ const styles = StyleSheet.create({
     fontSize: 46,
     lineHeight: 50,
     letterSpacing: -1.8,
+    ...webStyle({ fontSize: 40, lineHeight: 46, letterSpacing: -1 }),
   },
   desktopKicker: {
     ...appFont('bold'),
@@ -174,6 +177,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     marginTop: 9,
+    ...ios.secondary,
   },
   filtersWrap: {
     paddingHorizontal: spacing.screen,
@@ -198,6 +202,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 15,
     textAlign: 'center',
+    ...ios.secondary,
   },
   contentDesktop: {
     width: '100%',

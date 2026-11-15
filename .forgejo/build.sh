@@ -24,6 +24,7 @@ npm run test:map:layout
 npm run test:map:routing
 npm run test:push-reminders --prefix cms
 npm run test:admin --prefix cms
+python3 scripts/test-host-watchdog.py
 node scripts/test-deployed-map.mjs
 npx tsx scripts/test-web-linking.mjs
 test -f deploy/setup-push-reminders-cron.sh

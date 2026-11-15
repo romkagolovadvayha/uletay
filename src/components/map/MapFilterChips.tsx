@@ -1,5 +1,7 @@
+import { ios } from '../../theme/ios';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FilterTabs } from '../FilterTabs';
 import type { MapFilterId, MapPoisGeoJson, MapZonesGeoJson } from '../../types/map';
 import { mapColors } from '../../theme/map';
 import { radius } from '../../theme/radius';
@@ -26,6 +28,10 @@ export function MapFilterChips({ zones, pois, value, onChange, embedded = false 
   if (filters.length <= 1) {
     return null;
   }
+
+  if (Platform.OS === 'web') return <View style={[styles.wrap, embedded && styles.wrapEmbedded]}>
+    <FilterTabs label="Категории карты" role="radiogroup" items={filters} value={value} onChange={onChange} inset={spacing.screen} surface />
+  </View>;
 
   return (
     <View style={[styles.wrap, embedded && styles.wrapEmbedded]}>
@@ -81,6 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: mapColors.chipInactive,
     alignItems: 'center',
     justifyContent: 'center',
+    ...ios.glass,
   },
   chipActive: {
     backgroundColor: mapColors.chipActive,
@@ -88,6 +95,7 @@ const styles = StyleSheet.create({
   chipText: {
     ...typography.caption,
     color: mapColors.chipTextInactive,
+    ...ios.chipLabel,
   },
   chipTextActive: {
     color: mapColors.chipTextActive,

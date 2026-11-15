@@ -1,5 +1,7 @@
+import { ios, webStyle } from '../theme/ios';
 import React from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FilterTabs } from './FilterTabs';
 import { Stage, StageId } from '../types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -14,6 +16,10 @@ type Props = {
 };
 
 export function StageTabBar({ stages, selectedStageId, onSelect }: Props) {
+  if (Platform.OS === 'web') return <View style={{ paddingBottom: spacing.md }}>
+    <FilterTabs label="Сцены" value={selectedStageId} onChange={onSelect} inset={spacing.screen}
+      items={stages.map(stage => ({ id: stage.id, label: stage.shortName }))} />
+  </View>;
   return (
     <ScrollView
       horizontal
@@ -54,6 +60,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    ...ios.chip, ...webStyle({ justifyContent: 'center' }),
   },
   activeTab: {
     backgroundColor: colors.primary,
@@ -63,6 +70,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
     fontSize: 12,
+    ...ios.chipLabel,
   },
   activeLabel: {
     color: colors.primaryText,

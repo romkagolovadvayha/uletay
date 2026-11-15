@@ -214,7 +214,7 @@ export function ScheduleLiveScreen({ primary, navigation }: Props) {
 const screenStyles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   content: {
     paddingHorizontal: spacing.screen,

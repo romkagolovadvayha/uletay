@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { build } from 'esbuild';
 import { createRequire } from 'node:module';
-import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
+import { createExpression, validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import { booleanPointInPolygon } from '@turf/boolean-point-in-polygon';
 
 await fs.mkdir('tmp', { recursive: true });
@@ -86,6 +86,19 @@ const map = { getSource: id => stored.get(id), addSource: (id, source) => stored
   getLayer: id => layers.get(id), addLayer: layer => layers.set(layer.id, layer), removeLayer: id => layers.delete(id), removeSource: id => stored.delete(id) };
 const applied = { sources: new Map(), images: new Map() };
 m.syncWebMapScene(map, { sources, images: [] }, applied);
+const groundFilter = createExpression(layers.get('fest-ground').filter, 'fest-ground.filter');
+assert.equal(groundFilter.result, 'success');
+const ground = m.buildSiteGround(data.festivalMap).features;
+for (const zoom of [10, 13, 16, 19]) {
+  assert.equal(groundFilter.value.evaluate({ zoom }, ground[0]), false,
+    'The rectangular native backdrop must never hide web basemap tiles');
+  assert.equal(groundFilter.value.evaluate({ zoom }, ground[1]), true,
+    'The actual festival outline remains visible at every zoom');
+}
+const darkStyle = m.festivalMapStyle({ offline: true, dark: true, glyphs: '/map-fonts/noto-v1/{fontstack}/{range}.pbf' });
+for (const source of sources) darkStyle.sources[source.id] = { type: 'geojson', data: source.data };
+darkStyle.layers.push(...layers.values());
+assert.deepEqual(webRequire('@maplibre/maplibre-gl-style-spec').validateStyleMin(darkStyle).map(error => error.message), [], 'Dark web layers pass the GL JS style validator');
 m.syncWebMapScene(map, { sources, images: [] }, applied);
 assert.equal(updates.length, 0, 'Unchanged scene does not recreate or resend any source');
 const moved = sources.map(s => s.id === 'user' ? { ...s, data: m.buildUserLocation({ lat: 56, lng: 53 }) } : s);

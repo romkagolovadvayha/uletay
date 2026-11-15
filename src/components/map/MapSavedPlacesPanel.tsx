@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -36,7 +37,7 @@ export function MapSavedPlacesPanel({
   return (
     <View style={styles.panel}>
       <View style={styles.header}>
-        <View>
+        <View style={webStyle({ flex: 1 })}>
           <Text style={styles.title}>Мои места</Text>
           <Text style={styles.subtitle}>Хранятся только на этом устройстве</Text>
         </View>
@@ -100,19 +101,29 @@ export function MapSavedPlacesPanel({
 const styles = StyleSheet.create({
   panel: { gap: spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  title: { ...typography.sectionTitle, color: colors.text },
-  subtitle: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginTop: -spacing.sm },
-  place: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: spacing.md, backgroundColor: colors.surfaceElevated },
+  title: { ...typography.sectionTitle, color: colors.text, ...webStyle({ fontSize: 22, lineHeight: 28, letterSpacing: -0.3 }) },
+  subtitle: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs ,
+    ...webStyle({ maxWidth: 240 }),
+  },
+  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginTop: -spacing.sm ,
+    ...ios.iconButton, ...webStyle({ marginTop: 0, backgroundColor: 'rgba(255,255,255,.09)' }),
+  },
+  place: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: spacing.md, backgroundColor: colors.surfaceElevated,
+    ...webStyle({ borderWidth: 0, borderRadius: 22, backgroundColor: 'rgba(255,255,255,.055)', padding: 16, gap: 14 }),
+  },
   placeTitleRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
-  icon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  icon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, ...webStyle({ backgroundColor: 'rgba(255,255,255,.07)' }) },
   placeText: { flex: 1, gap: 2 },
   placeTitle: { ...typography.body, color: colors.text, fontWeight: '700' },
   placeCaption: { ...typography.caption, color: colors.textSecondary },
   actions: { flexDirection: 'row', gap: spacing.sm },
-  action: { minHeight: 44, flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs },
+  action: { minHeight: 44, flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs, ...webStyle({ borderWidth: 0, backgroundColor: 'rgba(255,255,255,.085)' }) },
   actionPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
-  actionText: { ...typography.button, color: colors.text },
-  actionPrimaryText: { ...typography.button, color: colors.primaryText },
+  actionText: { ...typography.button, color: colors.text ,
+    ...ios.secondary,
+  },
+  actionPrimaryText: { ...typography.button, color: colors.primaryText ,
+    ...ios.secondary,
+  },
   disabled: { opacity: 0.45 },
 });

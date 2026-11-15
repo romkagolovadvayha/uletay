@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -117,6 +118,7 @@ const styles = StyleSheet.create({
     borderColor: mapColors.fabBorder,
     alignItems: 'center',
     justifyContent: 'center',
+    ...ios.glass,
   },
   fabActive: {
     backgroundColor: mapColors.chipActive,
@@ -133,6 +135,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.72)',
     boxShadow: shadows.mapDirections,
+    ...webStyle({ borderColor: colors.primary, boxShadow: 'none' }),
   },
   directionsLabel: {
     ...typography.button,

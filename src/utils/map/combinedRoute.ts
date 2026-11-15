@@ -73,6 +73,8 @@ export async function buildCombinedRouteToTarget(options: {
   const target = options.target;
   const segments: RouteSegment[] = [];
   let internalOriginName: string | null = null;
+  let arrivalPoint: LatLng | undefined;
+  let roadRouteUnavailable = false;
   const inside =
     options.userLocation &&
     isInsideTerritory(options.userLocation, options.mapConfig);
@@ -86,13 +88,17 @@ export async function buildCombinedRouteToTarget(options: {
     );
     const entrance = nearestEntrance(options.userLocation, candidates);
     if (!entrance) return null;
-    const external = await fetchDrivingRoute(options.userLocation, entrance.point);
-    segments.push({
-      kind: 'external',
-      coordinates: external.coordinates,
-      distanceMeters: external.distanceMeters,
-      durationSeconds: external.durationSeconds,
-    });
+    arrivalPoint = entrance.point;
+    try {
+      const external = await fetchDrivingRoute(options.userLocation, entrance.point);
+      segments.push({
+        kind: 'external', coordinates: external.coordinates,
+        distanceMeters: external.distanceMeters, durationSeconds: external.durationSeconds,
+      });
+    } catch {
+      roadRouteUnavailable = true;
+      internalOriginName = entrance.name;
+    }
     segments.push({
       kind: 'internal',
       coordinates: entrance.internal.coordinates,
@@ -110,7 +116,12 @@ export async function buildCombinedRouteToTarget(options: {
     });
   } else {
     const entrances = entranceTargets(options.mapPois);
-    const [entrance] = await routableEntrances(entrances, target, options.mapPaths, options.mapZones);
+    // Preserve the preferred public entrance without computing every alternative.
+    let entrance: RoutableEntrance | undefined;
+    for (const candidate of entrances) {
+      const internal = await findInternalPathAsync(options.mapPaths, candidate.point, target, options.mapZones);
+      if (internal) { entrance = { ...candidate, internal }; break; }
+    }
     if (!entrance) return null;
     internalOriginName = entrance.name;
     segments.push({
@@ -135,9 +146,9 @@ export async function buildCombinedRouteToTarget(options: {
   } else if (externalSeg) {
     summary = `На машине → ${options.targetName}`;
   } else if (internalSeg) {
-    summary = options.userLocation
-      ? `Пешком → ${options.targetName}`
-      : `От входа «${internalOriginName ?? 'Главный вход'}» → ${options.targetName}`;
+    summary = internalOriginName
+      ? `От входа «${internalOriginName}» → ${options.targetName}`
+      : `Пешком → ${options.targetName}`;
   }
 
   return {
@@ -145,6 +156,8 @@ export async function buildCombinedRouteToTarget(options: {
     totalDistanceMeters,
     totalDurationSeconds,
     summary,
+    arrivalPoint,
+    roadRouteUnavailable,
   };
 }
 

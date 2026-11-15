@@ -1,0 +1,614 @@
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { Suspense, useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  type SharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CountdownTimer } from '../components/CountdownTimer';
+import { DesktopFestivalHome } from '../components/DesktopFestivalHome';
+import { ExternalLink } from '../components/ExternalLink';
+import { AutographSessionRow } from '../components/AutographSessionRow';
+import { FestivalLogoImage } from '../components/FestivalLogoImage';
+import { SemanticHeading } from '../components/SemanticHeading';
+import { HomeHeadlinersWidget } from '../components/HomeHeadlinersWidget';
+import { LiveArtistCard } from '../components/LiveArtistCard';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { SectionHeader } from '../components/SectionHeader';
+import { WebFestivalGuide } from '../components/WebFestivalGuide';
+import { TICKET_VENDOR_URL } from '../constants/legal';
+import { useAppData } from '../context/DataContext';
+import {
+  usePrimaryAutographSessions,
+  useStagePrimaryPerformances,
+} from '../hooks/useCurrentLivePerformance';
+import { useFavorites } from '../hooks/useFavorites';
+import { useDeferredHeroVideo } from '../hooks/useDeferredHeroVideo';
+import { useNow } from '../hooks/useNow';
+import { useIsDesktopWeb } from '../hooks/useIsDesktopWeb';
+import { RootTabParamList } from '../navigation/types';
+import { openHeadlinerDetail, openHeadlinersMain, openScheduleTabMain } from '../navigation/scheduleNavigation';
+import { colors } from '../theme/colors';
+import { radius } from '../theme/radius';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
+import {
+  formatSoonCountdown,
+  getStageName,
+  isFestivalFinished,
+  isFestivalStarted,
+  isStartingSoon,
+  parseDateTime,
+} from '../utils/scheduleHelpers';
+import { getLatestHeadlinerYear, hasScheduleForYear } from '../utils/headlinerHelpers';
+import { HERO_POSTER_SOURCE } from '../utils/heroPosterSource';
+
+type Navigation = BottomTabNavigationProp<RootTabParamList, 'HomeTab'>;
+
+type Props = {
+  navigation: Navigation;
+};
+
+const HERO_BACKGROUND_HEIGHT = 580;
+const PARALLAX_FACTOR = 0.42;
+
+const LazyHeroBackgroundVideo = React.lazy(() =>
+  import('../components/HeroBackgroundVideo').then((m) => ({ default: m.HeroBackgroundVideo })),
+);
+
+type HeroParallaxBackgroundProps = {
+  scrollY: SharedValue<number>;
+  reduceMotion: boolean;
+  allowVideo: boolean;
+  fill?: boolean;
+};
+
+function HeroParallaxBackground({
+  scrollY,
+  reduceMotion,
+  allowVideo,
+  fill = false,
+}: HeroParallaxBackgroundProps) {
+  const [heroPosterReady, setHeroPosterReady] = useState(Platform.OS !== 'web');
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
+  // The video is web-only and waits for the poster so the image remains the LCP element.
+  const shouldLoadHeroVideo = Platform.OS === 'web' && allowVideo && heroPosterReady;
+
+  const onHeroVideoReady = useCallback(() => {
+    setHeroVideoReady(true);
+  }, []);
+
+  const parallaxStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: reduceMotion
+          ? 0
+          : interpolate(
+              scrollY.get(),
+              [0, HERO_BACKGROUND_HEIGHT],
+              [0, -HERO_BACKGROUND_HEIGHT * PARALLAX_FACTOR],
+              Extrapolation.CLAMP,
+            ),
+      },
+    ],
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.parallaxBackground, fill && styles.welcomeBackground, parallaxStyle]}
+    >
+      <View style={styles.parallaxVideoCrop}>
+        <View style={styles.parallaxVideoLayer}>
+          <Image
+            source={HERO_POSTER_SOURCE}
+            style={styles.parallaxVideoMedia}
+            contentFit="cover"
+            contentPosition="center"
+            priority="high"
+            loading="eager"
+            accessibilityLabel=""
+            alt=""
+            onLoad={() => setHeroPosterReady(true)}
+          />
+        </View>
+        {shouldLoadHeroVideo ? (
+          <View
+            style={[styles.parallaxVideoLayer, !heroVideoReady && styles.parallaxVideoHidden]}
+          >
+            <Suspense fallback={null}>
+              <LazyHeroBackgroundVideo onReady={onHeroVideoReady} />
+            </Suspense>
+          </View>
+        ) : null}
+      </View>
+      <LinearGradient
+        colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.42)', 'rgba(0,0,0,0.92)']}
+        locations={[0, 0.45, 1]}
+        style={styles.parallaxGradient}
+      />
+    </Animated.View>
+  );
+}
+
+export function FestivalHomeMobile({ navigation, showWebGuide = true }: Props & { showWebGuide?: boolean }) {
+  const { data, isInitialLoading } = useAppData();
+  const [homeLayout, setHomeLayout] = useState({ width: 0, height: 0 });
+  const compactHome = homeLayout.height < 600;
+  const landscapeHome = homeLayout.height > 0 && homeLayout.height < 480 && homeLayout.width > homeLayout.height * 1.4;
+  const now = useNow(1000);
+  const stagePrimaries = useStagePrimaryPerformances();
+  const autographPrimaries = usePrimaryAutographSessions(3);
+  const { isAutographFavorite, toggleAutographFavorite } = useFavorites();
+  const allowHeroVideo = useDeferredHeroVideo();
+  const scrollY = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.set(event.contentOffset.y);
+  });
+
+  const festivalStart = useMemo(
+    () => parseDateTime(data.festival.startDate, '12:00'),
+    [data.festival.startDate],
+  );
+
+  const festivalStarted = isFestivalStarted(data.festival.startDate, now);
+  const festivalPhase = !festivalStarted
+    ? 'before'
+    : isFestivalFinished(data.festival.startDate, data.festival.endDate, data.schedule, now)
+      ? 'after'
+      : 'during';
+  // The bundled snapshot is intentionally available offline. It contains the
+  // published festival window, so a temporary API failure must not hide the
+  // countdown or switch the home screen to an empty post-festival state.
+  const hasReliableFestivalData = Boolean(
+    data.festival.startDate && data.festival.endDate && data.festival.year,
+  );
+  const nextFestivalYear = data.festival.year + 1;
+  const hasNextYearSchedule = hasScheduleForYear(data.schedule, nextFestivalYear);
+  const showPreFestivalHeadliners = hasReliableFestivalData && festivalPhase === 'before';
+  const showPostFestivalHeadliners =
+    hasReliableFestivalData && festivalPhase === 'after' && !hasNextYearSchedule;
+  const showLiveSection = hasReliableFestivalData && festivalPhase === 'during';
+  const latestHeadlinerYear = useMemo(
+    () => getLatestHeadlinerYear(data.headliners),
+    [data.headliners],
+  );
+  const hasAnyLive = stagePrimaries.some((item) => item.status === 'live');
+  const hasAnySoon = stagePrimaries.some(
+    (item) =>
+      item.status === 'upcoming' &&
+      isStartingSoon(item.performance.date, item.performance.startTime, now),
+  );
+  const sectionTitle = hasAnyLive
+    ? 'СЕЙЧАС НА СЦЕНАХ'
+    : hasAnySoon
+      ? 'СКОРО НА СЦЕНАХ'
+      : 'СЛЕДУЮЩИЕ ВЫСТУПЛЕНИЯ';
+  const hasLiveAutographs = autographPrimaries.some((item) => item.status === 'live');
+  const hasSoonAutographs = autographPrimaries.some(
+    (item) =>
+      item.status === 'upcoming' &&
+      isStartingSoon(item.session.date, item.session.startTime, now),
+  );
+  const autographSectionTitle = hasLiveAutographs
+    ? 'АВТОГРАФ-СЕССИИ СЕЙЧАС'
+    : hasSoonAutographs
+      ? 'СКОРО: АВТОГРАФ-СЕССИИ'
+      : 'БЛИЖАЙШИЕ АВТОГРАФ-СЕССИИ';
+
+  const openHeadlinersMainScreen = useCallback(() => {
+    openHeadlinersMain(navigation);
+  }, [navigation]);
+
+  const openHeadlinerDetailScreen = useCallback(
+    (headlinerId: string) => {
+      openHeadlinerDetail(navigation, headlinerId);
+    },
+    [navigation],
+  );
+
+  if (isInitialLoading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <HeroParallaxBackground
+          scrollY={scrollY}
+          reduceMotion={reduceMotion}
+          allowVideo={false}
+        />
+        <View style={styles.homeLoader}>
+          <ActivityIndicator
+            size="large"
+            color={colors.primary}
+            accessibilityLabel="Загружаем данные фестиваля"
+          />
+          <Text style={styles.homeLoaderText}>Загружаем данные фестиваля…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (Platform.OS === 'web' && !showLiveSection) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}
+        onLayout={({ nativeEvent: { layout } }) => setHomeLayout({ width: layout.width, height: layout.height })}>
+        <HeroParallaxBackground scrollY={scrollY} reduceMotion={reduceMotion} allowVideo={allowHeroVideo} fill />
+        <View pointerEvents="none" style={styles.welcomeShade} />
+        <View style={[styles.welcomeFrame, compactHome && styles.welcomeFrameCompact]}>
+          <View style={[styles.welcomeContent, landscapeHome && styles.welcomeLandscape]}>
+            <View style={[styles.welcomeIdentity, landscapeHome && styles.welcomeColumn]}>
+              <FestivalLogoImage logoImageUrl={data.festival.logoImageUrl}
+                style={[styles.welcomeLogo, compactHome && styles.welcomeLogoCompact]} />
+              <SemanticHeading level={1} style={[styles.welcomeTitle, compactHome && styles.welcomeTitleCompact]}>
+                Фестиваль Улетай {data.festival.year}
+              </SemanticHeading>
+              <Text style={[styles.welcomeLocation, compactHome && styles.welcomeLocationCompact]}>{data.festival.location}</Text>
+            </View>
+            <View style={[styles.welcomeActions, compactHome && styles.welcomeActionsCompact, landscapeHome && styles.welcomeColumn]}>
+              {hasReliableFestivalData ? <CountdownTimer
+                targetDate={festivalStart} festivalStartDate={data.festival.startDate}
+                festivalEndDate={data.festival.endDate} performances={data.schedule}
+                prominent compact={compactHome} /> : null}
+              <PrimaryButton label="Кто будет на Улетай?" onPress={openHeadlinersMainScreen}
+                style={[styles.welcomeButton, compactHome && styles.welcomeButtonCompact]}
+                textStyle={styles.welcomeButtonText} />
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <HeroParallaxBackground
+        scrollY={scrollY}
+        reduceMotion={reduceMotion}
+        allowVideo={allowHeroVideo}
+      />
+
+      <Animated.ScrollView
+        contentContainerStyle={[
+          styles.content,
+          Platform.OS === 'web' && styles.webContent,
+        ]}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={onScroll}
+      >
+        <View style={[styles.heroStack, festivalPhase === 'after' && styles.heroStackCompact]}>
+          <View style={[styles.heroContent, festivalPhase === 'after' && styles.heroContentCompact]}>
+            <FestivalLogoImage logoImageUrl={data.festival.logoImageUrl} style={styles.logoImage} />
+            <SemanticHeading level={1} style={styles.tagline}>
+              Фестиваль УЛЕТАЙ 2027
+            </SemanticHeading>
+            <Text style={styles.location}>{data.festival.location}</Text>
+          </View>
+
+          {hasReliableFestivalData ? (
+            <View style={styles.overlaySection}>
+              <CountdownTimer
+                targetDate={festivalStart}
+                festivalStartDate={data.festival.startDate}
+                festivalEndDate={data.festival.endDate}
+                performances={data.schedule}
+              />
+              {festivalPhase === 'before' ? (
+                <ExternalLink
+                  href={TICKET_VENDOR_URL}
+                  accessibilityLabel="Купить билет"
+                  style={styles.ticketButton}
+                >
+                  <Text style={styles.ticketButtonLabel}>Купить билет</Text>
+                </ExternalLink>
+              ) : null}
+            </View>
+          ) : null}
+
+          {hasReliableFestivalData && festivalPhase === 'during' ? (
+            <View style={styles.overlaySection}>
+              <PrimaryButton
+                label="РАСПИСАНИЕ"
+                onPress={() => openScheduleTabMain(navigation)}
+              />
+            </View>
+          ) : null}
+        </View>
+
+        {showPostFestivalHeadliners && latestHeadlinerYear != null ? (
+          <View style={styles.section}>
+            <HomeHeadlinersWidget
+              year={latestHeadlinerYear}
+              limit={5}
+              moreLabel="ЕЩЁ"
+              hint=""
+              onPressHeadliner={(headliner) => openHeadlinerDetailScreen(headliner.id)}
+              onPressAll={openHeadlinersMainScreen}
+            />
+          </View>
+        ) : null}
+
+        {showPreFestivalHeadliners && latestHeadlinerYear != null ? (
+          <View style={styles.section}>
+            <HomeHeadlinersWidget
+              year={latestHeadlinerYear}
+              onPressHeadliner={(headliner) => openHeadlinerDetailScreen(headliner.id)}
+              onPressAll={openHeadlinersMainScreen}
+            />
+          </View>
+        ) : null}
+
+        {showLiveSection ? (
+          <View style={styles.section}>
+            <SectionHeader title={sectionTitle} />
+            {stagePrimaries.length > 0 ? (
+              stagePrimaries.map((item) => (
+                <View key={item.performance.id} style={styles.liveCardWrap}>
+                  <LiveArtistCard
+                    performance={item.performance}
+                    stageName={getStageName(item.performance.stageId, data.stages)}
+                    status={item.status}
+                    now={now}
+                    style={styles.liveCard}
+                    onPress={() =>
+                      navigation.navigate('ScheduleTab', {
+                        screen: 'LiveDetail',
+                        params: { performanceId: item.performance.id },
+                      })
+                    }
+                  />
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>Нет предстоящих выступлений в расписании</Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {showLiveSection ? (
+          <View style={styles.section}>
+            <SectionHeader title={autographSectionTitle} />
+            {autographPrimaries.length > 0 ? (
+              <View style={styles.autographList}>
+                {autographPrimaries.map((item) => {
+                  const isSoon =
+                    item.status === 'upcoming' &&
+                    isStartingSoon(item.session.date, item.session.startTime, now);
+
+                  return (
+                    <AutographSessionRow
+                      key={item.session.id}
+                      session={item.session}
+                      isLive={item.status === 'live'}
+                      isUpcoming={isSoon}
+                      soonCountdown={
+                        isSoon
+                          ? formatSoonCountdown(
+                              parseDateTime(item.session.date, item.session.startTime),
+                              now,
+                            )
+                          : undefined
+                      }
+                      isFavorite={isAutographFavorite(item.session.id)}
+                      onToggleFavorite={() => toggleAutographFavorite(item.session.id)}
+                      onPress={() =>
+                        navigation.navigate('Autographs', {
+                          screen: 'AutographDetail',
+                          params: { sessionId: item.session.id },
+                        })
+                      }
+                    />
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>Нет предстоящих автограф-сессий</Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {Platform.OS === 'web' && showWebGuide ? (
+          <View style={styles.guideSection}>
+            <WebFestivalGuide
+              festival={data.festival}
+              onOpenSchedule={() => openScheduleTabMain(navigation)}
+              onOpenMap={() => navigation.navigate('MapTab')}
+              onOpenRules={() =>
+                navigation.navigate('MoreTab', { screen: 'FestivalRules' })
+              }
+            />
+          </View>
+        ) : null}
+      </Animated.ScrollView>
+    </SafeAreaView>
+  );
+}
+
+export function FestivalHomeScreen(props: Props) {
+  const isDesktopWeb = useIsDesktopWeb();
+
+  if (isDesktopWeb) {
+    return <DesktopFestivalHome {...props} />;
+  }
+
+  return <FestivalHomeMobile {...props} />;
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.pageBackground,
+    overflow: 'hidden',
+  },
+  welcomeBackground: { height: '100%' },
+  welcomeShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.2)' },
+  welcomeFrame: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
+  welcomeFrameCompact: { paddingHorizontal: 20, paddingVertical: 16 },
+  welcomeContent: { width: '100%', maxWidth: 480, alignItems: 'center', justifyContent: 'center' },
+  welcomeLandscape: { flexDirection: 'row', maxWidth: 860, gap: 32 },
+  welcomeIdentity: { width: '100%', alignItems: 'center' },
+  welcomeLogo: { width: 360, maxWidth: '100%', height: 190, alignSelf: 'center' },
+  welcomeLogoCompact: { height: 90 },
+  welcomeTitle: { ...typography.sectionTitle, fontSize: 28, lineHeight: 34, fontWeight: '700', color: colors.text, textAlign: 'center', marginTop: 20 },
+  welcomeTitleCompact: { fontSize: 24, lineHeight: 30, marginTop: 12 },
+  welcomeLocation: { ...typography.body, fontSize: 17, lineHeight: 24, color: colors.textSecondary, textAlign: 'center', marginTop: 8 },
+  welcomeLocationCompact: { fontSize: 16, lineHeight: 22 },
+  welcomeActions: { width: '100%', marginTop: 36 },
+  welcomeActionsCompact: { marginTop: 20 },
+  welcomeColumn: { flex: 1, width: 'auto', marginTop: 0 },
+  welcomeButton: { width: '100%', minHeight: 56, paddingVertical: 16, marginTop: 32 },
+  welcomeButtonCompact: { minHeight: 54, paddingVertical: 15, marginTop: 20 },
+  welcomeButtonText: { fontSize: 18, lineHeight: 24, fontWeight: '600' },
+  homeLoader: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    zIndex: 1,
+  },
+  homeLoaderText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  content: {
+    paddingBottom: spacing.xxl,
+  },
+  webContent: {
+    paddingBottom: 0,
+  },
+  parallaxBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HERO_BACKGROUND_HEIGHT + 80,
+    zIndex: 0,
+    overflow: 'hidden',
+  },
+  parallaxVideoCrop: {
+    ...StyleSheet.absoluteFill,
+    overflow: 'hidden',
+  },
+  parallaxVideoLayer: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  parallaxVideoMedia: {
+    height: '100%',
+    aspectRatio: 16 / 9,
+    minWidth: '100%',
+  },
+  parallaxVideoHidden: {
+    opacity: 0,
+  },
+  parallaxGradient: {
+    ...StyleSheet.absoluteFill,
+  },
+  heroStack: {
+    position: 'relative',
+    marginBottom: spacing.section,
+    zIndex: 1,
+  },
+  heroStackCompact: {
+    marginBottom: spacing.sm,
+  },
+  heroContent: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+    minHeight: 280,
+    gap: spacing.sm,
+  },
+  heroContentCompact: {
+    minHeight: 300,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  logoImage: {
+    width: 360,
+    maxWidth: '100%',
+    height: 156,
+    alignSelf: 'center',
+    marginBottom: spacing.xs,
+  },
+  tagline: {
+    ...typography.logoTagline,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  location: {
+    ...typography.location,
+    color: colors.text,
+    textAlign: 'center',
+    textTransform: 'none',
+    letterSpacing: 0.4,
+    fontSize: 13,
+  },
+  overlaySection: {
+    paddingHorizontal: spacing.screen,
+    marginBottom: spacing.section,
+  },
+  ticketButton: {
+    marginTop: spacing.xxl,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 17,
+    paddingHorizontal: spacing.xl,
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ticketButtonLabel: {
+    ...typography.button,
+    color: colors.primaryText,
+  },
+  section: {
+    paddingHorizontal: spacing.screen,
+    marginBottom: spacing.section,
+  },
+  guideSection: {
+    paddingHorizontal: spacing.screen,
+  },
+  liveCardWrap: {
+    marginBottom: spacing.sm,
+  },
+  liveCard: {
+    backgroundColor: colors.surfaceGlass,
+  },
+  autographList: {
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surfaceGlass,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  emptyText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+});

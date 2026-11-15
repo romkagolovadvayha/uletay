@@ -181,4 +181,6 @@ export interface CombinedRoute {
   totalDistanceMeters: number;
   totalDurationSeconds: number;
   summary: string;
+  arrivalPoint?: LatLng;
+  roadRouteUnavailable?: boolean;
 }

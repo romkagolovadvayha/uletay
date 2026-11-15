@@ -1,9 +1,11 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useIsFocused } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { Suspense } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
+import { AmbientBackground } from '../components/AmbientBackground';
 import { DeferredIonicons } from '../components/DeferredIonicons';
 import { RadioTabIcon } from '../components/RadioTabIcon';
 import { useIsTablet } from '../hooks/useIsTablet';
@@ -106,6 +108,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  hiddenScene: { display: 'none' },
   tabLabel: {
     ...typography.tabLabel,
     marginTop: 4,
@@ -146,7 +149,7 @@ function ScheduleNavigator() {
       screenOptions={{
         animation: reduceMotion ? 'fade' : 'default',
         headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: colors.pageBackground },
       }}
     >
       <ScheduleStack.Screen name="ScheduleMain" component={ScheduleMainScreen} />
@@ -164,7 +167,7 @@ function AutographNavigator() {
       screenOptions={{
         animation: reduceMotion ? 'fade' : 'default',
         headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: colors.pageBackground },
       }}
     >
       <AutographStack.Screen name="AutographsMain" component={AutographsScreen} />
@@ -181,7 +184,7 @@ function HeadlinersNavigator() {
       screenOptions={{
         animation: reduceMotion ? 'fade' : 'default',
         headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: colors.pageBackground },
       }}
     >
       <HeadlinersStack.Screen name="HeadlinersMain" component={HeadlinersScreen} />
@@ -199,7 +202,7 @@ function MoreNavigator() {
       screenOptions={{
         animation: reduceMotion ? 'fade' : 'default',
         headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: colors.pageBackground },
       }}
     >
       <MoreStack.Screen name="MoreHome" component={MorePlaceholderScreen} />
@@ -215,6 +218,12 @@ function MoreNavigator() {
   );
 }
 
+function WebTabScene({ children }: { children: React.ReactNode }) {
+  const focused = useIsFocused();
+  // Web tabs otherwise remain painted below the active tab's transparent canvas.
+  return <View style={[styles.root, !focused && styles.hiddenScene]}>{children}</View>;
+}
+
 function RootTabs() {
   const { open } = useMoreMenu();
   const isTablet = useIsTablet();
@@ -223,6 +232,7 @@ function RootTabs() {
     <Tab.Navigator
       initialRouteName="HomeTab"
       tabBar={(props) => <AdaptiveTabBar {...props} />}
+      screenLayout={Platform.OS === 'web' ? ({ children }) => <WebTabScene>{children}</WebTabScene> : undefined}
       screenOptions={{
         animation: 'none',
         headerShown: false,
@@ -242,7 +252,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Главная',
-          tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'home-outline' : 'home'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -251,7 +261,7 @@ function RootTabs() {
         listeners={({ navigation }) => createNestedTabListeners(navigation, 'ScheduleTab')}
         options={{
           title: 'Расписание',
-          tabBarIcon: ({ color }) => <TabIcon name="calendar" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'calendar-outline' : 'calendar'} color={color} />,
           popToTopOnBlur: true,
         }}
       />
@@ -261,7 +271,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Карта',
-          tabBarIcon: ({ color }) => <TabIcon name="map" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'map-outline' : 'map'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -270,7 +280,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Помощь',
-          tabBarIcon: ({ color }) => <TabIcon name="medical" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'medical-outline' : 'medical'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -279,7 +289,7 @@ function RootTabs() {
         listeners={({ navigation }) => createNestedTabListeners(navigation, 'Autographs')}
         options={{
           title: 'Автографы',
-          tabBarIcon: ({ color }) => <TabIcon name="ticket" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'ticket-outline' : 'ticket'} color={color} />,
           popToTopOnBlur: true,
         }}
       />
@@ -289,7 +299,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Избранное',
-          tabBarIcon: ({ color }) => <TabIcon name="star" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' && !focused ? 'star-outline' : 'star'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -298,7 +308,7 @@ function RootTabs() {
         listeners={({ navigation }) => createNestedTabListeners(navigation, 'HeadlinersTab')}
         options={{
           title: 'Хэдлайнеры',
-          tabBarIcon: ({ color }) => <TabIcon name="mic" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name={Platform.OS === 'web' ? (focused ? 'people' : 'people-outline') : 'mic'} color={color} />,
           popToTopOnBlur: true,
         }}
       />
@@ -324,7 +334,7 @@ function RootTabs() {
         }
         options={{
           title: 'Ещё',
-          tabBarIcon: ({ color }) => <TabIcon name="reorder-three" color={color} />,
+          tabBarIcon: ({ color }) => <TabIcon name={Platform.OS === 'web' ? 'ellipsis-horizontal' : 'reorder-three'} color={color} />,
           popToTopOnBlur: true,
           tabBarButton: isTablet ? () => null : undefined,
         }}
@@ -337,6 +347,7 @@ export function RootNavigator() {
   return (
     <MoreMenuProvider>
       <View style={styles.root}>
+        <AmbientBackground />
         <RootTabs />
         <FestivalNavigationGuard />
         <Suspense fallback={null}>

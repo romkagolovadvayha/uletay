@@ -7,6 +7,7 @@ export const mapControlLayout = {
   directionsBottom,
   directionsHeight,
   attributionBottom: directionsBottom + directionsHeight + spacing.sm,
+  attributionHeight: 15,
   compassBottom: 150,
 } as const;
 

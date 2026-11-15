@@ -1,9 +1,11 @@
+import { ios, webStyle, webLabel } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Linking from 'expo-linking';
 import React, { useMemo, useState } from 'react';
 import {
   Modal,
+  Platform,
   ScrollView,
   Share,
   StyleSheet,
@@ -14,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { MotionPressable } from '../components/MotionPressable';
 import { ScreenTitle } from '../components/ScreenTitle';
+import { LiquidDialog } from '../components/LiquidDialog';
 import { LEGAL_OPERATOR } from '../constants/legal';
 import { useAppData } from '../context/DataContext';
 import { useUserLocation } from '../hooks/useUserLocation';
@@ -83,11 +86,12 @@ export function HelpScreen({ navigation }: Props) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
         <View>
-          <Text style={styles.eyebrow}>РАБОТАЕТ БЕЗ ИНТЕРНЕТА</Text>
+          <Text style={styles.eyebrow}>{webLabel('Работает без интернета')}</Text>
           <ScreenTitle style={styles.screenTitle}>Помощь на фестивале</ScreenTitle>
           <Text style={styles.lead}>
-            Быстрые действия, маршруты к медпункту и охране, а также официальные
-            контакты организатора {data.festival.name} {data.festival.year}.
+            {Platform.OS === 'web'
+              ? `Быстрые действия, маршруты к медпункту и охране на фестивале ${data.festival.name} ${data.festival.year}.`
+              : `Быстрые действия, маршруты к медпункту и охране, а также официальные контакты организатора ${data.festival.name} ${data.festival.year}.`}
           </Text>
         </View>
 
@@ -154,7 +158,7 @@ export function HelpScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View style={styles.card}>
+        {Platform.OS !== 'web' ? <View style={styles.card}>
           <Text style={styles.cardTitle}>Организатор и потерянные вещи</Text>
           <Text style={styles.caption}>
             {LEGAL_OPERATOR.name} · {LEGAL_OPERATOR.phoneLabels[0]} · {LEGAL_OPERATOR.email}
@@ -167,7 +171,7 @@ export function HelpScreen({ navigation }: Props) {
               <Text style={styles.secondaryButtonText}>Написать</Text>
             </MotionPressable>
           </View>
-        </View>
+        </View> : null}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Офлайн-инструкции</Text>
@@ -193,11 +197,16 @@ export function HelpScreen({ navigation }: Props) {
         </View>
       </ScrollView>
 
-      <Modal visible={coordinatesVisible} transparent animationType="fade" onRequestClose={() => setCoordinatesVisible(false)}>
+      {Platform.OS === 'web' ? <LiquidDialog open={coordinatesVisible} onClose={() => setCoordinatesVisible(false)}
+        title="Мои координаты" description="Сообщите эти координаты сотруднику фестиваля."
+        actions={[{ label: 'Готово', tone: 'primary', onPress: () => setCoordinatesVisible(false) }]}>
+        <Text selectable style={styles.webCoordinates}>{coordinatesText}</Text>
+        {location?.accuracy != null ? <Text style={styles.webAccuracy}>Точность около {formatDistance(location.accuracy)}</Text> : null}
+      </LiquidDialog> : <Modal visible={coordinatesVisible} transparent animationType="fade" onRequestClose={() => setCoordinatesVisible(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.coordinatesCard}>
             <Ionicons name="location" size={34} color={colors.primary} />
-            <Text style={styles.coordinatesLabel}>МОИ КООРДИНАТЫ</Text>
+            <Text style={styles.coordinatesLabel}>{webLabel('Мои координаты')}</Text>
             <Text selectable style={styles.coordinates}>{coordinatesText}</Text>
             {location?.accuracy != null ? (
               <Text style={styles.caption}>Точность около {formatDistance(location.accuracy)}</Text>
@@ -205,7 +214,7 @@ export function HelpScreen({ navigation }: Props) {
             <PrimaryButton label="Закрыть" onPress={() => setCoordinatesVisible(false)} />
           </View>
         </View>
-      </Modal>
+      </Modal>}
     </SafeAreaView>
   );
 }
@@ -242,9 +251,13 @@ function HelpCard({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.screen, paddingBottom: spacing.xxxl, gap: spacing.md },
-  eyebrow: { ...typography.caption, color: colors.primary, fontWeight: '800', letterSpacing: 1 },
+  webCoordinates: { fontSize: 20, lineHeight: 28, color: colors.text, textAlign: 'center', padding: 16, borderRadius: 20, backgroundColor: 'rgba(255,255,255,.06)', fontVariant: ['tabular-nums'] },
+  webAccuracy: { fontSize: 13, lineHeight: 18, color: colors.textSecondary, textAlign: 'center', marginTop: 10 },
+  safe: { flex: 1, backgroundColor: colors.pageBackground },
+  content: { padding: spacing.screen, paddingBottom: spacing.xxxl, gap: spacing.md, ...webStyle({ width: '100%', maxWidth: 860, alignSelf: 'center' }) },
+  eyebrow: { ...typography.caption, color: colors.primary, fontWeight: '800', letterSpacing: 1 ,
+    ...ios.caption,
+  },
   screenTitle: { ...typography.screenTitle, color: colors.text, marginTop: spacing.xs },
   lead: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm },
   card: { padding: spacing.lg, borderRadius: radius.xl, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, gap: spacing.md },
@@ -256,8 +269,12 @@ const styles = StyleSheet.create({
   cardTitle: { ...typography.sectionTitle, color: colors.text },
   caption: { ...typography.caption, color: colors.textSecondary },
   twoActions: { flexDirection: 'row', gap: spacing.sm },
-  secondaryButton: { minHeight: 48, flex: 1, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md },
-  secondaryButtonText: { ...typography.button, color: colors.primary, textAlign: 'center' },
+  secondaryButton: { minHeight: 48, flex: 1, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md ,
+    ...ios.button, ...webStyle({ paddingHorizontal: 12 }),
+  },
+  secondaryButtonText: { ...typography.button, color: colors.primary, textAlign: 'center' ,
+    ...ios.secondary,
+  },
   disabled: { opacity: 0.4 },
   section: { gap: spacing.sm, marginTop: spacing.md },
   sectionTitle: { ...typography.sectionTitle, color: colors.text },
@@ -266,7 +283,9 @@ const styles = StyleSheet.create({
   instructionTitle: { ...typography.body, color: colors.text, fontWeight: '700' },
   instructionBody: { ...typography.body, color: colors.textSecondary },
   modalBackdrop: { flex: 1, backgroundColor: colors.overlayStrong, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  coordinatesCard: { width: '100%', maxWidth: 460, backgroundColor: colors.surface, borderRadius: radius.xxl, padding: spacing.xl, alignItems: 'center', gap: spacing.md, borderWidth: 1, borderColor: colors.borderStrong },
+  coordinatesCard: { width: '100%', maxWidth: 460, backgroundColor: colors.surface, borderRadius: radius.xxl, padding: spacing.xl, alignItems: 'center', gap: spacing.md, borderWidth: 1, borderColor: colors.borderStrong ,
+    ...ios.glass,
+  },
   coordinatesLabel: { ...typography.caption, color: colors.textMuted, letterSpacing: 1 },
   coordinates: { ...typography.screenTitle, color: colors.text, textAlign: 'center', fontSize: 28 },
 });

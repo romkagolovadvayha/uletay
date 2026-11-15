@@ -1,3 +1,5 @@
+import { BackButton } from '../components/BackButton';
+import { ios, webStyle, webLabel } from '../theme/ios';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,16 +47,14 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel="Назад"
+        <BackButton
           accessibilityHint="Вернуться к списку фудкорта"
           onPress={() => navigation.goBack()}
           hitSlop={12}
           style={styles.iconButton}
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </MotionPressable>
+        </BackButton>
         <MotionPressable
           accessibilityRole="button"
           accessibilityLabel={
@@ -77,7 +77,7 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <FoodCourtCard vendor={vendor} large />
 
-        <ScreenTitle style={styles.name}>{vendor.name.toUpperCase()}</ScreenTitle>
+        <ScreenTitle style={styles.name}>{webLabel(vendor.name)}</ScreenTitle>
         <Text style={styles.description}>{vendor.description}</Text>
         <Text style={styles.price}>{vendor.priceFrom.replace('от ', '')}</Text>
 
@@ -137,9 +137,10 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   topBar: {
+    ...webStyle({ paddingTop: spacing.headerTop, width: '100%', maxWidth: 820, alignSelf: 'center' }),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -151,8 +152,10 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    ...ios.iconButton,
   },
   content: {
+    ...webStyle({ width: '100%', maxWidth: 820, alignSelf: 'center' }),
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xxl,
   },
@@ -161,6 +164,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 22,
     marginBottom: spacing.sm,
+    ...ios.title,
   },
   description: {
     ...typography.body,
@@ -168,6 +172,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginBottom: spacing.md,
+    ...webStyle({ fontSize: 17, lineHeight: 24 }),
   },
   price: {
     ...typography.heroArtist,
@@ -184,6 +189,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontSize: 14,
+    ...ios.secondary,
   },
   mapButton: {
     minHeight: 48,
@@ -194,6 +200,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+    ...ios.button,
   },
   mapButtonText: {
     ...typography.button,
@@ -212,6 +219,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
+    ...ios.secondary,
   },
   menuSection: {
     marginTop: spacing.lg,
@@ -222,6 +230,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 15,
     marginBottom: spacing.xs,
+    ...webStyle({ fontSize: 20, lineHeight: 26 }),
   },
   menuRow: {
     flexDirection: 'row',
@@ -231,6 +240,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
+    ...webStyle({ paddingVertical: 12 }),
   },
   menuItemText: {
     flex: 1,
@@ -240,6 +250,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontSize: 14,
+    ...ios.secondary,
   },
   menuItemPortion: {
     ...typography.caption,
@@ -248,6 +259,7 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     letterSpacing: 0,
     marginTop: 2,
+    ...ios.caption,
   },
   menuItemDesc: {
     ...typography.caption,
@@ -257,12 +269,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     marginTop: 2,
     lineHeight: 16,
+    ...ios.caption,
   },
   menuItemPrice: {
     ...typography.body,
     color: colors.text,
     fontSize: 14,
     fontWeight: '600',
+    ...ios.secondary,
   },
   empty: {
     ...typography.body,

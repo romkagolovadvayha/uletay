@@ -1,3 +1,4 @@
+import { webStyle } from '../theme/ios';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SchedulePerformance } from '../types';
@@ -129,6 +130,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 12,
     lineHeight: 14,
+    ...webStyle({ fontSize: 13, lineHeight: 17 }),
   },
   badgeRow: {
     alignSelf: 'flex-start',

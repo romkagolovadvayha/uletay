@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Platform } from 'react-native';
 import { useAppData } from '../context/DataContext';
 import { useFestivalActive } from '../hooks/useFestivalActive';
 import { getFestivalDayDate } from '../utils/festivalTime';
@@ -27,6 +28,10 @@ export function getVisibleMainTabRoutes(
   festivalActive: boolean,
   content: MainTabContentFlags,
 ): (keyof RootTabParamList)[] {
+  if (Platform.OS === 'web') {
+    return ['HomeTab', 'MapTab', 'HeadlinersTab', 'ScheduleTab', 'FavoritesTab'];
+  }
+
   if (festivalActive) {
     const festivalRoutes: (keyof RootTabParamList)[] = ['HomeTab'];
     if (content.hasSchedule) {

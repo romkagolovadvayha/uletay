@@ -5,6 +5,15 @@ const productionBaseUrl = 'https://uletayapp.ru/api';
 
 assert.equal(
   resolveWebApiBaseUrl({
+    hostname: 'uletay.localhost', origin: 'http://uletay.localhost:4174', port: '4174',
+    configured: productionBaseUrl, productionBaseUrl,
+  }),
+  'http://uletay.localhost:4174/api',
+  'Local offline/PWA testing must never fetch production data',
+);
+
+assert.equal(
+  resolveWebApiBaseUrl({
     hostname: '127.0.0.1',
     origin: 'http://127.0.0.1:4174',
     port: '4174',

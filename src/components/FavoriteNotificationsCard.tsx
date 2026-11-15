@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import React, { createElement, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
@@ -46,6 +47,7 @@ function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
       'button',
       {
         type: 'button',
+        'data-uletay-control': 'default',
         disabled: disabled || busy,
         onPointerDown: () => setWebPressed(true),
         onPointerUp: () => setWebPressed(false),
@@ -61,20 +63,21 @@ function EnableButton({ busy, disabled, onEnable }: EnableButtonProps) {
           onEnable(webPermissionPromise);
         },
         style: {
+          position: 'relative',
           backgroundColor: colors.primary,
-          borderRadius: radius.md,
+          borderRadius: radius.pill,
           paddingTop: 12,
           paddingBottom: 12,
           paddingLeft: 16,
           paddingRight: 16,
-          minHeight: 44,
+          minHeight: 50,
           width: '100%',
           border: 'none',
           cursor: disabled || busy ? 'not-allowed' : 'pointer',
           opacity: disabled || busy ? 0.45 : 1,
           fontFamily: typography.button.fontFamily,
-          fontSize: 14,
-          fontWeight: '700',
+          fontSize: 17,
+          fontWeight: '600',
           color: colors.primaryText,
           display: 'flex',
           alignItems: 'center',
@@ -188,6 +191,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.lg,
     gap: spacing.md,
+    ...ios.card,
   },
   row: {
     flexDirection: 'row',
@@ -202,12 +206,14 @@ const styles = StyleSheet.create({
     ...typography.sectionTitle,
     color: colors.text,
     fontSize: 14,
+    ...webStyle({ fontSize: 17, lineHeight: 22 }),
   },
   subtitle: {
     ...typography.body,
     color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
+    ...ios.secondary,
   },
   enableButton: {
     backgroundColor: colors.primary,
@@ -216,6 +222,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
+    ...ios.button,
   },
   enableButtonDisabled: {
     opacity: 0.45,
@@ -224,23 +231,27 @@ const styles = StyleSheet.create({
     ...typography.button,
     color: colors.primaryText,
     fontSize: 14,
+    ...webStyle({ fontSize: 17, lineHeight: 22 }),
   },
   feedback: {
     ...typography.body,
     color: colors.competition,
     fontSize: 12,
     lineHeight: 16,
+    ...ios.caption,
   },
   linkButton: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+    ...webStyle({ minHeight: 44 }),
   },
   linkText: {
     ...typography.body,
     color: colors.textSecondary,
     fontSize: 13,
     textDecorationLine: 'underline',
+    ...ios.secondary,
   },
 });

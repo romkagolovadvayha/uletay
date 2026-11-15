@@ -1,7 +1,9 @@
+import { BackButton } from '../components/BackButton';
+import { ios, webStyle, webLabel } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FavoriteNotificationsCard } from '../components/FavoriteNotificationsCard';
 import { ScreenTitle } from '../components/ScreenTitle';
@@ -15,6 +17,7 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { appFont, typography } from '../theme/typography';
 import { clearOfflineAppCache } from '../utils/clearOfflineAppCache';
+import { LiquidDialog } from '../components/LiquidDialog';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'Settings'>;
 
@@ -130,17 +133,15 @@ export function SettingsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel="Назад"
+        <BackButton
           onPress={() => navigation.goBack()}
           style={styles.backRow}
         >
           <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
           <Text style={styles.backLabel}>Назад</Text>
-        </MotionPressable>
+        </BackButton>
 
-        <ScreenTitle style={styles.title}>НАСТРОЙКИ</ScreenTitle>
+        <ScreenTitle style={styles.title}>{webLabel('Настройки')}</ScreenTitle>
 
         <Text style={styles.sectionLabel}>Режим времени</Text>
         <View style={styles.section}>
@@ -172,57 +173,42 @@ export function SettingsScreen({ navigation }: Props) {
         </View>
 
         {cacheMessage ? <Text accessibilityRole="alert" style={styles.modeSubtitle}>{cacheMessage}</Text> : null}
-        <Text style={styles.sectionLabel}>Правовая информация</Text>
+        <Text style={styles.sectionLabel}>{Platform.OS === 'web' ? 'Фестиваль' : 'Правовая информация'}</Text>
         <View style={styles.section}>
-          <SettingsLink
+          {Platform.OS !== 'web' ? <SettingsLink
             icon="shield-checkmark"
             title="Конфиденциальность и поддержка"
             subtitle="Политика, соглашение, контакты организатора"
             onPress={() => navigation.navigate('Legal')}
-          />
+          /> : null}
           <SettingsLink
             icon="document-text"
             title="Правила фестиваля"
             subtitle="Правила посещения, безопасность и бытовая информация"
             onPress={() => navigation.navigate('FestivalRules')}
           />
-          <Text style={styles.legalNote}>
+          {Platform.OS !== 'web' ? <Text style={styles.legalNote}>
             Политика конфиденциальности также доступна по адресу {PRIVACY_POLICY_URL}
-          </Text>
+          </Text> : null}
         </View>
       </ScrollView>
-      <Modal visible={confirmReset} transparent animationType="fade" onRequestClose={() => setConfirmReset(false)}>
-        <View style={styles.dialogBackdrop}>
-          <View style={styles.dialog} accessibilityViewIsModal>
-            <Text accessibilityRole="header" style={styles.modeTitle}>Сбросить кэш?</Text>
-            <Text style={styles.modeSubtitle}>
-              Данные загрузятся заново, страница перезагрузится. Избранное и настройки уведомлений сохранятся.
-            </Text>
-            <View style={styles.dialogActions}>
-              <Pressable accessibilityRole="button" onPress={() => setConfirmReset(false)} style={styles.dialogButton}>
-                <Text style={styles.modeTitle}>Отмена</Text>
-              </Pressable>
-              <Pressable accessibilityRole="button" onPress={() => void runClearCache()} style={styles.dialogButton}>
-                <Text style={[styles.modeTitle, { color: colors.primary }]}>Сбросить кэш</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {Platform.OS === 'web' ? <LiquidDialog open={confirmReset} onClose={() => setConfirmReset(false)}
+        title="Сбросить кэш?" description="Страница перезагрузится и загрузит данные заново. Избранное и настройки уведомлений сохранятся."
+        actions={[
+          { label: 'Отмена', onPress: () => setConfirmReset(false) },
+          { label: 'Сбросить', tone: 'destructive', disabled: clearingCache, onPress: () => void runClearCache() },
+        ]} /> : null}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  dialogBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', padding: 24 },
-  dialog: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: 24, gap: 16, maxWidth: 460, width: '100%', alignSelf: 'center' },
-  dialogActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 12 },
-  dialogButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 8 },
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   content: {
+    ...webStyle({ width: '100%', maxWidth: 820, alignSelf: 'center' }),
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.headerTop,
     paddingBottom: spacing.xxl,
@@ -245,6 +231,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 22,
     marginBottom: spacing.lg,
+    ...ios.title,
   },
   sectionLabel: {
     ...typography.sectionTitle,
@@ -252,6 +239,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.8,
     marginBottom: spacing.sm,
+    ...ios.caption,
   },
   section: {
     gap: spacing.sm,
@@ -267,10 +255,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
+    ...ios.card,
   },
   modeOptionSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.surface,
+    ...webStyle({ borderColor: colors.borderStrong, backgroundColor: colors.surfaceElevated }),
   },
   modeTextWrap: {
     flex: 1,
@@ -281,6 +271,7 @@ const styles = StyleSheet.create({
     ...appFont('semiBold'),
     color: colors.text,
     fontSize: 16,
+    ...webStyle({ fontSize: 17, lineHeight: 22 }),
   },
   modeTitleSelected: {
     color: colors.primary,
@@ -290,6 +281,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
+    ...ios.secondary,
   },
   settingsLink: {
     minHeight: 48,
@@ -301,6 +293,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    ...ios.card,
   },
   legalNote: {
     ...typography.body,

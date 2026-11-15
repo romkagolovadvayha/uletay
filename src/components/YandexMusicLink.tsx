@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import { Image } from 'expo-image';
 import React, { useMemo } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
@@ -99,6 +100,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
+    ...webStyle({ minHeight: 44, minWidth: 44 }),
   },
   iconButton: {
     alignItems: 'center',
@@ -127,6 +129,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     maxWidth: '100%',
     ...(Platform.OS === 'web' ? { whiteSpace: 'nowrap' as never } : null),
+    ...ios.chip, ...webStyle({ justifyContent: 'center' }),
   },
   listenRow: {
     flexDirection: 'row',
@@ -142,6 +145,7 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     letterSpacing: 0,
     flexShrink: 0,
+    ...ios.secondary,
   },
   listenLogo: {
     width: 22,
@@ -155,6 +159,7 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     letterSpacing: 0,
     flexShrink: 0,
+    ...ios.secondary,
   },
   pressed: {
     opacity: 0.72,

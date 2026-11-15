@@ -1,3 +1,4 @@
+import { ios } from '../theme/ios';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -66,6 +67,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 54,
+    ...ios.button,
   },
   disabled: {
     opacity: 0.58,

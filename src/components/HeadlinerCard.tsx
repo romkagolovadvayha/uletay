@@ -1,3 +1,4 @@
+import { ios, webStyle, webLabel } from '../theme/ios';
 import React from 'react';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -67,14 +68,11 @@ function DesktopHeadlinerTile({ headliner, onPress }: { headliner: Headliner; on
   const reduceMotion = useReducedMotion();
   const cardMotion = useAnimatedStyle(() => ({
     transform: [
-      { perspective: 950 },
-      { translateY: reduceMotion ? 0 : interpolate(hover.value, [0, 1], [0, -10]) },
-      { rotateX: `${reduceMotion ? 0 : interpolate(hover.value, [0, 1], [0, -2.5])}deg` },
-      { rotateY: `${reduceMotion ? 0 : interpolate(hover.value, [0, 1], [0, 1.25])}deg` },
+      { translateY: reduceMotion ? 0 : interpolate(hover.value, [0, 1], [0, -4]) },
     ],
   }));
   const imageMotion = useAnimatedStyle(() => ({
-    transform: [{ scale: reduceMotion ? 1 : interpolate(hover.value, [0, 1], [1, 1.06]) }],
+    transform: [{ scale: reduceMotion ? 1 : interpolate(hover.value, [0, 1], [1, 1.025]) }],
   }));
   const setHover = (active: boolean) => {
     // Reanimated shared values are intentionally mutable animation handles.
@@ -151,7 +149,7 @@ export function HeadlinerCard({ headliner, allHeadliners, onPress, large, deskto
       <View style={styles.content}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={2}>
-            {headliner.name.toUpperCase()}
+            {webLabel(headliner.name)}
           </Text>
           {alternateNames.length ? (
             <>
@@ -202,6 +200,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     flexShrink: 1,
+    ...webStyle({ fontSize: 17, lineHeight: 22 }),
   },
   nameSeparator: {
     display: 'none',
@@ -219,6 +218,7 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     letterSpacing: 0.2,
     flexShrink: 1,
+    ...ios.caption,
   },
   stats: {
     ...typography.caption,
@@ -227,6 +227,7 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     textTransform: 'none',
     letterSpacing: 0,
+    ...ios.caption,
   },
   heroWrap: {
     alignItems: 'center',
@@ -243,12 +244,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.surface,
     boxShadow: '0 22px 52px rgba(0,0,0,0.28)',
+    ...webStyle({ borderRadius: 24 }),
   } as ViewStyle,
   desktopImageCrop: {
     position: 'relative',
     height: 330,
     overflow: 'hidden',
     borderRadius: 18,
+    ...webStyle({ borderRadius: 24 }),
   },
   desktopImage: {
     width: '100%',
@@ -262,12 +265,14 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 7,
     backgroundColor: 'rgba(11,13,11,0.72)',
+    ...webStyle({ backgroundColor: colors.surfaceGlass, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: colors.borderStrong }),
   },
   desktopYearText: {
     ...typography.caption,
     color: colors.text,
     fontSize: 8,
     letterSpacing: 1,
+    ...ios.caption,
   },
   desktopCopy: {
     position: 'absolute',
@@ -288,5 +293,6 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     marginTop: 6,
     textTransform: 'capitalize',
+    ...ios.caption,
   },
 });

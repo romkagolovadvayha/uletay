@@ -13,13 +13,14 @@ const defaults = {
   saveAppData,
   resolveProfile: resolveAndMergeLastFmForHeadliner,
   assertConfigured: assertLastFmConfigured,
+  timeoutMs: 40_000,
 };
 
 // One linked group per request: the browser runs larger selections sequentially.
 export async function refreshHeadlinerMusic(
   id: string,
   revision: string | undefined,
-  dependencies = defaults,
+  dependencies: Omit<typeof defaults, 'timeoutMs'> & { timeoutMs?: number } = defaults,
 ): Promise<HeadlinerRefreshResult> {
   if (typeof id !== 'string' || !id.trim()) {
     return { ok: false, error: 'Выберите артиста.', stopBatch: true };
@@ -39,11 +40,20 @@ export async function refreshHeadlinerMusic(
     }
 
     let profile: HeadlinerLastFmProfile | null | undefined;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(new DOMException('Last.fm refresh timed out', 'TimeoutError')), dependencies.timeoutMs ?? defaults.timeoutMs);
     try {
       // A service error must not turn a partially fetched group into a successful update.
-      profile = await dependencies.resolveProfile(headliner, data.headliners, { strict: true });
+      profile = await dependencies.resolveProfile(headliner, data.headliners, { strict: true, signal: controller.signal });
+      controller.signal.throwIfAborted();
     } catch {
+      if (controller.signal.aborted) {
+        return { ok: false, error: 'Last.fm не успел ответить. Данные не изменены. Повторите обновление через минуту.', stopBatch: true };
+      }
       return { ok: false, error: 'Last.fm не ответил или отклонил запрос. Повторите позже; при повторной ошибке проверьте ключ API и подключение сервера.', stopBatch: true };
+    } finally {
+      clearTimeout(timeout);
+      controller.abort();
     }
     if (!profile) {
       return { ok: false, error: 'Данные в Last.fm не найдены. Проверьте имя и дополнительные названия артиста.', stopBatch: false };

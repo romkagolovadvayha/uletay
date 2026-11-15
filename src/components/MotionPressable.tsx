@@ -9,6 +9,7 @@ import { Platform, Pressable } from 'react-native';
 import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 import { motion } from '../theme/motion';
 import { webKeyboardActivationProps } from '../utils/webKeyboardActivation';
+import { webControlProps } from '../utils/webControlProps';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 // Reanimated's native CSS parser requires an easing object for custom curves.
@@ -41,6 +42,7 @@ export function MotionPressable({
   onPressIn,
   onPressOut,
   onPress,
+  onBlur,
   disabled = false,
   pressRetentionOffset = 16,
   children,
@@ -48,15 +50,22 @@ export function MotionPressable({
 }: Props) {
   const [pressed, setPressed] = useState(false);
   const reduceMotion = useReducedMotion();
-  const resolvedStyle = typeof style === 'function' ? style({ pressed }) : style;
+  const resolvedStyle = typeof style === 'function' ? style({ pressed: pressed && !disabled }) : style;
+  const keyboardProps = webKeyboardActivationProps(
+    () => onPress?.({} as Parameters<NonNullable<PressableProps['onPress']>>[0]),
+    disabled,
+  );
 
   return (
     <AnimatedPressable
       {...props}
-      {...webKeyboardActivationProps(
-        () => onPress?.({} as Parameters<NonNullable<PressableProps['onPress']>>[0]),
-        disabled,
-      )}
+      {...webControlProps()}
+      {...keyboardProps}
+      onBlur={(event) => {
+        keyboardProps.onBlur?.(event);
+        setPressed(false);
+        onBlur?.(event);
+      }}
       disabled={disabled}
       onPress={onPress}
       pressRetentionOffset={pressRetentionOffset}
@@ -71,7 +80,7 @@ export function MotionPressable({
       style={[
         resolvedStyle,
         {
-          transform: [{ scale: pressed && !reduceMotion ? pressedScale : 1 }],
+          transform: [{ scale: pressed && !disabled && !reduceMotion ? pressedScale : 1 }],
           transitionProperty: 'transform',
           transitionDuration: reduceMotion ? 0 : motion.pressDurationMs,
           transitionTimingFunction: PRESS_EASING,

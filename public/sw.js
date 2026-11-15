@@ -1,8 +1,12 @@
 /* Offline shell + API cache. Bump CACHE_VERSION on every deploy that must invalidate clients. */
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const SHELL_CACHE = `uletay-shell-${CACHE_VERSION}`;
-const DATA_CACHE = `uletay-data-${CACHE_VERSION}`;
-const APP_SHELL = ['/', '/api/data'];
+// Content survives application updates; only a successful response replaces it.
+const DATA_CACHE = 'uletay-data-v8';
+const MEDIA_CACHE = 'uletay-media-v1';
+// Filled with this build's scripts, fonts and local UI assets during web export.
+const PRECACHE_ASSETS = [];
+const APP_SHELL = ['/', ...PRECACHE_ASSETS];
 const IS_LOOPBACK = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(self.location.hostname);
 
 self.addEventListener('install', (event) => {
@@ -32,7 +36,7 @@ self.addEventListener('activate', (event) => {
 
       await Promise.all(
         keys
-          .filter((key) => key.startsWith('uletay-') && key !== SHELL_CACHE && key !== DATA_CACHE)
+          .filter((key) => key.startsWith('uletay-') && ![SHELL_CACHE, DATA_CACHE, MEDIA_CACHE].includes(key))
           .map((key) => caches.delete(key)),
       );
       await self.clients.claim();
@@ -56,6 +60,10 @@ async function networkFirst(request, cacheName, isApiData = false) {
   const cache = await caches.open(cacheName).catch(() => null);
   try {
     const response = await fetch(request, isApiData ? { cache: 'no-store' } : undefined);
+    // Navigation redirects have status 0 (Fetch's opaqueredirect filter).
+    // Pass them through so the browser follows the server's canonical URL.
+    if (request.mode === 'navigate' && response.type === 'opaqueredirect') return response;
+    if (!response.ok && response.status !== 304) throw new Error('Response unavailable');
     if (response.ok && cache) {
       await cache.put(request, response.clone()).catch(() => {});
     }
@@ -72,7 +80,7 @@ async function networkFirst(request, cacheName, isApiData = false) {
 }
 
 /** Prefer cache for speed, but refresh in background so deploys stick. */
-async function staleWhileRevalidate(request, cacheName) {
+async function staleWhileRevalidate(request, cacheName, event) {
   const cache = await caches.open(cacheName).catch(() => null);
   const cached = await cache?.match(request).catch(() => undefined);
   const networkPromise = fetch(request)
@@ -85,7 +93,7 @@ async function staleWhileRevalidate(request, cacheName) {
     .catch(() => null);
 
   if (cached) {
-    void networkPromise;
+    event.waitUntil(networkPromise.then(() => {}));
     return cached;
   }
 
@@ -140,8 +148,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/_expo/') || url.pathname.startsWith('/vendor/maplibre/')) {
-    event.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
+  // Public photos uploaded by the CMS are outside /assets/. Keep viewed images
+  // across deploys as well as JSON so a saved catalog looks the same offline.
+  if (url.pathname.startsWith('/api/uploads/')) {
+    if (/\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(url.pathname)) {
+      event.respondWith(staleWhileRevalidate(request, MEDIA_CACHE, event));
+    }
+    return;
+  }
+
+  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/_expo/') ||
+      url.pathname.startsWith('/vendor/maplibre/') || url.pathname.startsWith('/map-fonts/') ||
+      (/^\/[^/]+\.(?:png|svg|webp|ico)$/.test(url.pathname))) {
+    event.respondWith(staleWhileRevalidate(request, SHELL_CACHE, event));
   }
 });
 

@@ -70,6 +70,48 @@ class WatchdogTests(unittest.TestCase):
         checks['logind']['retryable'] = True
         self.assertTrue(w.needs_recovery(checks)['logind'])
 
+    def test_backend_configuration_errors_do_not_restart_applications(self):
+        checks = self.checks()
+        for name in ['uletay', 'taxi']:
+            checks[name] = {'ok': False, 'retryable': False}
+        self.assertFalse(any(w.needs_recovery(checks).values()))
+
+    def boot_html(self):
+        return ''.join('<script defer src="/_expo/static/js/web/' + name + '.js"></script>'
+                       for name in ['runtime', 'common', 'index'])
+
+    def test_web_boot_checks_all_same_origin_scripts(self):
+        html = self.boot_html() + '<script src="https://analytics.example/tag.js"></script>'
+        with patch.object(w, 'command', side_effect=[(0, html)] + [(0, '200 application/javascript; charset=utf-8')] * 3) as command:
+            self.assertEqual(w.web_assets(), {'ok': True, 'retryable': False, 'code': 0, 'scripts': 3})
+            self.assertEqual(command.call_count, 4)
+            for call in command.call_args_list:
+                args = call.args[0]
+                self.assertIn('uletayapp.ru:443:127.0.0.1', args)
+                self.assertTrue(args[-1].startswith('https://uletayapp.ru/'))
+
+    def test_web_boot_rejects_html_200_instead_of_javascript(self):
+        with patch.object(w, 'command', side_effect=[(0, self.boot_html()), (0, '200 text/html')]):
+            self.assertEqual(w.web_assets(), {'ok': False, 'retryable': False, 'code': 0})
+
+    def test_web_boot_rejects_missing_script_without_restarting(self):
+        with patch.object(w, 'command', side_effect=[(0, self.boot_html()), (22, '404 text/html')]):
+            self.assertEqual(w.web_assets(), {'ok': False, 'retryable': False, 'code': 22})
+
+    def test_web_boot_rejects_fallback_without_scripts(self):
+        with patch.object(w, 'command', return_value=(0, '<html><p>Festival</p></html>')) as command:
+            self.assertFalse(w.web_assets()['ok'])
+            command.assert_called_once()
+
+    def test_web_boot_rejects_unavailable_home(self):
+        with patch.object(w, 'command', return_value=(28, '')):
+            self.assertEqual(w.web_assets(), {'ok': False, 'retryable': False, 'code': 28})
+
+    def test_malformed_script_url_does_not_break_all_health_checks(self):
+        html = self.boot_html() + '<script src="https://[invalid/"></script>'
+        with patch.object(w, 'command', return_value=(0, html)):
+            self.assertEqual(w.web_assets(), {'ok': False, 'retryable': False, 'code': 0})
+
     def test_invalid_nginx_config_never_restarts_service(self):
         with patch.object(w, 'command', return_value=(1, '')) as command:
             self.assertFalse(w.recover('nginx', 'unused'))

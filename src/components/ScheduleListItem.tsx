@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { GestureResponderEvent, StyleSheet, Text, View } from 'react-native';
@@ -215,6 +216,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     lineHeight: 17,
+    ...webStyle({ fontSize: 16, lineHeight: 21 }),
   },
   row: {
     flexDirection: 'row',
@@ -266,6 +268,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     lineHeight: 17,
+    ...webStyle({ fontSize: 16, lineHeight: 21 }),
   },
   stage: {
     ...typography.caption,
@@ -273,6 +276,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'none',
     letterSpacing: 0,
+    ...ios.caption,
   },
   actions: {
     alignItems: 'flex-end',
@@ -317,5 +321,6 @@ const styles = StyleSheet.create({
     ...typography.scheduleArtist,
     color: colors.text,
     fontSize: 13,
+    ...webStyle({ fontSize: 16, lineHeight: 21 }),
   },
 });

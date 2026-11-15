@@ -314,7 +314,7 @@ function getDateParts(dateString: string) {
 export function DesktopFestivalHome({ navigation }: Props) {
   const { width } = useWindowDimensions();
   const compact = width < 1340;
-  const { data, dataSource, error, isInitialLoading, lastFetchedAt } = useAppData();
+  const { data, isInitialLoading } = useAppData();
   const now = useNow(1000);
   const allowHeroVideo = useDeferredHeroVideo();
   const stagePrimaries = useStagePrimaryPerformances();
@@ -344,11 +344,6 @@ export function DesktopFestivalHome({ navigation }: Props) {
   );
   const startDate = getDateParts(data.festival.startDate);
   const endDate = getDateParts(data.festival.endDate);
-  const offlineStatus = error
-    ? dataSource === 'cache'
-      ? `Показана сохранённая версия${lastFetchedAt ? ` от ${new Date(lastFetchedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''}.`
-      : 'Данные временно недоступны.'
-    : null;
   const hasReliableFestivalData = Boolean(
     data.festival.startDate && data.festival.endDate && data.festival.year,
   );
@@ -480,17 +475,7 @@ export function DesktopFestivalHome({ navigation }: Props) {
               </View>
               <View style={styles.utilityLine} />
               <Text style={styles.utilityText}>{startDate.day}—{endDate.day} ИЮЛЯ / {data.festival.year}</Text>
-              {offlineStatus ? (
-                <>
-                  <View style={styles.utilityLine} />
-                  <Text style={styles.utilityCacheText} numberOfLines={1}>{offlineStatus}</Text>
-                </>
-              ) : null}
               <View style={styles.utilitySpacer} />
-              <View style={styles.utilityItem}>
-                <DeferredIonicons name="cloud-done-outline" size={15} color="#B9E6C0" />
-                <Text style={styles.utilityOnline}>ГИД ДОСТУПЕН ОФЛАЙН</Text>
-              </View>
             </View>
 
             <View style={[styles.heroCopy, compact && styles.heroCopyCompact]}>
@@ -681,7 +666,6 @@ const styles = StyleSheet.create({
   utilityItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   utilityLine: { width: 1, height: 14, backgroundColor: 'rgba(255,255,255,0.2)' },
   utilityText: { ...appFont('semiBold'), color: '#D1D4CB', fontSize: 10, letterSpacing: 1.25, textTransform: 'uppercase' },
-  utilityCacheText: { ...appFont('medium'), color: '#A8ADA2', fontSize: 9, letterSpacing: 0.35, flexShrink: 1 },
   utilityOnline: { ...appFont('semiBold'), color: '#B9E6C0', fontSize: 10, letterSpacing: 1.15 },
   utilitySpacer: { flex: 1 },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, boxShadow: `0 0 12px ${colors.primary}` },

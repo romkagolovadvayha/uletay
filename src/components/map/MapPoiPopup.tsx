@@ -1,9 +1,12 @@
+import { ios, webStyle } from '../../theme/ios';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo } from 'react';
 import {
   Platform,
+  ScrollView,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -51,6 +54,7 @@ function rubberband(overshoot: number, dimension: number, constant = 0.55) {
 
 export function MapPoiPopup({ visible, children, onClose, showCloseButton = true, onHeightChange }: Props) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const { reduceMotion } = useMapMotion();
   const progress = useSharedValue(visible ? 1 : 0);
   const dragY = useSharedValue(0);
@@ -195,7 +199,11 @@ export function MapPoiPopup({ visible, children, onClose, showCloseButton = true
             </MotionPressable>
           ) : null}
         </View>
-        <View style={styles.content}>{children}</View>
+        {Platform.OS === 'web' ? (
+          <ScrollView style={{ maxHeight: Math.max(160, height - 220) }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {children}
+          </ScrollView>
+        ) : <View style={styles.content}>{children}</View>}
       </View>
     </Animated.View>
   );
@@ -208,6 +216,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 30,
+    ...webStyle({ left: 10, right: 10, bottom: 8 }),
   },
   sheet: {
     backgroundColor: mapColors.sheetBg,
@@ -216,6 +225,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderBottomWidth: 0,
+    ...ios.glass, ...webStyle({ borderRadius: 28, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottomWidth: 1 }),
   },
   handleWrap: {
     position: 'relative',
@@ -225,6 +235,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
+    ...webStyle({ marginBottom: -20 }),
   },
   handleTouch: {
     width: '100%',
@@ -240,6 +251,7 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    ...ios.iconButton,
   },
   handle: {
     width: 40,
@@ -250,5 +262,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.sm,
+    ...webStyle({ paddingTop: 8, paddingHorizontal: 16 }),
   },
 });

@@ -1,5 +1,7 @@
+import { ios, webStyle, webLabel } from '../theme/ios';
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { FilterTabs } from './FilterTabs';
 import { MotionPressable } from './MotionPressable';
 import { CenteredHorizontalScroll } from './CenteredHorizontalScroll';
 import { colors } from '../theme/colors';
@@ -20,6 +22,9 @@ type Props = {
 };
 
 export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'default' }: Props) {
+  if (Platform.OS === 'web') return <View style={styles.container}>
+    <FilterTabs label="Категории" role="radiogroup" items={categories} value={selectedId} onChange={onSelect} />
+  </View>;
   return (
     <CenteredHorizontalScroll
       accessibilityRole="radiogroup"
@@ -51,7 +56,7 @@ export function CategoryPillBar({ categories, selectedId, onSelect, variant = 'd
                 isActive && (isFood ? styles.labelFoodActive : styles.labelDefaultActive),
               ]}
             >
-              {category.label.toUpperCase()}
+              {webLabel(category.label)}
             </Text>
           </MotionPressable>
         );
@@ -69,6 +74,7 @@ const styles = StyleSheet.create({
   },
   rowFood: {
     gap: spacing.xs,
+    ...webStyle({ gap: 8 }),
   },
   pill: {
     flexShrink: 1,
@@ -79,17 +85,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    ...ios.chip,
   },
   pillDefault: {
     borderColor: colors.primary,
     backgroundColor: 'transparent',
+    ...webStyle({ borderColor: colors.border, backgroundColor: colors.pillInactive }),
   },
   pillDefaultActive: {
     backgroundColor: colors.primary,
+    ...webStyle({ borderColor: colors.primary }),
   },
   pillFood: {
     borderColor: colors.borderStrong,
     backgroundColor: colors.pillInactive,
+    ...webStyle({ borderColor: colors.border }),
   },
   pillFoodCompact: {
     paddingHorizontal: spacing.sm,
@@ -103,9 +113,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+    ...ios.chipLabel,
   },
   labelDefault: {
     color: colors.primary,
+    ...webStyle({ color: colors.textSecondary }),
   },
   labelDefaultActive: {
     color: colors.primaryText,

@@ -49,8 +49,10 @@ if (!existsSync(sitemapPath)) {
   } else if (!urls.includes(`https://uletayapp.ru/headliners/${festivalYear}`)) {
     fail(`sitemap.xml is missing the current headliners year ${festivalYear}`);
   }
-  if (urls.includes('https://uletayapp.ru/headliners')) {
-    fail('redirecting /headliners URL must not be in sitemap.xml');
+  for (const redirectPath of ['/headliners', '/about', '/playlist', '/legal']) {
+    if (urls.includes(`https://uletayapp.ru${redirectPath}`)) {
+      fail(`redirecting ${redirectPath} URL must not be in sitemap.xml`);
+    }
   }
 
   for (const privateUrl of [
@@ -168,12 +170,16 @@ if (!existsSync(sitemapPath)) {
     if (!html.includes(question)) fail(`${yearUrl} does not have the year-specific question`);
   }
   const home = readFileSync(path.join(distDir, 'index.html'), 'utf8');
-  if (!home.includes('<h1>Сайт закрыт просим прощения</h1>')) {
-    fail('homepage is missing the site closure notice');
+  if (!home.includes('<h1>Приложение Улетай 2027</h1>')) {
+    fail('homepage is missing the app download heading');
   }
   const homeContent = home.match(/<section id="seo-fallback"[^>]*>([\s\S]*?)<\/section>/)?.[1] ?? '';
-  if (/<(?:a|button|nav)\b/i.test(homeContent)) {
-    fail('closed homepage must not contain links, buttons or navigation');
+  const homeLinks = [...homeContent.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((match) => match[1]);
+  if (homeLinks.length !== 2 || !homeLinks.includes('https://play.google.com/store/apps/details?id=ru.uletay.app') || !homeLinks.includes('https://www.rustore.ru/catalog/app/ru.uletay.app')) {
+    fail('homepage must link to the Uletay app in Google Play and RuStore');
+  }
+  if (/<nav\b/i.test(homeContent)) {
+    fail('app download homepage must not contain navigation');
   }
 
   console.log(`check-web-seo: checked ${urls.length} sitemap URLs`);

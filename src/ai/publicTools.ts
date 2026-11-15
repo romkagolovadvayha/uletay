@@ -97,7 +97,7 @@ export function createPublicTools(readSnapshot: () => PublicSnapshot): PublicToo
         name: data.festival.name, year: data.festival.year, startDate: data.festival.startDate,
         endDate: data.festival.endDate, location: data.festival.location, ageRating: data.festival.ageRating,
         archiveYears: [...new Set(data.headliners.flatMap(artist => artist.years))].sort((a, b) => b - a),
-        url: url('/about'),
+        url: url('/'),
       })),
     tool('uletay_find_artists', 'Найти исполнителей',
       'Читать исполнителей УЛЕТАЙ по имени и году. По умолчанию выбран текущий год фестиваля; прошлые годы являются архивом.',

@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
@@ -20,12 +21,14 @@ import { MapPoiCard } from '../components/map/MapPoiCard';
 import { MapRoutePanel } from '../components/map/MapRoutePanel';
 import { MapSavedPlacesPanel } from '../components/map/MapSavedPlacesPanel';
 import { MapZoneCard } from '../components/map/MapZoneCard';
+import { resolveMapData } from '../components/map/map-data';
 import { useAppData } from '../context/DataContext';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useUserMapMarkers } from '../hooks/useUserMapMarkers';
 import { ROAD_ENTRANCE } from '../data/festivalMap';
 import { RootTabParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { mapControlLayout } from '../theme/map';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import type {
@@ -96,18 +99,20 @@ type Props = {
 };
 
 export function FestivalMapScreen({ route }: Props) {
-  const { data, refreshData, isLoading: dataRefreshing, error: dataError } = useAppData();
+  const { data: appData, dataSource, refreshData, isLoading: dataRefreshing } = useAppData();
+  const data = useMemo(() => resolveMapData(appData, dataSource), [appData, dataSource]);
   const mapConfig = data.festivalMap;
   // The map is useful without precise location. Ask only after the user taps locate.
   const { location, status, requestPermission } = useUserLocation(false);
   const mapApi = useRef<FestivalMapApi | null>(null);
   const handledRouteRequestRef = useRef<string | null>(null);
+  const routeRequest = useRef(0);
   const { markers, saveMarker, removeMarker } = useUserMapMarkers();
 
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
   const [autocampGroupKey, setAutocampGroupKey] = useState('all');
   const [followUser, setFollowUser] = useState(false);
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('3d');
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>(Platform.OS === 'web' ? '2d' : '3d');
   const [compactMapControls, setCompactMapControls] = useState(false);
   const [mapPopupHeight, setMapPopupHeight] = useState(0);
   const [pickedZoneId, setPickedZoneId] = useState<string | null>(null);
@@ -178,6 +183,8 @@ export function FestivalMapScreen({ route }: Props) {
   }, [location, mapConfig]);
 
   const dismissPopup = useCallback(() => {
+    routeRequest.current += 1;
+    setRouting(false);
     setNearbyPlaces([]);
     setMapInfoVisible(false);
     setDirectionsVisible(false);
@@ -192,6 +199,8 @@ export function FestivalMapScreen({ route }: Props) {
   useFocusEffect(
     useCallback(() => {
       return () => {
+        routeRequest.current += 1;
+        setRouting(false);
         setNearbyPlaces([]);
         setMapInfoVisible(false);
         setDirectionsVisible(false);
@@ -254,9 +263,14 @@ export function FestivalMapScreen({ route }: Props) {
 
   const runRoute = useCallback(
     async (target: { lat: number; lng: number }, targetName: string, restoreZoneId?: string) => {
+      const request = ++routeRequest.current;
       setRouting(true);
+      setActiveRoute(null);
       setRouteError(null);
       try {
+        // Let the pending state paint before route computation on a mobile CPU.
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+        if (request !== routeRequest.current) return;
         const combined = await buildCombinedRouteToTarget({
           userLocation: location,
           target,
@@ -266,6 +280,7 @@ export function FestivalMapScreen({ route }: Props) {
           mapPois: data.mapPois,
           mapZones: data.mapZones,
         });
+        if (request !== routeRequest.current) return;
         if (!combined) {
           setRouteError('Нет связного маршрута по дорожкам. Сообщите организатору — участок карты требует исправления.');
           if (restoreZoneId) {
@@ -280,13 +295,14 @@ export function FestivalMapScreen({ route }: Props) {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } catch {
+        if (request !== routeRequest.current) return;
         setRouteError('Не удалось построить маршрут. Попробуйте ещё раз.');
         if (restoreZoneId) {
           setPickedZoneId(restoreZoneId);
           setHighlightZoneId(null);
         }
       } finally {
-        setRouting(false);
+        if (request === routeRequest.current) setRouting(false);
       }
     },
     [location, mapConfig, data.mapPaths, data.mapPois, data.mapZones],
@@ -298,14 +314,14 @@ export function FestivalMapScreen({ route }: Props) {
     const zoneId = selectedZone.properties.id;
     setHighlightZoneId(zoneId);
     setPickedZoneId(null);
-    await runRoute(zoneTargetPoint(selectedZone), selectedZone.properties.name, zoneId);
-  }, [selectedZone, runRoute]);
+    await runRoute(zoneTargetPoint(selectedZone, data.mapZones), selectedZone.properties.name, zoneId);
+  }, [selectedZone, runRoute, data.mapZones]);
 
   const handlePoiRoute = useCallback(async () => {
     if (!selectedPoi) return;
-    const target = selectedPoi.properties.accessPoint ?? poiCoordinate(selectedPoi);
+    const target = poiCoordinate(selectedPoi, data.mapZones);
     await runRoute(target, selectedPoi.properties.name);
-  }, [runRoute, selectedPoi]);
+  }, [runRoute, selectedPoi, data.mapZones]);
 
   useEffect(() => {
     const poiId = route.params?.poiId;
@@ -318,11 +334,11 @@ export function FestivalMapScreen({ route }: Props) {
       setPickedPoiId(poiId);
       if (route.params?.routeTo) {
         const poi = data.mapPois?.features.find((item) => item.properties.id === poiId);
-        if (poi) void runRoute(poi.properties.accessPoint ?? poiCoordinate(poi), poi.properties.name);
+        if (poi) void runRoute(poiCoordinate(poi, data.mapZones), poi.properties.name);
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [data.mapPois, route.params?.poiId, route.params?.routeTo, runRoute]);
+  }, [data.mapPois, data.mapZones, route.params?.poiId, route.params?.routeTo, runRoute]);
 
   const focusAutocampGroup = useCallback((group: AutocampNumberGroup) => {
     dismissPopup();
@@ -405,6 +421,8 @@ export function FestivalMapScreen({ route }: Props) {
                 coordinatePicking={Boolean(placingMarkerKind)}
                 onMapInteraction={() => setFollowUser(false)}
                 onZonePress={(zone) => {
+                  routeRequest.current += 1;
+                  setRouting(false);
                   setNearbyPlaces([]);
                   setMapInfoVisible(false);
                   setDirectionsVisible(false);
@@ -415,6 +433,8 @@ export function FestivalMapScreen({ route }: Props) {
                   setPickedPoiId(null);
                 }}
                 onPoiPress={(poi) => {
+                  routeRequest.current += 1;
+                  setRouting(false);
                   setNearbyPlaces([]);
                   setMapInfoVisible(false);
                   setDirectionsVisible(false);
@@ -543,11 +563,12 @@ export function FestivalMapScreen({ route }: Props) {
               </View>
             ) : null}
             <MapFabGroup
-              onInfo={tracedPlan && !popupVisible ? () => { dismissPopup(); setMapInfoVisible(true); } : undefined}
+              onInfo={Platform.OS !== 'web' && tracedPlan && !popupVisible ? () => { dismissPopup(); setMapInfoVisible(true); } : undefined}
               viewMode={viewMode}
               onToggleView={() => setViewMode(mode => mode === '3d' ? '2d' : '3d')}
               compact={compactMapControls || popupVisible}
-              bottomOffset={popupVisible ? mapPopupHeight + 8 : undefined}
+              bottomOffset={popupVisible ? mapPopupHeight + 8 : Platform.OS === 'web'
+                ? mapControlLayout.attributionBottom + mapControlLayout.attributionHeight + spacing.sm : undefined}
               onZoomIn={() => mapApi.current?.zoomBy?.(1)}
               onZoomOut={() => mapApi.current?.zoomBy?.(-1)}
               onLocate={handleLocate}
@@ -579,7 +600,7 @@ export function FestivalMapScreen({ route }: Props) {
           visible={popupVisible}
           onHeightChange={setMapPopupHeight}
           onClose={dismissPopup}
-          showCloseButton={!directionsVisible}
+          showCloseButton={!directionsVisible && !(Platform.OS === 'web' && savedPlacesVisible)}
         >
           {nearbyPlaces.length ? (
             <ScrollView style={styles.mapInfoContent}>
@@ -604,7 +625,6 @@ export function FestivalMapScreen({ route }: Props) {
                 <Text style={styles.mapInfoLabel}>{dataRefreshing ? 'Обновляем…' : 'Обновить объекты карты'}</Text>
               </MotionPressable>
               <View style={styles.mapInfoDescriptions}>
-                {dataError ? <Text accessibilityRole="alert" style={styles.mapInfoDescription}>{dataError}</Text> : null}
                 <Text style={styles.mapInfoDescription}>Объекты нанесены по схеме фестиваля 2026 года. Расположение ориентировочное; схема не подтверждает планировку следующего фестиваля.</Text>
                 <Text style={styles.mapInfoDescription}>Зелёный — территория и парковки · жёлтый — сцены и места автокемпинга · светлый — строения · голубой — вода · красный пунктир — ограждение.</Text>
                 <Text style={styles.mapInfoDescription}>Кнопка 2D / 3D переключает вид сверху и объёмную карту. Подписи находятся внутри объектов; приблизьте карту, чтобы прочитать мелкие названия и номера мест.</Text>
@@ -680,19 +700,27 @@ export function FestivalMapScreen({ route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  autocampNavigation: { marginHorizontal: 16, borderRadius: 10, backgroundColor: '#202124F2', overflow: 'hidden' },
+  autocampNavigation: { marginHorizontal: 16, borderRadius: 10, backgroundColor: '#202124F2', overflow: 'hidden' ,
+    ...ios.glass, ...webStyle({ borderRadius: 24, marginHorizontal: 20 }),
+  },
   autocampRows: { padding: 6, gap: 5 },
-  autocampRow: { minHeight: 36, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 6 },
+  autocampRow: { minHeight: 36, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 6 ,
+    ...webStyle({ minHeight: 44, borderRadius: 18 }),
+  },
   autocampRowActive: { backgroundColor: colors.primary },
-  autocampRowText: { color: '#DDD9CA', fontSize: 12, fontWeight: '600' },
+  autocampRowText: { color: '#DDD9CA', fontSize: 12, fontWeight: '600' ,
+    ...ios.secondary,
+  },
   autocampRowActiveText: { color: '#181818' },
-  autocampHint: { color: '#B8B5AA', fontSize: 10, paddingHorizontal: 12, paddingBottom: 8 },
+  autocampHint: { color: '#B8B5AA', fontSize: 10, paddingHorizontal: 12, paddingBottom: 8 ,
+    ...ios.caption,
+  },
   nearbyPlace: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   nearbyGlyph: { width: 36, textAlign: 'center', fontSize: 13, fontWeight: '700' },
   nearbyName: { ...typography.body, color: colors.text, flex: 1 },
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   mapWrap: {
     flex: 1,
@@ -725,7 +753,9 @@ const styles = StyleSheet.create({
   mapInfoContent: { maxHeight:360 },
   mapInfoRefreshButton: { marginBottom:spacing.lg },
   mapInfoDescriptions: { gap:spacing.md },
-  mapInfoDescription: { ...typography.body, color:colors.textSecondary, lineHeight:20 },
+  mapInfoDescription: { ...typography.body, color:colors.textSecondary, lineHeight:20 ,
+    ...ios.secondary,
+  },
   mapInfoCategories: { flexDirection:'row', flexWrap:'wrap', gap:spacing.sm, paddingBottom:spacing.md, marginTop:spacing.xl },
   mapInfoCategory: { minHeight:44, paddingHorizontal:spacing.md, justifyContent:'center', borderRadius:16, backgroundColor:colors.surfaceMuted },
   routeFailure: { position:'absolute', bottom:150, left:spacing.screen, right:80, backgroundColor:colors.surface,
@@ -801,6 +831,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    ...ios.glass,
   },
   placingText: {
     ...typography.caption,

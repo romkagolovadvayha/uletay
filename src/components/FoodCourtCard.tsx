@@ -1,3 +1,4 @@
+import { ios, webStyle, webLabel } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -90,7 +91,7 @@ export function FoodCourtCard({ vendor, onPress, large }: Props) {
       <FoodCourtThumbnail vendor={vendor} />
       <View style={styles.content}>
         <Text style={styles.name} numberOfLines={1}>
-          {vendor.name.toUpperCase()}
+          {webLabel(vendor.name)}
         </Text>
         <Text style={styles.description} numberOfLines={2}>
           {vendor.description}
@@ -117,6 +118,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
+    ...ios.card,
   },
   thumb: {
     alignItems: 'center',
@@ -132,12 +134,14 @@ const styles = StyleSheet.create({
     ...typography.artistName,
     color: colors.text,
     fontSize: 14,
+    ...webStyle({ fontSize: 17, lineHeight: 22 }),
   },
   description: {
     ...typography.body,
     color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 16,
+    ...ios.secondary,
   },
   metaRow: {
     flexDirection: 'row',
@@ -152,6 +156,7 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     letterSpacing: 0,
     fontWeight: '500',
+    ...ios.caption,
   },
   distance: {
     ...typography.caption,
@@ -159,6 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'none',
     letterSpacing: 0,
+    ...ios.caption,
   },
   heroWrap: {
     alignItems: 'center',

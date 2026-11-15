@@ -252,7 +252,7 @@ export function PlaylistScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: colors.pageBackground },
   content: { flexGrow: 1, paddingHorizontal: spacing.screen, paddingTop: 24, paddingBottom: 36 },
   contentWide: { paddingHorizontal: 40, paddingTop: 36, paddingBottom: 56 },
   inner: { width: '100%', maxWidth: 1200, alignSelf: 'center', gap: 28 },

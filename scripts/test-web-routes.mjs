@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { createServer } from 'node:net';
+import { createConnection, createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { checkWebRoutes } from '../deploy/check-web-routes.mjs';
@@ -10,6 +10,8 @@ const nginx = process.env.NGINX_BIN ?? 'nginx';
 const temporary = await mkdtemp(path.join(tmpdir(), 'uletay-web-routes-'));
 const nginxPath = (value) => value.replaceAll('\\', '/');
 let processHandle;
+let publicProxy;
+const proxySockets = new Set();
 try {
   // A root-started nginx drops worker privileges on Linux.
   await chmod(temporary, 0o755);
@@ -17,7 +19,20 @@ try {
   await new Promise((resolve) => listener.listen(0, '127.0.0.1', resolve));
   const port = listener.address().port;
   await new Promise((resolve) => listener.close(resolve));
-  const origin = `http://127.0.0.1:${port}`;
+  // Reproduce the production TLS proxy: nginx's listening port differs from
+  // the browser's public port, while the original HTTP Host is preserved.
+  publicProxy = createServer((downstream) => {
+    const upstream = createConnection({ host: '127.0.0.1', port });
+    for (const socket of [downstream, upstream]) {
+      proxySockets.add(socket);
+      socket.on('close', () => proxySockets.delete(socket));
+    }
+    downstream.on('error', () => upstream.destroy());
+    upstream.on('error', () => downstream.destroy());
+    downstream.pipe(upstream).pipe(downstream);
+  });
+  await new Promise((resolve) => publicProxy.listen(0, '127.0.0.1', resolve));
+  const origin = `http://127.0.0.1:${publicProxy.address().port}`;
   const document = (title) => `<html><head><title>${title}</title></head><body><div id="root">${title}</div></body></html>`;
   async function file(relative, content) {
     const target = path.join(temporary, relative);
@@ -88,6 +103,8 @@ http {
   }
   console.log(`test-web-routes: actual nginx passed ${result.requests + 2} HTTP checks`);
 } finally {
+  for (const socket of proxySockets) socket.destroy();
+  if (publicProxy?.listening) await new Promise((resolve) => publicProxy.close(resolve));
   if (processHandle) {
     spawnSync(nginx, ['-p', nginxPath(temporary) + '/', '-c', 'nginx.conf', '-s', 'quit'], { windowsHide: true });
     for (let attempt = 0; attempt < 50; attempt++) {

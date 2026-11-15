@@ -245,12 +245,12 @@ verify_https() {
     || { echo "API cache policy must require revalidation (no-cache)"; rm -f "$html_check" "$headers_check" "$asset_headers_check"; exit 1; }
   rm -f "$html_check" "$headers_check" "$asset_headers_check"
 
-  curl -fsS -k "https://127.0.0.1/about" -H "Host: ${DOMAIN}" -o "$seo_check" \
-    || { echo "HTTPS is not serving the /about SEO route"; rm -f "$seo_check"; exit 1; }
-  grep -Fq "<title>О фестивале — УЛЕТАЙ" "$seo_check" \
-    || { echo "/about has the wrong title"; rm -f "$seo_check"; exit 1; }
-  grep -Fq "rel=\"canonical\" href=\"https://${DOMAIN}/about\"" "$seo_check" \
-    || { echo "/about has the wrong canonical URL"; rm -f "$seo_check"; exit 1; }
+  curl -fsS -k "https://127.0.0.1/rules" -H "Host: ${DOMAIN}" -o "$seo_check" \
+    || { echo "HTTPS is not serving the /rules SEO route"; rm -f "$seo_check"; exit 1; }
+  grep -Fq "<title>Правила фестиваля — УЛЕТАЙ" "$seo_check" \
+    || { echo "/rules has the wrong title"; rm -f "$seo_check"; exit 1; }
+  grep -Fq "rel=\"canonical\" href=\"https://${DOMAIN}/rules\"" "$seo_check" \
+    || { echo "/rules has the wrong canonical URL"; rm -f "$seo_check"; exit 1; }
   rm -f "$seo_check"
 
   curl -fsS -k "https://127.0.0.1/sitemap.xml" -H "Host: ${DOMAIN}" -o "$sitemap_check" \

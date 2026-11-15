@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../../theme/ios';
 import React, { useEffect, useState } from 'react';
 import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { DeferredIonicons } from '../DeferredIonicons';
@@ -88,8 +89,9 @@ function RouteButton({ icon, label, primary, disabled, onPress }: {
       onPress={onPress}
       style={[styles.routeButton, primary && styles.routeButtonPrimary, disabled && styles.disabled]}
     >
-      <DeferredIonicons name={icon} size={20} color={primary ? colors.background : colors.primary} />
+      <DeferredIonicons name={icon} size={Platform.OS === 'web' ? 22 : 20} color={Platform.OS === 'web' ? colors.text : primary ? colors.background : colors.primary} />
       <Text style={[styles.routeButtonText, primary && styles.routeButtonTextPrimary]}>{label}</Text>
+      {Platform.OS === 'web' ? <DeferredIonicons name="chevron-forward" size={16} color={colors.textMuted} /> : null}
     </MotionPressable>
   );
 }
@@ -136,23 +138,34 @@ export function MapDirectionsSheet({ center, location, onClose }: Props) {
             ? 'Не удалось определить местоположение. Разрешите доступ к геолокации в браузере.'
             : 'Выберите приложение — оно построит маршрут от вашего текущего местоположения до фестиваля.'}
       </Text>
-      <RouteButton icon="navigate" label="Проложить в Яндекс Навигаторе" primary disabled={locating} onPress={() => void openYandexNavigator(center, routeOrigin ?? null)} />
-      <View style={styles.secondaryRow}>
+      <View style={styles.routeGroup}>
+        <RouteButton icon="navigate" label={Platform.OS === 'web' ? 'Яндекс Навигатор' : 'Проложить в Яндекс Навигаторе'} primary disabled={locating} onPress={() => void openYandexNavigator(center, routeOrigin ?? null)} />
+        <View style={styles.secondaryRow}>
         <RouteButton icon="map" label="Яндекс Карты" disabled={locating} onPress={() => openYandexMaps(center, routeOrigin ?? null)} />
         <RouteButton icon="apps" label="Другие карты" onPress={() => openSystemMaps(center, location)} />
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  routeGroup: { gap: spacing.md, ...webStyle({ gap: 0, borderRadius: 22, backgroundColor: 'rgba(255,255,255,.055)', overflow: 'hidden' }) },
   root: { gap: spacing.md },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   headerCopy: { flex: 1 },
-  title: { ...typography.screenTitle, color: colors.text, fontSize: 20, textTransform: 'none' },
-  location: { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs },
-  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  description: { ...typography.body, color: colors.textSecondary, lineHeight: 20 },
+  title: { ...typography.screenTitle, color: colors.text, fontSize: 20, textTransform: 'none' ,
+    ...webStyle({ fontSize: 22, lineHeight: 28, letterSpacing: -0.3 }),
+  },
+  location: { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs ,
+    ...ios.secondary,
+  },
+  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' ,
+    ...ios.iconButton, ...webStyle({ backgroundColor: 'rgba(255,255,255,.09)' }),
+  },
+  description: { ...typography.body, color: colors.textSecondary, lineHeight: 20 ,
+    ...ios.secondary,
+  },
   routeButton: {
     minHeight: 48,
     flex: 1,
@@ -164,10 +177,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+    ...ios.button, ...webStyle({ borderRadius: 0, borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,.09)', flex: 0, minHeight: 56, justifyContent: 'flex-start', paddingHorizontal: 16, paddingVertical: 14, gap: 14 }),
   },
-  routeButtonPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
-  routeButtonText: { ...appFont('semiBold'), color: colors.text, fontSize: 13, textAlign: 'center' },
-  routeButtonTextPrimary: { color: colors.background },
-  secondaryRow: { flexDirection: 'row', gap: spacing.sm },
+  routeButtonPrimary: { backgroundColor: colors.primary, borderColor: colors.primary, ...webStyle({ backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,.09)' }) },
+  routeButtonText: { ...appFont('semiBold'), color: colors.text, fontSize: 13, textAlign: 'center' ,
+    ...ios.secondary, ...webStyle({ flex: 1, textAlign: 'left', fontSize: 17, lineHeight: 22, fontWeight: '400' }),
+  },
+  routeButtonTextPrimary: { color: colors.background, ...webStyle({ color: colors.text }) },
+  secondaryRow: { flexDirection: 'row', gap: spacing.sm ,
+    ...webStyle({ flexDirection: 'column', gap: 0 }),
+  },
   disabled: { opacity: 0.5 },
 });

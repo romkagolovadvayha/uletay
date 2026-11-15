@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../../theme/ios';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { CombinedRoute, LatLng } from '../../types/map';
@@ -16,17 +17,21 @@ type Props = {
 
 export function MapRoutePanel({ route, userLocation, onClear }: Props) {
   const external = route.segments.find((s) => s.kind === 'external');
+  const arrival = route.arrivalPoint ?? (external?.coordinates.length ? {
+    lat: external.coordinates[external.coordinates.length - 1][1],
+    lng: external.coordinates[external.coordinates.length - 1][0],
+  } : null);
   const navigatorUrl =
-    userLocation && external?.coordinates.length
-      ? buildYandexRouteUrl(userLocation, {
-          lat: external.coordinates[external.coordinates.length - 1][1],
-          lng: external.coordinates[external.coordinates.length - 1][0],
-        })
+    userLocation && arrival
+      ? buildYandexRouteUrl(userLocation, arrival)
       : null;
 
   return (
     <View style={styles.panel}>
       <Text style={styles.summary}>{route.summary}</Text>
+      {route.roadRouteUnavailable ? (
+        <Text style={styles.meta} accessibilityLiveRegion="polite">Автомаршрут сейчас недоступен. Показан пеший путь от входа. До фестиваля можно доехать по навигатору.</Text>
+      ) : null}
       <Text style={styles.meta}>
         {formatDistance(route.totalDistanceMeters)} · {formatDuration(route.totalDurationSeconds)}
       </Text>
@@ -55,21 +60,26 @@ const styles = StyleSheet.create({
   meta: {
     ...typography.caption,
     color: colors.textSecondary,
+    ...ios.secondary,
   },
   navBtn: {
     minHeight: 44,
     justifyContent: 'center',
+    ...ios.button, ...webStyle({ backgroundColor: colors.primary, alignItems: 'center' }),
   },
   navText: {
     ...typography.body,
     color: colors.primary,
+    ...webStyle({ color: colors.primaryText }),
   },
   clearBtn: {
     minHeight: 44,
     justifyContent: 'center',
+    ...ios.button, ...webStyle({ backgroundColor: colors.surfaceElevated, alignItems: 'center' }),
   },
   clearText: {
     ...typography.caption,
     color: colors.textMuted,
+    ...webStyle({ color: colors.text, fontSize: 15, lineHeight: 20 }),
   },
 });

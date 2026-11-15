@@ -13,11 +13,10 @@ import { getCanonicalUrl, resolveSeoMeta, type NavState, type SeoMeta } from '..
 import { DEFAULT_SOCIAL_IMAGE_URL } from '../src/seo/site';
 import { buildWebStructuredData } from '../src/seo/structuredData';
 import { encodeSeoRouteId, isDateWithinFestival } from '../src/seo/seoRouteUtils';
-import { LEGAL_SECTIONS } from '../src/constants/legalContent';
 import { getSelectableHeadlinerYears } from '../src/utils/headlinerYears';
 import { writeAiDiscovery } from './ai-discovery';
-import { FESTIVAL_WEBSITE } from '../src/constants/legal';
 import { formatFestivalDateRange } from '../src/utils/festivalContent';
+import { APP_DOWNLOAD_CSS, APP_DOWNLOAD_SUBTITLE, APP_DOWNLOAD_TITLE, APP_STORES, APP_STORE_UNAVAILABLE } from '../src/constants/appDownload';
 
 type SeedData = Partial<AppData> & {
   festival: AppData['festival'];
@@ -196,7 +195,7 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
   const hasCurrentAutographs = data.autographs.some((item) => isDateWithinFestival(item.date, data.festival));
   const common: RouteSpec[] = [
     {
-      path: '/', routeName: 'HomeTab', heading: 'Сайт закрыт просим прощения',
+      path: '/', routeName: 'HomeTab', heading: APP_DOWNLOAD_TITLE,
     },
     { path: '/map', routeName: 'MapTab', details: [
       `Площадка фестиваля находится в ${festivalPlace}. На интерактивной карте отмечены сцены, фудкорт и сервисные зоны.`,
@@ -215,27 +214,8 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
         : `Расписание автограф-сессий УЛЕТАЙ ${data.festival.year} ещё не опубликовано. Следите за обновлениями.`,
     ] },
     { path: '/favorites', routeName: 'FavoritesTab' },
-    {
-      path: '/playlist', routeName: 'PlaylistTab', heading: 'Улетай радио — слушать рок онлайн',
-      details: [
-        'Рок станция (Улетай) — любимая музыка и артисты фестиваля в прямом эфире.',
-        'Слушайте бесплатно на телефоне и компьютере без регистрации. Названия песен, исполнители, обложки и очередь следующих треков обновляются автоматически.',
-        'Нажмите «Слушать эфир», чтобы включить радио. Сохраняйте понравившиеся песни в избранное на своём устройстве.',
-      ],
-      links: [{ href: currentHeadlinersPath, label: 'Артисты фестиваля Улетай' }],
-    },
     { path: '/foodcourt', routeName: 'FoodCourtMain' },
-    { path: '/about', routeName: 'FestivalAbout', heading: `О фестивале УЛЕТАЙ ${data.festival.year}`, details: [
-      `УЛЕТАЙ ${data.festival.year} пройдёт ${festivalDates} в ${festivalPlace}. Возрастное ограничение: ${data.festival.ageRating}.`,
-      'На этом сайте работает цифровой гид для гостей: артисты по годам, программа по мере публикации, карта территории, фудкорт, правила и контакты.',
-      'Сведения о билетах и организационные новости доступны на официальном сайте фестиваля. Покупка билетов проходит на внешнем сайте билетного партнёра.',
-    ], links: [
-      { href: FESTIVAL_WEBSITE, label: 'Официальный сайт фестиваля' },
-      { href: currentHeadlinersPath, label: `Артисты ${data.festival.year}` },
-      { href: '/rules', label: 'Правила посещения' },
-    ] },
     { path: '/rules', routeName: 'FestivalRules' },
-    { path: '/legal', routeName: 'Legal' },
     { path: '/settings', routeName: 'Settings' },
     { path: '/help', routeName: 'HelpTab' },
   ];
@@ -397,23 +377,18 @@ const primaryNavigation = (festivalYear: number) => [
   { href: '/map', label: 'Карта' },
   { href: '/autographs', label: 'Автографы' },
   { href: '/foodcourt', label: 'Фудкорт' },
-  { href: '/about', label: 'О фестивале' },
 ];
 
 function fallbackMarkup(route: GeneratedRoute, festivalYear: number): string {
   if (route.path === '/') {
-    return `<section id="seo-fallback" class="site-closed"><h1>${htmlEscape(route.heading)}</h1></section>`;
+    const buttons = APP_STORES.map((store) => {
+      const content = `<img class="app-download__logo" src="${store.image}" alt="" width="32" height="32"><span class="app-download__store-name">${htmlEscape(store.name)}</span><span class="app-download__chevron" aria-hidden="true"></span>`;
+      return store.href ? `<a class="app-download__store" href="${htmlEscape(store.href)}" target="_self" aria-label="Скачать Улетай в ${htmlEscape(store.name)}">${content}</a>`
+        : `<details class="app-download__availability"><summary class="app-download__store">${content}</summary><p class="app-download__notice">${APP_STORE_UNAVAILABLE}</p></details>`;
+    }).join('');
+    return `<section id="seo-fallback" class="app-download"><div class="app-download__content"><h1>${htmlEscape(route.heading)}</h1><p class="app-download__subtitle">${APP_DOWNLOAD_SUBTITLE}</p><div class="app-download__stores">${buttons}</div></div></section>`;
   }
 
-  if (route.path === '/legal') {
-    const sections = LEGAL_SECTIONS.map((section) => `<section id="${htmlEscape(section.id)}">
-      <h2>${htmlEscape(section.title)}</h2>
-      ${section.paragraphs.map((text) => `<p>${htmlEscape(text)}</p>`).join('')}
-      ${section.bullets ? `<ul>${section.bullets.map((text) => `<li>${htmlEscape(text)}</li>`).join('')}</ul>` : ''}
-      ${(section.afterBullets ?? []).map((text) => `<p>${htmlEscape(text)}</p>`).join('')}
-    </section>`).join('');
-    return `<main id="seo-fallback"><a href="/">← УЛЕТАЙ</a><h1>Правовая информация</h1>${sections}</main>`;
-  }
   const details = route.details?.filter(Boolean) ?? [];
   const links = route.links ?? [];
   const heading = plainText(
@@ -454,12 +429,6 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
     .replace(/\s*<script\b[^>]*\bid=["']seo-jsonld["'][^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/\s*<style\b[^>]*\bid=["']seo-fallback-style["'][^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<html(?:\s+lang=["'][^"']*["'])?>/i, '<html lang="ru">');
-  // The public policy must remain readable without JavaScript and must not be
-  // replaced by an older cached app bundle during a policy-only deployment.
-  if (route.path === '/legal') {
-    html = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
-    html = html.replace(/(<(?:div|main)\s+id=["']root["'][^>]*>)[\s\S]*?(<\/(?:div|main)>)/i, '$1$2');
-  }
   html = setTitle(html, route.meta.title);
   html = setMeta(html, 'name', 'description', truncate(plainText(route.meta.description), 160));
   html = setMeta(html, 'name', 'robots', route.meta.noIndex ? 'noindex, nofollow' : 'index, follow');
@@ -491,12 +460,11 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
   const jsonLd = JSON.stringify(structuredData(route, data)).replaceAll('<', '\\u003c');
   // Render useful no-JS content. React replaces this section when the app mounts.
   const bootStyle = [
-    route.path === '/legal' ? 'html,body{overflow:auto!important;height:auto!important}body{position:static!important}' : 'html,body{overflow:hidden;overflow:clip}body{position:fixed;inset:0;width:100%}',
+    'html,body{overflow:hidden;overflow:clip}body{position:fixed;inset:0;width:100%}',
     'html,body,#root{background:#000;color:#f5f5f7;margin:0;min-height:100%}',
     '#seo-fallback{box-sizing:border-box;max-width:960px;margin:0 auto;padding:32px 20px;font:16px/1.6 system-ui,sans-serif}',
     '#seo-fallback a{color:#ffc107}#seo-fallback h1,#seo-fallback h2{line-height:1.2}',
-    '#seo-fallback.site-closed{max-width:none;height:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}',
-    '#seo-fallback.site-closed h1{margin:0;font:400 28px/40px system-ui,sans-serif}',
+    route.path === '/' ? APP_DOWNLOAD_CSS : '',
   ].join('');
   html = html.replace(
     '</head>',

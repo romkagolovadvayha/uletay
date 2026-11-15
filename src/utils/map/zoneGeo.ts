@@ -1,4 +1,6 @@
-import type { LatLng } from '../../types/map';
+import type { LatLng, MapZonesGeoJson } from '../../types/map';
+import { extractFenceZones, routeCrossesFenceZones } from './fenceRouting';
+import { haversineMeters } from './geo-math';
 
 export function polygonCentroid(ring: [number, number][]): LatLng {
   if (ring.length === 0) {
@@ -22,8 +24,24 @@ export function polygonCentroid(ring: [number, number][]): LatLng {
 
 export function zoneTargetPoint(
   feature: GeoJSON.Feature<GeoJSON.Polygon, import('../../types/map').MapZoneProperties>,
+  zones?: MapZonesGeoJson,
 ): LatLng {
-  if (feature.properties.accessPoint) return feature.properties.accessPoint;
+  const entrance = feature.properties.accessPoint;
+  if (entrance) {
+    // A moved footprint can leave its generated approach inside a closed area.
+    // Only generated approaches may move; explicit entrances stay authoritative.
+    if (zones && feature.properties.accessPointGenerated && !feature.properties.accessRestricted) {
+      const fences = extractFenceZones(zones);
+      if (routeCrossesFenceZones([[entrance.lng, entrance.lat]], fences)) {
+        const boundary = feature.geometry.coordinates[0]
+          .filter(([lng, lat]) => !routeCrossesFenceZones([[lng, lat]], fences))
+          .map(([lng, lat]) => ({ lng, lat }))
+          .sort((a, b) => haversineMeters(entrance, a) - haversineMeters(entrance, b));
+        if (boundary[0]) return boundary[0];
+      }
+    }
+    return entrance;
+  }
   const layoutCenter = feature.properties?.layout?.center;
   if (layoutCenter) {
     return layoutCenter;

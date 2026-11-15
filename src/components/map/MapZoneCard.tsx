@@ -1,5 +1,6 @@
+import { ios, webStyle } from '../../theme/ios';
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '../PrimaryButton';
 import { ExternalLink } from '../ExternalLink';
@@ -10,7 +11,8 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import type { LatLng, MapZoneProperties, UserLocationState } from '../../types/map';
 import { formatDistance, haversineMeters, buildYandexRouteUrl } from '../../utils/map/geo';
-import { getZoneIconName, ZONE_TYPE_LABELS } from '../../utils/map/layerStyles';
+import { getPoiIconName, getZoneIconName, POI_CATEGORY_LABELS, ZONE_TYPE_LABELS } from '../../utils/map/layerStyles';
+import { zonePoiCategory } from '../../utils/map/poiData';
 import { zoneTargetPoint } from '../../utils/map/zoneGeo';
 
 type Props = {
@@ -37,8 +39,9 @@ export function MapZoneCard({
   routeError,
 }: Props) {
   const { name, zoneType, description } = zone.properties;
-  const icon = getZoneIconName(zoneType);
-  const typeLabel = ZONE_TYPE_LABELS[zoneType];
+  const serviceCategory = Platform.OS === 'web' && zoneType === 'service' ? zonePoiCategory(zone) : null;
+  const icon = serviceCategory ? getPoiIconName(serviceCategory) : getZoneIconName(zoneType);
+  const typeLabel = serviceCategory ? POI_CATEGORY_LABELS[serviceCategory] : ZONE_TYPE_LABELS[zoneType];
 
   const target = useMemo(() => zoneTargetPoint(zone), [zone]);
 
@@ -101,7 +104,7 @@ export function MapZoneCard({
           loading={routing}
           style={styles.primary}
         />
-        <Text style={styles.routeHint}>По дорогам Яндекса и тропинкам площадки</Text>
+        <Text style={styles.routeHint}>По дорогам и дорожкам площадки</Text>
         {routeError ? <Text style={styles.routeError}>{routeError}</Text> : null}
 
         {festivalNavUrl ? (
@@ -148,7 +151,7 @@ export function MapZoneCard({
         loading={routing}
         style={styles.primary}
       />
-      <Text style={styles.routeHint}>По дорогам Яндекса и тропинкам площадки</Text>
+      <Text style={styles.routeHint}>По дорогам и дорожкам площадки</Text>
       {routeError ? <Text style={styles.routeError}>{routeError}</Text> : null}
     </View>
   );
@@ -172,6 +175,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+    ...webStyle({ width: 44, height: 44, borderRadius: 22, borderWidth: 0, backgroundColor: 'rgba(255,255,255,.065)' }),
   },
   headerText: {
     flex: 1,
@@ -180,10 +184,13 @@ const styles = StyleSheet.create({
   title: {
     ...typography.sectionTitle,
     color: colors.text,
+    ...webStyle({ fontSize: 20, lineHeight: 26, fontWeight: '600', letterSpacing: -0.3, textTransform: 'none' }),
   },
   subtitle: {
     ...typography.body,
     color: colors.textSecondary,
+
+    ...ios.secondary,
   },
   statsRow: {
     flexDirection: 'row',
@@ -198,6 +205,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     gap: spacing.xs,
+    ...webStyle({ borderWidth: 0, borderRadius: 20, backgroundColor: 'rgba(255,255,255,.055)', padding: 14 }),
   },
   statValue: {
     ...typography.body,
@@ -210,6 +218,7 @@ const styles = StyleSheet.create({
   },
   primary: {
     width: '100%',
+    ...webStyle({ minHeight: 46, paddingVertical: 12 }),
   },
   categoryBadge: {
     alignSelf: 'flex-start',
@@ -219,11 +228,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderWidth: 1,
     borderColor: colors.border,
+    ...webStyle({ backgroundColor: 'transparent', borderWidth: 0, borderRadius: 0, paddingHorizontal: 0, paddingRight: 52, paddingTop: 8, paddingBottom: 8 }),
   },
   categoryText: {
     ...typography.caption,
     color: colors.primary,
     fontWeight: '600',
+    ...webStyle({ color: colors.textSecondary, fontSize: 13, lineHeight: 18, fontWeight: '400', textTransform: 'none' }),
   },
   routeHint: {
     ...typography.caption,
@@ -235,6 +246,8 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.live,
     textAlign: 'center',
+
+    ...ios.errorText,
   },
   territoryNote: {
     ...typography.caption,

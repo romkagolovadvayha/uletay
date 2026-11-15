@@ -9,6 +9,7 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { resolveAndroidBottomInset } from '../utils/safeArea';
 import { webKeyboardActivationProps } from '../utils/webKeyboardActivation';
+import { webControlProps } from '../utils/webControlProps';
 import { TabSpotlight } from './TabSpotlight';
 
 /** Equal inner padding above/below tab items (safe-area added separately below). */
@@ -22,7 +23,7 @@ const MOBILE_TAB_LABELS: Partial<Record<keyof RootTabParamList, string>> = {
   HomeTab: 'Домой',
   MapTab: 'Карта',
   FavoritesTab: 'Моё',
-  HeadlinersTab: 'Лайнап',
+  HeadlinersTab: Platform.OS === 'web' ? 'Лайн-ап' : 'Лайнап',
   PlaylistTab: 'Радио',
   MoreTab: 'Ещё',
 };
@@ -47,11 +48,16 @@ export function MobileBottomTabBar({
   const inactiveColor = focusedOptions?.tabBarInactiveTintColor ?? colors.tabInactive;
 
   const visibleRoutes = useMemo(
-    () =>
-      state.routes.filter((route) => {
+    () => {
+      const routes = state.routes.filter((route) => {
         const name = route.name as keyof RootTabParamList;
         return name === 'MoreTab' || mainTabRoutes.includes(name);
-      }),
+      });
+      const order: (keyof RootTabParamList)[] = [...mainTabRoutes, 'MoreTab'];
+      return Platform.OS === 'web'
+        ? routes.sort((a, b) => order.indexOf(a.name as keyof RootTabParamList) - order.indexOf(b.name as keyof RootTabParamList))
+        : routes;
+    },
     [mainTabRoutes, state.routes],
   );
   const focusedVisibleIndex = visibleRoutes.findIndex(
@@ -61,6 +67,8 @@ export function MobileBottomTabBar({
     focusedVisibleIndex >= 0
       ? focusedVisibleIndex
       : visibleRoutes.findIndex((route) => route.name === 'MoreTab');
+  const compactLabels = Platform.OS === 'web' && visibleRoutes.length >= 6 && barWidth < 480;
+  const tabWidth = barWidth / visibleRoutes.length;
 
   const handleLayout = (event: LayoutChangeEvent) => {
     setBarWidth(event.nativeEvent.layout.width);
@@ -98,7 +106,9 @@ export function MobileBottomTabBar({
                 ? options.tabBarLabel
                 : route.name;
           const displayLabel =
-            MOBILE_TAB_LABELS[route.name as keyof RootTabParamList] ?? label;
+            route.name === 'ScheduleTab' && compactLabels && tabWidth < 58
+              ? 'Распис.'
+              : MOBILE_TAB_LABELS[route.name as keyof RootTabParamList] ?? label;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -133,6 +143,7 @@ export function MobileBottomTabBar({
             // Flex lives on View so web <button> defaults cannot stretch columns unevenly.
             <View key={route.key} style={styles.itemSlot}>
               <Pressable
+                {...webControlProps('navigation')}
                 {...webKeyboardActivationProps(onPress)}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
@@ -146,7 +157,8 @@ export function MobileBottomTabBar({
                 <View style={styles.iconSlot}>
                   {icon}
                 </View>
-                <Text style={[styles.label, { color }]} numberOfLines={1} ellipsizeMode="clip">
+                <Text style={[styles.label, compactLabels && styles.compactLabel,
+                  compactLabels && { fontSize: Math.min(10, Math.max(9, (tabWidth - 4) / 6)) }, { color }]} numberOfLines={1} ellipsizeMode="clip">
                   {displayLabel}
                 </Text>
               </Pressable>
@@ -224,4 +236,5 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
     includeFontPadding: false,
   },
+  compactLabel: { fontSize: 10, letterSpacing: -0.5 },
 });

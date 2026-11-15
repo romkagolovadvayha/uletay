@@ -1,3 +1,4 @@
+import { ios, webStyle } from '../theme/ios';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NowTimeTrail } from './NowTimeTrail';
@@ -36,6 +37,8 @@ const NOW_RULE_HEIGHT = 2;
 type Props = {
   performances: SchedulePerformance[];
   emptyMessage?: string;
+  emptyContent?: React.ReactNode;
+  centerStageHeaders?: boolean;
   stages: Stage[];
   selectedDate: string;
   now: Date;
@@ -47,6 +50,8 @@ type Props = {
 export function ScheduleStageGrid({
   performances,
   emptyMessage = 'Нет выступлений в этот день',
+  emptyContent,
+  centerStageHeaders = false,
   stages,
   selectedDate,
   now,
@@ -60,6 +65,11 @@ export function ScheduleStageGrid({
   const columnsWidth = contentWidth - SCHEDULE_GRID_TIME_AXIS_WIDTH;
   const columnWidth =
     (columnsWidth - SCHEDULE_GRID_COLUMN_GAP * Math.max(stages.length - 1, 0)) / Math.max(stages.length, 1);
+  const centeredHeaders = centerStageHeaders && performances.length === 0;
+  const headerWidth = centeredHeaders ? Math.min(contentWidth, 420) : contentWidth;
+  const stageHeaderWidth = centeredHeaders
+    ? (headerWidth - SCHEDULE_GRID_COLUMN_GAP * Math.max(stages.length - 1, 0)) / Math.max(stages.length, 1)
+    : columnWidth;
 
   const { dayStart, gridHeight, hourMarkers, performancesByStage, highlights, pixelsPerMinute } = useMemo(() => {
     const bounds = getDayScheduleBounds(performances, selectedDate);
@@ -118,7 +128,7 @@ export function ScheduleStageGrid({
     return () => clearTimeout(timer);
   }, [selectedDate, dayStart, gridHeight, pixelsPerMinute]);
 
-  if (performances.length === 0) {
+  if (performances.length === 0 && emptyContent === undefined) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>{emptyMessage}</Text>
@@ -140,15 +150,15 @@ export function ScheduleStageGrid({
       style={styles.wrap}
       onLayout={(event) => setLayoutWidth(event.nativeEvent.layout.width)}
     >
-      <View style={[styles.headerRow, { width: contentWidth }]}>
-        <View style={styles.timeAxisHeader} />
+      <View style={[styles.headerRow, { width: headerWidth }, centeredHeaders && styles.centeredHeaderRow]}>
+        {!centeredHeaders && <View style={styles.timeAxisHeader} />}
         {stages.map((stage, index) => (
           <View
             key={stage.id}
             style={[
               styles.stageHeader,
               {
-                width: columnWidth,
+                width: stageHeaderWidth,
                 marginLeft: index === 0 ? 0 : SCHEDULE_GRID_COLUMN_GAP,
                 borderTopColor: getStageColor(stage.id, stages),
               },
@@ -161,7 +171,11 @@ export function ScheduleStageGrid({
         ))}
       </View>
 
-      <ScrollView
+      {performances.length === 0 ? (
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.empty, styles.emptyCustom]}>
+          {emptyContent}
+        </ScrollView>
+      ) : <ScrollView
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: spacing.screen }]}
@@ -233,7 +247,7 @@ export function ScheduleStageGrid({
             </View>
           ) : null}
         </View>
-      </ScrollView>
+      </ScrollView>}
     </View>
   );
 }
@@ -251,12 +265,17 @@ const styles = StyleSheet.create({
   timeAxisHeader: {
     width: SCHEDULE_GRID_TIME_AXIS_WIDTH,
   },
+  centeredHeaderRow: {
+    alignSelf: 'center',
+    paddingHorizontal: 0,
+  },
   stageHeader: {
     borderTopWidth: 3,
     paddingTop: 0,
     minHeight: 26,
     alignItems: 'center',
     justifyContent: 'flex-end',
+    ...webStyle({ paddingTop: 8, minHeight: 34 }),
   },
   stageHeaderText: {
     ...typography.caption,
@@ -265,6 +284,7 @@ const styles = StyleSheet.create({
     lineHeight: 11,
     letterSpacing: 0.3,
     textAlign: 'center',
+    ...webStyle({ fontSize: 12, lineHeight: 16, letterSpacing: 0 }),
   },
   scroll: {
     flex: 1,
@@ -359,5 +379,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     fontSize: 13,
+    ...ios.secondary,
   },
+  emptyCustom: { flexGrow: 1, justifyContent: 'center' },
 });

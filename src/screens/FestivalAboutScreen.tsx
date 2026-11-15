@@ -100,7 +100,7 @@ export function FestivalAboutScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   content: {
     paddingHorizontal: spacing.screen,

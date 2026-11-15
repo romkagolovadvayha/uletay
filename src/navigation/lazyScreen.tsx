@@ -1,11 +1,14 @@
 import React, { Suspense } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
+import { ios, webStyle } from '../theme/ios';
+import { typography } from '../theme/typography';
+import { webControlProps } from '../utils/webControlProps';
 
 const styles = StyleSheet.create({
   fallback: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -23,15 +26,16 @@ class ScreenErrorBoundary extends React.Component<
     if (!this.state.failed) return this.props.children;
     return (
       <View style={[styles.fallback, { padding: 24, gap: 16 }]}>
-        <Text accessibilityRole="alert" style={{ color: colors.text, textAlign: 'center' }}>
+        <Text accessibilityRole="alert" style={{ color: colors.text, textAlign: 'center', ...webStyle(typography.body) }}>
           Не удалось открыть раздел. Проверьте подключение к интернету и попробуйте ещё раз.
         </Text>
         <Pressable
+          {...webControlProps()}
           accessibilityRole="button"
           onPress={this.props.onRetry}
-          style={{ backgroundColor: colors.primary, padding: 16, borderRadius: 12 }}
+          style={{ backgroundColor: colors.primary, padding: 16, borderRadius: 12, ...ios.button }}
         >
-          <Text style={{ color: '#000', fontWeight: '700' }}>Попробовать снова</Text>
+          <Text style={{ color: colors.primaryText, fontWeight: '700', ...webStyle(typography.button) }}>Попробовать снова</Text>
         </Pressable>
       </View>
     );

@@ -1,3 +1,4 @@
+import { ios, webLabel } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import React, { useMemo, useState } from 'react';
@@ -110,7 +111,7 @@ export function MyScheduleScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <ScreenTitle style={styles.title}>МОЁ РАСПИСАНИЕ</ScreenTitle>
+        <ScreenTitle style={styles.title}>{webLabel('Моё расписание')}</ScreenTitle>
       </View>
 
       <View style={styles.sectionTabsWrap}>
@@ -128,7 +129,7 @@ export function MyScheduleScreen({ navigation }: Props) {
       {!hasAnyFavorites ? (
         <View style={styles.empty}>
           <Ionicons name="star-outline" size={32} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>ПОКА ПУСТО</Text>
+          <Text style={styles.emptyTitle}>{webLabel('Пока пусто')}</Text>
           <Text style={styles.emptyText}>
             Нажми на звёздочку рядом с выступлением или автограф-сессией, чтобы добавить сюда
           </Text>
@@ -197,13 +198,14 @@ export function MyScheduleScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   header: screenHeaderStyle,
   title: {
     ...typography.screenTitle,
     color: colors.text,
     fontSize: 22,
+    ...ios.title,
   },
   sectionTabsWrap: {
     paddingHorizontal: spacing.screen,
@@ -236,5 +238,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     maxWidth: 280,
+    ...ios.secondary,
   },
 });

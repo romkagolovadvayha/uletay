@@ -8,6 +8,7 @@ import { refreshHeadlinerMusic, type HeadlinerRefreshResult } from '../src/lib/h
 import { runHeadlinerRefreshBatch, type RefreshProgress } from '../src/lib/headliner-refresh-batch';
 import { resolveHeadlinerLastFm } from '../src/lib/headliner-lastfm-resolve';
 import { resolveLastFmProfileForHeadliner } from '../src/lib/lastfm';
+import { lastFmFetch } from '../src/lib/lastfm-fetch';
 
 const profile: HeadlinerLastFmProfile = {
   name: 'Артист', mbid: 'artist-id', tags: [{ name: 'rock' }], similarArtists: [],
@@ -36,7 +37,7 @@ function fixture() {
       stored = structuredClone(data);
     },
     assertConfigured: () => {},
-    resolveProfile: async (_artist: unknown, _all: unknown, options?: { strict?: boolean }) => {
+    resolveProfile: async (_artist: unknown, _all: unknown, options?: { strict?: boolean; signal?: AbortSignal }) => {
       requests++;
       assert.equal(options?.strict, true);
       return structuredClone(profile) as HeadlinerLastFmProfile | null;
@@ -92,6 +93,29 @@ async function testRefresh() {
   const outage = await refreshHeadlinerMusic('a', 'r1', failed.dependencies);
   assert(!outage.ok && outage.stopBatch && !outage.error.includes('secret-proxy-url'));
   assert.equal(failed.writes, 0);
+
+  const slow = fixture();
+  let cancelled = false;
+  slow.dependencies.resolveProfile = async (_artist, _all, options) => new Promise((_resolve, reject) => {
+    options!.signal!.addEventListener('abort', () => {
+      cancelled = true;
+      reject(options!.signal!.reason);
+    }, { once: true });
+  });
+  const expired = await refreshHeadlinerMusic('a', 'r1', { ...slow.dependencies, timeoutMs: 20 });
+  assert(!expired.ok && expired.stopBatch && expired.error.includes('не успел'));
+  assert(cancelled, 'The deadline must cancel upstream work, not just abandon the response');
+  assert.equal(slow.writes, 0, 'A timed out request must not save a partial group');
+  assert.deepEqual(slow.stored, before);
+
+  const late = fixture();
+  late.dependencies.resolveProfile = async () => {
+    await new Promise(resolve => setTimeout(resolve, 30));
+    return profile;
+  };
+  const lateResult = await refreshHeadlinerMusic('a', 'r1', { ...late.dependencies, timeoutMs: 10 });
+  assert(!lateResult.ok);
+  assert.equal(late.writes, 0, 'Even a late successful resolver must not write after the deadline');
 
   const conflict = fixture();
   conflict.dependencies.resolveProfile = async () => {
@@ -163,6 +187,14 @@ async function testStrictApiFailures() {
     pool.intercept({ path: /method=artist.gettoptracks/ }).reply(200, { toptracks: { track: [] } });
     pool.intercept({ path: /method=artist.search/ }).reply(200, { results: { artistmatches: { artist: [] } } });
     assert.equal(await resolveLastFmProfileForHeadliner('Fixture', { strict: true }), null);
+
+    const abort = new AbortController();
+    pool.intercept({ path: /method=artist.getinfo/ }).reply(200, { artist: { name: 'Fixture' } }).delay(200);
+    pool.intercept({ path: /method=artist.gettoptracks/ }).reply(200, { toptracks: { track: [] } }).delay(200);
+    const pending = resolveLastFmProfileForHeadliner('Fixture', { signal: abort.signal });
+    setTimeout(() => abort.abort(new DOMException('deadline', 'TimeoutError')), 20);
+    await assert.rejects(pending, { name: 'TimeoutError' }, 'Abort must propagate even in non-strict mode without searching again');
+    await assert.rejects(lastFmFetch('https://ws.audioscrobbler.com/2.0/', { signal: abort.signal }), { name: 'TimeoutError' });
     agent.assertNoPendingInterceptors();
   } finally {
     setGlobalDispatcher(dispatcher);

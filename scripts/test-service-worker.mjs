@@ -9,6 +9,8 @@ function createWorker(hostname, options = {}) {
   const handlers = new Map();
   const deletedCaches = [];
   const openedCaches = [];
+  const precachedAssets = [];
+  const storedAssets = [];
   let claimed = 0;
   let unregistered = 0;
 
@@ -18,7 +20,7 @@ function createWorker(hostname, options = {}) {
     console,
     caches: {
       async keys() {
-        return ['uletay-shell-v2', 'uletay-data-v2', 'unrelated-cache'];
+        return ['uletay-shell-v2', 'uletay-data-v2', 'uletay-data-v8', 'uletay-media-v1', 'unrelated-cache'];
       },
       async delete(key) {
         deletedCaches.push(key);
@@ -28,11 +30,12 @@ function createWorker(hostname, options = {}) {
         openedCaches.push(key);
         if (options.openError) throw new Error('Cache storage blocked');
         return {
-          async addAll() {},
+          async addAll(urls) { precachedAssets.push(...urls); },
           async match() { return options.cached?.clone(); },
           async put(_request, response) {
             if (response.status === 206) throw new TypeError('Partial responses cannot be cached');
             if (options.putError) throw new Error('Quota exceeded');
+            storedAssets.push(_request.url);
           },
         };
       },
@@ -77,6 +80,7 @@ function createWorker(hostname, options = {}) {
     dispatchLifecycle,
     handlers,
     getState: () => ({ claimed, deletedCaches, openedCaches, unregistered }),
+    precachedAssets, storedAssets,
   };
 }
 
@@ -94,7 +98,7 @@ localWorker.handlers.get('fetch')({
 
 assert.deepEqual(localWorker.getState(), {
   claimed: 1,
-  deletedCaches: ['uletay-shell-v2', 'uletay-data-v2'],
+  deletedCaches: ['uletay-shell-v2', 'uletay-data-v2', 'uletay-data-v8', 'uletay-media-v1'],
   openedCaches: [],
   unregistered: 1,
 });
@@ -105,7 +109,8 @@ await productionWorker.dispatchLifecycle('install');
 await productionWorker.dispatchLifecycle('activate');
 const productionState = productionWorker.getState();
 
-assert.deepEqual(productionState.openedCaches, ['uletay-shell-v8']);
+assert.deepEqual(productionState.openedCaches, ['uletay-shell-v9']);
+assert.ok(!productionWorker.precachedAssets.includes('/api/data'), 'An unavailable API cannot prevent shell installation');
 assert.deepEqual(productionState.deletedCaches, [
   'uletay-shell-v2',
   'uletay-data-v2',
@@ -131,6 +136,21 @@ productionWorker.handlers.get('fetch')({
 });
 assert.equal(rangeIntercepted, false, 'Video byte ranges must go directly to the network');
 
+// Navigation uses redirect:manual. Browsers expose server redirects as a
+// status-0 opaqueredirect response, which must reach the browser unchanged.
+for (const pathname of ['/about', '/playlist', '/legal', '/headliners']) {
+  for (const cached of [undefined, new Response('old page')]) {
+    const redirect = { type: 'opaqueredirect', status: 0, ok: false };
+    const worker = createWorker('uletayapp.ru', { cached, fetch: async () => redirect });
+    const request = new Request('http://uletayapp.ru:4174' + pathname, { redirect: 'manual' });
+    Object.defineProperty(request, 'mode', { value: 'navigate' });
+    let response;
+    worker.handlers.get('fetch')({ request, respondWith(value) { response = value; } });
+    assert.equal(await response, redirect, `${pathname} must retain the server redirect with or without a cached page`);
+    assert.equal(worker.storedAssets.length, 0, 'Redirects must not replace the cached page');
+  }
+}
+
 for (const pathname of ['/admin', '/admin?tab=access', '/admin/login']) {
   let intercepted = false;
   const request = new Request('http://uletayapp.ru:4174' + pathname);
@@ -144,6 +164,7 @@ async function requestAsset(worker) {
   worker.handlers.get('fetch')({
     request: new Request('http://uletayapp.ru:4174/assets/test.js'),
     respondWith(value) { response = value; },
+    waitUntil() {},
   });
   return response;
 }
@@ -186,4 +207,36 @@ for (const options of [{ openError: true }, { putError: true }]) {
 const unchanged = createWorker('uletayapp.ru', { fetch: async () => new Response(null, { status: 304 }) });
 assert.equal((await requestData(unchanged)).status, 304, 'Conditional API responses pass through');
 
-console.log('Service worker: API revalidation, offline fallback, video ranges and storage failure behavior OK');
+const unavailable = createWorker('uletayapp.ru', {
+  cached: Response.json({ revision: 'last-success' }),
+  fetch: async () => new Response('Maintenance', { status: 503 }),
+});
+const duringMaintenance = await requestData(unavailable);
+assert.equal(duringMaintenance.headers.get('X-Uletay-Offline'), '1');
+assert.equal((await duringMaintenance.json()).revision, 'last-success', 'Server failures retain the last successful response');
+assert.equal(unavailable.storedAssets.length, 0);
+
+for (const pathname of ['/api/uploads/images/photo.webp', '/map-fonts/Uletay/0-255.pbf', '/store-app-store-icon.svg']) {
+  const worker = createWorker('uletayapp.ru', {
+    cached: new Response('saved-file'), fetch: async () => { throw new Error('Offline'); },
+  });
+  let response;
+  const pending = [];
+  worker.handlers.get('fetch')({
+    request: new Request('http://uletayapp.ru:4174' + pathname),
+    respondWith(value) { response = value; },
+    waitUntil(value) { pending.push(value); },
+  });
+  assert.equal(await (await response).text(), 'saved-file', `${pathname} is available offline`);
+  await Promise.all(pending);
+  assert.equal(pending.length, 1, 'Background caching extends the worker lifetime');
+}
+for (const pathname of ['/api/push/subscription', '/api/uploads/private.json']) {
+  let intercepted = false;
+  productionWorker.handlers.get('fetch')({
+    request: new Request('http://uletayapp.ru:4174' + pathname),
+    respondWith() { intercepted = true; },
+  });
+  assert.equal(intercepted, false, 'Only public catalog content and images are cached');
+}
+console.log('Service worker: persistent data/photos, map fonts, server outages, storage failures, private routes and video ranges OK');

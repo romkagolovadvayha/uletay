@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 const fixedRoutes = [
   '/', '/map', '/schedule', '/schedule/full', '/autographs', '/favorites',
-  '/playlist', '/foodcourt', '/about', '/rules', '/settings', '/legal', '/help',
+  '/foodcourt', '/rules', '/settings', '/help',
 ];
 const detailRoutes = [
   ['headliners', '/headliners/'], ['schedule', '/schedule/live/'],
@@ -99,12 +99,17 @@ export async function checkWebRoutes(origin, { connectHost } = {}) {
       }
     }));
 
-    for (const prefix of [...detailRoutes.map(([, prefix]) => prefix), '/map/']) {
-      const pathname = prefix + routeId('__route-check-новая карточка/F.P.G.~__');
+    const slashRoutes = new Set([
+      ...fixedRoutes.filter((pathname) => pathname !== '/'),
+      ...paths.filter((pathname) => /^\/headliners\/\d{4}$/.test(pathname)),
+      ...[...detailRoutes.map(([, prefix]) => prefix), '/map/']
+        .map((prefix) => prefix + routeId('__route-check-новая карточка/F.P.G.~__')),
+    ]);
+    for (const pathname of slashRoutes) {
       const response = await get(pathname + '/?route_check=slash');
       const target = new URL(response.headers.location ?? '/', base);
       if (![301, 308].includes(response.status) || target.href !== base + pathname + '?route_check=slash') {
-        failures.push(`${pathname}/: redirect lost the encoded path or query`);
+        failures.push(`${pathname}/: redirect changed the public origin, encoded path or query`);
       }
     }
     for (const pathname of ['/__route-check-missing__', '/headliners/a/b', '/schedule/live', '/assets/__route-check-missing__.js', '/headliners/__route-check-missing__.js']) {
@@ -122,6 +127,15 @@ export async function checkWebRoutes(origin, { connectHost } = {}) {
       const target = new URL(response.headers.location ?? '/', base);
       if (response.status !== 301 || target.href !== base + currentHeadliners + '?route_check=redirect') {
         failures.push(`${pathname}: expected a permanent redirect to ${currentHeadliners}`);
+      }
+    }
+    for (const pathname of ['/about', '/about/', '/about/index.html', '/playlist', '/playlist/', '/playlist/index.html', '/legal', '/legal/', '/legal/index.html']) {
+      for (const query of ['', '?route_check=redirect']) {
+        const response = await get(pathname + query);
+        const target = new URL(response.headers.location ?? '', base);
+        if (response.status !== 301 || target.href !== base + '/' + query) {
+          failures.push(`${pathname}${query}: expected a permanent redirect to / preserving the public origin and query`);
+        }
       }
     }
     return { routes: routes.size, requests, failures };

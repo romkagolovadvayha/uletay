@@ -27,6 +27,5 @@ WebMCP доступен только после открытия приложе�
 
 ## Optional
 
-- [Правовая информация](https://uletayapp.ru/legal): условия и конфиденциальность.
 - [Карта сайта](https://uletayapp.ru/sitemap.xml): индексируемые страницы.
 - [Правила обхода](https://uletayapp.ru/robots.txt): правила для роботов; llms.txt не заменяет robots.txt.

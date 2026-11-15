@@ -54,6 +54,11 @@ type Props = {
   onPress?: () => void;
 };
 
+export function isExternalLinkVisible(href: string): boolean {
+  // Shared with enclosing cards so a hidden sales link leaves no empty wrapper.
+  return Platform.OS !== 'web' || !/^https?:\/\/(?:www\.)?drivegrup\.ru\/ticket(?:[/?#]|$)/i.test(href);
+}
+
 export function ExternalLink({
   href,
   children,
@@ -67,7 +72,7 @@ export function ExternalLink({
 
   if (Platform.OS === 'web') {
     // Ticket sales links are disabled on the website, including links from the CMS.
-    if (/^https?:\/\/(?:www\.)?drivegrup\.ru\/ticket(?:[/?#]|$)/i.test(href)) {
+    if (!isExternalLinkVisible(href)) {
       return null;
     }
 
@@ -76,6 +81,7 @@ export function ExternalLink({
 
     return (
       <a
+        data-uletay-control="default"
         href={href}
         target="_blank"
         rel={EXTERNAL_LINK_REL}
@@ -85,6 +91,7 @@ export function ExternalLink({
           onPress?.();
         }}
         style={{
+          position: 'relative',
           ...toWebLinkStyle(flatStyle),
           transform: pointerPressed && !reduceMotion ? 'scale(0.97)' : 'scale(1)',
           transition: reduceMotion

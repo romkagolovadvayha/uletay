@@ -1,10 +1,20 @@
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer, request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import path from 'node:path';
 
 const root = path.resolve(process.env.DIST_DIR ?? 'dist');
 const port = Number(process.env.PORT ?? 4174);
+// Optional public CMS snapshot for checking the current map without a local CMS.
+const previewData = process.env.PREVIEW_DATA_FILE
+  ? readFileSync(path.resolve(process.env.PREVIEW_DATA_FILE)) : null;
+if (previewData) JSON.parse(previewData.toString('utf8'));
 const apiOrigin = process.env.PREVIEW_API_ORIGIN ? new URL(process.env.PREVIEW_API_ORIGIN) : null;
+// Optional public media for a CMS snapshot. Never proxy API mutations or credentials.
+const mediaOrigin = process.env.PREVIEW_MEDIA_ORIGIN ? new URL(process.env.PREVIEW_MEDIA_ORIGIN) : null;
+if (mediaOrigin && (mediaOrigin.protocol !== 'https:' || mediaOrigin.username || mediaOrigin.password)) {
+  throw new Error('PREVIEW_MEDIA_ORIGIN must be a public HTTPS origin without credentials.');
+}
 if (apiOrigin && (apiOrigin.protocol !== 'http:' || !['localhost','127.0.0.1','[::1]'].includes(apiOrigin.hostname))) {
   throw new Error('PREVIEW_API_ORIGIN must point to a local HTTP development server.');
 }
@@ -22,6 +32,8 @@ const mime = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
+  '.cjs': 'text/javascript; charset=utf-8',
+  '.pbf': 'application/x-protobuf',
   '.json': 'application/json; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',
   '.md': 'text/markdown; charset=utf-8',
@@ -34,7 +46,32 @@ const mime = {
 };
 
 const server = createServer((request, response) => {
-  const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
+  const requestUrl = new URL(request.url ?? '/', 'http://localhost');
+  const pathname = decodeURIComponent(requestUrl.pathname);
+  if (previewData && pathname === '/api/data') {
+    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }).end(previewData);
+    return;
+  }
+  if (mediaOrigin && pathname.startsWith('/api/uploads/') && ['GET', 'HEAD'].includes(request.method)) {
+    const upstream = httpsRequest(new URL(requestUrl.pathname, mediaOrigin.origin), { method: request.method }, result => {
+      response.writeHead(result.statusCode ?? 502, {
+        'Content-Type': result.headers['content-type'] ?? 'application/octet-stream',
+        'Cache-Control': 'public, max-age=300',
+      });
+      result.pipe(response);
+    });
+    upstream.setTimeout(10000, () => upstream.destroy(new Error('Media timeout')));
+    upstream.on('error', () => {
+      if (response.headersSent) response.destroy();
+      else response.writeHead(502).end('Public preview media unavailable');
+    });
+    upstream.end();
+    return;
+  }
+  if (/^\/(?:about|playlist|legal)(?:\/|\/index\.html)?$/.test(pathname)) {
+    response.writeHead(301, { Location: `/${requestUrl.search}` }).end();
+    return;
+  }
   if (apiOrigin && pathname.startsWith('/api/')) {
     const upstream = httpRequest(new URL(request.url, apiOrigin), {
       method: request.method, headers: {...request.headers, host:apiOrigin.host},

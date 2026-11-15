@@ -1,3 +1,5 @@
+import { BackButton } from '../components/BackButton';
+import { ios, webStyle, webLabel } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
@@ -95,14 +97,12 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.emptyWrap}>
           <ScreenTitle style={styles.emptyText}>Хэдлайнер не найден</ScreenTitle>
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
+          <BackButton
             onPress={() => navigation.goBack()}
             style={styles.emptyBackButton}
           >
             <Text style={styles.backLink}>Назад</Text>
-          </MotionPressable>
+          </BackButton>
         </View>
       </SafeAreaView>
     );
@@ -111,17 +111,16 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <MotionPressable
-          accessibilityRole="button"
+        <BackButton
           onPress={() => navigation.goBack()}
           style={styles.backRow}
         >
           <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
           <Text style={styles.backLabel}>Назад</Text>
-        </MotionPressable>
+        </BackButton>
 
         <HeadlinerCard headliner={headliner} large />
-        <ScreenTitle style={styles.name}>{headliner.name.toUpperCase()}</ScreenTitle>
+        <ScreenTitle style={styles.name}>{webLabel(headliner.name)}</ScreenTitle>
         {alternateNames.length ? (
           <Text style={styles.alternateNames}>{alternateNames.join(' · ')}</Text>
         ) : null}
@@ -192,9 +191,10 @@ export function HeadlinerDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   content: {
+    ...webStyle({ width: '100%', maxWidth: 820, alignSelf: 'center' }),
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xxl,
   },
@@ -251,6 +251,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    ...webStyle({ paddingVertical: 7 }),
   },
   tagText: {
     ...typography.caption,
@@ -258,6 +259,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'lowercase',
     letterSpacing: 0.2,
+    ...ios.caption,
   },
   statsRow: {
     flexDirection: 'row',
@@ -270,6 +272,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
+    ...ios.card,
   },
   statValue: {
     ...appFont('semiBold'),
@@ -283,6 +286,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: 'none',
     letterSpacing: 0.2,
+    ...ios.caption,
   },
   section: {
     marginBottom: spacing.lg,
@@ -294,6 +298,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: spacing.xs,
+    ...webStyle({ fontSize: 20, lineHeight: 26 }),
   },
   trackRow: {
     flexDirection: 'row',
@@ -303,6 +308,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    ...webStyle({ minHeight: 60 }),
   },
   trackRank: {
     ...appFont('semiBold'),
@@ -323,6 +329,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontSize: 14,
+    ...ios.secondary,
   },
   trackMeta: {
     ...typography.caption,
@@ -331,6 +338,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: 'none',
     letterSpacing: 0,
+    ...ios.caption,
   },
   tracksMoreLabel: {
     ...typography.caption,
@@ -354,6 +362,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     minHeight: 48,
     justifyContent: 'center',
+    ...ios.chip,
   },
   similarText: {
     ...typography.caption,
@@ -361,6 +370,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'none',
     letterSpacing: 0.2,
+    ...ios.secondary,
   },
   emptyWrap: {
     flex: 1,

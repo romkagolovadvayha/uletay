@@ -1,3 +1,5 @@
+import { BackButton } from '../components/BackButton';
+import { webStyle } from '../theme/ios';
 import { NavigationProp } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,16 +90,14 @@ export function AutographDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel="Назад"
+        <BackButton
           accessibilityHint="Вернуться к списку автограф-сессий"
           onPress={() => navigation.goBack()}
           hitSlop={12}
           style={styles.iconButton}
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </MotionPressable>
+        </BackButton>
         <MotionPressable
           accessibilityRole="button"
           accessibilityLabel={
@@ -155,9 +155,10 @@ export function AutographDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   topBar: {
+    ...webStyle({ paddingTop: spacing.headerTop }),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

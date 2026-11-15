@@ -1,18 +1,22 @@
+import { ios, webStyle } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
+  useWindowDimensions,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MotionPressable } from './MotionPressable';
+import { LiquidSelect } from './LiquidDialog';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
@@ -32,30 +36,43 @@ type FilterSelectProps = {
   options: Option[];
   onChange: (id: string) => void;
   accessibilityLabel: string;
+  iconOnly?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-function FilterSelect({ value, options, onChange, accessibilityLabel, style }: FilterSelectProps) {
+function FilterSelect({ value, options, onChange, accessibilityLabel, iconOnly = false, style }: FilterSelectProps) {
   const [open, setOpen] = useState(false);
+  const selectId = useId();
   const insets = useSafeAreaInsets();
   const selected = options.find((option) => option.id === value);
 
   return (
     <>
       <MotionPressable
+        nativeID={selectId}
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
+        accessibilityLabel={iconOnly ? `${accessibilityLabel}: ${selected?.label ?? value}` : accessibilityLabel}
         aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls={`${selectId}-menu`}
         onPress={() => setOpen(true)}
         style={[styles.select, style]}
       >
-        <Text style={styles.selectLabel} numberOfLines={1}>
-          {selected?.label ?? value}
-        </Text>
-        <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
+        {iconOnly ? (
+          <Ionicons name="swap-vertical" size={20} color={colors.text} />
+        ) : (
+          <>
+            <Text style={styles.selectLabel} numberOfLines={1}>
+              {selected?.label ?? value}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
+          </>
+        )}
       </MotionPressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      {Platform.OS === 'web' ? <LiquidSelect open={open} onClose={() => setOpen(false)}
+        title={accessibilityLabel} anchorId={selectId} id={`${selectId}-menu`} value={value}
+        options={options} onChange={onChange} /> : <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View
           style={[
             styles.backdrop,
@@ -103,7 +120,7 @@ function FilterSelect({ value, options, onChange, accessibilityLabel, style }: F
             })}
           </ScrollView>
         </View>
-      </Modal>
+      </Modal>}
     </>
   );
 }
@@ -127,6 +144,8 @@ export function HeadlinerFilterBar({
   sortMode,
   onSortModeChange,
 }: Props) {
+  const { width } = useWindowDimensions();
+  const compactSearch = Platform.OS === 'web' && width < 400 && searchQuery.length > 0;
   const sortOptions = useMemo(
     () => HEADLINER_SORT_OPTIONS.map((option) => ({ id: option.id, label: option.label })),
     [],
@@ -134,8 +153,8 @@ export function HeadlinerFilterBar({
 
   return (
     <View style={styles.row}>
-      <View style={styles.searchWrap}>
-        <Ionicons name="search" size={16} color={colors.textMuted} style={styles.searchIcon} />
+      <View nativeID={Platform.OS === 'web' ? 'headliner-search-field' : undefined} style={styles.searchWrap}>
+        {!compactSearch ? <Ionicons name="search" size={Platform.OS === 'web' ? 20 : 16} color={colors.textMuted} style={styles.searchIcon} /> : null}
         <TextInput
           accessibilityLabel="Поиск хэдлайнера"
           value={searchQuery}
@@ -147,6 +166,11 @@ export function HeadlinerFilterBar({
           autoCorrect={false}
           clearButtonMode="while-editing"
         />
+        {Platform.OS === 'web' && searchQuery ? (
+          <MotionPressable accessibilityRole="button" accessibilityLabel="Очистить поиск" onPress={() => onSearchQueryChange('')} style={styles.clearSearch}>
+            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+          </MotionPressable>
+        ) : null}
       </View>
 
       <FilterSelect
@@ -159,6 +183,7 @@ export function HeadlinerFilterBar({
 
       <FilterSelect
         accessibilityLabel="Сортировка"
+        iconOnly={Platform.OS === 'web'}
         value={sortMode}
         options={sortOptions}
         onChange={(id) => onSortModeChange(id as HeadlinerSortMode)}
@@ -169,11 +194,13 @@ export function HeadlinerFilterBar({
 }
 
 const styles = StyleSheet.create({
+  clearSearch: { width: 44, height: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', marginRight: -8, borderRadius: radius.pill },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     paddingBottom: spacing.md,
+    ...webStyle({ flexWrap: 'nowrap', gap: 8 }),
   },
   searchWrap: {
     flex: 1,
@@ -186,6 +213,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: spacing.sm,
     height: 44,
+    ...ios.field, ...webStyle({ flexBasis: 0, paddingHorizontal: 12 }),
   },
   searchIcon: {
     marginRight: spacing.xs,
@@ -199,6 +227,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 0,
     outlineWidth: 0,
+    ...webStyle({ height: 48, fontSize: 17, lineHeight: 22 }),
   },
   select: {
     height: 44,
@@ -210,16 +239,19 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     paddingHorizontal: spacing.sm,
+    ...ios.field, ...webStyle({ height: 48, paddingHorizontal: 16, gap: 8 }),
   },
   yearSelect: {
     flexShrink: 0,
     minWidth: 72,
     maxWidth: 96,
+    ...webStyle({ width: 96, minWidth: 96, maxWidth: 96, paddingLeft: 16, paddingRight: 16, justifyContent: 'space-between' }),
   },
   sortSelect: {
     flexShrink: 1,
     minWidth: 96,
     maxWidth: 148,
+    ...webStyle({ width: 48, minWidth: 48, maxWidth: 48, flexGrow: 0, flexShrink: 0, paddingHorizontal: 0, justifyContent: 'center' }),
   },
   selectLabel: {
     ...typography.caption,
@@ -228,6 +260,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textTransform: 'none',
     letterSpacing: 0,
+    ...ios.chipLabel,
   },
   backdrop: {
     flex: 1,
@@ -246,9 +279,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
+    ...ios.glass, ...webStyle({ maxWidth: 440, maxHeight: '75%', alignSelf: 'center', borderRadius: 28 }),
   },
   menu: {
     flexGrow: 0,
+    ...webStyle({ padding: 8 }),
   },
   menuItem: {
     minHeight: 46,
@@ -257,6 +292,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
+    ...webStyle({ minHeight: 52, borderRadius: 18, paddingHorizontal: 16 }),
   },
   menuItemActive: {
     backgroundColor: colors.surfaceMuted,
@@ -267,6 +303,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
     flexShrink: 1,
+    ...ios.secondary,
   },
   menuItemLabelActive: {
     ...appFont('semiBold'),

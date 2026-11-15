@@ -54,9 +54,11 @@ export function AppRouteLink({
   if (Platform.OS === 'web') {
     return (
       <a
+        data-uletay-control="default"
         href={href}
         aria-label={accessibilityLabel}
         style={{
+          position: 'relative',
           ...toWebStyle(style),
           transform: pointerPressed && !reduceMotion ? 'scale(0.97)' : 'scale(1)',
           transition: reduceMotion

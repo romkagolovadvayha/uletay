@@ -2,6 +2,23 @@ import type { GeoJSONSource, LayerSpecification, Map as WebMap } from 'maplibre-
 import type { SceneData, SceneImage, SceneSource } from './map-scene';
 
 export type AppliedScene = { sources: Map<string, SceneData>; images: Map<string, string> };
+
+/** Adjust web map materials without changing CMS geometry or native rendering. */
+function darkLayer(layer: LayerSpecification): LayerSpecification {
+  if (layer.id === 'fest-ground' && layer.type === 'fill') return {
+    // The shared/native scene includes a rectangular backdrop around the site.
+    // On web the real basemap must remain visible outside the festival outline.
+    ...layer, filter: ['!=', ['get', 'color'], '#EDCD80'],
+    paint: { ...layer.paint, 'fill-color': ['match', ['get', 'color'], '#8DA837', '#29382B', ['get', 'color']] },
+  };
+  if (layer.id === 'fest-paths' && layer.type === 'line') return {
+    ...layer, paint: { ...layer.paint, 'line-color': '#90949A' },
+  };
+  if (layer.id === 'fest-roof-lettering' && layer.type === 'fill-extrusion') return {
+    ...layer, paint: { ...layer.paint, 'fill-extrusion-color': ['case', ['all', ['==', ['get', 'base'], 0], ['==', ['get', 'color'], '#263124']], '#E0E4DF', ['get', 'color']] },
+  };
+  return layer;
+}
 export function syncWebMapScene(map: WebMap, scene: { sources: SceneSource[]; images: SceneImage[] }, applied: AppliedScene) {
   for (const source of scene.sources) {
     if (!map.getSource(source.id)) map.addSource(source.id, { type: 'geojson', data: source.data, tolerance: 0 });
@@ -9,7 +26,7 @@ export function syncWebMapScene(map: WebMap, scene: { sources: SceneSource[]; im
     applied.sources.set(source.id, source.data);
     // Native pins style-spec 26.2; GL JS uses 26.4. The shared subset is validated
     // against both installed specs by test:map:renderer.
-    for (const layer of source.layers) if (!map.getLayer(layer.id)) map.addLayer(layer as LayerSpecification);
+    for (const layer of source.layers) if (!map.getLayer(layer.id)) map.addLayer(darkLayer(layer as LayerSpecification));
   }
   const desired = new Set(scene.images.map(image => image.id));
   for (const id of applied.images.keys()) {

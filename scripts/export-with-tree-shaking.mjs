@@ -48,3 +48,4 @@ if (process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') === 'https://uletayapp.r
   run(process.execPath, [path.join(root, 'check-indexed-routes.mjs')]);
 }
 run(process.execPath, [path.join(root, 'prune-dist-assets.mjs')]);
+run(process.execPath, [path.join(root, 'prepare-offline-shell.mjs')]);

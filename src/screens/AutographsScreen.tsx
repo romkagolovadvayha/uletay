@@ -110,7 +110,7 @@ export function AutographsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
   header: screenHeaderStyle,
   title: {
