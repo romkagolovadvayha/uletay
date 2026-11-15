@@ -7,7 +7,6 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { AdaptiveTabBar } from '../components/AdaptiveTabBar';
 import { AmbientBackground } from '../components/AmbientBackground';
 import { DeferredIonicons } from '../components/DeferredIonicons';
-import { RadioTabIcon } from '../components/RadioTabIcon';
 import { useIsTablet } from '../hooks/useIsTablet';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
@@ -318,7 +317,7 @@ function RootTabs() {
         listeners={({ navigation }) => createFlatTabListeners(navigation)}
         options={{
           title: 'Радио',
-          tabBarIcon: ({ color }) => <RadioTabIcon color={color} />,
+          tabBarIcon: ({ color }) => <TabIcon name="radio-outline" color={color} />,
         }}
       />
       <Tab.Screen

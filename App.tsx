@@ -10,7 +10,6 @@ import {
 } from './src/components/demo-mode-banner';
 import { DataProvider } from './src/context/DataContext';
 import { DemoModeProvider, useDemoMode } from './src/context/DemoModeContext';
-import { RadioPlayerProvider } from './src/context/RadioPlayerContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
 import { IconsReadyProvider } from './src/context/IconsReadyContext';
 import { NotificationSettingsProvider } from './src/context/NotificationSettingsContext';
@@ -125,13 +124,11 @@ export default function App() {
         <DataProvider>
           <WebMcpBridge />
           <DemoModeProvider>
-            <RadioPlayerProvider>
               <FavoritesProvider>
                 <NotificationSettingsProvider>
                   <AppContent />
                 </NotificationSettingsProvider>
               </FavoritesProvider>
-            </RadioPlayerProvider>
           </DemoModeProvider>
         </DataProvider>
       </SafeAreaProvider>

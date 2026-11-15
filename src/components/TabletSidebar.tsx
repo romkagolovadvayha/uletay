@@ -39,7 +39,6 @@ import { webControlProps } from '../utils/webControlProps';
 import { parseDateTime } from '../utils/scheduleHelpers';
 import { CountdownTimer } from './CountdownTimer';
 import { DeferredIonicons } from './DeferredIonicons';
-import { RadioTabIcon } from './RadioTabIcon';
 
 type ExtraItem = {
   key: string;
@@ -258,15 +257,11 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
               ? options.tabBarLabel
               : (options.title ?? route.name);
             const active = currentTabName === routeName;
-            const iconColor = active ? colors.tabActive : isDesktop ? '#AEB3A8' : colors.tabInactive;
 
             return (
               <SidebarItem
                 key={route.key}
                 icon={tabIcons[routeName]}
-                iconNode={routeName === 'PlaylistTab'
-                  ? <RadioTabIcon color={iconColor} size={isDesktop ? 19 : 22} />
-                  : undefined}
                 label={label}
                 active={active}
                 desktop={isDesktop}
