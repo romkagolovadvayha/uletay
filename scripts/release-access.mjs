@@ -27,8 +27,9 @@ export async function play(path,options={}) {
     const result=await response.json();if(!response.ok||!result.access_token)throw Error(`Google authorization failed (${response.status})`);googleToken=result.access_token;
   }
   const origin=options.upload?'https://androidpublisher.googleapis.com/upload/androidpublisher/v3':'https://androidpublisher.googleapis.com/androidpublisher/v3';
-  const {upload:ignored,...request}=options;
+  const {upload:ignored,raw,...request}=options;
   const response=await fetch(`${origin}/applications/ru.uletay.app${path}`,{...request,headers:{Authorization:`Bearer ${googleToken}`,...request.headers}});
+  if(raw&&response.ok)return response;
   const result=response.status===204?null:await response.json();
   if(!response.ok)throw Error(`Google Play ${response.status}: ${result?.error?.message||'request failed'}`);
   return result;

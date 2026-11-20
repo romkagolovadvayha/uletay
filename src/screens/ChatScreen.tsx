@@ -15,7 +15,7 @@ import {LiquidDialog} from '../components/LiquidDialog';
 import {festivalNative as f,NATIVE_NAV_HEIGHT} from '../theme/native-festival';
 import {appFont} from '../theme/typography';
 import {CHAT_BLOCKED_KEY,readBlockedUsers,visibleChatMessages} from '../../shared/chat-safety';
-type Message={id:number;userId:number;name:string;avatar:string|null;text:string;deleted:boolean;createdAt:string;reply:{id:number;userId?:number;name:string;text:string}|null};
+type Message={example?:boolean;id:number;userId:number;name:string;avatar:string|null;text:string;deleted:boolean;createdAt:string;reply:{id:number;userId?:number;name:string;text:string}|null};
 type Page={messages:Message[];hasMore:boolean;removed?:number[]};
 const DRAFT='uletay.native.chat.draft.v1';
 function merge(current:Message[],incoming:Message[],removed:number[]=[]){const map=new Map(current.map(row=>[row.id,row]));incoming.forEach(row=>map.set(row.id,row));return [...map.values()].sort((a,b)=>b.id-a.id).map(row=>({...row,...(removed.includes(row.id)?{deleted:true,text:''}:{}),reply:row.reply&&removed.includes(row.reply.id)?{...row.reply,text:'Сообщение удалено'}:row.reply}));}

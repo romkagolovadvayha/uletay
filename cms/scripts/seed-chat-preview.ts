@@ -8,7 +8,8 @@ async function main() {
   const host = process.env.DB_HOST || '127.0.0.1';
   const port = Number(process.env.DB_PORT || 3352);
   const database = process.env.DB_NAME;
-  if (database !== 'uletay_web_design' || !['127.0.0.1', 'localhost'].includes(host) || port !== 3352 || process.env.NODE_ENV === 'production') {
+  const productionSeed=process.argv.includes('--apply-production-if-empty')&&process.env.NODE_ENV==='production'&&port===3306&&!!database;
+  if (!['127.0.0.1', 'localhost'].includes(host) || (!productionSeed&&(database !== 'uletay_web_design' || port !== 3352 || process.env.NODE_ENV === 'production'))) {
     throw new Error('Fictional chat is restricted to the isolated local uletay_web_design database on port 3352');
   }
   assert.equal(previewChatMessages.length, 59);
@@ -21,8 +22,9 @@ async function main() {
   const connection = await mysql.createConnection({ host, port, database, user: process.env.DB_USER || 'root', password: process.env.DB_PASS || '', charset: 'utf8mb4' });
   try {
     const [identity] = await connection.query<RowDataPacket[]>('SELECT DATABASE() AS name');
-    assert.equal(identity[0].name, 'uletay_web_design');
+    assert.equal(identity[0].name, database);
     await connection.beginTransaction();
+    if(productionSeed){const [existing]=await connection.query<RowDataPacket[]>('SELECT COUNT(*) AS count FROM chat_messages');const [seeded]=await connection.query<RowDataPacket[]>("SELECT COUNT(*) AS count FROM chat_users WHERE vk_id LIKE 'preview-chat-%'");if(Number(existing[0].count)>0||Number(seeded[0].count)>0){await connection.rollback();console.log('Initial fictional conversation skipped: chat is already in use or was seeded before');return;}}
     const [before] = await connection.query<RowDataPacket[]>("SELECT COUNT(*) AS count FROM chat_messages WHERE request_id LIKE 'preview-chat-v1-%'");
     const people: number[] = [];
     for (const [index, name] of previewChatPeople.entries()) {

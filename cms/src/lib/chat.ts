@@ -59,12 +59,13 @@ export function chatFailure(error:unknown) {
   console.error('[chat] Request failed:',error instanceof Error?error.name:'UnknownError');
   return chatResponse({error:'Чат временно недоступен. Попробуйте ещё раз.'},503);
 }
-const selectMessage=`SELECT m.id,m.user_id,m.body,m.created_at,m.deleted_at,u.display_name,u.avatar_url,
+const selectMessage=`SELECT m.id,m.user_id,m.body,m.created_at,m.deleted_at,u.display_name,u.avatar_url,u.vk_id,
  r.id AS reply_id,r.user_id AS reply_user_id,r.body AS reply_body,r.deleted_at AS reply_deleted,ru.display_name AS reply_name
  FROM chat_messages m JOIN chat_users u ON u.id=m.user_id
  LEFT JOIN chat_messages r ON r.id=m.reply_to LEFT JOIN chat_users ru ON ru.id=r.user_id`;
 export function serializeMessage(row:RowDataPacket) {
-  return {id:row.id,userId:row.user_id,name:row.display_name,avatar:row.avatar_url,text:row.deleted_at?'':row.body,deleted:!!row.deleted_at,
+  const example=String(row.vk_id).startsWith('preview-chat-');
+  return {id:row.id,userId:row.user_id,name:example?`${row.display_name} · пример`:row.display_name,avatar:row.avatar_url,example,text:row.deleted_at?'':row.body,deleted:!!row.deleted_at,
     createdAt:new Date(row.created_at).toISOString(),reply:row.reply_id?{id:row.reply_id,userId:row.reply_user_id,name:row.reply_name,text:row.reply_deleted?'Сообщение удалено':String(row.reply_body).slice(0,240)}:null};
 }
 export async function listChatMessages(before:number|null,after:number|null) {

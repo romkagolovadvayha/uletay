@@ -7,7 +7,7 @@ import { LiquidDialog } from '../components/LiquidDialog';
 import { DeferredIonicons } from '../components/DeferredIonicons';
 
 import {CHAT_BLOCKED_KEY,readBlockedUsers,visibleChatMessages} from '../../shared/chat-safety';
-type Message={id:number;userId:number;name:string;avatar:string|null;text:string;deleted:boolean;createdAt:string;reply:{id:number;userId?:number;name:string;text:string}|null};
+type Message={example?:boolean;id:number;userId:number;name:string;avatar:string|null;text:string;deleted:boolean;createdAt:string;reply:{id:number;userId?:number;name:string;text:string}|null};
 type Session={user:{id:number;name:string;avatar:string|null}|null;csrf:string;bearer:string|null;loginAvailable:boolean};
 const DRAFT_KEY='uletay_chat_draft_v1';
 function readDraft(){try{return localStorage.getItem(DRAFT_KEY)||'';}catch{return '';}}

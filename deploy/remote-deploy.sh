@@ -215,6 +215,7 @@ npm run db:migrate
 # content and writes a full backup before replacing the map collections.
 npm run map:migrate-production
 npx tsx scripts/migrate-community-release.ts --apply-production
+npx tsx scripts/seed-chat-preview.ts --apply-production-if-empty
 
 # Create 160×160 *-list.webp siblings only — never overwrites originals.
 echo "Generating list image variants (siblings only)..."
