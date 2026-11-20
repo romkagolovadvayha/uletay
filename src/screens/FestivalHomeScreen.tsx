@@ -1,17 +1,15 @@
-import React,{memo,useEffect,useMemo,useState} from 'react';
-import {AppState,FlatList,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import React,{useEffect,useMemo,useState} from 'react';
+import {FlatList,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useIsFocused,useLinkTo} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useVideoPlayer,VideoView} from 'expo-video';
-import {Image} from 'expo-image';
 import {LinearGradient} from 'expo-linear-gradient';
 import {Ionicons} from '@expo/vector-icons';
-import Animated,{useAnimatedStyle,useSharedValue,withTiming,useReducedMotion} from 'react-native-reanimated';
 import {useAppData} from '../context/DataContext';
 import {useFavorites} from '../hooks/useFavorites';
 import {useNow} from '../hooks/useNow';
 import {NativeArtistCard} from '../components/festival-native/native-artist-card';
+import {NativeHeroVideo as HeroVideo} from '../components/festival-native/native-hero-video';
 import {NativeButton,NativeIconButton} from '../components/festival-native/native-controls';
 import {LiquidDialog} from '../components/LiquidDialog';
 import {MotionPressable} from '../components/MotionPressable';
@@ -30,14 +28,6 @@ function HeroCountdown({onAction}:{onAction:(ongoing:boolean)=>void}){
   const ongoing=isFestivalOngoing(festival.startDate,festival.endDate,now)&&!isFestivalFinished(festival.startDate,festival.endDate,data.schedule,now);
   return <View style={styles.timerWrap}><Text style={styles.until}>{seconds>0?'ДО ФЕСТИВАЛЯ':ongoing?'МЫ УЖЕ ЗДЕСЬ':'ДО НОВОЙ ВСТРЕЧИ'}</Text>{seconds>0?<View style={styles.timer}>{[Math.floor(seconds/86400),Math.floor(seconds/3600)%24,Math.floor(seconds/60)%60,seconds%60].map((value,index)=><React.Fragment key={index}>{index?<Text style={styles.colon}>:</Text>:null}<View style={styles.timerCell}><Text style={styles.digits}>{String(value).padStart(2,'0')}</Text><Text style={styles.timerLabel}>{['дней','часов','минут','секунд'][index]}</Text></View></React.Fragment>)}</View>:null}<NativeButton label={ongoing?'Расписание выступлений':'Кто приедет?'} primary onPress={()=>onAction(ongoing)} style={{minWidth:190,marginTop:23}}/></View>;
 }
-const HeroVideo=memo(function HeroVideo({focused,visible}:{focused:boolean;visible:boolean}){
-  const reduced=useReducedMotion(),player=useVideoPlayer(require('../../assets/videos/background.mp4'),p=>{p.loop=true;p.muted=true;});
-  const [failed,setFailed]=useState(false),poster=useSharedValue(1);
-  useEffect(()=>{const play=()=>{if(focused&&visible&&!reduced&&AppState.currentState==='active')player.play();else player.pause();};play();const state=AppState.addEventListener('change',play),error=player.addListener('statusChange',event=>{if(event.status==='error')setFailed(true);});return()=>{state.remove();error.remove();player.pause();};},[focused,visible,reduced,player]);
-  const posterStyle=useAnimatedStyle(()=>({opacity:poster.get()}));
-  useEffect(()=>{if(reduced||failed)poster.set(1);},[reduced,failed,poster]);
-  return <><Image source={require('../../public/hero-video-poster.webp')} contentFit="cover" style={StyleSheet.absoluteFill}/>{!reduced&&!failed?<VideoView player={player} nativeControls={false} fullscreenOptions={{enable:false}} allowsPictureInPicture={false} useExoShutter={false} contentFit="cover" surfaceType="surfaceView" onFirstFrameRender={()=>poster.set(withTiming(0,{duration:240}))} style={StyleSheet.absoluteFill}/>:null}<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,posterStyle]}><Image source={require('../../public/hero-video-poster.webp')} contentFit="cover" style={StyleSheet.absoluteFill}/></Animated.View></>;
-});
 export function FestivalHomeScreen({navigation}:{navigation:BottomTabNavigationProp<RootTabParamList,'HomeTab'>}){
   const {data}=useAppData(),favorites=useFavorites(),focused=useIsFocused(),linkTo=useLinkTo(),insets=useSafeAreaInsets(),{width,height}=useWindowDimensions();
   const model=useMemo(()=>buildFestivalHomeModel(data),[data]),artists=model.artists.map(item=>data.headliners.find(artist=>artist.id===item.id)!).filter(Boolean);

@@ -1,6 +1,6 @@
 # Google Play — Улетай 1.0.19
 
-Android package: `ru.uletay.app`. Release version code: **50**.
+Android package: `ru.uletay.app`. Release version code: **51**.
 
 `ru-RU/listing.json` contains the title, short and full descriptions.
 `release-notes.txt` contains the production release notes. `graphics/` contains six
