@@ -1,12 +1,17 @@
+import {NATIVE_NAV_HEIGHT} from '../theme/native-festival';
 import { ios, webStyle } from '../theme/ios';
 import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView,useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated,{FadeInDown,FadeOutUp,LinearTransition,useReducedMotion} from 'react-native-reanimated';
+import {NativeIconButton} from '../components/festival-native/native-controls';
 import { FestivalMapView } from '../components/map/FestivalMapView';
 import { ScreenTitle } from '../components/ScreenTitle';
+import { BackButton } from '../components/BackButton';
+import { DeferredIonicons } from '../components/DeferredIonicons';
 import { MotionPressable } from '../components/MotionPressable';
 import type { FestivalMapApi } from '../components/map/types';
 import { MapFabGroup } from '../components/map/MapFabGroup';
@@ -98,7 +103,7 @@ type Props = {
   route: RouteProp<RootTabParamList, 'MapTab'>;
 };
 
-export function FestivalMapScreen({ route }: Props) {
+export function FestivalMapScreen({ route, navigation }: Props) {
   const { data: appData, dataSource, refreshData, isLoading: dataRefreshing } = useAppData();
   const data = useMemo(() => resolveMapData(appData, dataSource), [appData, dataSource]);
   const mapConfig = data.festivalMap;
@@ -112,7 +117,10 @@ export function FestivalMapScreen({ route }: Props) {
   const [filterChoice, setFilterChoice] = useState<MapFilterId>('all');
   const [autocampGroupKey, setAutocampGroupKey] = useState('all');
   const [followUser, setFollowUser] = useState(false);
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const viewMode = '3d' as const;
+  const nativeInsets=useSafeAreaInsets(),reducedMotion=useReducedMotion();
+  const [mapSearchOpen, setMapSearchOpen] = useState(false);
+  const searchToggle = useRef<HTMLButtonElement>(null);
   const [compactMapControls, setCompactMapControls] = useState(false);
   const [mapPopupHeight, setMapPopupHeight] = useState(0);
   const [pickedZoneId, setPickedZoneId] = useState<string | null>(null);
@@ -393,9 +401,9 @@ export function FestivalMapScreen({ route }: Props) {
 
   return (
     <MapMotionConfig>
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView nativeID="festival-map-screen" style={styles.safe} edges={['top']}>
         <View style={styles.mapWrap} onLayout={event => setCompactMapControls(event.nativeEvent.layout.height < 640)}>
-          <ScreenTitle style={styles.visuallyHiddenTitle}>Карта фестиваля</ScreenTitle>
+          {Platform.OS !== 'web' ? <ScreenTitle style={styles.visuallyHiddenTitle}>Карта фестиваля</ScreenTitle> : null}
           <View style={styles.mapLayer}>
             <MapErrorBoundary
               key={mapAttempt}
@@ -417,6 +425,7 @@ export function FestivalMapScreen({ route }: Props) {
                 filter={filter}
                 followUser={followUser}
                 viewMode={viewMode}
+                lockViewMode
                 coordinatePicking={Boolean(placingMarkerKind)}
                 onMapInteraction={() => setFollowUser(false)}
                 onZonePress={(zone) => {
@@ -498,23 +507,42 @@ export function FestivalMapScreen({ route }: Props) {
               </View>
             ) : null}
           </View>
-          <View style={styles.mapOverlay} pointerEvents="box-none">
-            <View style={styles.mapToolbar} pointerEvents="box-none">
-            <MapSearchPanel
+          <View nativeID="festival-map-controls" style={[styles.mapOverlay,Platform.OS!=='web'&&{bottom:NATIVE_NAV_HEIGHT+nativeInsets.bottom}]} pointerEvents="box-none">
+            {Platform.OS!=='web'?<View style={styles.webHeading}><NativeIconButton name="arrow-back" label="Назад" onPress={()=>navigation.canGoBack()?navigation.goBack():navigation.navigate('HomeTab')}/><Text accessibilityRole="header" style={{fontFamily:'FestivalDisplay',fontSize:27,lineHeight:32,color:colors.text,flex:1}}>КАРТА ФЕСТИВАЛЯ</Text><NativeIconButton name={mapSearchOpen?'close':'search-outline'} label={mapSearchOpen?'Закрыть поиск по карте':'Поиск по карте'} onPress={()=>setMapSearchOpen(value=>!value)}/></View>:null}
+            {Platform.OS === 'web' ? <View nativeID="festival-map-heading" style={styles.webHeading}>
+              <BackButton onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('MoreTab', { screen: 'MoreHome' })}><Text>Назад</Text></BackButton>
+              <ScreenTitle style={styles.webTitle}>КАРТА ФЕСТИВАЛЯ</ScreenTitle>
+              <button ref={searchToggle} type="button" className="fest-icon fest-map-search-toggle" aria-label={mapSearchOpen ? 'Закрыть поиск по карте' : 'Открыть поиск по карте'} aria-expanded={mapSearchOpen} aria-controls="festival-map-search-reveal" onClick={() => setMapSearchOpen(value => !value)}>
+                <DeferredIonicons name={mapSearchOpen ? 'close' : 'search'} size={22} color={colors.text}/>
+              </button>
+            </View> : null}
+            <View style={[styles.mapToolbar, Platform.OS === 'web' && { gap: mapSearchOpen ? spacing.sm : 0 }]} pointerEvents="box-none">
+            {Platform.OS === 'web' ? <div id="festival-map-search-reveal" className="fest-map-search-reveal" data-open={mapSearchOpen} inert={!mapSearchOpen} aria-hidden={!mapSearchOpen}>
+              <div><MapSearchPanel
+                style={styles.search} zones={data.mapZones} pois={data.mapPois} focusWhenOpen={mapSearchOpen}
+                onClose={() => { setMapSearchOpen(false); searchToggle.current?.focus(); }}
+                onSelectZone={zone => { dismissPopup(); setFilterChoice('all'); setPickedZoneId(zone.properties.id); setMapSearchOpen(false); }}
+                onSelectPoi={poi => { dismissPopup(); setFilterChoice('all'); setPickedPoiId(poi.properties.id); setMapSearchOpen(false); }}
+              /></div>
+            </div> :
+            mapSearchOpen?<Animated.View entering={reducedMotion?undefined:FadeInDown.duration(180)} exiting={reducedMotion?undefined:FadeOutUp.duration(130)} layout={LinearTransition.duration(180)}><MapSearchPanel
               style={styles.search}
+              focusWhenOpen onClose={()=>setMapSearchOpen(false)}
               zones={data.mapZones}
               pois={data.mapPois}
               onSelectZone={(zone) => {
                 dismissPopup();
                 setFilterChoice('all');
                 setPickedZoneId(zone.properties.id);
+                setMapSearchOpen(false);
               }}
               onSelectPoi={(poi) => {
                 dismissPopup();
                 setFilterChoice('all');
                 setPickedPoiId(poi.properties.id);
+                setMapSearchOpen(false);
               }}
-            />
+            /></Animated.View>:null}
             <MapFilterChips
               embedded
               zones={data.mapZones}
@@ -563,11 +591,8 @@ export function FestivalMapScreen({ route }: Props) {
             ) : null}
             <MapFabGroup
               viewMode={viewMode}
-              onToggleView={() => setViewMode(mode => mode === '3d' ? '2d' : '3d')}
               compact={compactMapControls || popupVisible}
               bottomOffset={popupVisible ? mapPopupHeight + 8 : mapControlLayout.attributionBottom + mapControlLayout.attributionHeight + spacing.sm}
-              onZoomIn={() => mapApi.current?.zoomBy?.(1)}
-              onZoomOut={() => mapApi.current?.zoomBy?.(-1)}
               onLocate={handleLocate}
               onFestival={handleFestivalCenter}
               onSavedPlaces={() => {
@@ -624,7 +649,7 @@ export function FestivalMapScreen({ route }: Props) {
               <View style={styles.mapInfoDescriptions}>
                 <Text style={styles.mapInfoDescription}>Объекты нанесены по схеме фестиваля 2026 года. Расположение ориентировочное; схема не подтверждает планировку следующего фестиваля.</Text>
                 <Text style={styles.mapInfoDescription}>Зелёный — территория и парковки · жёлтый — сцены и места автокемпинга · светлый — строения · голубой — вода · красный пунктир — ограждение.</Text>
-                <Text style={styles.mapInfoDescription}>Кнопка 2D / 3D переключает вид сверху и объёмную карту. Подписи находятся внутри объектов; приблизьте карту, чтобы прочитать мелкие названия и номера мест.</Text>
+                <Text style={styles.mapInfoDescription}>Приближайте объёмную карту двумя пальцами, чтобы прочитать мелкие названия и номера мест. На компьютере используйте колесо мыши.</Text>
                 <Text style={styles.mapInfoDescription}>В автокемпинге нанесены официальные номера 1–296 по схеме выбора билетов 2027 года. Выберите диапазон и нажмите на нужную ячейку; цвет ячейки не показывает актуальную занятость.</Text>
                 <Text style={styles.mapInfoDescription}>Нажмите на объект или найдите его по названию. За сценами находятся закрытые служебные зоны — маршруты туда не строятся. Без геолокации путь начинается от главного входа.</Text>
               </View>
@@ -718,6 +743,7 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.pageBackground,
+    ...(Platform.OS === 'web' ? { backgroundColor: 'transparent' } : {}),
   },
   mapWrap: {
     flex: 1,
@@ -741,9 +767,12 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   mapToolbar: {
-    position: 'absolute', top: spacing.sm, left: 0, right: 0,
+    position: 'absolute', top: 68, left: 0, right: 0,
     gap: spacing.sm, zIndex: 100,
+    ...(Platform.OS === 'web' ? { top: 68 } : {}),
   },
+  webHeading: { position: 'absolute', top: 12, left: spacing.screen, right: spacing.screen, height: 44, flexDirection: 'row', alignItems: 'center', gap: 12, zIndex: 101 },
+  webTitle: { ...typography.sectionTitle, color: colors.text, fontSize: 28, flex: 1, ...webStyle({ fontFamily: 'FestivalDisplay', fontStyle: 'italic', lineHeight: 32 }) },
   search: { marginHorizontal: spacing.screen },
   mapInfoTitle: { ...typography.screenTitle, color:colors.text, textAlign:'center', marginBottom:spacing.md },
   mapInfoLabel: { ...typography.caption, color:colors.text },

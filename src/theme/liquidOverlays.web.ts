@@ -32,6 +32,7 @@ export const LIQUID_OVERLAY_CSS = `
 .liquid-dialog__close { display:flex; align-items:center; justify-content:center; flex:0 0 44px; width:44px; height:44px; padding:0; border:0; border-radius:50%; background:rgba(255,255,255,.09); color:rgba(245,245,247,.7); cursor:pointer; transition:background 140ms,transform 140ms; }
 .liquid-dialog__close svg { width:18px; height:18px; }
 .liquid-dialog__header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:20px 20px 8px 24px; flex-shrink:0; }
+.liquid-dialog[data-variant="sheet"] .liquid-dialog__header { touch-action:none; cursor:grab; user-select:none; }
 .liquid-dialog__header .liquid-dialog__title { font-size:22px; line-height:28px; }
 .liquid-dialog[data-variant="sheet"] { width:min(520px,calc(100vw - 20px)); margin:auto auto max(10px,env(safe-area-inset-bottom)); max-height:calc(100dvh - 24px); border-radius:36px; }
 .liquid-dialog[data-variant="sheet"] .liquid-dialog__body { padding:12px 20px 24px; }

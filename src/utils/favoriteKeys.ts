@@ -1,12 +1,13 @@
-export type FavoriteType = 'performance' | 'autograph' | 'food';
+export type FavoriteType = 'performance' | 'autograph' | 'food' | 'artist';
 
 export function favoriteKey(type: FavoriteType, id: string): string {
-  const prefix = type === 'performance' ? 'perf' : type === 'autograph' ? 'auto' : 'food';
+  const prefix = type === 'performance' ? 'perf' : type === 'autograph' ? 'auto' : type === 'artist' ? 'artist' : 'food';
   return `${prefix}:${id}`;
 }
 
-export function normalizeFavoriteKeys(items: string[]): string[] {
-  return items.map((item) => (item.includes(':') ? item : favoriteKey('performance', item)));
+export function normalizeFavoriteKeys(items: unknown): string[] {
+  if(!Array.isArray(items))return [];
+  return [...new Set(items.filter((item):item is string=>typeof item==='string'&&item.length>0).map((item) => (item.includes(':') ? item : favoriteKey('performance', item))))];
 }
 
 export function isFavoriteKey(items: string[], type: FavoriteType, id: string): boolean {

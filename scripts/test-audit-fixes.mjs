@@ -168,7 +168,7 @@ try {
   const routing = await bundle('src/utils/map/externalRouting.ts', 'routing', [{ name: 'map-config', setup(b) {
     b.onResolve({ filter: /^react-native$/ }, () => ({ path: 'native', namespace:'map-config' }));
     b.onResolve({ filter: /config\/(?:yandexMaps|api)$/ }, () => ({ path: 'config', namespace:'map-config' }));
-    b.onLoad({filter:/.*/,namespace:'map-config'},()=>({contents:'export const YANDEX_MAPS_API_KEY="test"; export const API_BASE_URL="https://app.example/api"; export const Platform={OS:"web"}; export const Linking={};'}));
+    b.onLoad({filter:/.*/,namespace:'map-config'},()=>({contents:'export const YANDEX_MAPS_API_KEY="test"; export const API_BASE_URL="https://app.example/api"; export const API_FALLBACK_URLS=[]; export const Platform={OS:"web"}; export const Linking={};'}));
   }}]);
   globalThis.fetch = async () => new Response(JSON.stringify({route:{legs:[
     {status:'OK',steps:[{length:100,duration:60,polyline:{points:[[56,53],[56.1,53.1]]}}]},

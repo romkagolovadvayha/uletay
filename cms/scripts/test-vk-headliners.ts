@@ -39,7 +39,8 @@ assert(!validateAppData({ ...data, headliners: [{ ...artist, vkMusicUrl: 'javasc
 assert(!validateAppData({ ...data, headliners: [{ ...artist, vkSubtitle: 'a'.repeat(71) }] }));
 const withoutLink = { ...artist, vkMusicUrl: undefined, vkSubtitle: undefined };
 assert.equal(selectVkHeadliners({ ...data, headliners: [withoutLink] }, 'https://uletayapp.ru')[0].musicLabel, 'Найти в VK Музыке');
-assert.equal(headlinerSubtitle({ ...withoutLink, lastfm: { tags: [{ name: 'russian' }, { name: 'punk rock' }, { name: 'punk' }, { name: 'art rock' }] } as Headliner['lastfm'] }, 2027), 'Панк-рок · Арт-рок');
+assert.equal(headlinerSubtitle({ ...withoutLink, lastfm: { tags: [{ name: 'russian' }, { name: 'punk rock' }, { name: 'punk' }, { name: 'art rock' }] } as Headliner['lastfm'] }, 2027), 'Участник УЛЕТАЙ 2027', 'Last.fm tags must not replace editorial genres');
+assert.equal(headlinerSubtitle({ ...withoutLink, genres: ['Панк-рок','Арт-рок'] }, 2027), 'Панк-рок · Арт-рок');
 const escaped = selectVkHeadliners({ ...data, headliners: [{ ...artist, id: 'a/b.c', imageUrl: 'javascript:alert(1)' }] }, 'https://uletayapp.ru')[0];
 assert.equal(escaped.imageUrl, null);
 assert.equal(escaped.detailUrl, 'https://uletayapp.ru/headliners/a~2Fb~2Ec');

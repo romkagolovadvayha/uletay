@@ -16,9 +16,13 @@ import { encodeSeoRouteId, isDateWithinFestival } from '../src/seo/seoRouteUtils
 import { getSelectableHeadlinerYears } from '../src/utils/headlinerYears';
 import { writeAiDiscovery } from './ai-discovery';
 import { formatFestivalDateRange } from '../src/utils/festivalContent';
-import { APP_DOWNLOAD_CSS, APP_DOWNLOAD_SUBTITLE, APP_DOWNLOAD_TITLE, APP_STORES, APP_STORE_UNAVAILABLE } from '../src/constants/appDownload';
+import { APP_STORES, APP_STORE_UNAVAILABLE } from '../src/constants/appDownload';
+import { FESTIVAL_WEB_CSS } from '../src/theme/festival.web';
 import { LEGAL_SECTIONS } from '../src/constants/legalContent';
 import { PRIVACY_POLICY_URL } from '../src/constants/legal';
+import { resolveArtistProfile } from '../shared/artist-identity';
+import {mergeCommunityRelease,type CommunityReleaseSeed} from '../shared/community-release';
+import communityRelease from '../cms/data/community-release-20261121.json';
 
 type SeedData = Partial<AppData> & {
   festival: AppData['festival'];
@@ -166,11 +170,11 @@ async function loadBuildData(): Promise<AppData> {
       ...data,
       ...live,
       festival: { ...data.festival, ...live.festival },
-      stages: live.stages?.length ? live.stages : data.stages,
-      schedule: live.schedule?.length ? live.schedule : data.schedule,
-      autographs: live.autographs?.length ? live.autographs : data.autographs,
-      foodcourt: live.foodcourt?.length ? live.foodcourt : data.foodcourt,
-      headliners: live.headliners?.length ? live.headliners : data.headliners,
+      stages: Array.isArray(live.stages) ? live.stages : data.stages,
+      schedule: Array.isArray(live.schedule) ? live.schedule : data.schedule,
+      autographs: Array.isArray(live.autographs) ? live.autographs : data.autographs,
+      foodcourt: Array.isArray(live.foodcourt) ? live.foodcourt : data.foodcourt,
+      headliners: Array.isArray(live.headliners) ? live.headliners : data.headliners,
     };
     console.log(`generate-web-seo: using live content from ${apiBase}/data`);
   } catch (error) {
@@ -182,7 +186,7 @@ async function loadBuildData(): Promise<AppData> {
     );
   }
 
-  return data;
+  return mergeCommunityRelease(data,communityRelease as CommunityReleaseSeed);
 }
 
 function stageName(stages: Stage[], stageId: string): string {
@@ -190,6 +194,7 @@ function stageName(stages: Stage[], stageId: string): string {
 }
 
 function makeRouteSpecs(data: AppData): RouteSpec[] {
+  const uniqueArtists=[...new Map(data.headliners.map(artist=>{const profile=resolveArtistProfile(data.headliners,artist.id)!;return [profile.id,profile] as const;})).values()];
   const currentHeadlinersPath = `/headliners/${data.festival.year}`;
   const festivalDates = formatFestivalDateRange(data.festival);
   const festivalPlace = data.festival.locationShort || data.festival.location;
@@ -197,7 +202,7 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
   const hasCurrentAutographs = data.autographs.some((item) => isDateWithinFestival(item.date, data.festival));
   const common: RouteSpec[] = [
     {
-      path: '/', routeName: 'HomeTab', heading: APP_DOWNLOAD_TITLE,
+      path: '/', routeName: 'HomeTab', heading: `Увидимся на Улетай ${data.festival.year}`,
     },
     { path: '/map', routeName: 'MapTab', details: [
       `Площадка фестиваля находится в ${festivalPlace}. На интерактивной карте отмечены сцены, фудкорт и сервисные зоны.`,
@@ -216,8 +221,12 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
         : `Расписание автограф-сессий УЛЕТАЙ ${data.festival.year} ещё не опубликовано. Следите за обновлениями.`,
     ] },
     { path: '/favorites', routeName: 'FavoritesTab' },
+    { path: '/chat', routeName: 'ChatTab' },
+    { path: '/wishes', routeName: 'ArtistWishes', heading: 'Кого ждём?', details: [
+      'Пожелания гостей фестиваля и голосование за артистов. Наличие артиста в этом разделе не означает участие в объявленном лайн-апе.',
+    ], links: uniqueArtists.map((artist) => ({href: `/headliners/${encodeSeoRouteId(artist.id)}`, label: artist.name})) },
     { path: '/foodcourt', routeName: 'FoodCourtMain' },
-    { path: '/rules', routeName: 'FestivalRules' },
+    { path: '/rules', routeName: 'FestivalRules', details: data.rules.flatMap(category => [category.label, ...category.blocks.flatMap(block => [block.title ?? '', ...(block.paragraphs ?? []), ...(block.items ?? [])])]).filter(Boolean) },
     { path: '/settings', routeName: 'Settings' },
     { path: '/help', routeName: 'HelpTab' },
   ];
@@ -256,23 +265,23 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     details: [vendor.description, vendor.hours, vendor.priceRange || vendor.priceFrom].filter(Boolean),
   }));
 
-  const headlinerRoutes: RouteSpec[] = data.headliners.map((headliner) => ({
-    path: `/headliners/${encodeSeoRouteId(headliner.id)}`,
+  const headlinerRoutes: RouteSpec[] = data.headliners.map((record) => {const headliner=resolveArtistProfile(data.headliners,record.id)!;return ({
+    path: `/headliners/${encodeSeoRouteId(record.id)}`,
     routeName: 'HeadlinerDetail',
-    params: { headlinerId: headliner.id },
+    params: { headlinerId: record.id },
     heading: headliner.name,
     details: [
       plainText(headliner.description).toLocaleLowerCase('ru-RU') === headliner.name.toLocaleLowerCase('ru-RU')
-        ? `${headliner.name} — участник фестиваля УЛЕТАЙ.`
+        ? headliner.years.length ? `${headliner.name} — участник фестиваля УЛЕТАЙ.` : `${headliner.name} — в пожеланиях гостей фестиваля УЛЕТАЙ.`
         : headliner.description,
       headliner.years?.length
         ? `Участие в фестивале: ${[...headliner.years].sort((a, b) => b - a).join(', ')}`
         : '',
-      ...data.schedule.filter((item) => item.headlinerId === headliner.id).slice(0, 3)
+      ...data.schedule.filter((item) => item.headlinerId === headliner.id && isDateWithinFestival(item.date, data.festival)).slice(0, 3)
         .map((item) => `Выступление ${item.date}: ${item.startTime}–${item.endTime}, ${stageName(data.stages, item.stageId)}.`),
     ].filter(Boolean),
-    links: headliner.years.map((year) => ({ href: `/headliners/${year}`, label: `Артисты УЛЕТАЙ ${year}` })),
-  }));
+    links: headliner.years.length ? headliner.years.map((year) => ({ href: `/headliners/${year}`, label: `Артисты УЛЕТАЙ ${year}` })) : [{href:'/wishes',label:'Кого ждём на фестивале'}],
+  });});
 
   const headlinerYears = getSelectableHeadlinerYears(data.headliners, data.festival.year);
   const headlinerYearRoutes: RouteSpec[] = headlinerYears.map((year) => ({
@@ -291,7 +300,7 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
         href: `/headliners/${item}`,
         label: `Хедлайнеры ${item}`,
       })),
-      ...data.headliners.filter((headliner) => headliner.years.includes(year)).map((headliner) => ({
+      ...uniqueArtists.filter((headliner) => headliner.years.includes(year)).map((headliner) => ({
         href: `/headliners/${encodeSeoRouteId(headliner.id)}`,
         label: headliner.name,
       })),
@@ -379,16 +388,19 @@ const primaryNavigation = (festivalYear: number) => [
   { href: '/map', label: 'Карта' },
   { href: '/autographs', label: 'Автографы' },
   { href: '/foodcourt', label: 'Фудкорт' },
+  { href: '/wishes', label: 'Кого ждём?' },
+  { href: '/rules', label: 'Правила и быт' },
+  { href: '/help', label: 'Помощь' },
 ];
 
 function fallbackMarkup(route: GeneratedRoute, festivalYear: number): string {
   if (route.path === '/') {
     const buttons = APP_STORES.map((store) => {
-      const content = `<img class="app-download__logo" src="${store.image}" alt="" width="32" height="32"><span class="app-download__store-name">${htmlEscape(store.name)}</span><span class="app-download__chevron" aria-hidden="true"></span>`;
-      return store.href ? `<a class="app-download__store" href="${htmlEscape(store.href)}" target="_self" aria-label="Скачать Улетай в ${htmlEscape(store.name)}">${content}</a>`
-        : `<details class="app-download__availability"><summary class="app-download__store">${content}</summary><p class="app-download__notice">${APP_STORE_UNAVAILABLE}</p></details>`;
+      const content = `<img src="${store.image}" alt="" width="32" height="32"><span><small>${store.href?'Доступно в':'Скоро в'}</small><strong>${htmlEscape(store.name)}</strong></span>`;
+      return store.href ? `<a class="fest-button fest-store-button" data-store="${htmlEscape(store.name)}" href="${htmlEscape(store.href)}" aria-label="Скачать Улетай в ${htmlEscape(store.name)}">${content}</a>`
+        : `<details><summary class="fest-button fest-store-button" data-store="${htmlEscape(store.name)}">${content}</summary><p>${APP_STORE_UNAVAILABLE}</p></details>`;
     }).join('');
-    return `<section id="seo-fallback" class="app-download"><div class="app-download__content"><h1>${htmlEscape(route.heading)}</h1><p class="app-download__subtitle">${APP_DOWNLOAD_SUBTITLE}</p><div class="app-download__stores">${buttons}</div></div></section>`;
+    return `<section id="seo-fallback" class="fest-screen"><div class="fest-hero"><img class="fest-hero-media" src="/hero-video-poster.webp" alt="Рок-фестиваль Улетай: сцена и зрители"><div class="fest-hero-copy"><h1>Увидимся на<br>Улетай ${festivalYear}</h1><div class="fest-hero-actions"><a class="fest-button" data-primary="true" href="/headliners/${festivalYear}">Кто приедет?</a></div></div></div><div class="fest-inner"><section><div class="fest-heading"><h2>Хедлайнеры</h2><a class="fest-pill" href="/headliners/${festivalYear}">Все артисты</a></div></section><section class="fest-downloads"><h2>Скачать приложение</h2><div class="fest-download-buttons">${buttons}</div></section></div></section>`;
   }
 
   const details = route.details?.filter(Boolean) ?? [];
@@ -466,7 +478,7 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
     'html,body,#root{background:#000;color:#f5f5f7;margin:0;min-height:100%}',
     '#seo-fallback{box-sizing:border-box;max-width:960px;margin:0 auto;padding:32px 20px;font:16px/1.6 system-ui,sans-serif}',
     '#seo-fallback a{color:#ffc107}#seo-fallback h1,#seo-fallback h2{line-height:1.2}',
-    route.path === '/' ? APP_DOWNLOAD_CSS : '',
+    route.path === '/' ? FESTIVAL_WEB_CSS + '#root{height:100dvh;display:flex}#seo-fallback{max-width:none;width:100%;margin:0;padding:0}#seo-fallback .fest-hero-copy{flex:1;text-align:center}#seo-fallback a[data-primary=true]{color:#191400} @media(display-mode:standalone),(display-mode:fullscreen),(display-mode:minimal-ui){#seo-fallback .fest-downloads{display:none}}' : '',
   ].join('');
   html = html.replace(
     '</head>',
@@ -481,7 +493,7 @@ function renderRouteHtml(template: string, route: GeneratedRoute, data: AppData)
 
 function sitemapXml(routes: GeneratedRoute[]): string {
   const entries = routes
-    .filter((route) => !route.meta.noIndex)
+    .filter((route) => !route.meta.noIndex && getCanonicalUrl(route.path) === route.canonical)
     .map((route) => `  <url>\n    <loc>${xmlEscape(route.canonical)}</loc>\n  </url>`)
     .join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`;
@@ -535,12 +547,12 @@ async function main() {
 
   for (const spec of specs) {
     const meta = resolveSeoMeta(navState(spec.routeName, spec.params), data);
-    const canonical = getCanonicalUrl(spec.path);
+    const canonical = getCanonicalUrl(meta.path);
     byPath.set(spec.path, {
       ...spec,
       meta: {
         ...meta,
-        path: spec.path,
+        path: meta.path,
         description: truncate(plainText(meta.description), 160),
       },
       canonical,

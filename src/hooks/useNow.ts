@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useDemoMode } from '../context/DemoModeContext';
+import { useClock } from '../context/ClockContext';
 
 const TICK_MS = 30_000;
 
 export function useNow(tickMs = TICK_MS): Date {
-  const { getNow } = useDemoMode();
+  const getNow = useClock();
   const [, setTick] = useState(0);
 
   useEffect(() => {

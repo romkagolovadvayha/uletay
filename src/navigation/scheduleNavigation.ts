@@ -2,7 +2,7 @@ import { CommonActions, NavigationProp, StackActions } from '@react-navigation/n
 import { setHeadlinersInMoreTab } from './linking';
 import { RootTabParamList, ScheduleStackParamList } from './types';
 
-let headlinersInMoreTab = true;
+let headlinersInMoreTab = false;
 
 type NestedTabName = 'ScheduleTab' | 'Autographs' | 'HeadlinersTab' | 'MoreTab';
 
@@ -183,6 +183,10 @@ export function createNestedTabListeners(
         onTabPress(event);
         return;
       }
+
+      // The listener opens the section root itself. Prevent the tab bar from
+      // replaying stale nested route.params (for example an artist deep link).
+      event.preventDefault();
 
       if (tabName === 'ScheduleTab') {
         openScheduleTabMain(navigation);

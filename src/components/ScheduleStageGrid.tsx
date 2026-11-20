@@ -1,5 +1,5 @@
 import { ios, webStyle } from '../theme/ios';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NowTimeTrail } from './NowTimeTrail';
 import { SchedulePerformance, Stage } from '../types';
@@ -29,6 +29,7 @@ import {
   SCHEDULE_GRID_TIME_AXIS_WIDTH,
 } from '../utils/scheduleGrid';
 import { ScheduleGridCard } from './ScheduleGridCard';
+import { ScheduleTimeSlider } from './ScheduleTimeSlider';
 
 const NOW_TRAIL_HEIGHT = 104;
 const NOW_LINE_HEIGHT = 12;
@@ -42,6 +43,7 @@ type Props = {
   stages: Stage[];
   selectedDate: string;
   now: Date;
+  bottomInset?: number;
   isFavorite: (id: string) => boolean;
   onToggleFavorite: (id: string) => void;
   onPressPerformance: (performanceId: string) => void;
@@ -55,6 +57,7 @@ export function ScheduleStageGrid({
   stages,
   selectedDate,
   now,
+  bottomInset = 0,
   isFavorite,
   onToggleFavorite,
   onPressPerformance,
@@ -71,7 +74,7 @@ export function ScheduleStageGrid({
     ? (headerWidth - SCHEDULE_GRID_COLUMN_GAP * Math.max(stages.length - 1, 0)) / Math.max(stages.length, 1)
     : columnWidth;
 
-  const { dayStart, gridHeight, hourMarkers, performancesByStage, highlights, pixelsPerMinute } = useMemo(() => {
+  const { dayStart, dayEnd, gridHeight, hourMarkers, performancesByStage, highlights, pixelsPerMinute } = useMemo(() => {
     const bounds = getDayScheduleBounds(performances, selectedDate);
     const ppm = getScheduleGridPixelsPerMinute(performances);
     const grouped = groupPerformancesByStage(performances);
@@ -93,6 +96,7 @@ export function ScheduleStageGrid({
 
     return {
       dayStart: bounds.start,
+      dayEnd: bounds.end,
       gridHeight: maxBottom + SCHEDULE_GRID_CARD_GAP,
       hourMarkers: getHourMarkers(bounds.start, bounds.end),
       performancesByStage: grouped,
@@ -105,6 +109,9 @@ export function ScheduleStageGrid({
   const nowTimeline = getNowFestivalDayTimelineMinutes(now, selectedDate);
   const nowTop = nowTimeline !== null ? minutesToGridOffset(nowTimeline, dayStart, pixelsPerMinute) : -1;
   const nowInRange = showNowLine && nowTop >= 0 && nowTop <= gridHeight;
+  const scrubTime=useCallback((minute:number)=>{
+    scrollRef.current?.scrollTo({y:Math.max(0,minutesToGridOffset(minute,dayStart,pixelsPerMinute)-70),animated:false});
+  },[dayStart,pixelsPerMinute]);
 
   useEffect(() => {
     if (!isSameFestivalDay(selectedDate, new Date())) {
@@ -150,6 +157,7 @@ export function ScheduleStageGrid({
       style={styles.wrap}
       onLayout={(event) => setLayoutWidth(event.nativeEvent.layout.width)}
     >
+      {performances.length>0?<ScheduleTimeSlider key={`${selectedDate}:${dayStart}:${dayEnd}`} min={dayStart} max={dayEnd} initialMinute={nowInRange?nowTimeline!:dayStart} nowMinute={showNowLine?nowTimeline:null} selectedDate={selectedDate} onChange={scrubTime}/>:null}
       <View style={[styles.headerRow, { width: headerWidth }, centeredHeaders && styles.centeredHeaderRow]}>
         {!centeredHeaders && <View style={styles.timeAxisHeader} />}
         {stages.map((stage, index) => (
@@ -172,13 +180,13 @@ export function ScheduleStageGrid({
       </View>
 
       {performances.length === 0 ? (
-        <ScrollView style={styles.scroll} contentContainerStyle={[styles.empty, styles.emptyCustom]}>
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.empty, styles.emptyCustom, { paddingBottom: spacing.xxxl + bottomInset }]}>
           {emptyContent}
         </ScrollView>
       ) : <ScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: spacing.screen }]}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: spacing.screen, paddingBottom: spacing.xxl + bottomInset }]}
         showsVerticalScrollIndicator
       >
         <View style={[styles.grid, { width: contentWidth, height: gridHeight }]}>
@@ -255,6 +263,7 @@ export function ScheduleStageGrid({
 const styles = StyleSheet.create({
   wrap: {
     flex: 1,
+    minHeight: 0,
   },
   headerRow: {
     flexDirection: 'row',

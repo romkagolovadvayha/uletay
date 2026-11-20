@@ -76,7 +76,9 @@ function breadcrumbItems(meta: SeoMeta, canonical: string, data: AppData): JsonL
       : meta.path.startsWith('/foodcourt/')
         ? { name: 'Фудкорт', path: '/foodcourt' }
         : meta.path.startsWith('/headliners/') && !/^\/headliners\/\d{4}$/.test(meta.path)
-          ? { name: `Хедлайнеры ${headlinerYear}`, path: `/headliners/${headlinerYear}` }
+          ? headliner && !headliner.years.length
+            ? { name: 'Кого ждём?', path: '/wishes' }
+            : { name: `Хедлайнеры ${headlinerYear}`, path: `/headliners/${headlinerYear}` }
           : null;
 
   if (section && meta.path !== section.path) {

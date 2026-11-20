@@ -25,6 +25,7 @@ export type FestivalMapViewProps = {
   filter: MapFilterId;
   followUser: boolean;
   viewMode?: '2d' | '3d';
+  lockViewMode?: boolean;
   coordinatePicking?: boolean;
   onMapInteraction?: () => void;
   onZonePress: (zone: GeoJSON.Feature<GeoJSON.Polygon, MapZoneProperties>) => void;

@@ -16,8 +16,10 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { MotionPressable } from './MotionPressable';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {NATIVE_NAV_HEIGHT} from '../theme/native-festival';
 
-const TAB_BAR_OFFSET = Platform.select({ ios: 96, android: 84, default: 84 });
+const TAB_BAR_OFFSET = Platform.select({ ios: 96, android: 84, default: 116 });
 const AUTO_HIDE_MS = 5000;
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 const TOAST_ENTER = FadeInDown.duration(220).easing(EASE_OUT);
@@ -26,8 +28,9 @@ const REDUCED_TOAST_ENTER = FadeIn.duration(160).easing(EASE_OUT);
 const REDUCED_TOAST_EXIT = FadeOut.duration(120).easing(EASE_OUT);
 
 export function FavoriteAddedToast() {
-  const { addedToastVisible, hideAddedToast } = useFavorites();
+  const { addedToastVisible, hideAddedToast, storageError } = useFavorites();
   const reduceMotion = useReducedMotion();
+  const insets=useSafeAreaInsets();
 
   useEffect(() => {
     if (!addedToastVisible) {
@@ -52,20 +55,21 @@ export function FavoriteAddedToast() {
 
   return (
     <Animated.View
+      nativeID="festival-favorite-toast"
       pointerEvents="box-none"
-      style={styles.host}
+      style={[styles.host,Platform.OS!=='web'&&{bottom:NATIVE_NAV_HEIGHT+12+insets.bottom}]}
       accessibilityLiveRegion="polite"
       entering={reduceMotion ? REDUCED_TOAST_ENTER : TOAST_ENTER}
       exiting={reduceMotion ? REDUCED_TOAST_EXIT : TOAST_EXIT}
     >
       <View style={styles.toast}>
-        <Text style={styles.message}>Добавлено в избранное</Text>
+        <Text style={styles.message}>{storageError?'Сохранено на время сеанса: хранилище браузера недоступно':'Добавлено в избранное'}</Text>
         <MotionPressable
           accessibilityRole="button"
           onPress={handleNavigate}
           style={styles.button}
         >
-          <Text style={styles.buttonText}>МОЁ РАСПИСАНИЕ</Text>
+          <Text style={styles.buttonText}>МОЁ ИЗБРАННОЕ</Text>
         </MotionPressable>
       </View>
     </Animated.View>
@@ -106,6 +110,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flexShrink: 1,
     ...ios.secondary,
+    ...(Platform.OS!=='web'?{fontSize:11,lineHeight:16}:{}),
   },
   button: {
     backgroundColor: colors.primary,
@@ -120,5 +125,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.3,
     ...ios.caption,
+    ...(Platform.OS!=='web'?{fontSize:10,lineHeight:14}:{}),
   },
 });

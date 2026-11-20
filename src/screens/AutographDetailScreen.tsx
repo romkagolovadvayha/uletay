@@ -4,7 +4,7 @@ import { NavigationProp } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   HEADLINER_TOP_TRACKS_PREVIEW,
@@ -13,7 +13,7 @@ import {
 } from '../components/HeadlinerTeaserCard';
 import { AutographHeroCard } from '../components/LiveArtistCard';
 import { SectionHeader } from '../components/SectionHeader';
-import { MotionPressable } from '../components/MotionPressable';
+import { FavoriteBurst } from '../components/FavoriteBurst';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -98,21 +98,7 @@ export function AutographDetailScreen({ navigation, route }: Props) {
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </BackButton>
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            isFavorite
-              ? 'Убрать автограф-сессию из избранного'
-              : 'Добавить автограф-сессию в избранное'
-          }
-          accessibilityState={{ selected: isFavorite }}
-          aria-pressed={isFavorite}
-          onPress={() => toggleAutographFavorite(session.id)}
-          hitSlop={12}
-          style={styles.iconButton}
-        >
-          <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={22} color={colors.star} />
-        </MotionPressable>
+        <FavoriteBurst isFavorite={isFavorite} onToggleFavorite={() => toggleAutographFavorite(session.id)} label={session.artist} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -127,17 +113,7 @@ export function AutographDetailScreen({ navigation, route }: Props) {
               onPress={openHeadliner}
             />
           ) : null}
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: isFavorite }}
-            aria-pressed={isFavorite}
-            onPress={() => toggleAutographFavorite(session.id)}
-            style={styles.favoriteButton}
-          >
-            <Text style={styles.favoriteButtonText}>
-              {isFavorite ? 'В МОЁМ РАСПИСАНИИ' : 'ДОБАВИТЬ В МОЁ РАСПИСАНИЕ'}
-            </Text>
-          </MotionPressable>
+          <FavoriteBurst isFavorite={isFavorite} onToggleFavorite={() => toggleAutographFavorite(session.id)} label={session.artist} caption={isFavorite ? 'В МОЁМ РАСПИСАНИИ' : 'ДОБАВИТЬ В МОЁ РАСПИСАНИЕ'} />
         </View>
 
         {headliner && topTracks.length ? (

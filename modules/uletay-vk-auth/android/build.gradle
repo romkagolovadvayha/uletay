@@ -1,0 +1,16 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+group = 'expo.modules.uletayvkauth'
+version = '1.0.0'
+android {
+  namespace 'expo.modules.uletayvkauth'
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+    manifestPlaceholders = [VKIDClientID: System.getenv('VK_NATIVE_APP_ID') ?: '54857258', VKIDClientSecret: System.getenv('VK_NATIVE_CLIENT_SECRET') ?: '', VKIDRedirectHost: 'vk.ru', VKIDRedirectScheme: 'vk' + (System.getenv('VK_NATIVE_APP_ID') ?: '54857258')]
+  }
+}
+repositories { maven { url 'https://nexus-external.vkteam.ru/repository/maven/' } }
+dependencies { implementation 'com.vk.id:vkid:2.7.3' }

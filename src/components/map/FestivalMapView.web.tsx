@@ -63,7 +63,9 @@ export function FestivalMapView(props: FestivalMapViewProps) {
       instance = new api.Map({ container: host,
         style: festivalMapStyle({ glyphs: BUNDLED_GLYPHS_URL, dark: true }), transformRequest: bundledGlyphRequest,
         center: [config.center.lng, config.center.lat], zoom: clampZoom(config.defaultZoom),
-        pitch: latest.current.viewMode === '2d' ? 0 : 36, maxPitch: 55,
+        pitch: latest.current.viewMode === '2d' ? 0 : 36,
+        minPitch: latest.current.lockViewMode ? 36 : 0, maxPitch: latest.current.lockViewMode ? 36 : 55,
+        touchPitch: !latest.current.lockViewMode,
         minZoom: MAP_MIN_ZOOM, maxZoom: MAP_MAX_ZOOM, attributionControl: false, renderWorldCopies: false,
         canvasContextAttributes: { antialias: true } });
       const active = instance;

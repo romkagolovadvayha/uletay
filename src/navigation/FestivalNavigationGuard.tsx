@@ -10,7 +10,7 @@ import { RootTabParamList } from './types';
 
 const FESTIVAL_ONLY_MORE_ROUTES = new Set(['FoodCourtMain', 'FoodCourtDetail']);
 const FESTIVAL_MORE_TABS = new Set<keyof RootTabParamList>(['Autographs']);
-const ALWAYS_AVAILABLE_HIDDEN_TABS = new Set<keyof RootTabParamList>(['HelpTab']);
+const ALWAYS_AVAILABLE_HIDDEN_TABS = new Set<keyof RootTabParamList>(['HelpTab','FavoritesTab','MapTab']);
 
 function readGuardState(): {
   currentTab: keyof RootTabParamList | undefined;

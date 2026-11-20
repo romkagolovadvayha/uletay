@@ -20,17 +20,20 @@ export type MoreStackParamList = {
   FestivalRules: undefined;
   Settings: undefined;
   Legal: undefined;
-  HeadlinersMain: { year?: string } | undefined;
+  Chat: undefined;
+  ArtistWishes: undefined;
+  HeadlinersMain: { year?: string; search?: boolean } | undefined;
   HeadlinerDetail: { headlinerId: string };
 };
 
 export type HeadlinersStackParamList = {
-  HeadlinersMain: { year?: string } | undefined;
+  HeadlinersMain: { year?: string; search?: boolean } | undefined;
   HeadlinerDetail: { headlinerId: string };
 };
 
 export type RootTabParamList = {
   HomeTab: undefined;
+  ChatTab: undefined;
   MapTab: { poiId?: string; routeTo?: boolean } | undefined;
   HelpTab: undefined;
   ScheduleTab: NavigatorScreenParams<ScheduleStackParamList>;

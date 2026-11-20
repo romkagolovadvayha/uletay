@@ -1,6 +1,6 @@
 import { ios, webStyle } from '../theme/ios';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
 import { useNow } from '../hooks/useNow';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -20,6 +20,8 @@ type Props = {
   performances: SchedulePerformance[];
   compact?: boolean;
   prominent?: boolean;
+  textStyle?: StyleProp<TextStyle>;
+  showLiveBadge?: boolean;
 };
 
 function pad(value: number) {
@@ -33,6 +35,8 @@ export function CountdownTimer({
   performances,
   compact = false,
   prominent = false,
+  textStyle,
+  showLiveBadge = true,
 }: Props) {
   const now = useNow(1000);
 
@@ -47,7 +51,7 @@ export function CountdownTimer({
     return (
       <View style={styles.liveContainer}>
         <View style={styles.endedBadge}>
-          <Text style={styles.endedText}>ФЕСТИВАЛЬ ОКОНЧЕН</Text>
+          <Text style={[styles.endedText, textStyle]}>ФЕСТИВАЛЬ ОКОНЧЕН</Text>
         </View>
       </View>
     );
@@ -56,10 +60,10 @@ export function CountdownTimer({
   if (isFestivalOngoing(festivalStartDate, festivalEndDate, now)) {
     return (
       <View style={styles.liveContainer}>
-        <Text style={styles.title}>ФЕСТИВАЛЬ ИДЁТ</Text>
-        <View style={styles.liveBadge}>
-          <Text style={styles.liveText}>LIVE</Text>
-        </View>
+        <Text style={[styles.title, textStyle]}>ФЕСТИВАЛЬ ИДЁТ</Text>
+        {showLiveBadge ? <View style={styles.liveBadge}>
+          <Text style={[styles.liveText, textStyle]}>LIVE</Text>
+        </View> : null}
       </View>
     );
   }
@@ -75,13 +79,13 @@ export function CountdownTimer({
 
   return (
     <View>
-      <Text style={[styles.title, compact && styles.titleCompact, prominent && styles.titleProminent, prominent && compact && styles.titleProminentCompact]}>ДО ФЕСТИВАЛЯ</Text>
+      <Text style={[styles.title, compact && styles.titleCompact, prominent && styles.titleProminent, prominent && compact && styles.titleProminentCompact, textStyle]}>ДО ФЕСТИВАЛЯ</Text>
       <View style={styles.row}>
         {items.map((item, index) => (
           <React.Fragment key={item.label}>
             <View style={styles.cell}>
-              <Text style={[styles.value, compact && styles.valueCompact, prominent && styles.valueProminent, prominent && compact && styles.valueProminentCompact]}>{item.value}</Text>
-              <Text style={[styles.label, compact && styles.labelCompact, prominent && styles.labelProminent]}>{item.label}</Text>
+              <Text style={[styles.value, compact && styles.valueCompact, prominent && styles.valueProminent, prominent && compact && styles.valueProminentCompact, textStyle]}>{item.value}</Text>
+              <Text style={[styles.label, compact && styles.labelCompact, prominent && styles.labelProminent, textStyle]}>{item.label}</Text>
             </View>
             {index < items.length - 1 ? (
               <View style={[styles.divider, compact && styles.dividerCompact]} />

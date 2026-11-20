@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Allow: /api/data$
+Allow: /api/uploads/
 
 Disallow: /admin
 Disallow: /admin/

@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "test:chat:http": "tsx scripts/test-chat-http.ts",
+    "test:wishes:http": "tsx scripts/test-wishes-http.ts",
     "test:http-cache": "tsx scripts/test-http-cache.ts",
     "test:auth:http": "tsx scripts/test-admin-http.ts",
     "test:admin": "tsx scripts/test-admin-workspace.ts && tsx scripts/test-admin-map.ts && tsx scripts/test-headliner-refresh.ts && tsx scripts/test-vk-headliners.ts",
@@ -71,7 +73,7 @@
     "iron-session": "^8.0.4",
     "maplibre-gl": "6.9.0",
     "mysql2": "^3.24.4",
-    "next": "^16.4.2",
+    "next": "^16.4.6",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sharp": "^0.35.5",

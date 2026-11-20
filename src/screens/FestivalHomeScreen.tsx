@@ -1,1 +1,57 @@
-export { FestivalHomeScreen } from './FestivalHomeContent';
+import React,{memo,useEffect,useMemo,useState} from 'react';
+import {AppState,FlatList,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {useIsFocused,useLinkTo} from '@react-navigation/native';
+import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useVideoPlayer,VideoView} from 'expo-video';
+import {Image} from 'expo-image';
+import {LinearGradient} from 'expo-linear-gradient';
+import {Ionicons} from '@expo/vector-icons';
+import Animated,{useAnimatedStyle,useSharedValue,withTiming,useReducedMotion} from 'react-native-reanimated';
+import {useAppData} from '../context/DataContext';
+import {useFavorites} from '../hooks/useFavorites';
+import {useNow} from '../hooks/useNow';
+import {NativeArtistCard} from '../components/festival-native/native-artist-card';
+import {NativeButton,NativeIconButton} from '../components/festival-native/native-controls';
+import {LiquidDialog} from '../components/LiquidDialog';
+import {MotionPressable} from '../components/MotionPressable';
+import {apiFetch} from '../api/apiFetch';
+import {readNotificationInbox,subscribeNotificationInbox} from '../utils/notificationInbox';
+import {readNotificationEntries,type FestivalNotification} from '../../shared/notification-feed';
+import {formatTemperature,isFestivalWeather,weatherDescription,type FestivalWeather} from '../../shared/festival-weather';
+import {isFestivalOngoing,isFestivalFinished,parseDateTime} from '../utils/scheduleHelpers';
+import {buildFestivalHomeModel} from './festivalHomeModel';
+import type {RootTabParamList} from '../navigation/types';
+import {festivalNative as f,NATIVE_NAV_HEIGHT} from '../theme/native-festival';
+import {appFont} from '../theme/typography';
+function HeroCountdown({onAction}:{onAction:(ongoing:boolean)=>void}){
+  const {data}=useAppData(),now=useNow(1000),festival=data.festival;
+  const seconds=Math.max(0,Math.floor((parseDateTime(festival.startDate,'12:00').getTime()-now.getTime())/1000));
+  const ongoing=isFestivalOngoing(festival.startDate,festival.endDate,now)&&!isFestivalFinished(festival.startDate,festival.endDate,data.schedule,now);
+  return <View style={styles.timerWrap}><Text style={styles.until}>{seconds>0?'ДО ФЕСТИВАЛЯ':ongoing?'МЫ УЖЕ ЗДЕСЬ':'ДО НОВОЙ ВСТРЕЧИ'}</Text>{seconds>0?<View style={styles.timer}>{[Math.floor(seconds/86400),Math.floor(seconds/3600)%24,Math.floor(seconds/60)%60,seconds%60].map((value,index)=><React.Fragment key={index}>{index?<Text style={styles.colon}>:</Text>:null}<View style={styles.timerCell}><Text style={styles.digits}>{String(value).padStart(2,'0')}</Text><Text style={styles.timerLabel}>{['дней','часов','минут','секунд'][index]}</Text></View></React.Fragment>)}</View>:null}<NativeButton label={ongoing?'Расписание выступлений':'Кто приедет?'} primary onPress={()=>onAction(ongoing)} style={{minWidth:190,marginTop:23}}/></View>;
+}
+const HeroVideo=memo(function HeroVideo({focused,visible}:{focused:boolean;visible:boolean}){
+  const reduced=useReducedMotion(),player=useVideoPlayer(require('../../assets/videos/background.mp4'),p=>{p.loop=true;p.muted=true;});
+  const [failed,setFailed]=useState(false),poster=useSharedValue(1);
+  useEffect(()=>{const play=()=>{if(focused&&visible&&!reduced&&AppState.currentState==='active')player.play();else player.pause();};play();const state=AppState.addEventListener('change',play),error=player.addListener('statusChange',event=>{if(event.status==='error')setFailed(true);});return()=>{state.remove();error.remove();player.pause();};},[focused,visible,reduced,player]);
+  const posterStyle=useAnimatedStyle(()=>({opacity:poster.get()}));
+  useEffect(()=>{if(reduced||failed)poster.set(1);},[reduced,failed,poster]);
+  return <><Image source={require('../../public/hero-video-poster.webp')} contentFit="cover" style={StyleSheet.absoluteFill}/>{!reduced&&!failed?<VideoView player={player} nativeControls={false} fullscreenOptions={{enable:false}} allowsPictureInPicture={false} useExoShutter={false} contentFit="cover" surfaceType="surfaceView" onFirstFrameRender={()=>poster.set(withTiming(0,{duration:240}))} style={StyleSheet.absoluteFill}/>:null}<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,posterStyle]}><Image source={require('../../public/hero-video-poster.webp')} contentFit="cover" style={StyleSheet.absoluteFill}/></Animated.View></>;
+});
+export function FestivalHomeScreen({navigation}:{navigation:BottomTabNavigationProp<RootTabParamList,'HomeTab'>}){
+  const {data}=useAppData(),favorites=useFavorites(),focused=useIsFocused(),linkTo=useLinkTo(),insets=useSafeAreaInsets(),{width,height}=useWindowDimensions();
+  const model=useMemo(()=>buildFestivalHomeModel(data),[data]),artists=model.artists.map(item=>data.headliners.find(artist=>artist.id===item.id)!).filter(Boolean);
+  const [weather,setWeather]=useState<FestivalWeather|null>(null),[weatherOpen,setWeatherOpen]=useState(false),[weatherError,setWeatherError]=useState(false);
+  const [remote,setRemote]=useState<FestivalNotification[]>([]),[local,setLocal]=useState<FestivalNotification[]>([]),[notifications,setNotifications]=useState(false),[heroVisible,setHeroVisible]=useState(true);
+  useEffect(()=>{let alive=true;void readNotificationInbox().then(rows=>{if(alive)setLocal(rows);});const sub=subscribeNotificationInbox(setLocal);return()=>{alive=false;sub();};},[]);
+  useEffect(()=>{if(!focused)return;const controller=new AbortController();const load=()=>{void apiFetch('/weather',{signal:controller.signal}).then(r=>r.json()).then(value=>{if(!controller.signal.aborted){if(isFestivalWeather(value)){setWeather(value);setWeatherError(false);}else setWeatherError(true);}}).catch(()=>{if(!controller.signal.aborted)setWeatherError(true);});void apiFetch('/notifications',{signal:controller.signal}).then(r=>r.json()).then(value=>{if(!controller.signal.aborted)setRemote(readNotificationEntries(value.items));}).catch(()=>{});};load();const timer=setInterval(load,300000);return()=>{controller.abort();clearInterval(timer);};},[focused]);
+  const rows=useMemo(()=>[...new Map([...remote,...local].map(row=>[row.id,row])).values()].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)),[remote,local]);
+  const kind=weather?weatherDescription(weather.code,weather.isDay):null;
+  const icon=kind?.kind==='clear'?'sunny':kind?.kind==='snow'?'snow':kind?.kind==='thunder'?'thunderstorm':['rain','drizzle','sleet'].includes(kind?.kind||'')?'rainy':'cloudy';
+  const openLineup=(search=false)=>navigation.navigate('HeadlinersTab',{screen:'HeadlinersMain',params:{year:String(data.festival.year),search:search?true:undefined}});
+  return <View style={f.screen}><FlatList data={artists} keyExtractor={item=>item.id} numColumns={2} showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom:NATIVE_NAV_HEIGHT+insets.bottom+24}} columnWrapperStyle={{gap:12,paddingHorizontal:14,marginBottom:12}} removeClippedSubviews={false} onScroll={e=>{const visible=e.nativeEvent.contentOffset.y<height;if(visible!==heroVisible)setHeroVisible(visible);}} scrollEventThrottle={200} ListHeaderComponent={<><View style={{height:height-insets.bottom,minHeight:560}}><HeroVideo focused={focused} visible={heroVisible}/><LinearGradient colors={['rgba(12,4,12,.28)','rgba(20,4,16,.22)','rgba(23,5,18,.92)']} locations={[0,.4,1]} style={StyleSheet.absoluteFill}/><View style={[styles.top,{paddingTop:insets.top+12}]}><MotionPressable accessibilityRole="button" accessibilityLabel={weather?`Погода: ${formatTemperature(weather.temperature)}, ${kind?.label}`:'Погода на фестивале'} onPress={()=>setWeatherOpen(true)} style={styles.weather}><Text style={styles.temperature}>{weather?formatTemperature(weather.temperature):'—°'}</Text><Ionicons name={icon} size={30} color={icon==='sunny'?'#ffda00':'#dde7f3'}/></MotionPressable><View style={{flexDirection:'row',gap:7}}><NativeIconButton name="notifications-outline" label="Уведомления" onPress={()=>setNotifications(true)}/><NativeIconButton name="search-outline" label="Поиск артистов" onPress={()=>openLineup(true)}/></View></View><View style={styles.heroCopy}><Text style={[f.eyebrow,{textAlign:'center'}]}>{data.festival.locationShort} · {data.festival.ageRating}</Text><Text accessibilityRole="header" style={[styles.title,{fontSize:Math.min(78,width*.157),lineHeight:Math.min(82,width*.165)}]}>{`Увидимся на\nУлетай ${data.festival.year}`}</Text><HeroCountdown onAction={ongoing=>ongoing?navigation.navigate('ScheduleTab',{screen:'ScheduleMain'}):openLineup()}/></View></View><View style={f.header}><View style={{flex:1}}><Text style={f.eyebrow}>{model.hasCurrent?'Участники фестиваля':`Участники · ${model.lineupYear}`}</Text><Text accessibilityRole="header" style={f.display}>Хедлайнеры</Text></View><NativeButton label="Все артисты" onPress={()=>navigation.navigate('HeadlinersTab',{screen:'HeadlinersMain',params:{year:String(model.lineupYear)}})}/></View></>} renderItem={({item})=><NativeArtistCard artist={item} width={(width-40)/2} saved={favorites.isArtistFavorite(item.id)} onSave={()=>favorites.toggleArtistFavorite(item.id)} onOpen={()=>navigation.navigate('HeadlinersTab',{screen:'HeadlinerDetail',params:{headlinerId:item.id}})}/>}/>
+    <LiquidDialog variant="sheet" open={weatherOpen} onClose={()=>setWeatherOpen(false)} title="Погода на фестивале"><Text style={f.body}>{weather?`${kind?.label}, ${formatTemperature(weather.temperature)}. Ощущается как ${formatTemperature(weather.feelsLike)}. Ветер ${weather.wind} м/с.`:weatherError?'Погода пока недоступна. Попробуй позже.':'Получаем прогноз…'}</Text>{weather?<Text style={f.muted}>{weather.stale?'Последние доступные данные · ':''}{new Date(weather.observedAt).toLocaleString('ru-RU')}</Text>:null}</LiquidDialog>
+    <LiquidDialog variant="sheet" open={notifications} onClose={()=>setNotifications(false)} title="Уведомления">{rows.length?rows.map(row=><MotionPressable accessibilityRole="button" key={row.id} onPress={()=>{setNotifications(false);linkTo(row.url);}} style={[f.glass,{padding:16,gap:6}]}><Text style={[f.body,appFont('bold')]}>{row.title}</Text><Text style={f.muted}>{row.body}</Text><Text style={[f.muted,{fontSize:10}]}>{new Date(row.createdAt).toLocaleDateString('ru-RU')}</Text></MotionPressable>):<Text style={f.muted}>Здесь будут новости фестиваля и объявления артистов.</Text>}</LiquidDialog>
+  </View>;
+}
+const styles=StyleSheet.create({top:{paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},weather:{flexDirection:'row',alignItems:'center',gap:9,minHeight:44,paddingRight:10},temperature:{fontFamily:'FestivalDisplay',color:'#fff',fontSize:34,lineHeight:39},heroCopy:{flex:1,justifyContent:'center',alignItems:'center',paddingHorizontal:16,paddingTop:26,paddingBottom:50},title:{fontFamily:'FestivalDisplay',textTransform:'uppercase',textAlign:'center',color:'#fff',marginTop:18},timerWrap:{alignItems:'center',marginTop:30},until:{...appFont('medium'),color:'#d2c3cc',fontSize:9,letterSpacing:1.5},timer:{flexDirection:'row',alignItems:'flex-start',marginTop:8},timerCell:{alignItems:'center',minWidth:56},digits:{fontFamily:'FestivalDisplay',color:'#ffda00',fontSize:43,lineHeight:49,fontVariant:['tabular-nums']},colon:{fontFamily:'FestivalDisplay',fontSize:34,lineHeight:46,color:'#c2b2bc',marginHorizontal:2},timerLabel:{...appFont('regular'),fontSize:9,lineHeight:15,color:'#c9bac4'}});

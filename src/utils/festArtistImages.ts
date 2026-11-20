@@ -1,5 +1,5 @@
 import { ImageSource } from 'expo-image';
-import { resolveMediaUrl } from '../config/api';
+import { API_BASE_URL, API_FALLBACK_URLS, resolveMediaUrl } from '../config/api';
 import { toListImageUrl } from './imageSource';
 
 export { toListImageUrl };
@@ -28,6 +28,12 @@ export function buildArtistImageSourceChain(
     }
   }
   chain.push({ uri: cmsUrl });
+  try {
+    const source=new URL(cmsUrl);
+    if(source.pathname.startsWith('/api/uploads/') && [new URL(API_BASE_URL).origin,'https://uletayapp.ru'].includes(source.origin)) {
+      for(const base of API_FALLBACK_URLS)chain.push({uri:`${base.replace(/\/api$/,'')}${source.pathname}${source.search}`});
+    }
+  }catch{/* A non-URL source keeps its original fallback behavior. */}
   return chain;
 }
 

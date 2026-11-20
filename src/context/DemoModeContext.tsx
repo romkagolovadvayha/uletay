@@ -4,6 +4,7 @@ import { AppData } from '../types';
 import { buildDemoAppData, getDemoNowFromData } from '../utils/demoData';
 import { describeDemoFestivalMoment, resolveDemoFestivalWindow } from '../utils/demoTime';
 import { DataContext, useRawAppData } from './DataContext';
+import { ClockProvider } from './ClockContext';
 
 export type AppTimeMode = 'real' | 'demo';
 
@@ -72,7 +73,7 @@ export function DemoModeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <DemoModeContext.Provider value={value}>
-      <DataContext.Provider value={dataValue}>{children}</DataContext.Provider>
+      <ClockProvider value={getNow}><DataContext.Provider value={dataValue}>{children}</DataContext.Provider></ClockProvider>
     </DemoModeContext.Provider>
   );
 }

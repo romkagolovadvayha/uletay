@@ -2,7 +2,6 @@ import type {
   HeadlinerLastFmImage,
   HeadlinerLastFmProfile,
   HeadlinerLastFmSimilarArtist,
-  HeadlinerLastFmTag,
   HeadlinerLastFmTrack,
 } from '@/lastfm-types';
 import { LASTFM_CLIENT_TOP_TRACKS_LIMIT } from './lastfm-tracks';
@@ -18,7 +17,6 @@ export class LastFmApiError extends Error {
 }
 
 type LastFmImage = { '#text': string; size: string };
-type LastFmTag = { name: string; url: string };
 type LastFmSimilarArtist = { name: string; url: string };
 type LastFmArtistInfo = {
   name: string;
@@ -27,7 +25,6 @@ type LastFmArtistInfo = {
   ontour?: string;
   image?: LastFmImage[];
   stats?: { listeners?: string; playcount?: string };
-  tags?: { tag?: LastFmTag[] | LastFmTag };
   similar?: { artist?: LastFmSimilarArtist[] | LastFmSimilarArtist };
   bio?: { summary?: string; published?: string };
 };
@@ -103,14 +100,6 @@ function mapImages(images: LastFmImage[] | undefined): HeadlinerLastFmImage[] {
       size: image.size,
     }))
     .filter((image) => image.url.length > 0 && isUsableLastFmImageUrl(image.url));
-}
-
-function mapTags(tags: LastFmTag[] | LastFmTag | undefined): HeadlinerLastFmTag[] {
-  return asArray(tags)
-    .map((tag) => ({
-      name: tag.name?.trim() ?? '',
-    }))
-    .filter((tag) => tag.name.length > 0);
 }
 
 function mapSimilarArtists(
@@ -241,7 +230,7 @@ export async function fetchLastFmArtistProfile(
     onTour: artist.ontour === '1',
     bioSummary: artist.bio?.summary ? stripHtml(artist.bio.summary) : undefined,
     bioPublished: artist.bio?.published?.trim() || undefined,
-    tags: mapTags(artist.tags?.tag),
+    tags: [],
     similarArtists: mapSimilarArtists(artist.similar?.artist),
     topTracks: mappedTracks.slice(0, LASTFM_CLIENT_TOP_TRACKS_LIMIT).map((track) => ({
       ...track,

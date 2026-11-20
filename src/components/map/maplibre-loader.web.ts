@@ -1,6 +1,7 @@
 import mapLibrePackage from 'maplibre-gl/package.json';
-import { revision } from './maplibre-assets.json';
+import mapLibreAssets from './maplibre-assets.json';
 const { version } = mapLibrePackage;
+const { revision } = mapLibreAssets;
 
 type MapApi = typeof import('maplibre-gl');
 declare global { interface Window { __uletayMapLibre?: MapApi } }

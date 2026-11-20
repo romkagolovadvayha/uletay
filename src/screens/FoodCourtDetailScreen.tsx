@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FoodCourtCard } from '../components/FoodCourtCard';
+import { FavoriteBurst } from '../components/FavoriteBurst';
 import { MotionPressable } from '../components/MotionPressable';
 import { ScreenTitle } from '../components/ScreenTitle';
 import { useAppData } from '../context/DataContext';
@@ -55,23 +56,7 @@ export function FoodCourtDetailScreen({ navigation, route }: Props) {
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </BackButton>
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            isFavorite ? 'Убрать точку из избранного' : 'Добавить точку в избранное'
-          }
-          accessibilityState={{ selected: isFavorite }}
-          aria-pressed={isFavorite}
-          onPress={() => toggleFoodFavorite(vendor.id)}
-          hitSlop={12}
-          style={styles.iconButton}
-        >
-          <Ionicons
-            name={isFavorite ? 'star' : 'star-outline'}
-            size={22}
-            color={isFavorite ? colors.star : colors.text}
-          />
-        </MotionPressable>
+        <FavoriteBurst isFavorite={isFavorite} onToggleFavorite={() => toggleFoodFavorite(vendor.id)} label={vendor.name} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

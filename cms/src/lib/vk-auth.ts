@@ -29,8 +29,11 @@ export function vkAuthConfigured(): boolean {
   }
 }
 
-export function createVkAuthorization() {
-  const { appId, redirectUri } = vkSettings();
+export function createVkAuthorization(overrideRedirectUri?: string,overrideAppId?:string) {
+  const { appId:configuredAppId, redirectUri: configuredRedirect } = vkSettings();
+  const appId=overrideAppId||configuredAppId;
+  if(!/^[0-9]+$/.test(appId))throw new Error('Invalid VK application');
+  const redirectUri = overrideRedirectUri || configuredRedirect;
   const state = randomBytes(32).toString('base64url');
   const verifier = randomBytes(48).toString('base64url');
   const url = new URL('https://id.vk.ru/authorize');
@@ -85,13 +88,18 @@ async function vkPost(
   return result;
 }
 
-export async function exchangeVkCode(input: {
+export async function exchangeVkIdentity(input: {
   code: string;
   verifier: string;
   deviceId: string;
   state: string;
-}): Promise<string> {
-  const { appId, redirectUri } = vkSettings();
+  redirectUri?: string;
+  clientId?:string;
+}): Promise<{id:string;name:string;avatar?:string}> {
+  const { appId:configuredAppId, redirectUri: configuredRedirect } = vkSettings();
+  const appId=input.clientId||configuredAppId;
+  if(!/^[0-9]+$/.test(appId))throw new Error('Invalid VK application');
+  const redirectUri=input.redirectUri || configuredRedirect;
   const token = await vkPost(
     'auth',
     new URLSearchParams({
@@ -124,5 +132,10 @@ export async function exchangeVkCode(input: {
     (token.user_id !== undefined && String(token.user_id) !== String(id))
   )
     throw new Error('Invalid VK ID identity');
-  return String(id);
+  const name=[user?.first_name,user?.last_name].filter(value=>typeof value==='string'&&value.trim()).join(' ').trim();
+  return {id:String(id),name:name||'Участник фестиваля',avatar:typeof user?.avatar==='string'?user.avatar:undefined};
+}
+
+export async function exchangeVkCode(input: {code:string;verifier:string;deviceId:string;state:string}):Promise<string> {
+  return (await exchangeVkIdentity(input)).id;
 }

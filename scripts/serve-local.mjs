@@ -38,16 +38,25 @@ const mime = {
   '.txt': 'text/plain; charset=utf-8',
   '.md': 'text/markdown; charset=utf-8',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.ttf': 'font/ttf',
+  '.woff2': 'font/woff2',
   '.webm': 'video/webm',
+  '.mp4': 'video/mp4',
   '.webp': 'image/webp',
   '.xml': 'application/xml; charset=utf-8',
 };
 
 const server = createServer((request, response) => {
   const requestUrl = new URL(request.url ?? '/', 'http://localhost');
-  const pathname = decodeURIComponent(requestUrl.pathname);
+  let pathname;
+  try { pathname = decodeURIComponent(requestUrl.pathname); }
+  catch { response.writeHead(400).end('Invalid URL'); return; }
   if (previewData && pathname === '/api/data') {
     response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }).end(previewData);
     return;
@@ -72,6 +81,22 @@ const server = createServer((request, response) => {
     response.writeHead(301, { Location: `/${requestUrl.search}` }).end();
     return;
   }
+  if (pathname === '/index.html' || /^\/more\/?$/.test(pathname)) {
+    response.writeHead(301, { Location: `/${requestUrl.search}` }).end();
+    return;
+  }
+  if (/^\/headliners(?:\/|\/index\.html)?$/.test(pathname)) {
+    const yearFile = path.join(root, 'festival-year.txt');
+    const year = existsSync(yearFile) ? readFileSync(yearFile, 'utf8').trim() : '';
+    if (/^\d{4}$/.test(year)) {
+      response.writeHead(301, { Location: `/headliners/${year}${requestUrl.search}` }).end();
+      return;
+    }
+  }
+  if (/^\/(?:map|schedule|autographs|favorites|headliners|foodcourt|rules|settings|help|privacy|chat|wishes)(?:\/.*)?\/$/.test(pathname)) {
+    response.writeHead(301, { Location: requestUrl.pathname.replace(/\/+$/, '') + requestUrl.search }).end();
+    return;
+  }
   if (apiOrigin && pathname.startsWith('/api/')) {
     const upstream = httpRequest(new URL(request.url, apiOrigin), {
       method: request.method, headers: {...request.headers, host:apiOrigin.host},
@@ -79,7 +104,8 @@ const server = createServer((request, response) => {
       response.writeHead(result.statusCode ?? 502, {...result.headers, 'cache-control':'no-store'});
       result.pipe(response);
     });
-    upstream.on('error', () => response.writeHead(502).end('Local API unavailable'));
+    response.on('close',()=>upstream.destroy());
+    upstream.on('error', () => {if(response.headersSent)response.destroy();else response.writeHead(502).end('Local API unavailable');});
     request.pipe(upstream);
     return;
   }
@@ -88,13 +114,30 @@ const server = createServer((request, response) => {
     response.writeHead(404).end('Not found');
     return;
   }
-  let target = path.resolve(root, `.${pathname}`);
-  if (!target.startsWith(root)) {
+  const candidates = [...new Set([requestUrl.pathname, pathname])].map(value => path.resolve(root, `.${value}`));
+  if (candidates.some(target => target !== root && !target.startsWith(root + path.sep))) {
     response.writeHead(403).end('Forbidden');
     return;
   }
-  if (existsSync(target) && statSync(target).isDirectory()) target = path.join(target, 'index.html');
-  if (!existsSync(target)) target = path.join(root, 'index.html');
+  let target;
+  let size;
+  try {
+    target = candidates.map(candidate => existsSync(candidate) && statSync(candidate).isDirectory() ? path.join(candidate, 'index.html') : candidate).find(candidate => existsSync(candidate) && statSync(candidate).isFile());
+    if (!target) {
+      const spaRoute = /^\/(?:map(?:\/[^/]+)?|schedule(?:\/(?:live\/[^/.]+|full(?:\/[^/]+)?))?|autographs(?:\/[^/.]+)?|favorites|headliners(?:\/[^/.]+)?|foodcourt(?:\/[^/.]+)?|rules|settings|help|chat|wishes)$/.test(pathname);
+      if (spaRoute) target = path.join(root, 'index.html');
+      else {
+        response.statusCode = 404;
+        response.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        target = path.join(root, '404.html');
+        if (!existsSync(target)) { response.writeHead(404, {'Content-Type':'text/plain; charset=utf-8'}).end('Not found'); return; }
+      }
+    }
+    size = statSync(target).size;
+  } catch {
+    response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '1' }).end('Local build is temporarily unavailable');
+    return;
+  }
   const contentType = pathname.endsWith('/ai-catalog.json')
     ? 'application/ai-catalog+json; charset=utf-8'
     : pathname === '/api/data'
@@ -103,15 +146,38 @@ const server = createServer((request, response) => {
   response.setHeader('Content-Type', contentType);
   response.setHeader('Cache-Control', 'no-cache');
   if (productionCsp) response.setHeader('Content-Security-Policy', productionCsp);
-  const file = createReadStream(target);
+  let streamOptions;
+  if (contentType.startsWith('video/')) {
+    response.setHeader('Accept-Ranges', 'bytes');
+    if (request.headers.range) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(request.headers.range);
+      let start = match?.[1] ? Number(match[1]) : 0;
+      let end = match?.[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+      if (match && !match[1] && match[2]) { start = Math.max(0, size - Number(match[2])); end = size - 1; }
+      if (!match || (!match[1] && !match[2]) || (!match[1] && Number(match[2]) <= 0) || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end || start >= size) {
+        response.writeHead(416, { 'Content-Range': `bytes */${size}`, 'Content-Length': '0' }).end();
+        return;
+      }
+      response.statusCode = 206;
+      response.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
+      streamOptions = { start, end };
+    }
+  }
+  response.setHeader('Content-Length', streamOptions ? streamOptions.end - streamOptions.start + 1 : size);
+  if (request.method === 'HEAD') { response.end(); return; }
+  const file = createReadStream(target, streamOptions);
   file.on('error', () => {
     if (response.headersSent) response.destroy();
-    else response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '1' })
-      .end('Local build is temporarily unavailable');
+    else {
+      response.removeHeader('Content-Length');
+      response.removeHeader('Content-Range');
+      response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '1' })
+        .end('Local build is temporarily unavailable');
+    }
   });
   file.pipe(response);
 });
 
 server.listen({ port, host: '::', ipv6Only: false }, () => {
-  console.log(`Local preview: http://localhost:${port}/${productionCsp ? ' (production CSP enabled)' : ''}`);
+  console.log(`Local preview: http://localhost:${server.address().port}/${productionCsp ? ' (production CSP enabled)' : ''}`);
 });

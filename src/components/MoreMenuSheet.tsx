@@ -26,6 +26,9 @@ export function MoreMenuSheet() {
   const content = useMainTabContentFlags();
   if (isTablet) return null;
   const menuItems: MenuItem[] = [
+    {icon:'sparkles-outline',label:'Кого ждём?',onPress:()=>{close();navigation.navigate('MoreTab',{screen:'ArtistWishes'});}},
+    {icon:'map-outline',label:'Карта фестиваля',onPress:()=>{close();navigation.navigate('MapTab');}},
+    {icon:'heart-outline',label:'Моё избранное',onPress:()=>{close();navigation.navigate('FavoritesTab');}},
     ...(headlinersInMore
       ? [
           {
@@ -89,7 +92,7 @@ export function MoreMenuSheet() {
   return (
     <LiquidDialog open={visible} onClose={close} title="Ещё" variant="sheet">
       <View style={styles.webGroup}>
-        {menuItems.map((item, index) => <MotionPressable key={item.label} accessibilityRole="button"
+        {menuItems.map((item, index) => <MotionPressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label}
           onPress={item.onPress} style={[styles.webRow, index < menuItems.length - 1 && styles.webRowSeparator]}>
           <DeferredIonicons name={item.icon} size={22} color={colors.text} />
           <Text style={styles.webLabel}>{item.label}</Text>

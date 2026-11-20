@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensio
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
+import { BottomSheet, RNHostView } from '@expo/ui';
 import { colors } from '../theme/colors';
 import { appFont } from '../theme/typography';
 import { MotionPressable } from './MotionPressable';
@@ -14,6 +15,7 @@ export function LiquidDialog({ open, onClose, title, description, children, acti
   const { height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const sheet = variant !== 'alert';
+  if(sheet)return <BottomSheet isPresented={open} onDismiss={onClose} containerColor="#281323" contentPadding={{left:14,right:14,bottom:Math.max(16,insets.bottom)}}><RNHostView matchContents={{vertical:true}}><View style={{maxHeight:height-insets.top-insets.bottom-80}} accessibilityViewIsModal><View style={styles.header}><Text accessibilityRole="header" style={[styles.title,styles.sheetTitle]}>{title}</Text><MotionPressable accessibilityLabel="Закрыть" accessibilityRole="button" onPress={onClose} style={styles.close}><Ionicons name="close" size={22} color={colors.text}/></MotionPressable></View><ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" bounces={false} style={styles.body} contentContainerStyle={styles.bodyContent}>{description?<Text style={styles.description}>{description}</Text>:null}{children}</ScrollView>{actions.length?<View style={styles.actions}>{actions.map(action=><MotionPressable key={action.label} accessibilityRole="button" disabled={action.disabled} onPress={action.onPress} style={[styles.action,action.tone==='primary'&&styles.primary,action.disabled&&styles.disabled]}><Text style={[styles.actionLabel,action.tone==='primary'&&styles.primaryLabel,action.tone==='destructive'&&styles.destructive]}>{action.label}</Text></MotionPressable>)}</View>:null}</View></RNHostView></BottomSheet>;
   return <Modal visible={open} transparent statusBarTranslucent animationType={reduceMotion ? 'none' : 'fade'} onRequestClose={onClose}>
     <View style={[styles.backdrop, { paddingTop: insets.top + 16, paddingBottom: Math.max(16, insets.bottom) }, sheet && styles.sheetPosition]}>
       <Pressable accessibilityRole="button" accessibilityLabel="Закрыть окно" style={StyleSheet.absoluteFill} onPress={onClose} />
@@ -57,7 +59,7 @@ const styles = StyleSheet.create({
   handle: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.24)', marginBottom: 8 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 8, paddingVertical: 12 },
   title: { ...appFont('semiBold'), fontSize: 20, lineHeight: 26, color: colors.text, textAlign: 'center', flex: 1 },
-  sheetTitle: { ...appFont('bold'), fontSize: 24, lineHeight: 30, textAlign: 'left' },
+  sheetTitle: { fontFamily:'FestivalDisplay', fontSize: 28, lineHeight: 31, textAlign: 'left',textTransform:'uppercase' },
   close: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   body: { flexGrow: 0, flexShrink: 1 },
   bodyContent: { paddingBottom: 8, gap: 12 },

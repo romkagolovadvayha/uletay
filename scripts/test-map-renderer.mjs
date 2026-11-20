@@ -57,6 +57,9 @@ assert.equal(m.clampZoom(100), 21);
 for (const [width, height] of [[320, 500], [844, 200], [1280, 720]]) {
   const padding = m.mapPadding(width, height, true);
   assert.ok(padding.top + padding.bottom < height && padding.left + padding.right < width, 'Route fitting leaves a usable viewport');
+  const overview = m.mapPadding(width, height);
+  assert.ok(overview.bottom > overview.top, 'Festival overview stays above the midpoint, clear of the bottom menu and directions');
+  assert.ok(overview.top + overview.bottom < height, 'Festival overview fits in portrait and landscape');
 }
 const labels = m.buildPlaceLabels(selectedScene.markers, 19);
 let hit;

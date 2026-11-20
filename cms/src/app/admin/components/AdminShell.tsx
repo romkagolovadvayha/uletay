@@ -71,6 +71,7 @@ export function AdminShell({
             </div>
           ))}
         </nav>
+        <Link className="admin-nav-link" href="/admin/chat" onClick={()=>menu.current?.close()}><AdminIcon name="users" size={19}/><span>Модерация чата</span></Link>
         <div className="admin-sidebar-footer">
           <div className="admin-account">
             <span className="admin-account-avatar">

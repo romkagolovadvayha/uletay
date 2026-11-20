@@ -2,7 +2,6 @@ import type {
   HeadlinerLastFmImage,
   HeadlinerLastFmProfile,
   HeadlinerLastFmSimilarArtist,
-  HeadlinerLastFmTag,
   HeadlinerLastFmTrack,
 } from '@/lastfm-types';
 import { LASTFM_CLIENT_TOP_TRACKS_LIMIT } from './lastfm-tracks';
@@ -101,18 +100,6 @@ function mergeTopTracks(profiles: HeadlinerLastFmProfile[]): {
   };
 }
 
-function mergeTags(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmTag[] {
-  const tags = new Map<string, HeadlinerLastFmTag>();
-  for (const profile of profiles) {
-    for (const tag of profile.tags) {
-      if (!tags.has(tag.name)) {
-        tags.set(tag.name, { name: tag.name });
-      }
-    }
-  }
-  return [...tags.values()].slice(0, 12);
-}
-
 function mergeSimilarArtists(profiles: HeadlinerLastFmProfile[]): HeadlinerLastFmSimilarArtist[] {
   const artists = new Map<string, HeadlinerLastFmSimilarArtist>();
   for (const profile of profiles) {
@@ -157,7 +144,7 @@ export function mergeLastFmProfiles(
     onTour: unique.some((profile) => profile.onTour),
     bioSummary: primary.bioSummary,
     bioPublished: primary.bioPublished,
-    tags: mergeTags(unique),
+    tags: [],
     similarArtists: mergeSimilarArtists(unique),
     topTracks: mergedTracks.tracks,
     topTracksTotal: mergedTracks.total,

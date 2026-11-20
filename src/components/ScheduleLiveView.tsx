@@ -11,7 +11,7 @@ import {
 } from './HeadlinerTeaserCard';
 import { NextUpItem } from './ScheduleListItem';
 import { PrimaryButton } from './PrimaryButton';
-import { MotionPressable } from './MotionPressable';
+import { FavoriteBurst } from './FavoriteBurst';
 import { SectionHeader } from './SectionHeader';
 import { useAppData } from '../context/DataContext';
 import { useNow } from '../hooks/useNow';
@@ -115,15 +115,7 @@ export function ScheduleLiveView({ primary, navigation }: Props) {
             onPress={openHeadliner}
           />
         ) : null}
-        <MotionPressable
-          accessibilityRole="button"
-          onPress={() => toggleFavorite(performance.id)}
-          style={styles.favoriteButton}
-        >
-          <Text style={styles.favoriteButtonText}>
-            {performanceIsFavorite ? 'В ИЗБРАННОМ' : 'ДОБАВИТЬ В ИЗБРАННОЕ'}
-          </Text>
-        </MotionPressable>
+        <FavoriteBurst isFavorite={performanceIsFavorite} label={performance.artist} onToggleFavorite={() => toggleFavorite(performance.id)} caption={performanceIsFavorite ? 'В ИЗБРАННОМ' : 'ДОБАВИТЬ В ИЗБРАННОЕ'} />
         <PrimaryButton
           label="СМОТРЕТЬ РАСПИСАНИЕ"
           onPress={() => openScheduleMainFromStack(navigation)}

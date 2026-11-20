@@ -12,6 +12,7 @@ import {
   syncFavoriteNotifications,
 } from '../utils/favoriteNotifications';
 import { syncWebPushFavorites } from '../utils/remotePushNotifications';
+import { appendNotificationInbox } from '../utils/notificationInbox';
 
 const POLL_MS = 30_000;
 
@@ -98,6 +99,7 @@ export function useFavoriteNotifications() {
         notifiedIdsRef.current.add(event.notificationId);
         void saveNotifiedIds(notifiedIdsRef.current);
         setActiveReminder(payload);
+        void appendNotificationInbox(payload).catch(()=>{});
       }
     };
 

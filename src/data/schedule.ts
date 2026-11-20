@@ -4,9 +4,9 @@ import { stageColors } from '../theme/palettes';
 /** Minimal festival stub until API loads. No offline schedule seed. */
 export const festivalInfo = {
   name: 'УЛЕТАЙ',
-  year: 2026,
-  startDate: '2026-07-08',
-  endDate: '2026-07-12',
+  year: 2027,
+  startDate: '2027-07-07',
+  endDate: '2027-07-11',
   location: 'Лагуново, Удмуртия',
   locationShort: 'Удмуртия, с. Лагуново',
   ageRating: '6+',

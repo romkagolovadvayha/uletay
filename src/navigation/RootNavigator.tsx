@@ -1,5 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useIsFocused } from '@react-navigation/native';
+import { getFocusedRouteNameFromRoute, useIsFocused, useNavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { Suspense } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
@@ -10,7 +10,9 @@ import { DeferredIonicons } from '../components/DeferredIonicons';
 import { useIsTablet } from '../hooks/useIsTablet';
 import { FestivalHomeScreen } from '../screens/FestivalHomeScreen';
 import { FavoriteAddedToast } from '../components/FavoriteAddedToast';
+import { FestivalWebStyles } from '../components/FestivalWebStyles';
 import { MoreMenuProvider, useMoreMenu } from '../context/MoreMenuContext';
+import {NativeGlassProvider,NativeGlassScene} from '../context/NativeGlassContext';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import {
@@ -94,6 +96,8 @@ const SettingsScreen = lazyScreen(() =>
 const LegalScreen = lazyScreen(() =>
   import('../screens/LegalScreen').then((m) => m.LegalScreen),
 );
+const ChatScreen = lazyScreen(() => import('../screens/ChatScreen').then((m) => m.ChatScreen));
+const ArtistWishesScreen = lazyScreen(() => import('../screens/ArtistWishesScreen').then((m) => m.ArtistWishesScreen));
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const ScheduleStack = createNativeStackNavigator<ScheduleStackParamList>();
@@ -210,6 +214,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="FestivalAbout" component={FestivalAboutScreen} />
       <MoreStack.Screen name="FestivalRules" component={FestivalRulesScreen} />
       <MoreStack.Screen name="Settings" component={SettingsScreen} />
+      <MoreStack.Screen name="Chat" component={ChatScreen} />
+      <MoreStack.Screen name="ArtistWishes" component={ArtistWishesScreen} />
       <MoreStack.Screen name="Legal" component={LegalScreen} />
       <MoreStack.Screen name="HeadlinersMain" component={HeadlinersScreen} />
       <MoreStack.Screen name="HeadlinerDetail" component={HeadlinerDetailScreen} />
@@ -217,10 +223,13 @@ function MoreNavigator() {
   );
 }
 
+const WEB_FULL_BLEED_SCREENS=new Set(['HomeTab','ChatTab','MapTab','ScheduleTab','ScheduleMain','HeadlinersTab','HeadlinersMain','HeadlinerDetail','FavoritesTab','Settings','Chat','ArtistWishes','FestivalRules']);
 function WebTabScene({ children }: { children: React.ReactNode }) {
   const focused = useIsFocused();
+  const page=useNavigationState(state=>{const route=state.routes[state.index];return getFocusedRouteNameFromRoute(route)??route.name;});
   // Web tabs otherwise remain painted below the active tab's transparent canvas.
-  return <View style={[styles.root, !focused && styles.hiddenScene]}>{children}</View>;
+  // Legacy screens reserve controls above the floating menu; photo pages scroll underneath it.
+  return <View nativeID={focused?(WEB_FULL_BLEED_SCREENS.has(page)?'festival-active-scene':'festival-inset-scene'):undefined} style={[styles.root, !focused && styles.hiddenScene]}>{children}</View>;
 }
 
 function RootTabs() {
@@ -231,7 +240,7 @@ function RootTabs() {
     <Tab.Navigator
       initialRouteName="HomeTab"
       tabBar={(props) => <AdaptiveTabBar {...props} />}
-      screenLayout={Platform.OS === 'web' ? ({ children }) => <WebTabScene>{children}</WebTabScene> : undefined}
+      screenLayout={({children})=>Platform.OS==='web'?<WebTabScene>{children}</WebTabScene>:<NativeGlassScene>{children}</NativeGlassScene>}
       screenOptions={{
         animation: 'none',
         headerShown: false,
@@ -262,6 +271,15 @@ function RootTabs() {
           title: 'Расписание',
           tabBarIcon: ({ color, focused }) => <TabIcon name={!focused ? 'calendar-outline' : 'calendar'} color={color} />,
           popToTopOnBlur: true,
+        }}
+      />
+      <Tab.Screen
+        name="ChatTab"
+        component={ChatScreen}
+        listeners={({ navigation }) => createFlatTabListeners(navigation)}
+        options={{
+          title: 'Общий чат',
+          tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'chatbubbles' : 'chatbubbles-outline'} color={color} />,
         }}
       />
       <Tab.Screen
@@ -306,7 +324,7 @@ function RootTabs() {
         component={HeadlinersNavigator}
         listeners={({ navigation }) => createNestedTabListeners(navigation, 'HeadlinersTab')}
         options={{
-          title: 'Хэдлайнеры',
+          title: 'Лайн-ап',
           tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'people' : 'people-outline'} color={color} />,
           popToTopOnBlur: true,
         }}
@@ -344,8 +362,9 @@ function RootTabs() {
 
 export function RootNavigator() {
   return (
-    <MoreMenuProvider>
+    <MoreMenuProvider><NativeGlassProvider>
       <View style={styles.root}>
+        <FestivalWebStyles />
         <AmbientBackground />
         <RootTabs />
         <FestivalNavigationGuard />
@@ -357,6 +376,6 @@ export function RootNavigator() {
         </Suspense>
         <FavoriteAddedToast />
       </View>
-    </MoreMenuProvider>
+    </NativeGlassProvider></MoreMenuProvider>
   );
 }

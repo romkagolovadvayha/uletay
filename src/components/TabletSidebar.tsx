@@ -127,7 +127,8 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       const routes = state.routes.filter((route) =>
         mainTabRoutes.includes(route.name as keyof RootTabParamList),
       );
-      return routes.sort((a, b) => mainTabRoutes.indexOf(a.name as keyof RootTabParamList) - mainTabRoutes.indexOf(b.name as keyof RootTabParamList));
+      const order=['HomeTab','HeadlinersTab','ChatTab','ScheduleTab'];
+      return routes.sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
     },
     [mainTabRoutes, state.routes],
   );
@@ -153,6 +154,9 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   };
 
   const extraItems: ExtraItem[] = [
+    {key:'wishes',icon:'sparkles',label:'Кого хотите видеть?',isActive:moreNestedRoute==='ArtistWishes',onPress:()=>tabNavigation.navigate('MoreTab',{screen:'ArtistWishes'})},
+    {key:'map',icon:'map',label:'Карта фестиваля',isActive:currentTabName==='MapTab',onPress:()=>tabNavigation.navigate('MapTab')},
+    {key:'favorites',icon:'heart',label:'Моё избранное',isActive:currentTabName==='FavoritesTab',onPress:()=>tabNavigation.navigate('FavoritesTab')},
     ...(headlinersInMore
       ? [{
           key: 'headliners',
@@ -206,6 +210,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
 
   const tabIcons: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
     HomeTab: 'home',
+    ChatTab: 'chatbubbles',
     MapTab: 'map',
     HelpTab: 'medical',
     ScheduleTab: 'calendar',
@@ -290,6 +295,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       {isDesktop ? (
         <View style={styles.sidebarCountdown}>
           <CountdownTimer
+            showLiveBadge={currentTabName !== 'HomeTab'}
             targetDate={festivalStart}
             festivalStartDate={data.festival.startDate}
             festivalEndDate={data.festival.endDate}
@@ -302,7 +308,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
       {isDesktop ? (
         <View style={styles.sidebarFooter}>
           <Text style={styles.sidebarFooterText}>МУЗЫКА · ЛЮДИ · СВОБОДА</Text>
-          <Text style={styles.sidebarFooterIndex}>18+</Text>
+          <Text style={styles.sidebarFooterIndex}>{data.festival.ageRating}</Text>
         </View>
       ) : null}
     </View>

@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exchangeVkCode, validVkState, vkSettings } from '@/lib/vk-auth';
 import { getSession, startBrowserSession } from '@/lib/session';
 import { findAdminByVkId } from '@/lib/admin-access';
+import { finishChatOAuth } from '@/lib/chat-oauth';
 
 export async function GET(request: NextRequest) {
+  const visitorResponse=await finishChatOAuth(request);
+  if(visitorResponse)return visitorResponse;
   let destination = '/admin/login?error=vk';
   try {
     const session = await getSession();

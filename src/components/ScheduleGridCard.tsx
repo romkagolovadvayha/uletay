@@ -1,6 +1,6 @@
 import { webStyle } from '../theme/ios';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
@@ -42,16 +42,19 @@ export function ScheduleGridCard({
     ? formatSoonCountdown(parseDateTime(performance.date, performance.startTime), now)
     : undefined;
 
+  if(Platform.OS!=='web')return <View style={[styles.card,{top,height,padding:0,borderWidth:0,opacity:isPast?.55:1},isLive&&styles.cardLive,isUpcoming&&styles.cardUpcoming]}><MotionPressable accessibilityRole="button" accessibilityLabel={`${performance.artist}, ${formatTimeRange(performance.startTime,performance.endTime)}`} onPress={onPress} style={{flex:1,padding:7,paddingRight:22,justifyContent:'center',gap:3}}><Text numberOfLines={1} style={{fontFamily:'FestivalSansMedium',fontSize:10,lineHeight:13,color:isLive?colors.live:colors.textSecondary}}>{performance.startTime}{height>=76?` – ${performance.endTime}`:''}</Text><Text numberOfLines={height>=76?3:1} style={{fontFamily:'FestivalDisplay',fontSize:15,lineHeight:17,color:colors.text,textTransform:'uppercase'}}>{performance.artist}</Text>{height>=110&&(isLive||isUpcoming)?<View style={{alignSelf:'flex-start'}}>{isLive?<LiveBadge compact/>:<SoonBadge compact countdown={soonCountdown}/>}</View>:null}</MotionPressable>{onToggleFavorite?<View style={{position:'absolute',top:-3,right:-5,zIndex:5,overflow:'visible'}}><FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={16} label={performance.artist}/></View>:null}</View>;
+
   return (
     <MotionPressable
       accessibilityRole="button"
+      accessibilityLabel={`${performance.artist}, ${formatTimeRange(performance.startTime, performance.endTime)}`}
       onPress={onPress}
       style={[
         styles.card,
         {
           top,
           height,
-          opacity: isPast ? 0.42 : 1,
+          opacity: isPast ? (Platform.OS === 'web' ? 0.7 : 0.42) : 1,
           justifyContent: 'center',
         },
         isLive && styles.cardLive,
@@ -60,11 +63,11 @@ export function ScheduleGridCard({
     >
       <View style={styles.cardBody}>
         <View style={styles.header}>
-          <Text style={[styles.time, isLive && styles.timeLive]} numberOfLines={1}>
-            {formatTimeRange(performance.startTime, performance.endTime)}
+          <Text style={[styles.time, isLive && styles.timeLive]} numberOfLines={Platform.OS === 'web' ? 2 : 1}>
+            {Platform.OS === 'web' ? `${performance.startTime}\n${performance.endTime}` : formatTimeRange(performance.startTime, performance.endTime)}
           </Text>
           {onToggleFavorite ? (
-            <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={16} />
+            <FavoriteStar isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={16} label={performance.artist} />
           ) : null}
         </View>
 
@@ -93,7 +96,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xs,
-    overflow: 'hidden',
+    overflow: 'visible',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
@@ -121,16 +124,18 @@ const styles = StyleSheet.create({
     flex: 1,
     textTransform: 'none',
     letterSpacing: 0,
+    ...webStyle({ fontSize: 11, lineHeight: 14 }),
   },
   timeLive: {
     color: colors.live,
   },
   artist: {
     ...typography.scheduleArtist,
+    ...(Platform.OS!=='web'?{fontFamily:'FestivalDisplay'}:{}),
     color: colors.text,
     fontSize: 12,
     lineHeight: 14,
-    ...webStyle({ fontSize: 13, lineHeight: 17 }),
+    ...webStyle({ fontFamily: 'FestivalDisplay', fontSize: 16, lineHeight: 18, fontWeight: '900', fontStyle: 'italic', textTransform: 'uppercase' }),
   },
   badgeRow: {
     alignSelf: 'flex-start',

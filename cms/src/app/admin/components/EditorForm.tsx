@@ -104,14 +104,16 @@ export function SubmitButton({
 export function SaveBar({
   cancelHref,
   label = 'Сохранить изменения',
+  children,
 }: {
   cancelHref?: string;
   label?: string;
+  children?: ReactNode;
 }) {
   const dirty = useContext(DirtyContext);
   const { pending } = useFormStatus();
   return (
-    <div className="editor-savebar">
+    <div className={children ? 'editor-savebar has-extra-action' : 'editor-savebar'}>
       <span className={dirty ? 'save-status is-dirty' : 'save-status'} role="status">
         <AdminIcon name={dirty ? 'festival' : 'check'} size={17} />
         {pending
@@ -127,6 +129,7 @@ export function SaveBar({
           </Link>
         )}
         <SubmitButton>{label}</SubmitButton>
+        {children}
       </div>
     </div>
   );

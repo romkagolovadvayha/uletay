@@ -99,6 +99,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
   prefixes,
   async getInitialURL() {
     const initialUrl = await Linking.getInitialURL();
+    if(initialUrl?.startsWith('uletay://auth'))return null;
     if (initialUrl || Platform.OS === 'web') {
       return initialUrl;
     }
@@ -112,13 +113,14 @@ export const linking: LinkingOptions<RootTabParamList> = {
     return rustorePath ? Linking.createURL(rustorePath) : null;
   },
   subscribe(listener) {
-    const linkingSubscription = Linking.addEventListener('url', ({ url }) => listener(url));
+    const linkingSubscription = Linking.addEventListener('url', ({ url }) => {if(!url.startsWith('uletay://auth'))listener(url);});
     const notificationSubscription =
       Platform.OS === 'web'
         ? null
         : Notifications.addNotificationResponseReceivedListener((response) => {
             const path = getSafePushPath(response.notification.request.content.data?.url);
             if (path) {
+              Notifications.clearLastNotificationResponse();
               listener(Linking.createURL(path));
             }
           });
@@ -135,6 +137,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
   config: {
     screens: {
       HomeTab: '',
+      ChatTab: 'chat',
       MapTab: {
         path: 'map/:poiId?',
         parse: {
@@ -198,6 +201,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
           FestivalAbout: 'about',
           FestivalRules: 'rules',
           Settings: 'settings',
+          ArtistWishes: 'wishes',
           Legal: 'legal',
         },
       },
@@ -220,6 +224,8 @@ export const linking: LinkingOptions<RootTabParamList> = {
   },
   getPathFromState(state, options) {
     const active = getActiveRoute(state);
+
+    if (active?.name === 'Chat') return '/chat';
 
     if (active?.name === 'MoreHome') {
       return '/';

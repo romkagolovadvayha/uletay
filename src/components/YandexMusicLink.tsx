@@ -81,10 +81,10 @@ export function YandexMusicLink({ artist, track, variant = 'icon', size = 32 }: 
         pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.iconButton, { width: size, height: size, borderRadius: radius.sm }]}>
+      <View style={[styles.iconButton, { width: targetSize, height: targetSize, borderRadius: targetSize / 2 }]}>
         <Image
           source={YANDEX_MUSIC_LOGO}
-          style={{ width: size - 4, height: size - 4 }}
+          style={{ width: Math.min(24, size), height: Math.min(24, size), borderRadius: 12 }}
           contentFit="contain"
           accessibilityLabel=""
           alt=""
@@ -107,9 +107,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
     overflow: 'hidden',
-    backgroundColor: colors.surfaceGlass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    backgroundColor: 'rgba(10,5,9,.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,.13)',
   },
   listenTarget: {
     alignSelf: 'center',

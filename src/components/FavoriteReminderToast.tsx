@@ -56,6 +56,7 @@ export function FavoriteReminderToast({ reminder, onDismiss }: Props) {
 
   return (
     <Animated.View
+      nativeID="festival-reminder-toast"
       style={[styles.host, { pointerEvents: 'box-none' }]}
       accessibilityLiveRegion="polite"
       entering={reduceMotion ? REDUCED_TOAST_ENTER : TOAST_ENTER}

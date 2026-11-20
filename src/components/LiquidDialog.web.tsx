@@ -24,6 +24,7 @@ export function LiquidCloseIcon() {
 export function LiquidDialog({ open, onClose, title, description, children, actions, variant = 'alert', anchorId, id }: LiquidDialogProps) {
   const generatedId = useId();
   const dialog = useRef<HTMLDialogElement>(null);
+  const drag=useRef<{pointer:number;y:number;lastY:number;lastTime:number;velocity:number;distance:number}|null>(null);
   const titleId = `${id ?? generatedId}-title`;
   const descriptionId = `${id ?? generatedId}-description`;
 
@@ -40,6 +41,7 @@ export function LiquidDialog({ open, onClose, title, description, children, acti
     const trigger = anchorId ? document.getElementById(anchorId) : document.activeElement;
     const previousOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
+    panel.style.transform='';panel.style.transition='';panel.style.animation='';drag.current=null;
     panel.dataset.closing = 'false';
     panel.showModal();
     panel.scrollTop = 0;
@@ -98,10 +100,17 @@ export function LiquidDialog({ open, onClose, title, description, children, acti
       aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined}
       onCancel={event => { event.preventDefault(); onClose(); }}
       onPointerDown={event => {
-        if (event.target !== event.currentTarget) return;
         const rect = event.currentTarget.getBoundingClientRect();
+        if(variant==='sheet'&&event.clientY>=rect.top&&event.clientY<rect.top+76&&!((event.target as HTMLElement).closest('button,input,a'))){
+          drag.current={pointer:event.pointerId,y:event.clientY,lastY:event.clientY,lastTime:performance.now(),velocity:0,distance:0};
+          event.currentTarget.setPointerCapture(event.pointerId);event.currentTarget.style.animation='none';event.currentTarget.style.transition='none';return;
+        }
+        if (event.target !== event.currentTarget) return;
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose();
-      }}>
+      }}
+      onPointerMove={event=>{const current=drag.current;if(!current||current.pointer!==event.pointerId)return;const now=performance.now();current.velocity=(event.clientY-current.lastY)/Math.max(1,now-current.lastTime);current.lastY=event.clientY;current.lastTime=now;current.distance=Math.max(0,event.clientY-current.y);event.currentTarget.style.transform=`translateY(${current.distance}px)`;}}
+      onPointerUp={event=>{const current=drag.current;if(!current||current.pointer!==event.pointerId)return;drag.current=null;event.currentTarget.releasePointerCapture(event.pointerId);if(current.distance>100||(current.distance>25&&current.velocity>.65)){event.currentTarget.style.animation='';onClose();}else{event.currentTarget.style.transition='transform 260ms cubic-bezier(.32,.72,0,1)';event.currentTarget.style.transform='translateY(0px)';}}}
+      onPointerCancel={event=>{drag.current=null;event.currentTarget.style.transition='transform 260ms ease-out';event.currentTarget.style.transform='';}}>
       {variant !== 'alert' ? <header className="liquid-dialog__header">
         <h2 className="liquid-dialog__title" id={titleId}>{title}</h2>
         {variant === 'sheet' ? <button type="button" className="liquid-dialog__close" aria-label="Закрыть окно" onClick={onClose}><LiquidCloseIcon /></button> : null}

@@ -34,8 +34,8 @@ function client(initialData = oldData, savedValues) {
   let respond = async () => { throw new Error('Unexpected request'); };
   const module = { exports: {} };
   runInNewContext(code, {
-    module, exports: module.exports, console, process: { env: {} }, URL,
-    structuredClone, AbortController, setTimeout, clearTimeout,
+    module, exports: module.exports, console, process: { env: {EXPO_PUBLIC_API_FALLBACK_URLS:''} }, URL,
+    structuredClone, AbortController, Headers, Response, DOMException, setTimeout, clearTimeout,
     Date: class extends Date { static now() { return now; } },
     __seed: seed,
     __storage: {

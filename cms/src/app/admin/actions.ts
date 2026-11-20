@@ -1,5 +1,6 @@
 'use server';
 
+import { normalizeManualArtistGenres } from '../../../../shared/music-genres';
 import { redirect } from 'next/navigation';
 import {
   buildAutographId,
@@ -37,6 +38,7 @@ import { parseFoodcourtMenu } from '@/lib/foodcourt-menu-input';
 import { adminSaveRedirect } from '@/lib/admin-navigation';
 import { refreshHeadlinerMusic, type HeadlinerRefreshResult } from '@/lib/headliner-refresh';
 import { isVkMusicUrl } from '../../../../shared/vk-headliners';
+import { saveArtistAndAnnounce } from '@/lib/artist-announcement';
 
 async function requireSession(): Promise<number> {
   const admin = await getCurrentAdmin();
@@ -474,7 +476,7 @@ export async function reorderFoodcourtAction(
 }
 
 export async function upsertHeadlinerAction(formData: FormData) {
-  await requireSession();
+  const adminId = await requireSession();
   const data = await getAppData();
   const isNew = formData.get('isNew') === '1';
   const existingId = String(formData.get('id') ?? '').trim();
@@ -486,6 +488,7 @@ export async function upsertHeadlinerAction(formData: FormData) {
   const manualYears = parseYearsInput(String(formData.get('years') ?? ''));
   const alternateNames = parseAlternateNamesInput(String(formData.get('alternateNames') ?? ''));
   const linkedHeadlinerIds = parseLinkedHeadlinerIds(formData);
+  const genres = formData.has('genresPresent') ? normalizeManualArtistGenres(formData.getAll('genres')) : normalizeManualArtistGenres(existing?.genres);
   const vkSubtitle = String(formData.get('vkSubtitle') ?? existing?.vkSubtitle ?? '').trim();
   const vkMusicUrl = String(formData.get('vkMusicUrl') ?? existing?.vkMusicUrl ?? '').trim();
   if (vkSubtitle.length > 70 || (vkMusicUrl && !isVkMusicUrl(vkMusicUrl))) {
@@ -516,6 +519,7 @@ export async function upsertHeadlinerAction(formData: FormData) {
     name,
     description,
     imageTint,
+    genres,
     years,
     ...(imageUrl ? { imageUrl } : {}),
     ...(alternateNames.length ? { alternateNames } : {}),
@@ -538,6 +542,24 @@ export async function upsertHeadlinerAction(formData: FormData) {
   }
 
   data.headliners = applyBidirectionalHeadlinerLinks(data.headliners, id, linkedHeadlinerIds);
+
+  if (formData.get('_intent') === 'announce-artist') {
+    data.revision = String(formData.get('_revision') ?? '');
+    let announcement;
+    try {
+      announcement = await saveArtistAndAnnounce(data, id, adminId, existing?.years.includes(data.festival.year) ?? false);
+    } catch (error) {
+      const message = error instanceof AppDataConflictError || error instanceof AppDataValidationError
+        ? error.message : 'Не удалось сохранить артиста. Уведомление не отправлено.';
+      redirect('/admin?tab=headliners&error=' + encodeURIComponent(message));
+    }
+    const target = new URL(adminSaveRedirect('headliners', String(formData.get('_returnTo') ?? '')), 'https://admin.invalid');
+    target.searchParams.delete('ok');
+    target.searchParams.set('edit', id);
+    target.searchParams.set('announcement', announcement.message);
+    if (announcement.status === 'warning') target.searchParams.set('announcementWarning', '1');
+    redirect(target.pathname + target.search);
+  }
 
   await saveAdminSnapshot(data, formData);
   redirect(adminSaveRedirect('headliners', String(formData.get('_returnTo') ?? '')));

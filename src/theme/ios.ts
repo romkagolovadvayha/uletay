@@ -7,6 +7,7 @@ export function webStyle<T extends ViewStyle | TextStyle>(style: T): Partial<T> 
   if (Platform.OS === 'web') return style;
   const native = { ...style } as Record<string, unknown>;
   for (const key of ['backdropFilter', 'WebkitBackdropFilter', 'outlineWidth', 'outlineColor', 'outlineStyle', 'cursor']) delete native[key];
+  if(native.fontFamily==='FestivalDisplay'){native.fontStyle='normal';native.fontWeight='normal';}
   if (typeof native.borderRadius === 'number' && native.borderRadius < 999) native.borderCurve = 'continuous';
   return native as T;
 }

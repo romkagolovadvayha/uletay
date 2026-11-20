@@ -14,10 +14,10 @@ import { MotionPressable } from './MotionPressable';
 
 function getDisabledSubtitle(permission: NotificationPermissionStatus): string {
   if (permission === 'unsupported') {
-    return 'Нужен HTTPS или браузер с поддержкой уведомлений';
+    return Platform.OS==='web'?'Нужен HTTPS или браузер с поддержкой уведомлений':'Уведомления недоступны на этом устройстве';
   }
   if (permission === 'denied') {
-    return 'Разрешите уведомления в настройках устройства или браузера';
+    return Platform.OS==='web'?'Разрешите уведомления в настройках устройства или браузера':'Разрешите уведомления в настройках устройства';
   }
   if (permission === 'in-app-only') {
     return 'В Safari на iPhone системные push недоступны во вкладке. Напомним внутри приложения, пока сайт открыт. Для push: «Поделиться» → «На экран Домой».';

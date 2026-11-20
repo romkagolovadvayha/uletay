@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { buildFestivalHomeModel } from '../src/screens/festivalHomeModel';
+import type { AppData } from '../src/types';
+
+const data=JSON.parse(readFileSync(new URL('../public/api/data',import.meta.url),'utf8')) as AppData;
+const resolveMedia=(path?:string)=>path?new URL(path,'https://preview.example').href:undefined;
+const model=buildFestivalHomeModel(data,resolveMedia);
+assert.equal(model.festival.year,data.festival.year);
+assert.equal(model.hasCurrent,true);
+assert.equal(model.lineupYear,data.festival.year);
+assert.equal(model.artists.length,6);
+assert(model.artists.every(artist=>!artist.imageUrl||artist.imageUrl.startsWith('https://')));
+assert(model.schedule.every(item=>item.date>=data.festival.startDate&&item.date<=data.festival.endDate));
+assert(!JSON.stringify(model).includes('mapZones'),'Map geometry never crosses the home bridge');
+assert(!JSON.stringify(model).includes('topTracks'),'Music profiles never cross the home bridge');
+assert(JSON.stringify(model).length<50000,'The native bridge receives a small visible snapshot');
+const archived=structuredClone(data);
+archived.headliners=archived.headliners.map(artist=>({...artist,years:[2026]}));
+const archiveModel=buildFestivalHomeModel(archived,resolveMedia);
+assert.equal(archiveModel.hasCurrent,false);
+assert.equal(archiveModel.lineupYear,2026);
+assert.equal(archiveModel.artists.length,6);
+assert.equal(buildFestivalHomeModel({...data,headliners:[]}).artists.length,0);
+console.log('Unified home: same current lineup, six artists, absolute media URLs, current performances, archived and empty states, compact native bridge passed.');

@@ -98,7 +98,7 @@ export function HeadlinerMusicRefresh({ artist }: { artist: Headliner }) {
   return (
     <section className="music-refresh-panel span-2" aria-label="Музыкальные данные артиста">
       <h3>Музыкальные данные · Last.fm</h3>
-      <p className="hint">Популярные песни, жанры, похожие артисты, биография и статистика слушателей.</p>
+      <p className="hint">Популярные песни, похожие артисты, биография и статистика слушателей. Жанры выбираются вручную ниже.</p>
       <p className="hint">Учитываются дополнительные названия и связанные артисты. Фотография и описание карточки сохраняются.</p>
       <p className="hint">{updatedAt ? `Последнее обновление: ${updatedAt} (МСК)` : 'Данные ещё не загружены.'}</p>
       <button

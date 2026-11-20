@@ -52,6 +52,8 @@ export default async function AdminPage({
     date?: string;
     category?: string;
     pushResult?: string;
+    announcement?: string;
+    announcementWarning?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -77,6 +79,7 @@ export default async function AdminPage({
         {activeTab === 'access' && <AccessEditor />}
         {params.ok ? <AdminNotice tone="success">Изменения сохранены</AdminNotice> : null}
         {params.error ? <AdminNotice tone="error">{params.error}</AdminNotice> : null}
+        {params.announcement ? <AdminNotice tone={params.announcementWarning ? 'error' : 'success'}>{params.announcement}</AdminNotice> : null}
 
         {activeTab === 'festival' ? (
           <EditorForm action={saveFestivalAction} className="admin-form">
@@ -266,6 +269,7 @@ export default async function AdminPage({
 
         {activeTab === 'headliners' ? (
           <HeadlinersEditor
+            festivalYear={data.festival.year}
             yearFilter={params.year && /^\d{4}$/.test(params.year) ? params.year : undefined}
             items={data.headliners}
             editId={params.edit}

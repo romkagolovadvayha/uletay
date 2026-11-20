@@ -1,7 +1,6 @@
 import { ios, webStyle } from '../theme/ios';
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { GestureResponderEvent, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SchedulePerformance } from '../types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -14,6 +13,7 @@ import { PerformanceMetaDivider, PerformanceTimeDateRow, performanceTimeWeightSt
 import { MotionPressable } from './MotionPressable';
 import { SoonBadge } from './SoonBadge';
 import { StageDot } from './StageDot';
+import { FavoriteBurst } from './FavoriteBurst';
 
 type Props = {
   performance: SchedulePerformance;
@@ -31,35 +31,18 @@ export function FavoriteStar({
   isFavorite,
   onToggleFavorite,
   size = 20,
+  label,
 }: {
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   size?: number;
+  label?: string;
 }) {
   if (!onToggleFavorite) {
     return null;
   }
 
-  const handlePress = (event: GestureResponderEvent) => {
-    event.stopPropagation();
-    onToggleFavorite();
-  };
-
-  return (
-    <MotionPressable
-      accessibilityRole="imagebutton"
-      accessibilityLabel={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-      onPress={handlePress}
-      disabled={!onToggleFavorite}
-      hitSlop={10}
-    >
-      <Ionicons
-        name={isFavorite ? 'star' : 'star-outline'}
-        size={size}
-        color={colors.star}
-      />
-    </MotionPressable>
-  );
+  return <FavoriteBurst isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} size={size} label={label}/>;
 }
 
 export function ScheduleTimelineItem({

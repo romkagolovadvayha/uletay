@@ -1,10 +1,10 @@
-import { ViewStyle } from 'react-native';
+import { Platform,ViewStyle } from 'react-native';
 import { spacing } from './spacing';
 
 export const screenHeaderStyle: ViewStyle = {
   paddingHorizontal: spacing.screen,
-  paddingTop: spacing.headerTop,
-  paddingBottom: spacing.headerBottom,
+  paddingTop: Platform.OS==='web'?spacing.headerTop:14,
+  paddingBottom: Platform.OS==='web'?spacing.headerBottom:12,
 };
 
 export const screenHeaderRowStyle: ViewStyle = {

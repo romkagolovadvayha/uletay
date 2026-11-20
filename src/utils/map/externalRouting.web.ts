@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../../config/api';
+import { apiFetch } from '../../api/apiFetch';
 import type { LatLng } from '../../types/map';
 import type { ExternalRouteResult } from './externalRouting';
 
@@ -10,7 +11,7 @@ async function json(url: string): Promise<unknown> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4_000);
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = url.startsWith(`${API_BASE_URL}/`) ? await apiFetch(url.slice(API_BASE_URL.length), {signal:controller.signal},4000) : await fetch(url, { signal: controller.signal });
     if (!response.ok) throw new Error(`Routing HTTP ${response.status}`);
     return await response.json();
   } finally {

@@ -72,11 +72,13 @@ if (!existsSync(sitemapPath)) {
     'https://uletayapp.ru/favorites',
     'https://uletayapp.ru/settings',
     'https://uletayapp.ru/schedule/full',
+    'https://uletayapp.ru/chat',
   ]) {
     if (urls.includes(privateUrl)) {
       fail(`noindex URL is present in sitemap: ${privateUrl}`);
     }
   }
+  if (!urls.includes('https://uletayapp.ru/wishes')) fail('sitemap.xml is missing the artist wishes page');
 
   for (const url of urls) {
     const file = routeFile(url);
@@ -183,21 +185,20 @@ if (!existsSync(sitemapPath)) {
     if (!html.includes(question)) fail(`${yearUrl} does not have the year-specific question`);
   }
   const home = readFileSync(path.join(distDir, 'index.html'), 'utf8');
-  if (!home.includes('<h1>Приложение Улетай 2027</h1>')) {
-    fail('homepage is missing the app download heading');
+  if (!home.includes(`<h1>Увидимся на<br>Улетай ${festivalYear}</h1>`)) {
+    fail('homepage is missing the shared festival heading');
   }
-  const homeContent = home.match(/<section id="seo-fallback"[^>]*>([\s\S]*?)<\/section>/)?.[1] ?? '';
-  const homeLinks = [...homeContent.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((match) => match[1]);
-  if (homeLinks.length !== 2 || !homeLinks.includes('https://play.google.com/store/apps/details?id=ru.uletay.app') || !homeLinks.includes('https://www.rustore.ru/catalog/app/ru.uletay.app')) {
+  const homeLinks = [...home.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((match) => match[1]);
+  if (!homeLinks.includes('https://play.google.com/store/apps/details?id=ru.uletay.app') || !homeLinks.includes('https://www.rustore.ru/catalog/app/ru.uletay.app')) {
     fail('homepage must link to the Uletay app in Google Play and RuStore');
   }
-  if (/<nav\b/i.test(homeContent)) {
-    fail('app download homepage must not contain navigation');
+  if (!home.includes('>Кто приедет?</a>') || !home.includes('<h2>Хедлайнеры</h2>') || !homeLinks.includes(`/headliners/${festivalYear}`)) {
+    fail('homepage must open the current lineup and show headliners');
   }
 
   console.log(`check-web-seo: checked ${urls.length} sitemap URLs`);
 
-  for (const pathname of ['/favorites', '/settings', '/schedule/full']) {
+  for (const pathname of ['/favorites', '/settings', '/schedule/full', '/chat']) {
     const url = new URL(pathname, 'https://uletayapp.ru').href;
     const file = routeFile(url);
     if (!existsSync(file)) {
@@ -223,6 +224,7 @@ if (!existsSync(robotsPath)) {
   if (!/^User-agent:\s*\*/im.test(robots)) fail('robots.txt has no default user-agent');
   if (!/^Allow:\s*\/$/im.test(robots)) fail('robots.txt does not allow public crawling');
   if (!/^Allow:\s*\/api\/data\$$/m.test(robots)) fail('robots.txt does not allow the public catalog endpoint');
+  if (!/^Allow:\s*\/api\/uploads\/$/m.test(robots)) fail('robots.txt blocks public artist images');
   if (!/^Sitemap:\s*https?:\/\/.+\/sitemap\.xml$/im.test(robots)) {
     fail('robots.txt has no absolute sitemap URL');
   }

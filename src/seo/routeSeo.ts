@@ -1,9 +1,9 @@
 import type { AppData } from '../types';
-import { APP_DOWNLOAD_DESCRIPTION, APP_DOWNLOAD_TITLE } from '../constants/appDownload';
 import { encodeSeoRouteId, isDateWithinFestival } from './seoRouteUtils';
 import { DEFAULT_DESCRIPTION, DEFAULT_FESTIVAL_YEAR, getSiteName, SITE_NAME, SITE_URL } from './site';
 import { getSelectableHeadlinerYears } from '../utils/headlinerYears';
 import { formatFestivalDateRange } from '../utils/festivalContent';
+import { resolveArtistProfile } from '../../shared/artist-identity';
 
 export type SeoMeta = {
   title: string;
@@ -53,7 +53,7 @@ function buildHeadlinerDescription(
       ]
     : sortedYears.length === 1
       ? [`${headliner.name} — участник фестиваля УЛЕТАЙ ${sortedYears[0]} года.`]
-      : [`${headliner.name} — артист фестиваля УЛЕТАЙ.`];
+      : [`${headliner.name} — кого ждут на фестивале УЛЕТАЙ. Голосование за артиста и доступные сведения.`];
 
   for (const introduction of introductions) {
     for (const detail of details) {
@@ -77,6 +77,17 @@ const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: st
     title: `Фестиваль УЛЕТАЙ — даты, артисты и гид | ${SITE_NAME}`,
     description: DEFAULT_DESCRIPTION,
     path: '/',
+  },
+  ChatTab: {
+    title: `Общий чат — ${SITE_NAME}`,
+    description: 'Общий чат гостей фестиваля УЛЕТАЙ: общение, вопросы и ответы на сообщения.',
+    path: '/chat',
+    noIndex: true,
+  },
+  ArtistWishes: {
+    title: `Кого ждём на УЛЕТАЙ — голосование за артистов`,
+    description: 'Кого хотят видеть гости фестиваля УЛЕТАЙ: голосуйте за любимых артистов, смотрите ожидания и открывайте их карточки.',
+    path: '/wishes',
   },
   MapTab: {
     title: `Карта фестиваля — ${SITE_NAME}`,
@@ -198,6 +209,11 @@ function buildPath(chain: RouteNode[]): string {
         : '/autographs';
     case 'FavoritesTab':
       return '/favorites';
+    case 'ChatTab':
+    case 'Chat':
+      return '/chat';
+    case 'ArtistWishes':
+      return '/wishes';
     case 'PlaylistTab':
       return '/playlist';
     case 'MoreHome':
@@ -216,6 +232,8 @@ function buildPath(chain: RouteNode[]): string {
       return '/legal';
     case 'Settings':
       return '/settings';
+    case 'HelpTab':
+      return '/help';
     case 'HeadlinersMain':
       return `/headliners/${params.year && /^\d{4}$/.test(params.year) ? params.year : DEFAULT_FESTIVAL_YEAR}`;
     case 'HeadlinerDetail':
@@ -301,9 +319,9 @@ export function resolveSeoMeta(
 
   if (routeName === 'HomeTab') {
     return {
-      title: APP_DOWNLOAD_TITLE,
+      title: `Улетай ${data.festival.year} — артисты, расписание и общение`,
       siteName,
-      description: APP_DOWNLOAD_DESCRIPTION,
+      description: `Фестиваль Улетай ${data.festival.year}: участники, расписание выступлений, общий чат, карта площадки и голосование за любимых артистов.`,
       path: '/',
     };
   }
@@ -399,23 +417,23 @@ export function resolveSeoMeta(
   }
 
   if (routeName === 'HeadlinerDetail' && params.headlinerId) {
-    const headliner = data.headliners.find((item) => item.id === params.headlinerId);
+    const headliner = resolveArtistProfile(data.headliners, params.headlinerId);
     const name = headliner?.name ?? 'Хэдлайнер';
     return {
       title: headliner?.years.includes(data.festival.year)
         ? `${name} — участник УЛЕТАЙ ${data.festival.year}`
-        : `${name} — участник фестиваля УЛЕТАЙ`,
+        : headliner?.years.length ? `${name} — участник фестиваля УЛЕТАЙ` : `${name} — кого ждут на УЛЕТАЙ`,
       siteName,
       description: headliner
         ? buildHeadlinerDescription(headliner)
         : 'Страница артиста — участника фестиваля УЛЕТАЙ: годы выступлений и популярные треки.',
-      path: `/headliners/${encodeSeoRouteId(params.headlinerId)}`,
+      path: `/headliners/${encodeSeoRouteId(headliner?.id ?? params.headlinerId)}`,
       noIndex: !headliner,
       provisional: !headliner,
     };
   }
 
-  const staticMeta = STATIC_SEO[routeName];
+  const staticMeta = STATIC_SEO[routeName === 'Chat' ? 'ChatTab' : routeName];
   if (staticMeta) {
     return {
       ...staticMeta,

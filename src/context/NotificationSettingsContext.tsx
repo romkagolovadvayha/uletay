@@ -56,6 +56,7 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
   useEffect(() => {
     let active = true;
 
+
     void Promise.all([loadNotificationsEnabled(), getNotificationPermissionStatus()]).then(
       ([stored, status]) => {
         if (!active) {

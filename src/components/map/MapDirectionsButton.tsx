@@ -12,6 +12,7 @@ import { appFont } from '../../theme/typography';
 export function MapDirectionsButton({ onPress }: { onPress: () => void }) {
   return (
     <MotionPressable
+      nativeID="festival-map-directions"
       accessibilityRole="button"
       accessibilityLabel="Как добраться до фестиваля"
       onPress={onPress}

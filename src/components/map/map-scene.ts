@@ -23,8 +23,10 @@ const point = (coordinates: number[], properties: Record<string, unknown>): Feat
 export const validCoordinate = (p?: LatLng | null): p is LatLng => Boolean(p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 85.051129 && Math.abs(p.lng) <= 180);
 export const clampZoom = (zoom: number) => Math.max(MAP_MIN_ZOOM, Math.min(MAP_MAX_ZOOM, Number.isFinite(zoom) ? zoom : 16));
 export function mapPadding(width: number, height: number, route = false) {
-  return { top: Math.min(130, height * 0.22), right: Math.min(55, width * 0.15),
-    bottom: Math.min(route ? 240 : 90, height * 0.4), left: Math.min(35, width * 0.1) };
+  // Reserve the bottom menu and directions button. The visible festival belongs
+  // above the screen midpoint, rather than underneath these controls.
+  return { top: Math.min(100, height * 0.18), right: Math.min(55, width * 0.15),
+    bottom: Math.min(route ? 240 : 190, height * 0.35), left: Math.min(35, width * 0.1) };
 }
 export function festivalBounds(config: FestivalMapViewProps['config']) {
   const bounds = config.territoryBounds;

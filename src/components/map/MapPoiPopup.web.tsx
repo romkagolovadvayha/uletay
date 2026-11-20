@@ -45,7 +45,7 @@ export function MapPoiPopup({ visible, children, onClose, showCloseButton = true
 
   return <>
     <style>{LIQUID_OVERLAY_CSS}</style>
-    <section ref={panel} className="liquid-map-sheet" data-visible={visible} role="dialog" aria-label="Информация на карте"
+    <section id="festival-map-popup" ref={panel} className="liquid-map-sheet" data-visible={visible} role="dialog" aria-label="Информация на карте"
       aria-modal="false" aria-hidden={!visible} inert={!visible} tabIndex={-1}>
       <div className="liquid-map-sheet__handle" aria-hidden="true" />
       {onClose && showCloseButton ? <button type="button" className="liquid-dialog__close liquid-map-sheet__close" aria-label="Закрыть карточку" onClick={onClose}><LiquidCloseIcon /></button> : null}

@@ -24,6 +24,10 @@ module.exports = ({ config }) => {
     ...config,
     plugins: [
       ...(config.plugins || []),
+      'expo-web-browser',
+      'expo-secure-store',
+      './plugins/with-vk-native-auth',
+      './plugins/with-native-interface',
       '@maplibre/maplibre-react-native',
       ...(isRuStoreBuild
         ? [

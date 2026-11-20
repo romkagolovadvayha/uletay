@@ -15,7 +15,7 @@ async function filesUnder(directory) {
 // Include lazy screen chunks so a previously unopened section can open offline.
 // Festival photos/videos are cached on use, not bulk-downloaded with the shell.
 const assets = (await Promise.all(
-  ['_expo', 'assets', 'vendor/maplibre', 'map-fonts'].map(filesUnder),
+  ['_expo', 'assets', 'vendor/maplibre', 'map-fonts', 'fonts'].map(filesUnder),
 )).flat();
 for (const entry of await readdir(dist, { withFileTypes: true })) {
   if (entry.isFile() && /\.(?:png|svg|webp|ico)$/.test(entry.name)) assets.push(entry.name);

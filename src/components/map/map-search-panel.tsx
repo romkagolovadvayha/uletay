@@ -1,6 +1,6 @@
 import { ios, webStyle } from '../../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Platform,
   StyleSheet,
@@ -38,6 +38,8 @@ type Props = {
   onSelectZone: (zone: ZoneFeature) => void;
   onSelectPoi: (poi: PoiFeature) => void;
   style?: StyleProp<ViewStyle>;
+  focusWhenOpen?: boolean;
+  onClose?: () => void;
 };
 
 function normalize(value: string) {
@@ -50,8 +52,16 @@ export function MapSearchPanel({
   onSelectZone,
   onSelectPoi,
   style,
+  focusWhenOpen = false,
+  onClose,
 }: Props) {
   const [query, setQuery] = useState('');
+  const input = useRef<TextInput>(null);
+  useEffect(() => {
+    if (!focusWhenOpen) return;
+    const frame = requestAnimationFrame(() => input.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [focusWhenOpen]);
   const normalizedQuery = normalize(query);
 
   const results = useMemo<Result[]>(() => {
@@ -94,6 +104,7 @@ export function MapSearchPanel({
       <View nativeID={Platform.OS === 'web' ? 'map-search-field' : undefined} style={styles.inputWrap}>
         <Ionicons name="search" size={20} color={colors.textSecondary} />
         <TextInput
+          ref={input}
           accessibilityLabel="Поиск по карте"
           placeholder="Сцена, вода, медпункт…"
           placeholderTextColor={colors.textMuted}
@@ -102,7 +113,7 @@ export function MapSearchPanel({
           autoCorrect={false}
           returnKeyType="search"
           onSubmitEditing={() => { if (results.length) select(results[0]); }}
-          onKeyPress={(event) => { if (event.nativeEvent.key === 'Escape') setQuery(''); }}
+          onKeyPress={(event) => { if (event.nativeEvent.key === 'Escape') { setQuery(''); onClose?.(); } }}
           style={styles.input}
         />
         {query ? (

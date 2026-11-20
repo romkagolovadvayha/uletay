@@ -1,3 +1,4 @@
+import { getArtistGenres } from './music-genres';
 import type { AppData, Headliner } from '../src/types';
 import { encodeSeoRouteId } from '../src/seo/seoRouteUtils';
 import { sortHeadlinersByPopularity } from './headliner-popularity';
@@ -40,21 +41,9 @@ export function festivalCountdown(startDate: string, endDate: string, now: numbe
   };
 }
 
-const GENRES: Record<string, string> = {
-  rock: 'Рок', 'russian rock': 'Русский рок', 'punk rock': 'Панк-рок', punk: 'Панк-рок',
-  'folk rock': 'Фолк-рок', folk: 'Фолк', 'folk metal': 'Фолк-метал', 'hard rock': 'Хард-рок',
-  'heavy metal': 'Хеви-метал', metal: 'Метал', 'thrash metal': 'Трэш-метал',
-  alternative: 'Альтернатива', 'alternative rock': 'Альтернативный рок',
-  acoustic: 'Акустика', 'chanson noir': 'Нуар-шансон', grunge: 'Гранж',
-  'art rock': 'Арт-рок', 'pop rock': 'Поп-рок', 'indie rock': 'Инди-рок',
-  rap: 'Рэп', 'hip-hop': 'Хип-хоп', hiphop: 'Хип-хоп', electronic: 'Электроника',
-  ska: 'Ска', 'ska punk': 'Ска-панк', blues: 'Блюз', industrial: 'Индастриал',
-};
-
 export function headlinerSubtitle(artist: Headliner, year: number): string {
   if (artist.vkSubtitle?.trim()) return artist.vkSubtitle.trim();
-  const genres = [...new Set((artist.lastfm?.tags ?? [])
-    .map(({ name }) => GENRES[name.trim().toLowerCase()]).filter(Boolean))];
+  const genres = getArtistGenres(artist);
   const specific = genres.length > 1 ? genres.filter((genre) => genre !== 'Рок') : genres;
   return specific.slice(0, 2).join(' · ') || `Участник УЛЕТАЙ ${year}`;
 }

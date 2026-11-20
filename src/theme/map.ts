@@ -18,7 +18,7 @@ export const mapColors = {
   routeInternal: '#FFC107',
   routeExternal: '#8E8E93',
   sheetBg: '#1C1C1E',
-  fabBg: '#1C1C1E',
+  fabBg: 'rgba(31,11,25,0.60)',
   fabBorder: 'rgba(255, 255, 255, 0.12)',
   scrim: 'rgba(0, 0, 0, 0.55)',
   pathLine: '#2C2C2E',

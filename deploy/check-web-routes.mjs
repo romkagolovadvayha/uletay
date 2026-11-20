@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 const fixedRoutes = [
   '/', '/map', '/schedule', '/schedule/full', '/autographs', '/favorites',
-  '/foodcourt', '/rules', '/settings', '/help', '/privacy',
+  '/foodcourt', '/rules', '/settings', '/help', '/privacy', '/chat', '/wishes',
 ];
 const detailRoutes = [
   ['headliners', '/headliners/'], ['schedule', '/schedule/live/'],

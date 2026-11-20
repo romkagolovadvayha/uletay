@@ -95,3 +95,78 @@ CREATE TABLE IF NOT EXISTS push_reminder_deliveries (
   CONSTRAINT fk_push_reminder_subscription
     FOREIGN KEY (subscription_id) REFERENCES push_subscriptions(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS chat_users (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  vk_id VARCHAR(20) NOT NULL UNIQUE,
+  display_name VARCHAR(120) NOT NULL,
+  avatar_url VARCHAR(2048) NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  body TEXT NOT NULL,
+  reply_to INT UNSIGNED NULL,
+  request_id VARCHAR(64) NOT NULL,
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  deleted_at TIMESTAMP NULL,
+  UNIQUE KEY uq_chat_request (user_id,request_id),
+  KEY idx_chat_reply (reply_to),
+  KEY idx_chat_deleted (deleted_at),
+  FOREIGN KEY (user_id) REFERENCES chat_users(id),
+  FOREIGN KEY (reply_to) REFERENCES chat_messages(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_reports (
+  message_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (message_id,user_id),
+  FOREIGN KEY (message_id) REFERENCES chat_messages(id),
+  FOREIGN KEY (user_id) REFERENCES chat_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  token_hash CHAR(64) NOT NULL PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  KEY idx_chat_session_expiry (expires_at),
+  FOREIGN KEY (user_id) REFERENCES chat_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_native_auth (
+  state_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+  client_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  payload TEXT NOT NULL,
+  callback_used BOOLEAN NOT NULL DEFAULT FALSE,
+  ticket_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL UNIQUE,
+  identity_payload TEXT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  KEY idx_native_auth_expiry (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS artist_wish_votes (
+  festival_year SMALLINT UNSIGNED NOT NULL,
+  artist_id VARCHAR(191) COLLATE utf8mb4_bin NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (festival_year,artist_id,user_id),
+  KEY idx_artist_wish_user (festival_year,user_id),
+  CONSTRAINT fk_artist_wish_user FOREIGN KEY (user_id) REFERENCES chat_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS artist_wish_mentions (
+  festival_year SMALLINT UNSIGNED NOT NULL,
+  artist_id VARCHAR(191) COLLATE utf8mb4_bin NOT NULL,
+  platform ENUM('vk','telegram') NOT NULL,
+  author_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  source_url VARCHAR(2048) NOT NULL,
+  source_key VARCHAR(191) NOT NULL,
+  kind ENUM('request','like') NOT NULL DEFAULT 'request',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (festival_year,artist_id,platform,author_hash),
+  KEY idx_artist_wish_source (festival_year,platform)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

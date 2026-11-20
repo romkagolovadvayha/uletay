@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Headliner } from '../types';
 import { formatLastFmCount } from '../utils/lastfmFormat';
+import { getArtistGenres } from '../utils/musicGenres';
 import { getHeadlinerDisplayAlternateNames } from '../utils/headlinerGroups';
 import { ArtistImage } from './ArtistImage';
 import { colors } from '../theme/colors';
@@ -82,7 +83,7 @@ function DesktopHeadlinerTile({ headliner, onPress }: { headliner: Headliner; on
       easing: Easing.out(Easing.cubic),
     });
   };
-  const genre = headliner.lastfm?.tags?.[0]?.name || headliner.description || 'Рок-сцена';
+  const genre = getArtistGenres(headliner, 1)[0] || 'Рок-сцена';
   const latestYear = Math.max(...headliner.years);
 
   return (

@@ -25,6 +25,7 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 google-service-account.json
+credentials.json
 firebase-service-account-uletay-9335f.json
 credentials/
 
@@ -58,8 +59,12 @@ scripts/fest-artist-sync-report.json
 # generated native folders
 /ios
 /android
+/modules/**/android/build/
+/modules/**/android/.cxx/
+/modules/**/android/.gradle/
 
 # Local build and QA scratch files
+/artifacts/
 /tmp/
 /public/vendor/maplibre/
 /cms/public/vendor/maplibre/

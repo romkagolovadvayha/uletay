@@ -39,6 +39,16 @@ const lumenMeta = resolveSeoMeta(
   },
   data,
 );
+for (const name of ['ChatTab', 'Chat']) {
+  const meta = resolveSeoMeta({routes:[{name}],index:0},data);
+  assert(meta.path === '/chat' && meta.noIndex, 'chat must have its own non-indexable metadata');
+}
+const wishesMeta=resolveSeoMeta({routes:[{name:'ArtistWishes'}],index:0},data);
+assert(wishesMeta.path === '/wishes' && !wishesMeta.noIndex, 'wishes must be an indexable page of its own');
+assert(resolveSeoMeta({routes:[{name:'HelpTab'}],index:0},data).path === '/help','help must not canonicalize to the homepage');
+const requestedArtist={...lumen,id:'requested-artist',name:'Желаемый артист',years:[]};
+const requestedMeta=resolveSeoMeta({routes:[{name:'HeadlinerDetail',params:{headlinerId:requestedArtist.id}}],index:0},{...data,headliners:[requestedArtist]});
+assert(!requestedMeta.title.includes('участник') && !requestedMeta.description.includes('участник'), 'a requested artist must not be presented as an announced participant');
 for (const year of [2027, 2026]) {
   const meta = resolveSeoMeta(
     { routes: [{ name: 'HeadlinersMain', params: { year: String(year) } }], index: 0 },

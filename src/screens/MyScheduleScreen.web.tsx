@@ -1,0 +1,22 @@
+import React, { useState } from 'react';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { RootTabParamList } from '../navigation/types';
+import { useAppData } from '../context/DataContext';
+import { useFavorites } from '../hooks/useFavorites';
+import { FestivalArtistTile } from '../components/FestivalArtistTile.web';
+import { FestivalIcon } from '../components/FestivalIcon.web';
+import { formatDayMonthLabel, formatTimeRange, sortByStartTime } from '../utils/scheduleHelpers';
+import { resolveLinkedArtist, resolveLinkedImageUrl } from '../utils/headlinersCore';
+
+export function MyScheduleScreen({navigation}:{navigation:BottomTabNavigationProp<RootTabParamList,'FavoritesTab'>}) {
+  const {data}=useAppData();const favorites=useFavorites();const [section,setSection]=useState('schedule');
+  const performances=sortByStartTime(data.schedule.filter(item=>favorites.isFavorite(item.id)));
+  const autographs=sortByStartTime(data.autographs.filter(item=>favorites.isAutographFavorite(item.id)));
+  const artists=data.headliners.filter(item=>favorites.isArtistFavorite(item.id));const food=data.foodcourt.filter(item=>favorites.isFoodFavorite(item.id));
+  const tabs=[{id:'schedule',label:'Мой план',count:performances.length},{id:'artists',label:'Артисты',count:artists.length},{id:'autographs',label:'Автографы',count:autographs.length},{id:'food',label:'Еда и напитки',count:food.length}];
+  const count=tabs.find(item=>item.id===section)?.count||0;
+  return <section className="fest-screen" aria-label="Моё избранное"><div className="fest-inner"><header className="fest-heading"><div><div className="fest-eyebrow">Всё, что хочется увидеть</div><h1>Мой Улетай</h1></div><button type="button" className="fest-icon" aria-label="Настроить напоминания" onClick={()=>navigation.navigate('MoreTab',{screen:'Settings'})}><FestivalIcon name="bell"/></button></header>
+    <div className="fest-scroll-pills fest-stages" role="group" aria-label="Раздел избранного">{tabs.map(tab=><button type="button" className="fest-pill" key={tab.id} aria-pressed={section===tab.id} onClick={()=>setSection(tab.id)}>{tab.label} · {tab.count}</button>)}</div>
+    {!favorites.isReady?<p role="status">Загружаем избранное…</p>:!count?<div className="fest-empty"><FestivalIcon name="heart" size={42}/><h2>Сохрани свой момент</h2><p className="fest-muted">Нажми на сердечко у артиста, выступления, встречи или точки питания. Сохранённое останется здесь даже после перезагрузки.</p><button type="button" className="fest-button" data-primary="true" onClick={()=>navigation.navigate('HeadlinersTab',{screen:'HeadlinersMain'})}>Открыть лайн-ап</button></div>:section==='artists'?<div className="fest-grid">{artists.map(item=><FestivalArtistTile key={item.id} id={item.id} name={item.name} imageUrl={item.imageUrl} subtitle={item.description} saved onSave={()=>favorites.toggleArtistFavorite(item.id)} onOpen={()=>navigation.navigate('HeadlinersTab',{screen:'HeadlinerDetail',params:{headlinerId:item.id}})}/>)}</div>:section==='food'?<div className="fest-grid">{food.map(item=><FestivalArtistTile key={item.id} id={item.id} name={item.name} imageUrl={item.imageUrl} subtitle={item.location} saved onSave={()=>favorites.toggleFoodFavorite(item.id)} onOpen={()=>navigation.navigate('MoreTab',{screen:'FoodCourtDetail',params:{vendorId:item.id}})}/>)}</div>:section==='autographs'?autographs.map(item=><div className="fest-schedule-item" key={item.id}><time className="fest-schedule-time">{item.startTime}</time><FestivalArtistTile id={item.id} name={resolveLinkedArtist(item,data.headliners)||item.artist} imageUrl={resolveLinkedImageUrl(item,data.headliners)} subtitle={`${formatDayMonthLabel(item.date)} · ${item.location||'Автограф-сессия'}`} saved onSave={()=>favorites.toggleAutographFavorite(item.id)} onOpen={()=>navigation.navigate('Autographs',{screen:'AutographDetail',params:{sessionId:item.id}})}/></div>):performances.map(item=><div className="fest-schedule-item" key={item.id}><time className="fest-schedule-time">{item.startTime}</time><FestivalArtistTile id={item.id} name={resolveLinkedArtist(item,data.headliners)||item.artist} imageUrl={resolveLinkedImageUrl(item,data.headliners)} subtitle={`${formatDayMonthLabel(item.date)} · ${formatTimeRange(item.startTime,item.endTime)} · ${data.stages.find(stage=>stage.id===item.stageId)?.name||''}`} saved onSave={()=>favorites.toggleFavorite(item.id)} onOpen={()=>navigation.navigate('ScheduleTab',{screen:'LiveDetail',params:{performanceId:item.id}})}/></div>)}
+  </div></section>;
+}

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL, APP_DATA_REFRESH_INTERVAL_MS, CachedAppData } from '../config/api';
+import { APP_DATA_REFRESH_INTERVAL_MS, CachedAppData } from '../config/api';
 import { AppData } from '../types';
-import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { apiFetch } from './apiFetch';
 import { normalizeAppData } from '../utils/appDataNormalize';
 import { validateAppData } from '../../shared/app-data-validation';
 
@@ -103,8 +103,8 @@ async function fetchRemoteAppData(): Promise<{ data: AppData; offline: boolean }
     }
 
     try {
-      const response = await fetchWithTimeout(
-        `${API_BASE_URL}/data`,
+      const response = await apiFetch(
+        '/data',
         {
           cache: 'no-store',
           headers: { Accept: 'application/json', ...(memoryCache?.data.revision ? { 'If-None-Match': `"${memoryCache.data.revision}"` } : {}) },

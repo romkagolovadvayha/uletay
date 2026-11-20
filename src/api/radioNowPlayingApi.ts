@@ -1,13 +1,12 @@
-import { API_BASE_URL } from '../config/api';
 import { RADIO_STATION_ID } from '../config/radio';
-import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { apiFetch } from './apiFetch';
 import type { RadioSnapshot } from '../utils/radioSnapshot';
 
 export type { RadioNowPlaying, RadioSnapshot } from '../utils/radioSnapshot';
 
 export async function fetchRadioNowPlaying(): Promise<RadioSnapshot> {
-  const response = await fetchWithTimeout(
-    `${API_BASE_URL}/radio/now-playing`,
+  const response = await apiFetch(
+    '/radio/now-playing',
     { headers: { Accept: 'application/json' }, cache: 'no-store' },
     10_000,
   );

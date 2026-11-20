@@ -11,6 +11,8 @@ map $uri $is_spa_route {
     ~^/schedule/full(?:/[^/]+)?/?$ 1;
     ~^/autographs(?:/[^/.]+)?/?$ 1;
     ~^/favorites/?$ 1;
+    ~^/chat/?$ 1;
+    ~^/wishes/?$ 1;
     ~^/headliners(?:/[^/.]+)?/?$ 1;
     ~^/more/?$ 1;
     ~^/foodcourt(?:/[^/.]+)?/?$ 1;

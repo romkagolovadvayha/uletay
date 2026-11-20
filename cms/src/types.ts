@@ -86,6 +86,8 @@ export interface Headliner {
   description: string;
   imageTint: string;
   imageUrl?: string;
+  /** Editorial genres; never synchronized from Last.fm. */
+  genres?: string[];
   vkSubtitle?: string;
   vkMusicUrl?: string;
   years: number[];

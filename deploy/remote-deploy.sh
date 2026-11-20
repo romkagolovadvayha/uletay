@@ -214,6 +214,7 @@ npm run db:migrate
 # Apply each versioned map seed once. The migration preserves all non-map CMS
 # content and writes a full backup before replacing the map collections.
 npm run map:migrate-production
+npx tsx scripts/migrate-community-release.ts --apply-production
 
 # Create 160×160 *-list.webp siblings only — never overwrites originals.
 echo "Generating list image variants (siblings only)..."

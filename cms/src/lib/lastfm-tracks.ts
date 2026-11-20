@@ -28,7 +28,7 @@ export function trimLastFmTopTracks(profile: HeadlinerLastFmProfile): HeadlinerL
     onTour: profile.onTour,
     bioSummary: profile.bioSummary,
     bioPublished: profile.bioPublished,
-    tags: (profile.tags ?? []).map((tag) => ({ name: tag.name })),
+    tags: [],
     similarArtists: (profile.similarArtists ?? []).map((artist) => ({ name: artist.name })),
     topTracks: limited,
     topTracksTotal: total || limited.length,

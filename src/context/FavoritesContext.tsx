@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FavoriteType,
   favoriteKey,
@@ -21,9 +21,12 @@ type FavoritesContextValue = {
   toggleAutographFavorite: (id: string) => void;
   isFoodFavorite: (id: string) => boolean;
   toggleFoodFavorite: (id: string) => void;
+  isArtistFavorite: (id: string) => boolean;
+  toggleArtistFavorite: (id: string) => void;
   addedToastVisible: boolean;
   hideAddedToast: () => void;
   isReady: boolean;
+  storageError: boolean;
 };
 
 const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefined);
@@ -32,6 +35,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { mode } = useDemoMode();
   const { data } = useAppData();
   const [favorites, setFavorites] = useState<string[]>([]);
+  const favoritesRef=useRef<string[]>([]);
+  const storageWrite=useRef<Promise<void>>(Promise.resolve());
+  const [storageError,setStorageError]=useState(false);
   const [demoSuppressed, setDemoSuppressed] = useState<string[]>([]);
   const [suppressedForMode, setSuppressedForMode] = useState(mode);
   const [isReady, setIsReady] = useState(false);
@@ -49,11 +55,12 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         try {
-          setFavorites(normalizeFavoriteKeys(JSON.parse(value)));
+          const restored=normalizeFavoriteKeys(JSON.parse(value));favoritesRef.current=restored;setFavorites(restored);
         } catch {
           setFavorites([]);
         }
       })
+      .catch(()=>setStorageError(true))
       .finally(() => setIsReady(true));
   }, []);
 
@@ -73,9 +80,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     return [...new Set([...demoVisible, ...favorites])];
   }, [demoFavoriteKeys, demoSuppressed, favorites, mode]);
 
-  const persist = useCallback(async (next: string[]) => {
+  const persist = useCallback((next: string[]) => {
+    favoritesRef.current=next;
     setFavorites(next);
-    await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+    storageWrite.current=storageWrite.current.catch(()=>{}).then(()=>AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(next))).then(()=>setStorageError(false)).catch(()=>setStorageError(true));
+    return storageWrite.current;
   }, []);
 
   const hideAddedToast = useCallback(() => {
@@ -84,6 +93,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const toggle = useCallback(
     (type: FavoriteType, id: string) => {
+      if(!isReady)return;
       const key = favoriteKey(type, id);
       const isCurrentlyFavorite = effectiveFavorites.includes(key);
 
@@ -103,14 +113,14 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const isAdding = !favorites.includes(key);
-      const next = toggleFavoriteKey(favorites, type, id);
+      const isAdding = !favoritesRef.current.includes(key);
+      const next = toggleFavoriteKey(favoritesRef.current, type, id);
       void persist(next);
       if (isAdding) {
         setAddedToastVisible(true);
       }
     },
-    [demoFavoriteKeys, effectiveFavorites, favorites, mode, persist],
+    [demoFavoriteKeys, effectiveFavorites, favorites, mode, persist,isReady],
   );
 
   const isFavorite = useCallback(
@@ -134,6 +144,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const toggleFoodFavorite = useCallback((id: string) => toggle('food', id), [toggle]);
 
+  const isArtistFavorite = useCallback((id: string) => isFavoriteKey(effectiveFavorites, 'artist', id), [effectiveFavorites]);
+  const toggleArtistFavorite = useCallback((id: string) => toggle('artist', id), [toggle]);
+
   const value = useMemo(
     () => ({
       favorites: effectiveFavorites,
@@ -143,9 +156,12 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       toggleAutographFavorite,
       isFoodFavorite,
       toggleFoodFavorite,
+      isArtistFavorite,
+      toggleArtistFavorite,
       addedToastVisible,
       hideAddedToast,
       isReady,
+      storageError,
     }),
     [
       effectiveFavorites,
@@ -155,9 +171,12 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       toggleAutographFavorite,
       isFoodFavorite,
       toggleFoodFavorite,
+      isArtistFavorite,
+      toggleArtistFavorite,
       addedToastVisible,
       hideAddedToast,
       isReady,
+      storageError,
     ],
   );
 

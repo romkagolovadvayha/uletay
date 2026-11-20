@@ -13,7 +13,7 @@ type Props = {
   alt?: string;
   style?: StyleProp<ImageStyle>;
   contentFit?: 'cover' | 'contain';
-  variant?: 'thumbnail' | 'hero';
+  variant?: 'thumbnail' | 'hero' | 'card';
 };
 
 export function ArtistImage({
@@ -69,8 +69,8 @@ function ArtistImageResolved({
         recyclingKey={`${imageUrl ?? artist ?? 'artist'}:${index}`}
         accessibilityLabel={imageAlt}
         alt={imageAlt}
-        priority={preferList ? 'low' : 'high'}
-        loading={Platform.OS === 'web' ? (preferList ? 'lazy' : 'eager') : undefined}
+        priority={variant === 'hero' ? 'high' : 'low'}
+        loading={Platform.OS === 'web' ? (variant === 'hero' ? 'eager' : 'lazy') : undefined}
         onError={() => setIndex((current) => current + 1)}
       />
     );

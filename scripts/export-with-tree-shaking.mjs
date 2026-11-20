@@ -9,6 +9,9 @@ process.env.EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH = '1';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(root, '..');
 const require = createRequire(import.meta.url);
+// Expo loads these variables in its child process; SEO must use the same API
+// and site URL rather than silently generating pages from the old seed.
+require('@expo/env').loadProjectEnv(projectRoot, { mode: 'production', silent: true });
 const expoCli = require.resolve('expo/bin/cli');
 const tsxCli = require.resolve('tsx/cli');
 

@@ -97,7 +97,7 @@ export function HeadlinersSortableTable({ items, allItems, sortable = true, list
     <>
       <div className="music-refresh-panel">
         <h3>Обновление данных из Last.fm</h3>
-        <p className="hint">Загрузить заново песни, жанры, биографию, похожих артистов и статистику. Связанные артисты обновляются вместе.</p>
+        <p className="hint">Загрузить заново песни, биографию, похожих артистов и статистику. Ручные жанры сохраняются. Связанные артисты обновляются вместе.</p>
         <div className="music-refresh-controls">
           <label className="checkbox-label">
             <input

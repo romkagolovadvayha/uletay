@@ -1,3 +1,4 @@
+import { isArtistGenre } from './music-genres';
 import type { AppData } from '../src/types';
 import { isVkMusicUrl } from './vk-headliners';
 
@@ -72,6 +73,7 @@ export function validateAppData(value: unknown): value is AppData {
   if (!list(value.headliners, (h) => record(h) && id(h.id) && fields(h, ['name', 'description', 'imageTint']) &&
     list(h.years, (year) => number(year) && Number.isInteger(year) && year >= 2000 && year <= 2100) &&
     optional(h.imageUrl, text) && optional(h.alternateNames, texts) && optional(h.linkedHeadlinerIds, (v) => list(v, id)) &&
+    optional(h.genres, (v) => list(v, isArtistGenre)) &&
     optional(h.vkSubtitle, (v) => text(v) && v.length <= 70) &&
     optional(h.vkMusicUrl, isVkMusicUrl) && optional(h.lastfm, lastfm)
   ) || !unique(value.headliners)) return false;

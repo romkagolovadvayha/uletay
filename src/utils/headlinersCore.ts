@@ -1,5 +1,6 @@
 import type { AppData, AutographSession, Headliner, SchedulePerformance } from '../types';
 import { headlinerImageTints } from '../theme/palettes';
+import { normalizeManualArtistGenres } from '../../shared/music-genres';
 
 const IMAGE_TINTS = headlinerImageTints;
 
@@ -42,6 +43,7 @@ function migrateHeadliner(raw: Headliner & { year?: number }): Headliner {
     description: raw.description?.trim() || raw.name.trim(),
     imageTint: raw.imageTint || IMAGE_TINTS[0],
     imageUrl: raw.imageUrl?.trim() || undefined,
+    genres: normalizeManualArtistGenres(raw.genres),
     years: years.sort((a, b) => b - a),
     alternateNames: raw.alternateNames?.map((name) => name.trim()).filter(Boolean),
     linkedHeadlinerIds: raw.linkedHeadlinerIds?.filter(Boolean),
@@ -105,6 +107,7 @@ function ensureHeadliner(
     description: artist.trim(),
     imageTint: IMAGE_TINTS[headliners.length % IMAGE_TINTS.length],
     imageUrl,
+    genres: [],
     years: [],
   };
   headliners.push(created);
@@ -151,13 +154,15 @@ export function syncAppHeadliners(data: AppData): AppData {
     }
 
     if (headlinerId && !headliners.some((headliner) => headliner.id === headlinerId) && artist) {
-      headliners.push({
+      const stored = data.headliners.find((entry) => entry.id === headlinerId);
+      headliners.push(stored ? migrateHeadliner(stored) : {
         id: headlinerId,
         name: artist,
         description: artist,
         imageTint: IMAGE_TINTS[headliners.length % IMAGE_TINTS.length],
         imageUrl: item.imageUrl,
-        years: [],
+        genres: [],
+    years: [],
       });
     }
 
@@ -181,13 +186,15 @@ export function syncAppHeadliners(data: AppData): AppData {
     }
 
     if (headlinerId && !headliners.some((headliner) => headliner.id === headlinerId) && artist) {
-      headliners.push({
+      const stored = data.headliners.find((entry) => entry.id === headlinerId);
+      headliners.push(stored ? migrateHeadliner(stored) : {
         id: headlinerId,
         name: artist,
         description: artist,
         imageTint: IMAGE_TINTS[headliners.length % IMAGE_TINTS.length],
         imageUrl: item.imageUrl,
-        years: [],
+        genres: [],
+    years: [],
       });
     }
 

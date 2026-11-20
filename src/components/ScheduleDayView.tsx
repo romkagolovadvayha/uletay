@@ -1,6 +1,6 @@
 import { webLabel } from '../theme/ios';
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform,StyleSheet, Text, View } from 'react-native';
 import type { NavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,7 +31,7 @@ type Props = {
 
 export function ScheduleDayView({ navigation, initialDate }: Props) {
   const { data } = useAppData();
-  const now = useNow(1000);
+  const now = useNow(15000);
   const { isFavorite, toggleFavorite } = useFavorites();
   const festivalDates = useMemo(
     () => getFestivalDates(data.festival.startDate, data.festival.endDate),
@@ -63,6 +63,7 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
       </View>
 
       <ScheduleStageGrid
+        bottomInset={Platform.OS==='web'?0:80}
         performances={dayPerformances}
         centerStageHeaders={!hasPublishedSchedule}
         emptyMessage={hasPublishedSchedule
@@ -71,10 +72,9 @@ export function ScheduleDayView({ navigation, initialDate }: Props) {
         emptyContent={(
           <View style={styles.emptyContent}>
             <Text style={styles.emptyTitle}>
-              {hasPublishedSchedule ? 'Нет выступлений в этот день' : `Расписание Улетай ${data.festival.year} ещё не опубликовано`}
+              {hasPublishedSchedule ? 'Нет выступлений в этот день' : `Расписание ${data.festival.year} скоро`}
             </Text>
             {!hasPublishedSchedule ? <>
-              <Text style={styles.emptyDescription}>Посмотрите, кто будет на Улетай {data.festival.year}</Text>
               <PrimaryButton label="Хедлайнеры" style={styles.headlinersButton} onPress={() => {
                 navigation.getParent<NavigationProp<RootTabParamList>>()?.navigate('HeadlinersTab', {
                   screen: 'HeadlinersMain', params: { year: String(data.festival.year) },

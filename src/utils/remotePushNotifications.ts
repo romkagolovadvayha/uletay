@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { API_BASE_URL } from '../config/api';
+import { apiFetch } from '../api/apiFetch';
 import {
   addRuStorePushTokenListener,
   deleteRuStorePushToken,
@@ -12,7 +12,6 @@ import {
 
 const EXPO_PUSH_TOKEN_KEY = '@uletay_expo_push_token';
 const RUSTORE_PUSH_TOKEN_KEY = '@uletay_rustore_push_token';
-const PUSH_SUBSCRIPTION_URL = `${API_BASE_URL}/push/subscribe`;
 
 type WebPushServerConfig = {
   webPushSupported: boolean;
@@ -38,7 +37,8 @@ function base64UrlToUint8Array(value: string): Uint8Array<ArrayBuffer> {
 }
 
 async function postJson(method: 'POST' | 'DELETE', body: unknown): Promise<void> {
-  const response = await fetch(PUSH_SUBSCRIPTION_URL, {
+  if(body&&typeof body==='object'&&'favoriteKeys' in body&&Array.isArray(body.favoriteKeys))body={...body,favoriteKeys:body.favoriteKeys.filter((key:unknown)=>typeof key==='string'&&!key.startsWith('artist:'))};
+  const response = await apiFetch('/push/subscribe', {
     method,
     headers: {
       Accept: 'application/json',
@@ -60,7 +60,7 @@ async function getOrCreateWebPushSubscription(): Promise<PushSubscription> {
   ) {
     throw new Error('Web Push не поддерживается этим браузером');
   }
-  const configResponse = await fetch(PUSH_SUBSCRIPTION_URL, {
+  const configResponse = await apiFetch('/push/subscribe', {
     headers: { Accept: 'application/json' },
   });
   if (!configResponse.ok) {

@@ -1,4 +1,5 @@
 import { LinkedArtistsField } from './LinkedArtistsField';
+import { ArtistGenresField } from './ArtistGenresField';
 import { EditorForm, SaveBar } from './EditorForm';
 import { CollectionToolbar } from './CollectionToolbar';
 import { matchesAdminSearch, adminHref } from '@/lib/admin-navigation';
@@ -8,6 +9,7 @@ import { upsertHeadlinerAction } from '../actions';
 import { AdminImageUpload } from './AdminImageUpload';
 import { HeadlinersSortableTable } from './HeadlinersSortableTable';
 import { HeadlinerMusicRefresh } from './HeadlinerMusicRefresh';
+import { ArtistFestivalButton } from './ArtistFestivalButton';
 import type { Headliner } from '@/types';
 import { presetHint } from '@/lib/image-presets';
 import { resolveAdminImageSrc } from '@/lib/resolve-admin-image';
@@ -20,9 +22,10 @@ type Props = {
   editId?: string;
   query?: string;
   yearFilter?: string;
+  festivalYear: number;
 };
 
-export function HeadlinersEditor({ items, editId, query = '', yearFilter }: Props) {
+export function HeadlinersEditor({ items, editId, query = '', yearFilter, festivalYear }: Props) {
   const listHref = adminHref('headliners', { q: query, year: yearFilter });
   const isNew = editId === 'new';
   const editing = isNew ? null : editId ? (items.find((item) => item.id === editId) ?? null) : null;
@@ -102,6 +105,7 @@ export function HeadlinersEditor({ items, editId, query = '', yearFilter }: Prop
               Описание
               <textarea name="description" rows={3} defaultValue={editing?.description ?? ''} />
             </label>
+            <ArtistGenresField key={editing?.id ?? 'new'} selected={editing?.genres} />
             <details className="advanced-panel span-2" open>
               <summary>Карточка для ВКонтакте</summary>
               <label>
@@ -153,6 +157,7 @@ export function HeadlinersEditor({ items, editId, query = '', yearFilter }: Prop
               />
               <span className="hint">
                 Можно указать вручную. Годы также подтягиваются из расписания и автографов.
+                {' '}Кнопка «Будет на фестивале {festivalYear}» добавит год и отправит push с именем артиста всем подписчикам.
               </span>
             </label>
             <div className="span-2">
@@ -166,7 +171,9 @@ export function HeadlinersEditor({ items, editId, query = '', yearFilter }: Prop
             </div>
           </div>
 
-          <SaveBar cancelHref={listHref} />
+          <SaveBar cancelHref={listHref}>
+            <ArtistFestivalButton year={festivalYear} participating={editing?.years.includes(festivalYear) ?? false}/>
+          </SaveBar>
         </EditorForm>
       ) : null}
 

@@ -82,6 +82,19 @@ function upsertJsonLd(meta: SeoMeta, data: AppData) {
   });
 }
 
+function syncAlternates(canonical: string) {
+  for (const language of ['ru', 'x-default']) {
+    const selector = `link[rel="alternate"][hreflang="${language}"]`;
+    const matches = document.head.querySelectorAll<HTMLLinkElement>(selector);
+    const element = matches[0] ?? document.createElement('link');
+    element.rel = 'alternate';
+    element.hreflang = language;
+    element.href = canonical;
+    if (!element.isConnected) document.head.appendChild(element);
+    matches.forEach((duplicate, index) => { if (index > 0) duplicate.remove(); });
+  }
+}
+
 export function applyWebSeo(meta: SeoMeta, data: AppData) {
   if (Platform.OS !== 'web' || typeof document === 'undefined') {
     return;
@@ -97,6 +110,7 @@ export function applyWebSeo(meta: SeoMeta, data: AppData) {
   upsertMeta('keywords', DEFAULT_KEYWORDS);
   upsertMeta('robots', robots);
   upsertLink('canonical', canonical);
+  syncAlternates(canonical);
 
   upsertMeta('og:title', meta.title, 'property');
   upsertMeta('og:description', socialDescription, 'property');

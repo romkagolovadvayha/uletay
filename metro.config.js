@@ -4,6 +4,7 @@ const fs = require('node:fs');
 require('./scripts/prepare-maplibre-web.cjs').prepareMapLibreWeb();
 
 const config = getDefaultConfig(__dirname);
+config.resolver.assetExts = [...new Set([...config.resolver.assetExts, 'woff2'])];
 
 config.resolver.blockList.push(/[\\/]cms[\\/]\.next[^\\/]*(?:[\\/]|$)/);
 const rootPattern = __dirname.split(/[\\/]/).map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[\\\\/]');

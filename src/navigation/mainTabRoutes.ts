@@ -27,7 +27,7 @@ export function getVisibleMainTabRoutes(
   _festivalActive: boolean,
   _content: MainTabContentFlags,
 ): (keyof RootTabParamList)[] {
-  return ['HomeTab', 'MapTab', 'HeadlinersTab', 'ScheduleTab', 'FavoritesTab'];
+  return ['HeadlinersTab', 'ChatTab', 'HomeTab', 'ScheduleTab'];
 }
 
 export function useMainTabContentFlags(): MainTabContentFlags {

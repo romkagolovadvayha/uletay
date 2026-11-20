@@ -1,7 +1,7 @@
 # Деплой через GitHub
 
 Основной репозиторий: https://github.com/romkagolovadvayha/uletay.
-Push в `master` запускает **Deploy production**. Настройки находятся в GitHub
+Push в `codex/uletay-2027-web` запускает **Deploy production**. Настройки находятся в GitHub
 Environment **production**. Сборка выполняется на GitHub runner, готовый архив
 передаётся на существующий production `212.193.26.91`, в `/var/www/uletay`.
 

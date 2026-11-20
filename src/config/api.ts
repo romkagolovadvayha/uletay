@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { AppData, Stage, StageId } from '../types';
 import { stageColors } from '../theme/palettes';
-import { isLoopbackUrl, resolveWebApiBaseUrl } from './web-api-base-url';
+import { isIsolatedPreviewUrl, isLoopbackUrl, resolveWebApiBaseUrl } from './web-api-base-url';
 
 const PRODUCTION_API_BASE_URL = 'https://uletayapp.ru/api';
 
@@ -33,10 +33,16 @@ function getNativeApiBaseUrl(): string {
 export const API_BASE_URL =
   Platform.OS === 'web' ? getWebApiBaseUrl() : getNativeApiBaseUrl();
 
+/** Local development stays isolated from public gateways and production writes. */
+export const API_FALLBACK_URLS = isIsolatedPreviewUrl(API_BASE_URL) ? [] :
+  String(process.env.EXPO_PUBLIC_API_FALLBACK_URLS ?? 'https://d5doi78tpg13bke63gsc.bu9mdbe1.apigw.yandexcloud.net/api').split(',').map((value:string)=>value.trim().replace(/\/$/,'')).filter((value:string)=>{
+    try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password&&url.pathname==='/api'&&!url.search&&!url.hash;}catch{return false;}
+  });
+
 // Conditional requests transfer the catalog only when its revision changes.
 export const APP_DATA_REFRESH_INTERVAL_MS = 30_000;
 
-function getSiteOrigin(): string {
+export function getSiteOrigin(): string {
   return API_BASE_URL.replace(/\/api\/?$/, '') || 'https://uletayapp.ru';
 }
 

@@ -21,6 +21,7 @@ function MapFab({ icon, label, onPress, active }: FabProps) {
     <MotionPressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(active) }}
       onPress={onPress}
       style={[styles.fab, active && styles.fabActive]}
     >

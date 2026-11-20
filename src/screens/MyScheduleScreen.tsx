@@ -2,13 +2,14 @@ import { ios, webLabel } from '../theme/ios';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, View,useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AutographSessionRow } from '../components/AutographSessionRow';
-import { CategoryPillBar } from '../components/CategoryPillBar';
 import { DateTabBar } from '../components/DateTabBar';
 import { ScheduleStageGrid } from '../components/ScheduleStageGrid';
 import { ScreenTitle } from '../components/ScreenTitle';
+import {NativeArtistCard} from '../components/festival-native/native-artist-card';
+import {NativePills} from '../components/festival-native/native-controls';
 import { useAppData } from '../context/DataContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useFestivalSelectedDate } from '../hooks/useFestivalSelectedDate';
@@ -32,18 +33,24 @@ type Props = {
   navigation: BottomTabNavigationProp<RootTabParamList, 'FavoritesTab'>;
 };
 
-type FavoritesSection = 'schedule' | 'autographs';
+type FavoritesSection = 'artists' | 'schedule' | 'autographs';
 
 const SECTION_TABS = [
+  { id: 'artists' as const, label: 'Артисты' },
   { id: 'schedule' as const, label: 'Расписание' },
   { id: 'autographs' as const, label: 'Автографы' },
 ];
 
 export function MyScheduleScreen({ navigation }: Props) {
   const { data } = useAppData();
+  const {width}=useWindowDimensions();
   const now = useNow(1000);
-  const { favorites, isFavorite, toggleFavorite, isAutographFavorite, toggleAutographFavorite } = useFavorites();
-  const [activeSection, setActiveSection] = useState<FavoritesSection>('schedule');
+  const { favorites, isFavorite, toggleFavorite, isAutographFavorite, toggleAutographFavorite, toggleArtistFavorite } = useFavorites();
+  const [activeSection, setActiveSection] = useState<FavoritesSection>('artists');
+  const favoriteArtists = useMemo(
+    () => data.headliners.filter(artist => favorites.includes(favoriteKey('artist', artist.id))),
+    [data.headliners, favorites],
+  );
 
   const festivalDates = useMemo(
     () => getFestivalDates(data.festival.startDate, data.festival.endDate),
@@ -90,7 +97,7 @@ export function MyScheduleScreen({ navigation }: Props) {
     [dayAutographs, now],
   );
 
-  const hasAnyFavorites = favoritePerformances.length > 0 || favoriteAutographs.length > 0;
+  const hasAnyFavorites = favoriteArtists.length > 0 || favoritePerformances.length > 0 || favoriteAutographs.length > 0;
   const hasSectionFavorites =
     activeSection === 'schedule' ? favoritePerformances.length > 0 : favoriteAutographs.length > 0;
 
@@ -111,32 +118,39 @@ export function MyScheduleScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <ScreenTitle style={styles.title}>{webLabel('Моё расписание')}</ScreenTitle>
+        <ScreenTitle style={styles.title}>{webLabel('Избранное')}</ScreenTitle>
       </View>
 
       <View style={styles.sectionTabsWrap}>
-        <CategoryPillBar
-          categories={SECTION_TABS}
-          selectedId={activeSection}
-          onSelect={(id) => setActiveSection(id as FavoritesSection)}
-        />
+        <NativePills items={SECTION_TABS} selected={activeSection} onSelect={id=>setActiveSection(id as FavoritesSection)} label="Избранное"/>
       </View>
 
-      <View style={styles.tabsWrap}>
+      {activeSection !== 'artists' ? <View style={styles.tabsWrap}>
         <DateTabBar dates={festivalDates} selectedDate={selectedDate} onSelect={setSelectedDate} variant="red" />
-      </View>
+      </View> : null}
 
-      {!hasAnyFavorites ? (
+      {activeSection === 'artists' ? (
+        <FlatList
+          data={favoriteArtists}
+          numColumns={2}
+          columnWrapperStyle={{gap:12,marginBottom:12}}
+          removeClippedSubviews={false}
+          keyExtractor={artist => artist.id}
+          contentContainerStyle={favoriteArtists.length ? {paddingHorizontal:14,paddingBottom:100} : styles.empty}
+          renderItem={({item}) => <NativeArtistCard artist={item} width={(width-40)/2} saved onSave={()=>toggleArtistFavorite(item.id)} onOpen={()=>navigation.navigate('HeadlinersTab',{screen:'HeadlinerDetail',params:{headlinerId:item.id}})}/>}
+          ListEmptyComponent={<><Ionicons name="heart-outline" size={32} color={colors.textMuted}/><Text style={styles.emptyTitle}>Пока нет артистов</Text><Text style={styles.emptyText}>Нажми на сердечко на главной, чтобы сохранить артиста.</Text></>}
+        />
+      ) : !hasAnyFavorites ? (
         <View style={styles.empty}>
-          <Ionicons name="star-outline" size={32} color={colors.textMuted} />
+          <Ionicons name="heart-outline" size={32} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>{webLabel('Пока пусто')}</Text>
           <Text style={styles.emptyText}>
-            Нажми на звёздочку рядом с выступлением или автограф-сессией, чтобы добавить сюда
+            Нажми на сердечко рядом с выступлением или автограф-сессией, чтобы добавить сюда
           </Text>
         </View>
       ) : !hasSectionFavorites ? (
         <View style={styles.empty}>
-          <Ionicons name="star-outline" size={28} color={colors.textMuted} />
+          <Ionicons name="heart-outline" size={28} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>
             {activeSection === 'schedule' ? 'НЕТ ВЫСТУПЛЕНИЙ' : 'НЕТ АВТОГРАФ-СЕССИЙ'}
           </Text>
@@ -149,6 +163,7 @@ export function MyScheduleScreen({ navigation }: Props) {
       ) : activeSection === 'schedule' ? (
         dayPerformances.length > 0 ? (
           <ScheduleStageGrid
+            bottomInset={80}
             performances={dayPerformances}
             stages={data.stages}
             selectedDate={selectedDate}
@@ -204,8 +219,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.screenTitle,
     color: colors.text,
-    fontSize: 22,
-    ...ios.title,
+    fontSize: 34,
   },
   sectionTabsWrap: {
     paddingHorizontal: spacing.screen,
@@ -218,6 +232,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xxl,
   },
+  artistRow: {flexDirection:'row',alignItems:'center',gap:spacing.xs},
+  artistCard: {flex:1},
   empty: {
     flex: 1,
     alignItems: 'center',

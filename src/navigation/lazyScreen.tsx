@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { ios, webStyle } from '../theme/ios';
@@ -43,13 +43,15 @@ class ScreenErrorBoundary extends React.Component<
 }
 
 function ScreenFallback() {
+  const [visible,setVisible]=useState(false);
+  useEffect(()=>{const timer=setTimeout(()=>setVisible(true),160);return()=>clearTimeout(timer);},[]);
   return (
     <View style={styles.fallback}>
-      <ActivityIndicator
+      {visible?<ActivityIndicator
         size="large"
         color={colors.primary}
         accessibilityLabel="Загружаем экран"
-      />
+      />:null}
     </View>
   );
 }
@@ -62,9 +64,10 @@ export function lazyScreen(
   loader: () => Promise<React.ComponentType<any>>,
 ): React.ComponentType<any> {
   const createScreen = () => React.lazy(async () => ({ default: await loader() }));
+  const InitialScreen=createScreen();
 
   class LazyScreen extends React.Component<any> {
-    state = { attempt: 0, Screen: createScreen() };
+    state = { attempt: 0, Screen: InitialScreen };
     retry = () => this.setState((state: { attempt: number }) => ({ attempt: state.attempt + 1, Screen: createScreen() }));
 
     render() {

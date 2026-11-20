@@ -1,5 +1,6 @@
 import { YANDEX_MAPS_API_KEY } from '../../config/yandexMaps';
 import { API_BASE_URL } from '../../config/api';
+import { apiFetch } from '../../api/apiFetch';
 import { fetchWithTimeout } from '../fetchWithTimeout';
 import type { LatLng } from '../../types/map';
 import { haversineMeters } from './geo-math';
@@ -157,7 +158,7 @@ async function fetchYandexRouteViaProxy(
   const url = `${base}/route?${params.toString()}`;
 
   try {
-    const response = await fetchWithTimeout(url, {}, 8000);
+    const response = await apiFetch(url.slice(base.length), {}, 8000);
     if (!response.ok) return null;
     const data = await response.json();
     if ((data as { error?: string }).error) return null;
