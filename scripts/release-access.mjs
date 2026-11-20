@@ -30,7 +30,8 @@ export async function play(path,options={}) {
   const {upload:ignored,raw,...request}=options;
   const response=await fetch(`${origin}/applications/ru.uletay.app${path}`,{...request,headers:{Authorization:`Bearer ${googleToken}`,...request.headers}});
   if(raw&&response.ok)return response;
-  const result=response.status===204?null:await response.json();
+  const body=await response.text();
+  const result=body?JSON.parse(body):null;
   if(!response.ok)throw Error(`Google Play ${response.status}: ${result?.error?.message||'request failed'}`);
   return result;
 }

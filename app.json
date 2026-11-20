@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "ru.uletay.app",
-      "versionCode": 49,
+      "versionCode": 50,
       "permissions": [
         "SCHEDULE_EXACT_ALARM"
       ],
