@@ -81,6 +81,7 @@
   "scripts": {
     "test:clock": "tsx scripts/test-clock-context.tsx",
     "test:hero-video": "tsx scripts/test-hero-video-playback.ts",
+    "test:push-registration": "node scripts/test-remote-push-registration.mjs",
     "test:api-failover": "tsx scripts/test-api-failover.ts",
     "ai:generate": "tsx scripts/generate-ai-discovery.ts",
     "test:ai": "tsx scripts/test-ai-discovery.ts",
@@ -151,7 +152,7 @@
     "cms:migrate": "npm --prefix cms run db:migrate",
     "cms:typecheck": "npm --prefix cms run typecheck",
     "check": "npm run typecheck && npm run cms:typecheck && npm run lint",
-    "test": "npm run test:audit-fixes && npm run test:hero-video && npm run test:api-url && npm run test:sw && npm run test:push-web && npm run test:ai && npm run test:compat && npm --prefix cms run test:admin && npm --prefix cms run test:auth"
+    "test": "npm run test:audit-fixes && npm run test:hero-video && npm run test:push-registration && npm run test:api-url && npm run test:sw && npm run test:push-web && npm run test:ai && npm run test:compat && npm --prefix cms run test:admin && npm --prefix cms run test:auth"
   },
   "private": true,
   "engines": {

@@ -26,3 +26,9 @@ The check enforces the package, version/name, arm64 support, and absence of ever
 permission listed in `android.blockedPermissions`. The release is signed using
 the existing upload key. Google Play signs delivered APKs with its own app key.
 Credentials, keystores, raw QA captures and API release receipts remain ignored.
+
+The native home video is bundled (`assets/videos/background.mp4`, about 2 MiB)
+and does not require a network download. Its Media3 buffer is bounded to 4 MiB;
+leaving Home or backgrounding the app pauses and unloads the player immediately.
+Push token refresh reuses the native event token, avoiding recursive registration
+requests on Android. Both lifecycle and token-rotation regressions are tested.

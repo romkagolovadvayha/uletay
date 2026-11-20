@@ -137,7 +137,7 @@ async function registerRuStorePush(): Promise<void> {
   await unregisterStoredToken(EXPO_PUSH_TOKEN_KEY, 'expo').catch(() => undefined);
 }
 
-async function registerExpoPush(): Promise<void> {
+async function registerExpoPush(devicePushToken?: Notifications.DevicePushToken): Promise<void> {
   await ensureAndroidPushChannel();
   if (Platform.OS === 'android') {
     if (Constants.appOwnership === 'expo') {
@@ -160,7 +160,9 @@ async function registerExpoPush(): Promise<void> {
   }
   let token: string;
   try {
-    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    // Fetching the native token emits addPushTokenListener again on Android.
+    // Reuse the event's token so refresh registration cannot call itself forever.
+    token = (await Notifications.getExpoPushTokenAsync({ projectId, devicePushToken })).data;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (
@@ -213,8 +215,8 @@ export function addRemotePushTokenRefreshListener(): { remove: () => void } | nu
       });
     });
   }
-  return Notifications.addPushTokenListener(() => {
-    void registerExpoPush().catch(() => {
+  return Notifications.addPushTokenListener((token) => {
+    void registerExpoPush(token).catch(() => {
       // Повторная синхронизация произойдёт при следующем запуске приложения.
     });
   });
