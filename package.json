@@ -80,6 +80,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "eas-build-on-success": "node scripts/ios-store-qa.mjs",
     "test:clock": "tsx scripts/test-clock-context.tsx",
     "test:hero-video": "tsx scripts/test-hero-video-playback.ts",
     "test:push-registration": "node scripts/test-remote-push-registration.mjs",

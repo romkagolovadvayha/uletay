@@ -41,6 +41,19 @@
         "simulator": true
       }
     },
+    "ios-store-qa": {
+      "extends": "ios-simulator",
+      "env": {
+        "ULETAY_IOS_STORE_QA": "1"
+      },
+      "buildArtifactPaths": [
+        "artifacts/ios-store-qa-results.tar.gz",
+        "artifacts/ios-store-qa/**/*.png",
+        "artifacts/ios-store-qa/**/*.xml",
+        "artifacts/ios-store-qa/**/*.log",
+        "artifacts/ios-store-qa/available-devices.json"
+      ]
+    },
     "rustore": {
       "extends": "production",
       "env": {
