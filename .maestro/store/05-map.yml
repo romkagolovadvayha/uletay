@@ -1,0 +1,17 @@
+appId: ru.uletay.app
+name: Festival map without location permission
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: deny
+- openLink: uletay://map
+- tapOn:
+    text: 'Open|Открыть'
+    optional: true
+- extendedWaitUntil:
+    visible: '(?i)Карта фестиваля'
+    timeout: 45000
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: 05-map

@@ -33,7 +33,7 @@ for(const device of selected){
  run('xcrun',['simctl','bootstatus',device.udid,'-b']);
  run('xcrun',['simctl','status_bar',device.udid,'override','--time','9:41','--dataNetwork','wifi','--wifiMode','active','--wifiBars','3','--batteryState','charged','--batteryLevel','100']);
  run('xcrun',['simctl','install',device.udid,appPath]);
- const result=spawnSync('maestro',['--device',device.udid,'test','--format','junit','--output',path.join(out,'report.xml'),'--test-output-dir',out,'.maestro/ios-store.yml'],{encoding:'utf8',timeout:12*60*1000,maxBuffer:24*1024*1024});
+ const result=spawnSync('maestro',['--device',device.udid,'test','--format','junit','--output',path.join(out,'report.xml'),'--test-output-dir',out,'.maestro/store'],{encoding:'utf8',timeout:18*60*1000,maxBuffer:24*1024*1024});
  await writeFile(path.join(out,'maestro.log'),(result.stdout||'')+'\n'+(result.stderr||''));
  console.log(`${device.name}: ${result.status===0?'PASS':'FAIL'}`);
  if(result.status!==0)failures++;

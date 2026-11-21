@@ -1,0 +1,26 @@
+appId: ru.uletay.app
+name: Published state and festival schedule demo
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: deny
+- openLink: uletay://schedule
+- tapOn:
+    text: 'Open|Открыть'
+    optional: true
+- extendedWaitUntil:
+    visible: '(?i)Расписание'
+    timeout: 30000
+- takeScreenshot: 06-schedule-unpublished
+- openLink: uletay://settings
+- tapOn: 'Демо фестиваля'
+- openLink: uletay://schedule
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 06-schedule-demo
+- swipe:
+    direction: LEFT
+- takeScreenshot: 06-schedule-demo-after-swipe
+- openLink: uletay://settings
+- tapOn: 'Текущее время'

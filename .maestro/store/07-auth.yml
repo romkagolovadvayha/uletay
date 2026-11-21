@@ -1,0 +1,18 @@
+appId: ru.uletay.app
+name: Optional authentication for sending chat messages
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: deny
+- openLink: uletay://chat
+- tapOn:
+    text: 'Open|Открыть'
+    optional: true
+- extendedWaitUntil:
+    visible: '(?i)Общий чат'
+    timeout: 30000
+- tapOn: 'Сообщение.*'
+- assertVisible: '(?i)Войти в Улетай'
+- assertVisible: 'Войти через VK'
+- takeScreenshot: 07-optional-apple-login

@@ -1,0 +1,17 @@
+appId: ru.uletay.app
+name: Guest public chat
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: deny
+- openLink: uletay://chat
+- tapOn:
+    text: 'Open|Открыть'
+    optional: true
+- extendedWaitUntil:
+    visible: '(?i)Общий чат'
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 02-chat

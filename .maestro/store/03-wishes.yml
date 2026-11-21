@@ -1,0 +1,17 @@
+appId: ru.uletay.app
+name: Artist voting results without login
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: deny
+- openLink: uletay://wishes
+- tapOn:
+    text: 'Open|Открыть'
+    optional: true
+- extendedWaitUntil:
+    visible: '(?i)Кого ждём\?'
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 03-wishes
