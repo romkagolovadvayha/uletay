@@ -78,3 +78,5 @@ scripts/fest-artist-sync-report.json
 cms/.env.production
 __pycache__/
 *.pyc
+# Private Apple server credentials are generated only during deployment.
+**/.private/

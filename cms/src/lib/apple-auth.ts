@@ -1,5 +1,6 @@
 import {createCipheriv,createDecipheriv,createHash,randomBytes,timingSafeEqual} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
+import path from 'node:path';
 import {createRemoteJWKSet,importPKCS8,jwtVerify,SignJWT,type JWTVerifyGetKey} from 'jose';
 import {ChatError} from './chat';
 import {sessionOptions} from './session';
@@ -46,7 +47,7 @@ export function decryptAppleRefreshToken(value:string){
 }
 export async function appleConfiguration(){
   try{
-    const config=JSON.parse(await readFile(process.env.APPLE_SIGN_IN_CONFIG_PATH||'/etc/uletay/apple-sign-in.json','utf8')) as {clientId:string;teamId:string;keyId:string;privateKeyPath:string};
+    const config=JSON.parse(await readFile(process.env.APPLE_SIGN_IN_CONFIG_PATH||path.resolve(process.cwd(),'.private/apple-sign-in.json'),'utf8')) as {clientId:string;teamId:string;keyId:string;privateKeyPath:string};
     if(config.clientId!==APPLE_CLIENT_ID||!/^[A-Z0-9]{10}$/.test(config.teamId)||!/^[A-Z0-9]{10}$/.test(config.keyId)||typeof config.privateKeyPath!=='string')throw Error('Invalid configuration');
     return config;
   }catch{throw new ChatError('Вход с Apple пока недоступен. Попробуй позже или выбери VK.',503);}

@@ -187,6 +187,11 @@ jobs:
       - name: Setup pinned SSH connection
         run: bash deploy/gha-setup-ssh.sh
 
+      - name: Prepare private Apple sign-in server credentials
+        env:
+          APPLE_SIGN_IN_SERVER_CONFIG: ${{ secrets.APPLE_SIGN_IN_SERVER_CONFIG }}
+        run: node scripts/prepare-apple-server-credentials.mjs
+
       - name: Package release without environment files
         run: |
           tar --dereference --hard-dereference --exclude='cms/.env*' --exclude='cms/node_modules' --exclude='cms/.next/cache' \
