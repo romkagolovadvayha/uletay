@@ -5,6 +5,9 @@ name: Artist voting results without login
     clearState: true
     permissions:
       all: deny
+- extendedWaitUntil:
+    visible: 'Увидимся на Улетай 2027'
+    timeout: 60000
 - openLink: uletay://wishes
 - tapOn:
     text: 'Open|Открыть'

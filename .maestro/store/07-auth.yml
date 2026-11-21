@@ -5,6 +5,9 @@ name: Optional authentication for sending chat messages
     clearState: true
     permissions:
       all: deny
+- extendedWaitUntil:
+    visible: 'Увидимся на Улетай 2027'
+    timeout: 60000
 - openLink: uletay://chat
 - tapOn:
     text: 'Open|Открыть'

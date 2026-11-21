@@ -129,4 +129,6 @@ button:disabled{cursor:not-allowed;opacity:.45}
 @media(max-width:389px){.fest-hero-copy h1{font-size:clamp(44px,16.4vw,64px)}}
 @media(min-width:768px) and (max-width:1023px){.fest-hero-copy h1{font-size:clamp(44px,6.3vw,64px)}}
 @supports(font-size:1cqw){.fest-hero-copy{container-type:inline-size}.fest-hero-copy h1{font-size:clamp(44px,16.4cqw,110px)}@media(max-width:767px){.fest-hero-copy h1{font-size:clamp(44px,calc(16.4cqw + 6.56px),64px)}}}
+.fest-hero-copy h1>span{display:block;white-space:nowrap}.fest-hero-copy>.fest-eyebrow{font-size:16px;line-height:1.5;letter-spacing:.09em}
 `;
+

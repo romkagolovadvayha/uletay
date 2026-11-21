@@ -12,15 +12,20 @@ function run(command,args,options={}){
   if(result.status!==0)throw Error(`${command} failed: ${result.stderr||result.stdout}`);
   return result.stdout;
 }
-const archive=path.join(root,'simulator-app.tar.gz');
-run('curl',['-fL','--retry','3','https://expo.dev/artifacts/eas/Dx2iMORF894Z8oJbl3g2_d-h9IQV3Qkf-I-1mE1kcWM.tar.gz','-o',archive]);
-const unpacked=path.join(root,'app');await mkdir(unpacked,{recursive:true});
-run('tar',['-xzf',archive,'-C',unpacked]);
-const app=(await readdir(unpacked)).find(name=>name.endsWith('.app'));
-if(!app)throw Error('Simulator app missing');
-const appPath=path.join(unpacked,app);
+// Test this build's own binary, including its current JS bundle and assets.
+const products=path.resolve('ios/build/Build/Products');
+const apps=[];
+for(const directory of await readdir(products)){
+ if(!directory.endsWith('-iphonesimulator'))continue;
+ for(const file of await readdir(path.join(products,directory))){
+  if(file.endsWith('.app'))apps.push(path.join(products,directory,file));
+ }
+}
+if(apps.length!==1)throw Error(`Expected one freshly built simulator application, found ${apps.length}`);
+const appPath=apps[0];
 const bundle=run('/usr/libexec/PlistBuddy',['-c','Print :CFBundleIdentifier',path.join(appPath,'Info.plist')]).trim();
 if(bundle!=='ru.uletay.app')throw Error('Unexpected simulator application');
+await writeFile(path.join(root,'tested-build.json'),JSON.stringify({bundle,version:run('/usr/libexec/PlistBuddy',['-c','Print :CFBundleShortVersionString',path.join(appPath,'Info.plist')]).trim(),build:run('/usr/libexec/PlistBuddy',['-c','Print :CFBundleVersion',path.join(appPath,'Info.plist')]).trim(),commit:process.env.EAS_BUILD_GIT_COMMIT_HASH},null,2));
 const devices=JSON.parse(run('xcrun',['simctl','list','devices','available','-j']));
 await writeFile(path.join(root,'available-devices.json'),JSON.stringify(devices,null,2));
 const available=Object.entries(devices.devices).filter(([runtime])=>runtime.includes('iOS-26')).flatMap(([,values])=>values);

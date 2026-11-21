@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   titleProminentCompact: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 18,
+    lineHeight: 24,
     marginBottom: 10,
   },
   row: {
