@@ -3,7 +3,6 @@ import { Asset } from 'expo-asset';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { FestivalIcon } from '../components/FestivalIcon.web';
 import { FestivalArtistTile } from '../components/FestivalArtistTile.web';
-import { LiquidDialog } from '../components/LiquidDialog.web';
 import { FestivalWeather } from '../components/FestivalWeather.web';
 import { FestivalNotifications } from '../components/FestivalNotifications.web';
 import { APP_STORES } from '../constants/appDownload';
@@ -39,7 +38,7 @@ function HomeAction({model,onAction}:{model:FestivalHomeModel;onAction:FestivalH
 
 export function FestivalHomeView({model,focused,savedIds,showDownloads,topInset=0,localNotifications,onAction,onToggleFavorite,onNavigatePath,onExternalLink,loadWeather,loadNotifications}:FestivalHomeViewProps) {
   const {festival,center,artists,lineupYear,hasCurrent}=model;
-  const [storeNotice,setStoreNotice]=useState(false),videoRef=useRef<HTMLVideoElement>(null);
+  const videoRef=useRef<HTMLVideoElement>(null);
   const [videoAllowed,setVideoAllowed]=useState(allowsBackgroundVideo),[videoFailed,setVideoFailed]=useState(false),[heroFailed,setHeroFailed]=useState(false);
   useEffect(()=>{const media=window.matchMedia('(prefers-reduced-motion: reduce)');const update=()=>setVideoAllowed(allowsBackgroundVideo());media.addEventListener('change',update);return()=>media.removeEventListener('change',update);},[]);
   useEffect(()=>{
@@ -59,9 +58,9 @@ export function FestivalHomeView({model,focused,savedIds,showDownloads,topInset=
     <div className="fest-inner">
       {artists.length?<section aria-labelledby="home-headliners-title"><div className="fest-heading"><div><div className="fest-eyebrow">{hasCurrent?'Участники фестиваля':`Участники фестиваля · ${lineupYear}`}</div><h2 id="home-headliners-title">Хедлайнеры</h2></div><button type="button" className="fest-pill" onClick={()=>void onAction({type:'lineup',year:lineupYear})}>Все артисты</button></div><div className="fest-grid">{artists.map(artist=><FestivalArtistTile key={artist.id} id={artist.id} name={artist.name} imageUrl={artist.imageUrl} subtitle={getArtistGenres(artist,1)[0]} onOpen={()=>void onAction({type:'artist',id:artist.id})} saved={savedIds.includes(artist.id)} onSave={()=>void onToggleFavorite(artist.id)}/>)}</div></section>:null}
       {showDownloads?<section className="fest-downloads" aria-labelledby="home-downloads-title"><h2 id="home-downloads-title">Скачать приложение</h2><div className="fest-download-buttons">{APP_STORES.map(store=>{
-        const content=<><img src={store.image} alt="" width={32} height={32} loading="lazy" decoding="async"/><span><small>{store.href?(store.name==='RuStore'?'Скачайте из':'Доступно в'):'Скоро в'}</small><strong>{store.name}</strong></span></>;
-        return store.href?<a key={store.name} className="fest-button fest-store-button" data-store={store.name} href={store.href}>{content}</a>:<button className="fest-button fest-store-button" data-store={store.name} key={store.name} type="button" onClick={()=>setStoreNotice(true)}>{content}</button>;
+        const content=<><img src={store.image} alt="" width={32} height={32} loading="lazy" decoding="async"/><span><small>{store.name==='RuStore'?'Скачайте из':'Доступно в'}</small><strong>{store.name}</strong></span></>;
+        return <a key={store.name} className="fest-button fest-store-button" data-store={store.name} href={store.href}>{content}</a>;
       })}</div></section>:null}
     </div>
-  </div>{showDownloads?<LiquidDialog open={storeNotice} onClose={()=>setStoreNotice(false)} title="Скоро в App Store" description="Приложение для iOS готовится к публикации. Пока пользуйтесь веб-версией." actions={[{label:'Понятно',tone:'primary',onPress:()=>setStoreNotice(false)}]}/>:null}</section>;
+  </div></section>;
 }

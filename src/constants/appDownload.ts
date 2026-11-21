@@ -5,8 +5,7 @@ import { AMBIENT_BACKGROUND, AMBIENT_BACKGROUND_CSS } from '../theme/ambientBack
 
 export const APP_DOWNLOAD_TITLE = 'Приложение Улетай 2027';
 export const APP_DOWNLOAD_SUBTITLE = 'Скачать приложение';
-export const APP_DOWNLOAD_DESCRIPTION = 'Скачайте приложение Улетай 2027 для Android в Google Play или RuStore.';
-export const APP_STORE_UNAVAILABLE = 'Приложение пока недоступно для скачивания. Скоро появится.';
+export const APP_DOWNLOAD_DESCRIPTION = 'Скачайте приложение Улетай 2027 для iOS в App Store и для Android в Google Play или RuStore.';
 
 export const APP_STORES = [
   {
@@ -21,7 +20,7 @@ export const APP_STORES = [
   },
   {
     name: 'App Store',
-    href: null,
+    href: 'https://apps.apple.com/ru/app/id6837515167',
     image: '/store-app-store-icon.svg',
   },
 ] as const;

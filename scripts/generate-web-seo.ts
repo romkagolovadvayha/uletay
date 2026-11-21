@@ -16,7 +16,7 @@ import { encodeSeoRouteId, isDateWithinFestival } from '../src/seo/seoRouteUtils
 import { getSelectableHeadlinerYears } from '../src/utils/headlinerYears';
 import { writeAiDiscovery } from './ai-discovery';
 import { formatFestivalDateRange } from '../src/utils/festivalContent';
-import { APP_STORES, APP_STORE_UNAVAILABLE } from '../src/constants/appDownload';
+import { APP_STORES } from '../src/constants/appDownload';
 import { FESTIVAL_WEB_CSS } from '../src/theme/festival.web';
 import { LEGAL_SECTIONS } from '../src/constants/legalContent';
 import { PRIVACY_POLICY_URL } from '../src/constants/legal';
@@ -396,9 +396,8 @@ const primaryNavigation = (festivalYear: number) => [
 function fallbackMarkup(route: GeneratedRoute, festivalYear: number): string {
   if (route.path === '/') {
     const buttons = APP_STORES.map((store) => {
-      const content = `<img src="${store.image}" alt="" width="32" height="32"><span><small>${store.href?'Доступно в':'Скоро в'}</small><strong>${htmlEscape(store.name)}</strong></span>`;
-      return store.href ? `<a class="fest-button fest-store-button" data-store="${htmlEscape(store.name)}" href="${htmlEscape(store.href)}" aria-label="Скачать Улетай в ${htmlEscape(store.name)}">${content}</a>`
-        : `<details><summary class="fest-button fest-store-button" data-store="${htmlEscape(store.name)}">${content}</summary><p>${APP_STORE_UNAVAILABLE}</p></details>`;
+      const content = `<img src="${store.image}" alt="" width="32" height="32"><span><small>Доступно в</small><strong>${htmlEscape(store.name)}</strong></span>`;
+      return `<a class="fest-button fest-store-button" data-store="${htmlEscape(store.name)}" href="${htmlEscape(store.href)}" aria-label="Скачать Улетай в ${htmlEscape(store.name)}">${content}</a>`;
     }).join('');
     return `<section id="seo-fallback" class="fest-screen"><div class="fest-hero"><img class="fest-hero-media" src="/hero-video-poster.webp" alt="Рок-фестиваль Улетай: сцена и зрители"><div class="fest-hero-copy"><h1>Увидимся на<br>Улетай ${festivalYear}</h1><div class="fest-hero-actions"><a class="fest-button" data-primary="true" href="/headliners/${festivalYear}">Кто приедет?</a></div></div></div><div class="fest-inner"><section><div class="fest-heading"><h2>Хедлайнеры</h2><a class="fest-pill" href="/headliners/${festivalYear}">Все артисты</a></div></section><section class="fest-downloads"><h2>Скачать приложение</h2><div class="fest-download-buttons">${buttons}</div></section></div></section>`;
   }
