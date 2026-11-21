@@ -22,6 +22,10 @@ flock -n 9 || { echo 'Another release is being activated'; exit 1; }
 
 previous="$(readlink -f "$SHARED_ROOT/current" 2>/dev/null || true)"
 [[ -d "$previous/cms" ]] || previous="$SHARED_ROOT"
+if [[ "$previous" == "$SHARED_ROOT/releases/"* ]]; then
+  python3 "$DEPLOY_PATH/deploy/prune-release-storage.py" "$SHARED_ROOT" \
+    --candidate "$DEPLOY_PATH" --lock-held --apply
+fi
 base_port="$CMS_PORT"
 old_port="$(cat "$SHARED_ROOT/.active-port" 2>/dev/null || printf '%s' "$base_port")"
 if [[ "$old_port" == "$base_port" ]]; then CMS_PORT=$((base_port + 1)); else CMS_PORT="$base_port"; fi
@@ -101,4 +105,8 @@ touch "$DEPLOY_PATH/.activated"
 committed=1
 pm2 delete "$old_process" >/dev/null 2>&1 || true
 pm2 save >/dev/null 2>&1 || true
+python3 "$DEPLOY_PATH/deploy/prune-release-storage.py" "$SHARED_ROOT" \
+  --candidate "$DEPLOY_PATH" --lock-held --apply || \
+  echo 'Release activated; storage retention will retry during the next deployment.'
+
 echo "Activated release $RELEASE_ID; previous files retained at $previous"

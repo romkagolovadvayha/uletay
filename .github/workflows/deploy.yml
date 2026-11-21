@@ -138,6 +138,7 @@ jobs:
           npm run test:ai
           npm run test:auth --prefix cms
           python3 scripts/test-release-transport.py
+          python3 scripts/test-release-retention.py
           npx tsx --test scripts/test-radio.ts
           npm run test:rustore-push-config
           npm run test:audit-fixes

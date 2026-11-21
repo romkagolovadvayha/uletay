@@ -65,6 +65,7 @@ MOCK
   # Redirect only system configuration paths in the test copy; production source is unchanged.
   sed "s|/etc/|$TEST_CASE/etc/|g" "$repo/deploy/release-deploy.sh" > "$TEST_CASE/release.sh"
   cp "$repo/deploy/read-deployment-env.sh" "$TEST_CASE/read-deployment-env.sh"
+  cp "$repo/deploy/prune-release-storage.py" "$candidate/deploy/prune-release-storage.py"
   printf '%s\0' test.invalid "$root" test@example.invalid 3000 127.0.0.1 test test \
     '' admin '' '' '' '' '' '' '' '' '' '' '' > "$TEST_CASE/input"
   if [[ "$transport" == extended ]]; then
