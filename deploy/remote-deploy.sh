@@ -256,6 +256,12 @@ if [ ! -f "$CMS_SERVER" ]; then
   exit 1
 fi
 
+# Next's standalone entry changes cwd to its own directory. Keep private runtime
+# files reachable there without tracing them into a build or a public directory.
+if [ -f "$DEPLOY_PATH/cms/.private/apple-sign-in.json" ]; then
+  ln -sfnT "$DEPLOY_PATH/cms/.private" "$DEPLOY_PATH/cms/.next/standalone/.private"
+fi
+
 if "$PM2_BIN" describe "$CMS_PROCESS_NAME" >/dev/null 2>&1; then
   "$PM2_BIN" restart "$CMS_PROCESS_NAME" --update-env
 else
