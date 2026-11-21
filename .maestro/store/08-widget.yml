@@ -1,0 +1,14 @@
+appId: ru.uletay.app
+name: Native widget discovery on iPhone home screen
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible: 'Увидимся на Улетай 2027'
+    timeout: 60000
+- pressKey: Home
+- takeScreenshot: 08-widget-home-screen
+- longPressOn: 'Улетай'
+- takeScreenshot: 08-widget-icon-menu

@@ -12,6 +12,7 @@
     }
   },
   "dependencies": {
+    "@bacons/apple-targets": "^5.0.0",
     "@expo-google-fonts/montserrat": "^0.4.2",
     "@expo/metro-runtime": "~57.0.16",
     "@expo/ui": "~57.0.26",

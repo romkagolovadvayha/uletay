@@ -29,6 +29,7 @@ module.exports = ({ config }) => {
       './plugins/with-vk-native-auth',
       './plugins/with-native-interface',
       '@maplibre/maplibre-react-native',
+      '@bacons/apple-targets',
       ...(isRuStoreBuild
         ? [
             [

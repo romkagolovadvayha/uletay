@@ -16,6 +16,7 @@
       "usesAppleSignIn": true,
       "supportsTablet": true,
       "bundleIdentifier": "ru.uletay.app",
+      "appleTeamId": "GJVRBGFVG5",
       "buildNumber": "5",
       "config": {
         "usesNonExemptEncryption": false

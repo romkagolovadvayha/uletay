@@ -23,6 +23,13 @@ for(const directory of await readdir(products)){
 }
 if(apps.length!==1)throw Error(`Expected one freshly built simulator application, found ${apps.length}`);
 const appPath=apps[0];
+const widgetChecks=path.join(root,'widget-model-checks');
+if(process.env.ULETAY_WIDGET_QA==='1'){
+ const extensions=await readdir(path.join(appPath,'PlugIns'));
+ if(!extensions.some(name=>name.endsWith('.appex')))throw Error('Widget extension missing from the application bundle');
+ run('swiftc',['targets/festival-widget/FestivalModel.swift','scripts/widget-model-checks.swift','-o',widgetChecks]);
+ const report=run(widgetChecks,[]);console.log(report);await writeFile(path.join(root,'widget-model-checks.log'),report);
+}
 const bundle=run('/usr/libexec/PlistBuddy',['-c','Print :CFBundleIdentifier',path.join(appPath,'Info.plist')]).trim();
 if(bundle!=='ru.uletay.app')throw Error('Unexpected simulator application');
 await writeFile(path.join(root,'tested-build.json'),JSON.stringify({bundle,version:run('/usr/libexec/PlistBuddy',['-c','Print :CFBundleShortVersionString',path.join(appPath,'Info.plist')]).trim(),build:run('/usr/libexec/PlistBuddy',['-c','Print :CFBundleVersion',path.join(appPath,'Info.plist')]).trim(),commit:process.env.EAS_BUILD_GIT_COMMIT_HASH},null,2));
