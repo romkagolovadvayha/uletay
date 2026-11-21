@@ -1,8 +1,11 @@
 import {chatFailure,chatResponse,ChatError,currentChatUser,getChatSession,requireChatUser} from '@/lib/chat';
 import {getPool} from '@/lib/db';
+import {revokeAppleAccountAccess} from '@/lib/apple-chat-auth';
 export const dynamic='force-dynamic';
 async function removeAccount(request:Request){
-  const user=await requireChatUser(request),db=await getPool().getConnection();
+  const user=await requireChatUser(request);
+  await revokeAppleAccountAccess(user.id);
+  const db=await getPool().getConnection();
   try{await db.beginTransaction();
     await db.execute('DELETE r FROM chat_reports r LEFT JOIN chat_messages m ON m.id=r.message_id WHERE r.user_id=? OR m.user_id=?',[user.id,user.id]);
     await db.execute("INSERT INTO chat_users(vk_id,display_name,is_active) VALUES('deleted-profile','Удалённый участник',FALSE) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)");

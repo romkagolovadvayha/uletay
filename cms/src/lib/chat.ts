@@ -34,7 +34,7 @@ export async function requireChatUser(request: Request) {
   const supplied=request.headers.get('X-Chat-CSRF')||'';
   if(!session.csrf || Buffer.byteLength(supplied)!==Buffer.byteLength(session.csrf) || !timingSafeEqual(Buffer.from(supplied),Buffer.from(session.csrf))) throw new ChatError('Обновите страницу и повторите отправку',403);
   const user=await currentChatUser();
-  if(!user) throw new ChatError('Войдите через VK, чтобы написать сообщение',401);
+  if(!user) throw new ChatError('Войдите в профиль, чтобы написать сообщение',401);
   return user;
 }
 export async function issueChatBearer(userId:number,lifetimeHours=1) {

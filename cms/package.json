@@ -62,7 +62,8 @@
     "test:push-reminders": "tsx scripts/test-favorite-reminders.ts",
     "test:push-favorites": "tsx scripts/test-push-favorites-integration.ts",
     "typecheck": "tsc --noEmit",
-    "test:auth": "tsx scripts/test-vk-auth.ts && tsx scripts/test-public-images.ts",
+    "test:auth": "tsx scripts/test-vk-auth.ts && tsx scripts/test-apple-auth.ts && tsx scripts/test-public-images.ts",
+    "test:auth:apple:db": "tsx scripts/test-apple-chat-auth.ts",
     "test:auth:db": "tsx scripts/test-admin-auth-db.ts",
     "dev:local": "next dev --hostname 127.0.0.1 -p 3000"
   },
@@ -71,6 +72,7 @@
     "@vkontakte/vk-bridge": "3.0.2",
     "bcryptjs": "^3.0.2",
     "iron-session": "^8.0.4",
+    "jose": "^6.2.18",
     "maplibre-gl": "6.9.0",
     "mysql2": "^3.24.4",
     "next": "^16.4.6",

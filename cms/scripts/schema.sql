@@ -148,6 +148,30 @@ CREATE TABLE IF NOT EXISTS chat_native_auth (
   KEY idx_native_auth_expiry (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS chat_apple_auth (
+  challenge_id CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+  client_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  nonce_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  used_at TIMESTAMP NULL,
+  KEY idx_apple_auth_expiry (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_apple_accounts (
+  apple_subject VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL UNIQUE,
+  encrypted_refresh_token TEXT NULL,
+  grant_issued_at DATETIME(3) NOT NULL,
+  revoked_at TIMESTAMP NULL,
+  FOREIGN KEY (user_id) REFERENCES chat_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_apple_events (
+  event_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+  event_type VARCHAR(64) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS artist_wish_votes (
   festival_year SMALLINT UNSIGNED NOT NULL,
   artist_id VARCHAR(191) COLLATE utf8mb4_bin NOT NULL,

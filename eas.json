@@ -29,7 +29,16 @@
         "buildType": "app-bundle"
       },
       "ios": {
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "credentialsSource": "local"
+      }
+    },
+    "ios-simulator": {
+      "extends": "production",
+      "distribution": "internal",
+      "autoIncrement": false,
+      "ios": {
+        "simulator": true
       }
     },
     "rustore": {
@@ -45,7 +54,13 @@
   },
   "submit": {
     "production": {
-      "ios": {},
+      "ios": {
+        "ascAppId": "6837515167",
+        "appleTeamId": "GJVRBGFVG5",
+        "ascApiKeyPath": "./credentials/apple/app-store-connect.p8",
+        "ascApiKeyId": "JZX48RRLU7",
+        "ascApiKeyIssuerId": "54422ecf-7ee1-441d-887b-315cbdc5f315"
+      },
       "android": {
         "track": "production",
         "releaseStatus": "completed",

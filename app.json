@@ -13,6 +13,7 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#000000",
     "ios": {
+      "usesAppleSignIn": true,
       "supportsTablet": true,
       "bundleIdentifier": "ru.uletay.app",
       "buildNumber": "5",
@@ -20,6 +21,7 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
         "CADisableMinimumFrameDurationOnPhone": true,
         "NSLocationWhenInUseUsageDescription": "Приложению нужен доступ к геолокации, чтобы показать ваше положение на карте площадки фестиваля «Улетай». При построении внешнего маршрута координаты передаются сервису маршрутизации, в том числе через сервер приложения.",
         "NSUserNotificationsUsageDescription": "Приложению нужны уведомления, чтобы напоминать о начале избранных выступлений и автограф-сессий, которые вы добавили в расписание."
@@ -63,6 +65,7 @@
       ],
       "expo-image",
       "expo-font",
+      "expo-apple-authentication",
       [
         "expo-notifications",
         {
