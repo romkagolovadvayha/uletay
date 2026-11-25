@@ -26,6 +26,7 @@ export function MoreMenuSheet() {
   const content = useMainTabContentFlags();
   if (isTablet) return null;
   const menuItems: MenuItem[] = [
+    {icon:'game-controller-outline',label:'Знаток Улетай',onPress:()=>{close();navigation.navigate('MoreTab',{screen:'UletayQuiz'});}},
     {icon:'sparkles-outline',label:'Кого ждём?',onPress:()=>{close();navigation.navigate('MoreTab',{screen:'ArtistWishes'});}},
     {icon:'map-outline',label:'Карта фестиваля',onPress:()=>{close();navigation.navigate('MapTab');}},
     {icon:'heart-outline',label:'Моё избранное',onPress:()=>{close();navigation.navigate('FavoritesTab');}},

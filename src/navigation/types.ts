@@ -22,6 +22,7 @@ export type MoreStackParamList = {
   Legal: undefined;
   Chat: undefined;
   ArtistWishes: undefined;
+  UletayQuiz: undefined;
   HeadlinersMain: { year?: string; search?: boolean } | undefined;
   HeadlinerDetail: { headlinerId: string };
 };

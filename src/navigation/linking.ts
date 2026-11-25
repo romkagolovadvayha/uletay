@@ -202,6 +202,7 @@ export const linking: LinkingOptions<RootTabParamList> = {
           FestivalRules: 'rules',
           Settings: 'settings',
           ArtistWishes: 'wishes',
+          UletayQuiz: 'quiz',
           Legal: 'legal',
         },
       },

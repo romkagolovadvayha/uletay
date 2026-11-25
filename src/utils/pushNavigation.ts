@@ -7,7 +7,7 @@ const SAFE_PUSH_PATHS = [
   /^\/playlist$/,
   /^\/headliners(?:\/[^/?#]+)?$/,
   /^\/foodcourt(?:\/[^/?#]+)?$/,
-  /^\/(?:about|rules|settings|legal|chat|wishes|help)$/,
+  /^\/(?:about|rules|settings|legal|chat|wishes|help|quiz)$/,
 ];
 
 export function getSafePushPath(value: unknown): string | null {

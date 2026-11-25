@@ -73,6 +73,12 @@ export type NavState = {
 };
 
 const STATIC_SEO: Record<string, Omit<SeoMeta, 'path' | 'siteName'> & { path: string }> = {
+  UletayQuiz: {
+    title: 'Знаток Улетай — фестивальная игра',
+    description: 'Проверь свои знания о группах и истории Улетай: 12 вопросов, три подсказки и рисованные персонажи.',
+    path: '/quiz',
+    noIndex: true,
+  },
   HomeTab: {
     title: `Фестиваль УЛЕТАЙ — даты, артисты и гид | ${SITE_NAME}`,
     description: DEFAULT_DESCRIPTION,
@@ -214,6 +220,8 @@ function buildPath(chain: RouteNode[]): string {
       return '/chat';
     case 'ArtistWishes':
       return '/wishes';
+    case 'UletayQuiz':
+      return '/quiz';
     case 'PlaylistTab':
       return '/playlist';
     case 'MoreHome':

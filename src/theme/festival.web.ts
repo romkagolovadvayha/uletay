@@ -1,6 +1,10 @@
 import { colors } from './colors';
 
 export const FESTIVAL_WEB_CSS = `
+/* Confirmed quiz answers stay readable even though their controls are locked. */
+#uletay-quiz button[data-testid^="quiz-answer-"]:disabled{opacity:1!important}
+#uletay-quiz button{background-color:transparent!important}
+#uletay-quiz{max-height:100dvh;overscroll-behavior:none}
 @font-face{font-family:FestivalDisplay;src:url('/fonts/RobotoCondensed-BlackItalic.woff2') format('woff2');font-style:italic;font-weight:100 900;font-display:swap}
 @font-face{font-family:FestivalSans;src:url('/fonts/Montserrat.woff2') format('woff2');font-weight:100 900;font-display:swap}
 :root{--fest-yellow:#ffda00;--fest-ink:#100b0f;--fest-wine:#360b21;--fest-text:#f8f4f0;--fest-muted:#beb3ba;--fest-line:rgba(255,255,255,.17);--fest-ease:cubic-bezier(.23,1,.32,1);color-scheme:dark}

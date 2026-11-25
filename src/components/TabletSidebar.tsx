@@ -154,6 +154,7 @@ export function TabletSidebar({ state, descriptors, navigation }: BottomTabBarPr
   };
 
   const extraItems: ExtraItem[] = [
+    {key:'quiz',icon:'game-controller',label:'Знаток Улетай',isActive:moreNestedRoute==='UletayQuiz',onPress:()=>tabNavigation.navigate('MoreTab',{screen:'UletayQuiz'})},
     {key:'wishes',icon:'sparkles',label:'Кого хотите видеть?',isActive:moreNestedRoute==='ArtistWishes',onPress:()=>tabNavigation.navigate('MoreTab',{screen:'ArtistWishes'})},
     {key:'map',icon:'map',label:'Карта фестиваля',isActive:currentTabName==='MapTab',onPress:()=>tabNavigation.navigate('MapTab')},
     {key:'favorites',icon:'heart',label:'Моё избранное',isActive:currentTabName==='FavoritesTab',onPress:()=>tabNavigation.navigate('FavoritesTab')},

@@ -13,6 +13,7 @@ map $uri $is_spa_route {
     ~^/favorites/?$ 1;
     ~^/chat/?$ 1;
     ~^/wishes/?$ 1;
+    ~^/quiz/?$ 1;
     ~^/headliners(?:/[^/.]+)?/?$ 1;
     ~^/more/?$ 1;
     ~^/foodcourt(?:/[^/.]+)?/?$ 1;

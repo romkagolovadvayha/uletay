@@ -222,6 +222,7 @@ function makeRouteSpecs(data: AppData): RouteSpec[] {
     ] },
     { path: '/favorites', routeName: 'FavoritesTab' },
     { path: '/chat', routeName: 'ChatTab' },
+    { path: '/quiz', routeName: 'UletayQuiz', heading: 'Знаток Улетай' },
     { path: '/wishes', routeName: 'ArtistWishes', heading: 'Кого ждём?', details: [
       'Пожелания гостей фестиваля и голосование за артистов. Наличие артиста в этом разделе не означает участие в объявленном лайн-апе.',
     ], links: uniqueArtists.map((artist) => ({href: `/headliners/${encodeSeoRouteId(artist.id)}`, label: artist.name})) },

@@ -93,7 +93,7 @@ const server = createServer((request, response) => {
       return;
     }
   }
-  if (/^\/(?:map|schedule|autographs|favorites|headliners|foodcourt|rules|settings|help|privacy|chat|wishes)(?:\/.*)?\/$/.test(pathname)) {
+  if (/^\/(?:map|schedule|autographs|favorites|headliners|foodcourt|rules|settings|help|privacy|chat|wishes|quiz)(?:\/.*)?\/$/.test(pathname)) {
     response.writeHead(301, { Location: requestUrl.pathname.replace(/\/+$/, '') + requestUrl.search }).end();
     return;
   }
@@ -124,7 +124,7 @@ const server = createServer((request, response) => {
   try {
     target = candidates.map(candidate => existsSync(candidate) && statSync(candidate).isDirectory() ? path.join(candidate, 'index.html') : candidate).find(candidate => existsSync(candidate) && statSync(candidate).isFile());
     if (!target) {
-      const spaRoute = /^\/(?:map(?:\/[^/]+)?|schedule(?:\/(?:live\/[^/.]+|full(?:\/[^/]+)?))?|autographs(?:\/[^/.]+)?|favorites|headliners(?:\/[^/.]+)?|foodcourt(?:\/[^/.]+)?|rules|settings|help|chat|wishes)$/.test(pathname);
+      const spaRoute = /^\/(?:map(?:\/[^/]+)?|schedule(?:\/(?:live\/[^/.]+|full(?:\/[^/]+)?))?|autographs(?:\/[^/.]+)?|favorites|headliners(?:\/[^/.]+)?|foodcourt(?:\/[^/.]+)?|rules|settings|help|chat|wishes|quiz)$/.test(pathname);
       if (spaRoute) target = path.join(root, 'index.html');
       else {
         response.statusCode = 404;

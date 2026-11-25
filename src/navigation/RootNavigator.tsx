@@ -98,6 +98,7 @@ const LegalScreen = lazyScreen(() =>
 );
 const ChatScreen = lazyScreen(() => import('../screens/ChatScreen').then((m) => m.ChatScreen));
 const ArtistWishesScreen = lazyScreen(() => import('../screens/ArtistWishesScreen').then((m) => m.ArtistWishesScreen));
+const UletayQuizScreen = lazyScreen(() => import('../screens/UletayQuizScreen').then((m) => m.UletayQuizScreen));
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const ScheduleStack = createNativeStackNavigator<ScheduleStackParamList>();
@@ -216,6 +217,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="Settings" component={SettingsScreen} />
       <MoreStack.Screen name="Chat" component={ChatScreen} />
       <MoreStack.Screen name="ArtistWishes" component={ArtistWishesScreen} />
+      <MoreStack.Screen name="UletayQuiz" component={UletayQuizScreen} />
       <MoreStack.Screen name="Legal" component={LegalScreen} />
       <MoreStack.Screen name="HeadlinersMain" component={HeadlinersScreen} />
       <MoreStack.Screen name="HeadlinerDetail" component={HeadlinerDetailScreen} />
@@ -223,7 +225,7 @@ function MoreNavigator() {
   );
 }
 
-const WEB_FULL_BLEED_SCREENS=new Set(['HomeTab','ChatTab','MapTab','ScheduleTab','ScheduleMain','HeadlinersTab','HeadlinersMain','HeadlinerDetail','FavoritesTab','Settings','Chat','ArtistWishes','FestivalRules']);
+const WEB_FULL_BLEED_SCREENS=new Set(['HomeTab','ChatTab','MapTab','ScheduleTab','ScheduleMain','HeadlinersTab','HeadlinersMain','HeadlinerDetail','FavoritesTab','Settings','Chat','ArtistWishes','FestivalRules','UletayQuiz']);
 function WebTabScene({ children }: { children: React.ReactNode }) {
   const focused = useIsFocused();
   const page=useNavigationState(state=>{const route=state.routes[state.index];return getFocusedRouteNameFromRoute(route)??route.name;});
