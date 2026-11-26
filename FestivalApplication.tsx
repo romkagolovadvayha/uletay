@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppDownloadBanner } from './src/components/AppDownloadBanner';
 import {
   DEMO_MODE_BANNER_HEIGHT,
   DemoModeBanner,
@@ -64,6 +65,7 @@ function AppContent() {
     <IconsReadyProvider ready={iconsReady}>
       <View style={styles.appContent}>
         <View style={[styles.navigation, demoModeActive && styles.navigationWithDemoBanner]}>
+          <AppDownloadBanner />
           <NavigationContainer
             ref={navigationRef}
             theme={navigationTheme}
