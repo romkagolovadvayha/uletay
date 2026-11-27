@@ -4,7 +4,7 @@
     "slug": "romkadvayha",
     "scheme": "uletay",
     "owner": "romkadvayhas-team",
-    "version": "1.0.19",
+    "version": "1.0.21",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -17,11 +17,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "ru.uletay.app",
       "appleTeamId": "GJVRBGFVG5",
-      "buildNumber": "5",
+      "buildNumber": "10",
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
+        "NSSupportsLiveActivities": true,
         "CFBundleAllowMixedLocalizations": true,
         "CADisableMinimumFrameDurationOnPhone": true,
         "NSLocationWhenInUseUsageDescription": "Приложению нужен доступ к геолокации, чтобы показать ваше положение на карте площадки фестиваля «Улетай». При построении внешнего маршрута координаты передаются сервису маршрутизации, в том числе через сервер приложения.",
@@ -30,7 +31,7 @@
     },
     "android": {
       "package": "ru.uletay.app",
-      "versionCode": 52,
+      "versionCode": 55,
       "permissions": [
         "SCHEDULE_EXACT_ALARM"
       ],

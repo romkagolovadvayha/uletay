@@ -169,6 +169,12 @@ write_env EXPO_PUSH_ACCESS_TOKEN "$EXPO_PUSH_ACCESS_TOKEN"
 write_env RUSTORE_PUSH_PROJECT_ID "$RUSTORE_PUSH_PROJECT_ID"
 write_env RUSTORE_PUSH_SERVICE_TOKEN "$RUSTORE_PUSH_SERVICE_TOKEN"
 
+# These host-local APNs settings and its private key survive every release.
+# They are deliberately not transferred through the public build environment.
+for activity_setting in FESTIVAL_ACTIVITY_APNS_ENABLED FESTIVAL_ACTIVITY_APNS_TEAM_ID FESTIVAL_ACTIVITY_APNS_KEY_ID FESTIVAL_ACTIVITY_APNS_KEY_PATH; do
+  write_env "$activity_setting" "${!activity_setting:-$(read_existing_env "$activity_setting")}"
+done
+
 chmod 600 "$ENV_TMP"
 mv -f "$ENV_TMP" "$DEPLOY_PATH/cms/.env"
 trap - EXIT

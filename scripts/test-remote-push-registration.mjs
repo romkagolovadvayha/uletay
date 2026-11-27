@@ -8,8 +8,10 @@ import ts from 'typescript';
 const storage = new Map();
 const listeners = new Set();
 const posts = [];
+const operations = [];
 let nativeReads = 0;
 let offline = false;
+let holdNextPost;
 const emit = (data) => { for (const listener of listeners) listener({type: 'android', data}); };
 const notifications = {
   AndroidImportance: {HIGH: 4},
@@ -29,13 +31,26 @@ const imports = {
   'expo-constants': {expoConfig: {android: {googleServicesFile: './firebase.json'}, extra: {eas: {projectId: 'project'}}}},
   'expo-notifications': notifications,
   'react-native': {Platform: {OS: 'android'}},
-  '../api/apiFetch': {apiFetch: async (_path, init) => {if (offline) throw Error('offline'); posts.push(JSON.parse(init.body)); return {ok: true};}},
+  '../api/apiFetch': {apiFetch: async (_path, init) => {
+    if (offline) throw Error('offline');
+    const body = JSON.parse(init.body);
+    posts.push(body); operations.push({method: init.method, ...body});
+    const gate = holdNextPost; holdNextPost = null;
+    if (gate) await gate;
+    return {ok: true};
+  }},
   './rustorePushNotifications': {isRuStorePushBuild: () => false},
 };
-const module = {exports: {}};
-const compiled = ts.transpileModule(fs.readFileSync('src/utils/remotePushNotifications.ts', 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true}}).outputText;
-vm.runInNewContext(compiled, {module, exports: module.exports, require: name => {assert(name in imports, `Unexpected import ${name}`); return imports[name];}});
-const api = module.exports;
+function load(file) {
+  const module = {exports: {}};
+  const compiled = ts.transpileModule(fs.readFileSync(file, 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true}}).outputText;
+  vm.runInNewContext(compiled, {module, exports: module.exports, require: name => {
+    if (name === './notificationChannels') return load('src/utils/notificationChannels.ts');
+    assert(name in imports, `Unexpected import ${name}`); return imports[name];
+  }});
+  return module.exports;
+}
+const api = load('src/utils/remotePushNotifications.ts');
 const flush = async () => {for (let i = 0; i < 10; i++) await new Promise(resolve => setImmediate(resolve));};
 const subscription = api.addRemotePushTokenRefreshListener();
 await api.syncRemotePushSubscription();
@@ -59,4 +74,32 @@ subscription.remove();
 emit('native-removed');
 await flush();
 assert.equal(posts.length, 4, 'Removing the listener must stop refresh registrations');
-console.log('Native push: initial Android event, no recursive token reads, token rotation, offline recovery and listener cleanup passed.');
+
+let finishRegistration;
+holdNextPost = new Promise(resolve => { finishRegistration = resolve; });
+const registering = api.syncRemotePushSubscription();
+await flush();
+const pendingToken = operations.at(-1).token;
+assert.equal(operations.at(-1).method, 'POST');
+const unregistering = api.unregisterRemotePushSubscription();
+await flush();
+assert.equal(operations.at(-1).method, 'POST', 'Opt-out must wait for the in-flight registration before removing its token');
+finishRegistration();
+await Promise.all([registering, unregistering]);
+assert.equal(operations.at(-1).method, 'DELETE');
+assert.equal(operations.at(-1).token, pendingToken, 'Opt-out removes the token produced by the late registration');
+assert.equal(storage.has('@uletay_expo_push_token'), false);
+
+const queuedListener = api.addRemotePushTokenRefreshListener();
+holdNextPost = new Promise(resolve => { finishRegistration = resolve; });
+const secondRegistration = api.syncRemotePushSubscription();
+await flush();
+emit('native-queued-after-disable');
+queuedListener.remove();
+const finalOptOut = api.unregisterRemotePushSubscription();
+finishRegistration();
+await Promise.all([secondRegistration, finalOptOut]);
+await flush();
+assert.equal(operations.some(row => row.token === 'Expo[native-queued-after-disable]'), false, 'A removed listener must not register an already queued token');
+assert.equal(storage.has('@uletay_expo_push_token'), false);
+console.log('Native push: token refresh, offline recovery, late registration opt-out and queued listener cancellation passed.');

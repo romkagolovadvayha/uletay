@@ -31,12 +31,13 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 MAILTO=""
 * * * * * root flock -n /tmp/uletay-push-reminders.lock bash -lc 'set -a; source "$DEPLOY_PATH/cms/.env"; set +a; cd "$DEPLOY_PATH/cms"; "$RUNNER" scripts/send-favorite-reminders.ts >> "$LOG_DIR/push-reminders.log" 2>&1'
+* * * * * root flock -n /tmp/uletay-live-activities.lock bash -lc 'set -a; source "$DEPLOY_PATH/cms/.env"; set +a; cd "$DEPLOY_PATH/cms"; "$RUNNER" scripts/send-festival-activities.ts >> "$LOG_DIR/live-activities.log" 2>&1'
 CRON
 
 chmod 0644 "$CRON_FILE"
 
 cat > "$LOGROTATE_FILE" <<LOGROTATE
-$LOG_DIR/push-reminders.log {
+$LOG_DIR/push-reminders.log $LOG_DIR/live-activities.log {
     daily
     rotate 14
     compress

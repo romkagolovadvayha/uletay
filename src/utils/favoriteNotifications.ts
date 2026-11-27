@@ -8,6 +8,7 @@ import {
   needsPwaForWebNotifications,
 } from './webNotifications';
 import { parseDateTime } from './scheduleHelpers';
+import { ensureAndroidPushChannel } from './notificationChannels';
 
 const REMINDER_LEAD_MS = 10 * 60 * 1000;
 const NOTIFIED_STORAGE_KEY = '@uletay_favorite_notified';
@@ -179,6 +180,8 @@ export async function requestNotificationPermissions(
     return true;
   }
 
+  // Android 13+ can only show the permission prompt after a channel exists.
+  await ensureAndroidPushChannel();
   const requested = await Notifications.requestPermissionsAsync();
   return requested.granted || requested.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 }

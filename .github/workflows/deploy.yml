@@ -145,6 +145,11 @@ jobs:
           npm run test:audit-fixes
           npm run test:sw
           npm run test:api-url
+          npm run test:notification-settings
+          npm run test:push-registration
+          npm run test:festival-activity
+          npm run test:festival-activity:bridge
+          npm run test:live-activities --prefix cms
           npm run test:compat
           npm run test:map
           npm run test:map:renderer

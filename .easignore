@@ -60,6 +60,10 @@ scripts/fest-artist-sync-report.json
 # generated native folders
 /ios
 /android
+/modules/**/android/build/
+/modules/**/android/.cxx/
+/modules/**/android/.gradle/
+/hs_err_pid*.log
 
 # Local build and QA scratch files
 /tmp/

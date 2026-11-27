@@ -1,0 +1,5 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": { "modules": ["FestivalActivityModule"], "appDelegateSubscribers": ["FestivalActivityAppDelegateSubscriber"] },
+  "android": { "modules": ["expo.modules.festivalactivity.FestivalActivityModule"] }
+}

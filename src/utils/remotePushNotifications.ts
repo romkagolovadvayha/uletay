@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { apiFetch } from '../api/apiFetch';
+import { ensureAndroidPushChannel } from './notificationChannels';
 import {
   addRuStorePushTokenListener,
   deleteRuStorePushToken,
@@ -12,6 +13,15 @@ import {
 
 const EXPO_PUSH_TOKEN_KEY = '@uletay_expo_push_token';
 const RUSTORE_PUSH_TOKEN_KEY = '@uletay_rustore_push_token';
+
+// A registration already in flight must finish before an opt-out removes its
+// token, otherwise its late response could restore a disabled subscription.
+let remotePushPending = Promise.resolve();
+function queueRemotePush(work: () => Promise<void>): Promise<void> {
+  const result = remotePushPending.catch(() => undefined).then(work);
+  remotePushPending = result;
+  return result;
+}
 
 type WebPushServerConfig = {
   webPushSupported: boolean;
@@ -90,18 +100,6 @@ async function registerWebPush(favoriteKeys?: string[]): Promise<void> {
     subscription: subscription.toJSON(),
     ...(favoriteKeys ? { favoriteKeys } : {}),
   });
-}
-
-async function ensureAndroidPushChannel(): Promise<void> {
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('broadcasts', {
-      name: 'Новости фестиваля',
-      description: 'Важные новости и объявления фестиваля',
-      importance: Notifications.AndroidImportance.HIGH,
-      sound: 'default',
-      vibrationPattern: [0, 250, 200, 250],
-    });
-  }
 }
 
 async function unregisterStoredToken(
@@ -186,69 +184,71 @@ async function registerExpoPush(devicePushToken?: Notifications.DevicePushToken)
 }
 
 export async function syncRemotePushSubscription(): Promise<void> {
-  if (Platform.OS === 'web') {
-    await registerWebPush();
-    return;
-  }
-  if (isRuStorePushBuild()) {
-    await registerRuStorePush();
-    return;
-  }
-  await registerExpoPush();
+  return queueRemotePush(async () => {
+    if (Platform.OS === 'web') {
+      await registerWebPush();
+      return;
+    }
+    if (isRuStorePushBuild()) {
+      await registerRuStorePush();
+      return;
+    }
+    await registerExpoPush();
+  });
 }
 
 export async function syncWebPushFavorites(favoriteKeys: string[]): Promise<void> {
   if (Platform.OS !== 'web') {
     return;
   }
-  await registerWebPush(favoriteKeys);
+  await queueRemotePush(() => registerWebPush(favoriteKeys));
 }
 
 export function addRemotePushTokenRefreshListener(): { remove: () => void } | null {
   if (Platform.OS === 'web') {
     return null;
   }
-  if (isRuStorePushBuild()) {
-    return addRuStorePushTokenListener((token) => {
-      void registerRuStorePushToken(token).catch(() => {
-        // Повторная синхронизация произойдёт при следующем запуске приложения.
-      });
-    });
-  }
-  return Notifications.addPushTokenListener((token) => {
-    void registerExpoPush(token).catch(() => {
+  let active = true;
+  const enqueue = (work: () => Promise<void>) => {
+    void queueRemotePush(async () => { if (active) await work(); }).catch(() => {
       // Повторная синхронизация произойдёт при следующем запуске приложения.
     });
-  });
+  };
+  const subscription = isRuStorePushBuild()
+    ? addRuStorePushTokenListener(token => enqueue(() => registerRuStorePushToken(token)))
+    : Notifications.addPushTokenListener(token => enqueue(() => registerExpoPush(token)));
+  return { remove() { active = false; subscription?.remove(); } };
 }
 
 export async function unregisterRemotePushSubscription(): Promise<void> {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+  return queueRemotePush(async () => {
+    if (Platform.OS === 'web') {
+      if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+        return;
+      }
+      const registration = await navigator.serviceWorker.getRegistration('/');
+      const subscription = await registration?.pushManager.getSubscription();
+      if (!subscription) {
+        return;
+      }
+      try {
+        await postJson('DELETE', { endpoint: subscription.endpoint });
+      } finally {
+        await subscription.unsubscribe();
+      }
       return;
     }
-    const registration = await navigator.serviceWorker.getRegistration('/');
-    const subscription = await registration?.pushManager.getSubscription();
-    if (!subscription) {
-      return;
-    }
-    try {
-      await postJson('DELETE', { endpoint: subscription.endpoint });
-    } finally {
-      await subscription.unsubscribe();
-    }
-    return;
-  }
 
-  const results = await Promise.allSettled([
-    unregisterStoredToken(EXPO_PUSH_TOKEN_KEY, 'expo'),
-    unregisterStoredToken(RUSTORE_PUSH_TOKEN_KEY, 'rustore'),
-  ]);
-  if (isRuStorePushBuild()) {
-    await deleteRuStorePushToken().catch(() => undefined);
-  }
-  const failure = results.find((result) => result.status === 'rejected');
-  if (failure?.status === 'rejected') {
-    throw failure.reason;
-  }
+    const results = await Promise.allSettled([
+      unregisterStoredToken(EXPO_PUSH_TOKEN_KEY, 'expo'),
+      unregisterStoredToken(RUSTORE_PUSH_TOKEN_KEY, 'rustore'),
+    ]);
+    if (isRuStorePushBuild()) {
+      await deleteRuStorePushToken().catch(() => undefined);
+    }
+    const failure = results.find((result) => result.status === 'rejected');
+    if (failure?.status === 'rejected') {
+      throw failure.reason;
+    }
+  });
 }

@@ -6,6 +6,7 @@ export async function schemaForDatabase(name: string): Promise<string> {
   if (!/^[A-Za-z0-9_]{1,64}$/.test(name)) throw new Error('Invalid DB_NAME');
   const schema = await readFile(path.join(__dirname, 'schema.sql'), 'utf8');
   const identifier = mysql.escapeId(name);
+  const activities = await readFile(path.join(__dirname, 'live-activities-schema.sql'), 'utf8');
   return schema.replace('CREATE DATABASE IF NOT EXISTS uletay', `CREATE DATABASE IF NOT EXISTS ${identifier}`)
-    .replace('USE uletay;', `USE ${identifier};`);
+    .replace('USE uletay;', `USE ${identifier};`) + '\n' + activities;
 }

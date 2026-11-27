@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import {
   cancelAllFavoriteNotifications,
   getNotificationPermissionStatus,
@@ -12,6 +13,7 @@ import {
   syncRemotePushSubscription,
   unregisterRemotePushSubscription,
 } from '../utils/remotePushNotifications';
+import { syncFestivalActivities } from '../utils/festivalActivity';
 
 type NotificationSettingsContextValue = {
   enabled: boolean;
@@ -45,9 +47,12 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const settingsRevision = useRef(0);
 
   const refresh = useCallback(async () => {
+    const revision = settingsRevision.current;
     const [stored, status] = await Promise.all([loadNotificationsEnabled(), getNotificationPermissionStatus()]);
+    if (revision !== settingsRevision.current) return;
     setEnabled(stored);
     setPermission(status);
     setReady(true);
@@ -55,26 +60,38 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
 
   useEffect(() => {
     let active = true;
-
-
-    void Promise.all([loadNotificationsEnabled(), getNotificationPermissionStatus()]).then(
-      ([stored, status]) => {
-        if (!active) {
-          return;
+    const update = () => {
+      const revision = settingsRevision.current;
+      return Promise.all([loadNotificationsEnabled(), getNotificationPermissionStatus()]).then(
+        ([stored, status]) => {
+          if (!active || revision !== settingsRevision.current) {
+            return;
+          }
+          setEnabled(stored);
+          setPermission(status);
+          setReady(true);
+        },
+      ).catch(() => {
+        if (active && revision === settingsRevision.current) {
+          setReady(true);
+          setFeedback('Не удалось проверить разрешение на уведомления. Попробуйте ещё раз.');
         }
-        setEnabled(stored);
-        setPermission(status);
-        setReady(true);
-      },
-    );
+      });
+    };
+    void update();
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') void update();
+    });
 
     return () => {
       active = false;
+      subscription.remove();
     };
   }, []);
 
   const enableNotifications = useCallback(
     async (webPermissionPromise?: Promise<NotificationPermission> | null): Promise<boolean> => {
+      settingsRevision.current += 1;
       setFeedback(null);
       setBusy(true);
       try {
@@ -83,20 +100,12 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
         setPermission(status);
 
         if (granted) {
-          let remotePushWarning: string | null = null;
-          if (status === 'granted') {
-            try {
-              await syncRemotePushSubscription();
-            } catch (error) {
-              remotePushWarning =
-                error instanceof Error
-                  ? error.message
-                  : 'Не удалось зарегистрировать удалённые push.';
-            }
-          }
+          // Local reminders and ActivityKit must be enabled while the app is
+          // still in the foreground, even when the push server is unreachable.
           await saveNotificationsEnabled(true);
+          settingsRevision.current += 1;
           setEnabled(true);
-          setFeedback(remotePushWarning);
+          setFeedback(null);
           return true;
         }
 
@@ -114,13 +123,16 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
   );
 
   const disableNotifications = useCallback(async () => {
+    settingsRevision.current += 1;
     setBusy(true);
     setFeedback(null);
     try {
       await saveNotificationsEnabled(false);
-      await cancelAllFavoriteNotifications();
-      await unregisterRemotePushSubscription().catch(() => undefined);
+      settingsRevision.current += 1;
       setEnabled(false);
+      await syncFestivalActivities([]).catch(() => undefined);
+      await cancelAllFavoriteNotifications();
+      void unregisterRemotePushSubscription().catch(() => undefined);
     } finally {
       setBusy(false);
     }
@@ -130,9 +142,13 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
     if (!ready || !enabled || permission !== 'granted') {
       return;
     }
-    void syncRemotePushSubscription().catch(() => {
-      // Сохраняем локальные напоминания и повторим регистрацию при следующем запуске.
+    let active = true;
+    void syncRemotePushSubscription().catch(error => {
+      if (active) {
+        setFeedback(error instanceof Error ? error.message : 'Не удалось зарегистрировать удалённые push.');
+      }
     });
+    return () => { active = false; };
   }, [enabled, permission, ready]);
 
   useEffect(() => {

@@ -160,7 +160,6 @@ struct FestivalWidgetView: View {
   }
 }
 
-@main
 struct UletayFestivalWidget: Widget {
   let kind="UletayFestival"
   var body: some WidgetConfiguration {
@@ -168,5 +167,13 @@ struct UletayFestivalWidget: Widget {
       .configurationDisplayName("Улетай рядом")
       .description("Таймер до фестиваля, погода в Лагуново и текущие и следующие выступления.")
       .supportedFamilies([.systemSmall,.systemMedium,.systemLarge])
+  }
+}
+
+@main
+struct UletayWidgetBundle: WidgetBundle {
+  var body: some Widget {
+    UletayFestivalWidget()
+    FestivalLiveActivity()
   }
 }

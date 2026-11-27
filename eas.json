@@ -41,6 +41,11 @@
         "simulator": true
       }
     },
+    "ios-live-activity-qa": {
+      "extends": "ios-simulator",
+      "env": { "ULETAY_LIVE_ACTIVITY_QA": "1" },
+      "buildArtifactPaths": ["artifacts/live-activity-qa/*.log"]
+    },
     "ios-store-qa": {
       "extends": "ios-simulator",
       "env": {
